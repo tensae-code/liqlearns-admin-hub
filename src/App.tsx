@@ -9,6 +9,8 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
 import BusinessDashboard from "./pages/BusinessDashboard";
+import TeacherDashboard from "./pages/TeacherDashboard";
+import ParentDashboard from "./pages/ParentDashboard";
 import Marketplace from "./pages/Marketplace";
 import Quest from "./pages/Quest";
 import StudyRooms from "./pages/StudyRooms";
@@ -30,6 +32,8 @@ const AppRoutes = () => (
     <Route path="/dashboard" element={<Dashboard />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/business" element={<BusinessDashboard />} />
+    <Route path="/teacher" element={<TeacherDashboard />} />
+    <Route path="/parent" element={<ParentDashboard />} />
     <Route path="/marketplace" element={<Marketplace />} />
     <Route path="/quest" element={<Quest />} />
     <Route path="/study-rooms" element={<StudyRooms />} />
