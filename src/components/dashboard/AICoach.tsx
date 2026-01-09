@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Send, X, Sparkles, MessageSquare, Mic, Volume2 } from 'lucide-react';
+import { Bot, Send, X, Sparkles, MessageSquare, Mic, Volume2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -30,7 +32,7 @@ const AICoach = () => {
     },
   ]);
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -42,7 +44,7 @@ const AICoach = () => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -52,28 +54,48 @@ const AICoach = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const userInput = input;
     setInput('');
-    setIsTyping(true);
+    setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        'Great question! In Amharic, we say "ሰላም" (selam) for hello. Try saying it with me! 🎯',
-        'Here\'s a quick tip: Amharic uses a unique script called Ge\'ez. Each character represents a consonant-vowel combination!',
-        'Let me quiz you: How do you say "thank you" in Amharic? Hint: It starts with "አ" 🤔',
-        'Excellent practice! Your pronunciation is improving. Keep up the great work! 🌟',
-      ];
-      
+    try {
+      const conversationHistory = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      const { data, error } = await supabase.functions.invoke('ai-coach', {
+        body: {
+          message: userInput,
+          conversationHistory,
+        },
+      });
+
+      if (error) throw error;
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: data.response,
         timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-      setIsTyping(false);
-    }, 1500);
+    } catch (error) {
+      console.error('AI Coach error:', error);
+      toast.error('Failed to get response. Please try again.');
+      
+      // Fallback response
+      const fallbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'I\'m having trouble connecting right now. Please try again in a moment! 🙏',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, fallbackMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleQuickPrompt = (prompt: string) => {
@@ -162,7 +184,7 @@ const AICoach = () => {
                 </motion.div>
               ))}
               
-              {isTyping && (
+              {isLoading && (
                 <div className="flex gap-2">
                   <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
                     <Sparkles className="w-4 h-4 text-accent" />
