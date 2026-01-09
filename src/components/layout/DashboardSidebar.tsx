@@ -33,6 +33,7 @@ const navItems = [
   { icon: Calendar, label: 'Events', path: '/events' },
   { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
   { icon: MessageSquare, label: 'Community', path: '/community' },
+  { icon: Trophy, label: 'Profile', path: '/profile' },
   { icon: HelpCircle, label: 'Help', path: '/help' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];

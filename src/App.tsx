@@ -14,6 +14,9 @@ import Events from "./pages/Events";
 import Community from "./pages/Community";
 import Help from "./pages/Help";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
+import CourseDetail from "./pages/CourseDetail";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +33,9 @@ const AppRoutes = () => (
     <Route path="/community" element={<Community />} />
     <Route path="/help" element={<Help />} />
     <Route path="/settings" element={<Settings />} />
+    <Route path="/profile" element={<Profile />} />
+    <Route path="/course/:id" element={<CourseDetail />} />
+    <Route path="/admin" element={<AdminDashboard />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
