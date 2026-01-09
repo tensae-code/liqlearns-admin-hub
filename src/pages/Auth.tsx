@@ -23,7 +23,7 @@ import {
   Users
 } from 'lucide-react';
 
-type Role = 'student' | 'teacher' | 'support' | 'admin';
+type Role = 'student' | 'teacher' | 'parent' | 'support' | 'admin';
 
 interface FormData {
   role: Role;
@@ -40,8 +40,8 @@ interface FormData {
 const roles = [
   { id: 'student' as Role, label: 'Student', icon: GraduationCap, description: 'Learn and grow with courses, quests, and rewards' },
   { id: 'teacher' as Role, label: 'Teacher', icon: Briefcase, description: 'Create courses and manage your students' },
+  { id: 'parent' as Role, label: 'Parent', icon: Users, description: 'Monitor your child\'s learning progress' },
   { id: 'support' as Role, label: 'Support', icon: HeadphonesIcon, description: 'Help users and manage tickets' },
-  { id: 'admin' as Role, label: 'Admin', icon: Shield, description: 'Manage the platform and users' },
 ];
 
 const Auth = () => {
@@ -60,15 +60,15 @@ const Auth = () => {
     acceptPrivacy: false,
   });
 
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, getDashboardPath } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate(getDashboardPath());
     }
-  }, [user, navigate]);
+  }, [user, navigate, getDashboardPath]);
 
   const steps = isSignUp ? ['Role', 'Details', 'Policies', 'Complete'] : ['Login'];
   
@@ -80,12 +80,17 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     
-    const { error } = await signIn(formData.email, formData.password);
+    const { error, role } = await signIn(formData.email, formData.password);
     if (error) {
       toast({ title: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Welcome back!' });
-      navigate('/dashboard');
+      // Navigate based on role
+      const dashboardPath = role === 'teacher' ? '/teacher' 
+        : role === 'parent' ? '/parent'
+        : role === 'admin' || role === 'ceo' || role === 'support' ? '/admin'
+        : '/dashboard';
+      navigate(dashboardPath);
     }
     setLoading(false);
   };
@@ -97,7 +102,8 @@ const Auth = () => {
       formData.email, 
       formData.password, 
       formData.fullName, 
-      formData.username
+      formData.username,
+      formData.role
     );
     
     if (error) {
@@ -105,7 +111,12 @@ const Auth = () => {
       setLoading(false);
     } else {
       toast({ title: 'Account created! Welcome to LiqLearns.' });
-      navigate('/dashboard');
+      // Navigate based on role
+      const dashboardPath = formData.role === 'teacher' ? '/teacher' 
+        : formData.role === 'parent' ? '/parent'
+        : formData.role === 'support' ? '/admin'
+        : '/dashboard';
+      navigate(dashboardPath);
     }
   };
 
