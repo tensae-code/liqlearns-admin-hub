@@ -19,7 +19,9 @@ import {
   ChevronRight,
   Trophy,
   Flame,
-  Star
+  Star,
+  Briefcase,
+  Library
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -28,11 +30,13 @@ interface SidebarProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+  { icon: Library, label: 'Courses', path: '/courses' },
   { icon: GraduationCap, label: 'Quest', path: '/quest' },
   { icon: Users, label: 'Study Rooms', path: '/study-rooms' },
   { icon: Calendar, label: 'Events', path: '/events' },
   { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
   { icon: MessageSquare, label: 'Community', path: '/community' },
+  { icon: Briefcase, label: 'Business', path: '/business' },
   { icon: Trophy, label: 'Profile', path: '/profile' },
   { icon: HelpCircle, label: 'Help', path: '/help' },
   { icon: Settings, label: 'Settings', path: '/settings' },

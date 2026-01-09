@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import Leaderboard from '@/components/dashboard/Leaderboard';
+import SkillsTracker from '@/components/dashboard/SkillsTracker';
+import AICoach from '@/components/dashboard/AICoach';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
@@ -266,6 +269,27 @@ const Dashboard = () => {
           ))}
         </div>
       </motion.div>
+
+      {/* Leaderboard & Skills */}
+      <div className="grid lg:grid-cols-2 gap-6 mt-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+        >
+          <Leaderboard />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.75 }}
+        >
+          <SkillsTracker />
+        </motion.div>
+      </div>
+
+      {/* AI Coach */}
+      <AICoach />
     </DashboardLayout>
   );
 };
