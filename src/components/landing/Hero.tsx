@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Trophy, Users, Sparkles } from 'lucide-react';
+import { BookOpen, Trophy, Users, Sparkles, Play, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import heroBg from '@/assets/hero-bg.jpg';
 
@@ -9,17 +9,17 @@ const Hero = () => {
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background Image */}
+      {/* Background with warm gradient overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/80 to-primary/60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-accent/70" />
       </div>
 
       {/* Floating Elements */}
       <motion.div
-        className="absolute top-20 right-20 w-20 h-20 rounded-2xl bg-gradient-gold shadow-gold flex items-center justify-center animate-float"
+        className="absolute top-20 right-20 w-20 h-20 rounded-2xl bg-gradient-gold shadow-gold flex items-center justify-center animate-float hidden md:flex"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.8 }}
@@ -28,12 +28,21 @@ const Hero = () => {
       </motion.div>
 
       <motion.div
-        className="absolute bottom-32 right-40 w-16 h-16 rounded-xl bg-gradient-accent shadow-glow flex items-center justify-center animate-float-delayed"
+        className="absolute bottom-32 right-40 w-16 h-16 rounded-xl bg-gradient-accent shadow-glow flex items-center justify-center animate-float-delayed hidden md:flex"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7, duration: 0.8 }}
       >
         <Sparkles className="w-8 h-8 text-accent-foreground" />
+      </motion.div>
+
+      <motion.div
+        className="absolute top-40 left-20 w-14 h-14 rounded-xl bg-success/80 shadow-lg flex items-center justify-center animate-float hidden lg:flex"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.9, duration: 0.8 }}
+      >
+        <Star className="w-7 h-7 text-success-foreground" />
       </motion.div>
 
       {/* Content */}
@@ -57,7 +66,9 @@ const Hero = () => {
             transition={{ delay: 0.2, duration: 0.6 }}
           >
             Learn Smarter,{' '}
-            <span className="text-gradient-gold">Earn More</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold to-accent">
+              Earn More
+            </span>
           </motion.h1>
 
           <motion.p
@@ -89,7 +100,8 @@ const Hero = () => {
               size="xl"
               onClick={() => navigate('/auth')}
             >
-              Sign In
+              <Play className="w-5 h-5" />
+              Watch Demo
             </Button>
           </motion.div>
 
