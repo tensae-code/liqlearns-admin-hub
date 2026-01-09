@@ -1,0 +1,137 @@
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Trophy, Users, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import heroBg from '@/assets/hero-bg.jpg';
+
+const Hero = () => {
+  const navigate = useNavigate();
+
+  return (
+    <section className="relative min-h-screen flex items-center overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${heroBg})` }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/80 to-primary/60" />
+      </div>
+
+      {/* Floating Elements */}
+      <motion.div
+        className="absolute top-20 right-20 w-20 h-20 rounded-2xl bg-gradient-gold shadow-gold flex items-center justify-center animate-float"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.8 }}
+      >
+        <Trophy className="w-10 h-10 text-gold-foreground" />
+      </motion.div>
+
+      <motion.div
+        className="absolute bottom-32 right-40 w-16 h-16 rounded-xl bg-gradient-accent shadow-glow flex items-center justify-center animate-float-delayed"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7, duration: 0.8 }}
+      >
+        <Sparkles className="w-8 h-8 text-accent-foreground" />
+      </motion.div>
+
+      {/* Content */}
+      <div className="container relative z-10 pt-20">
+        <div className="max-w-3xl">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-sm font-medium mb-6">
+              <Sparkles className="w-4 h-4 text-gold" />
+              <span className="text-foreground">Start learning today with a 3-day free trial</span>
+            </span>
+          </motion.div>
+
+          <motion.h1
+            className="text-5xl md:text-6xl lg:text-7xl font-display font-bold text-primary-foreground leading-tight mb-6"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+          >
+            Learn Smarter,{' '}
+            <span className="text-gradient-gold">Earn More</span>
+          </motion.h1>
+
+          <motion.p
+            className="text-xl text-primary-foreground/80 mb-8 max-w-xl leading-relaxed"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+          >
+            Join thousands of students mastering new skills with gamified learning, 
+            expert instructors, and a community that rewards your progress.
+          </motion.p>
+
+          <motion.div
+            className="flex flex-wrap gap-4 mb-12"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+          >
+            <Button 
+              variant="gold" 
+              size="xl"
+              onClick={() => navigate('/auth')}
+            >
+              <BookOpen className="w-5 h-5" />
+              Get Started Free
+            </Button>
+            <Button 
+              variant="glass" 
+              size="xl"
+              onClick={() => navigate('/auth')}
+            >
+              Sign In
+            </Button>
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            className="flex flex-wrap gap-8"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center">
+                <Users className="w-6 h-6 text-accent" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-primary-foreground">12.5K+</p>
+                <p className="text-sm text-primary-foreground/60">Active Students</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gold/20 flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-gold" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-primary-foreground">150+</p>
+                <p className="text-sm text-primary-foreground/60">Expert Courses</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-success" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-primary-foreground">875K</p>
+                <p className="text-sm text-primary-foreground/60">Lessons Completed</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default Hero;
