@@ -7,6 +7,13 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Marketplace from "./pages/Marketplace";
+import Quest from "./pages/Quest";
+import StudyRooms from "./pages/StudyRooms";
+import Events from "./pages/Events";
+import Community from "./pages/Community";
+import Help from "./pages/Help";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -16,6 +23,13 @@ const AppRoutes = () => (
     <Route path="/" element={<Index />} />
     <Route path="/auth" element={<Auth />} />
     <Route path="/dashboard" element={<Dashboard />} />
+    <Route path="/marketplace" element={<Marketplace />} />
+    <Route path="/quest" element={<Quest />} />
+    <Route path="/study-rooms" element={<StudyRooms />} />
+    <Route path="/events" element={<Events />} />
+    <Route path="/community" element={<Community />} />
+    <Route path="/help" element={<Help />} />
+    <Route path="/settings" element={<Settings />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
