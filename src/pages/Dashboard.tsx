@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import Navbar from '@/components/layout/Navbar';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   BookOpen, 
   Trophy, 
@@ -11,12 +12,20 @@ import {
   Target,
   Clock,
   ChevronRight,
-  Star
+  Star,
+  Award,
+  CheckCircle2,
+  Circle,
+  Play,
+  FileText,
+  Headphones,
+  Video
 } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [completedQuests, setCompletedQuests] = useState<string[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -32,107 +41,232 @@ const Dashboard = () => {
     );
   }
 
-  const courses = [
-    { title: 'Amharic Basics', progress: 65, lessons: 24, image: '📚' },
-    { title: 'Business English', progress: 30, lessons: 18, image: '💼' },
-    { title: 'Web Development', progress: 80, lessons: 32, image: '💻' },
+  const stats = [
+    { icon: BookOpen, label: 'Total Lessons', value: '24', color: 'text-accent', bg: 'bg-accent/10' },
+    { icon: Award, label: 'Total Badges', value: '5', color: 'text-gold', bg: 'bg-gold/10' },
+    { icon: Star, label: 'Total XP', value: '1,250', color: 'text-success', bg: 'bg-success/10' },
+    { icon: Trophy, label: 'Certificates', value: '2', color: 'text-primary', bg: 'bg-primary/10' },
+    { icon: Flame, label: 'Current Streak', value: '7', color: 'text-streak', bg: 'bg-streak/10' },
   ];
 
+  const quests = [
+    { id: '1', title: 'Complete daily quiz', xp: 50 },
+    { id: '2', title: 'Watch a video lesson', xp: 30 },
+    { id: '3', title: 'Practice flashcards', xp: 25 },
+    { id: '4', title: 'Read course materials', xp: 20 },
+    { id: '5', title: 'Join a study room', xp: 40 },
+  ];
+
+  const courses = [
+    { title: 'Amharic Basics', progress: 65, lessons: 24, icon: '📚', category: 'Language' },
+    { title: 'Ethiopian Culture', progress: 30, lessons: 18, icon: '🏛️', category: 'Culture' },
+    { title: 'Web Development', progress: 80, lessons: 32, icon: '💻', category: 'Technology' },
+  ];
+
+  const toggleQuest = (id: string) => {
+    setCompletedQuests(prev => 
+      prev.includes(id) ? prev.filter(q => q !== id) : [...prev, id]
+    );
+  };
+
+  const completedCount = completedQuests.length;
+  const totalXP = quests.filter(q => completedQuests.includes(q.id)).reduce((sum, q) => sum + q.xp, 0);
+
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container pt-24 pb-12">
-        {/* Welcome Section */}
+    <DashboardLayout>
+      {/* Welcome Header */}
+      <motion.div
+        className="mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h1 className="text-3xl font-display font-bold text-foreground mb-1">
+          Good morning, {user?.email?.split('@')[0] || 'Learner'}! 👋
+        </h1>
+        <p className="text-muted-foreground">Continue your learning journey today</p>
+      </motion.div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        {stats.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            className="bg-card rounded-xl p-4 border border-border hover:border-accent/30 hover:shadow-soft transition-all cursor-pointer"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+          >
+            <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
+              <stat.icon className={`w-5 h-5 ${stat.color}`} />
+            </div>
+            <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
+            <p className="text-sm text-muted-foreground">{stat.label}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Today's Quest */}
         <motion.div
-          className="mb-8"
+          className="lg:col-span-1 bg-card rounded-xl border border-border p-5"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
         >
-          <h1 className="text-3xl font-display font-bold text-foreground mb-2">
-            Welcome back! 👋
-          </h1>
-          <p className="text-muted-foreground">Continue your learning journey</p>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-display font-semibold text-foreground">Today's Quest</h2>
+            <div className="text-sm text-muted-foreground">
+              {completedCount}/{quests.length}
+            </div>
+          </div>
+
+          <div className="space-y-3 mb-4">
+            {quests.map((quest) => {
+              const isCompleted = completedQuests.includes(quest.id);
+              return (
+                <label
+                  key={quest.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    isCompleted 
+                      ? 'border-success/30 bg-success/5' 
+                      : 'border-border hover:border-accent/30'
+                  }`}
+                >
+                  <Checkbox
+                    checked={isCompleted}
+                    onCheckedChange={() => toggleQuest(quest.id)}
+                    className={isCompleted ? 'border-success text-success' : ''}
+                  />
+                  <span className={`flex-1 text-sm ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                    {quest.title}
+                  </span>
+                  <span className={`text-xs font-medium ${isCompleted ? 'text-success' : 'text-gold'}`}>
+                    +{quest.xp} XP
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          {totalXP > 0 && (
+            <div className="p-3 rounded-lg bg-gold/10 border border-gold/30">
+              <p className="text-sm text-foreground">
+                🎉 You've earned <strong className="text-gold">{totalXP} XP</strong> today!
+              </p>
+            </div>
+          )}
         </motion.div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {[
-            { icon: Flame, label: 'Day Streak', value: '7', color: 'text-streak', bg: 'bg-streak/10' },
-            { icon: Star, label: 'Total XP', value: '1,250', color: 'text-gold', bg: 'bg-gold/10' },
-            { icon: BookOpen, label: 'Courses', value: '3', color: 'text-accent', bg: 'bg-accent/10' },
-            { icon: Trophy, label: 'Badges', value: '5', color: 'text-success', bg: 'bg-success/10' },
-          ].map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              className="bg-card rounded-xl p-4 border border-border"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
-                <stat.icon className={`w-5 h-5 ${stat.color}`} />
-              </div>
-              <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-            </motion.div>
-          ))}
-        </div>
-
         {/* Continue Learning */}
-        <div className="mb-8">
+        <motion.div
+          className="lg:col-span-2"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-display font-semibold text-foreground">Continue Learning</h2>
+            <h2 className="text-lg font-display font-semibold text-foreground">Continue Learning</h2>
             <Button variant="ghost" size="sm">
               View All <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
+          
           <div className="grid md:grid-cols-3 gap-4">
             {courses.map((course, i) => (
               <motion.div
                 key={course.title}
-                className="bg-card rounded-xl p-5 border border-border hover:border-accent/30 hover:shadow-elevated transition-all cursor-pointer"
+                className="bg-card rounded-xl p-5 border border-border hover:border-accent/30 hover:shadow-elevated transition-all cursor-pointer group"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.1 }}
+                transition={{ delay: 0.3 + i * 0.1 }}
               >
-                <div className="text-4xl mb-4">{course.image}</div>
-                <h3 className="font-display font-semibold text-foreground mb-2">{course.title}</h3>
+                <div className="flex items-start justify-between mb-3">
+                  <span className="text-3xl">{course.icon}</span>
+                  <span className="text-xs font-medium text-muted-foreground px-2 py-1 bg-muted rounded-full">
+                    {course.category}
+                  </span>
+                </div>
+                <h3 className="font-display font-semibold text-foreground mb-2 group-hover:text-accent transition-colors">
+                  {course.title}
+                </h3>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                   <Clock className="w-4 h-4" />
                   <span>{course.lessons} lessons</span>
                 </div>
-                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2">
                   <div 
                     className="h-full bg-gradient-to-r from-accent to-success rounded-full transition-all"
                     style={{ width: `${course.progress}%` }}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">{course.progress}% complete</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{course.progress}% complete</span>
+                  <Button variant="ghost" size="sm" className="p-0 h-auto text-accent">
+                    <Play className="w-4 h-4" />
+                  </Button>
+                </div>
               </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
+      </div>
 
-        {/* Daily Goal */}
-        <motion.div
-          className="bg-gradient-hero rounded-2xl p-6 text-primary-foreground"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-display font-semibold text-lg mb-1">Daily Goal</h3>
-              <p className="text-primary-foreground/70">Complete 2 more lessons to earn bonus XP!</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Target className="w-8 h-8 text-gold" />
-              <span className="text-2xl font-bold">3/5</span>
+      {/* Daily Goal Banner */}
+      <motion.div
+        className="mt-6 p-6 rounded-2xl bg-gradient-hero text-primary-foreground relative overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <div className="flex items-center justify-between relative z-10">
+          <div>
+            <h3 className="font-display font-semibold text-lg mb-1">Daily Goal</h3>
+            <p className="text-primary-foreground/70">
+              Complete {5 - completedCount} more quests to earn bonus XP!
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 rounded-full border-4 border-gold/30 flex items-center justify-center">
+              <div className="text-center">
+                <Target className="w-6 h-6 text-gold mx-auto" />
+                <span className="text-sm font-bold">{completedCount}/5</span>
+              </div>
             </div>
           </div>
-        </motion.div>
-      </main>
-    </div>
+        </div>
+      </motion.div>
+
+      {/* Learning Tools */}
+      <motion.div
+        className="mt-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <h2 className="text-lg font-display font-semibold text-foreground mb-4">Quick Access</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { icon: Video, label: 'Video Lessons', count: 45, color: 'text-accent', bg: 'bg-accent/10' },
+            { icon: Headphones, label: 'Audio Guides', count: 23, color: 'text-gold', bg: 'bg-gold/10' },
+            { icon: FileText, label: 'Study Notes', count: 67, color: 'text-success', bg: 'bg-success/10' },
+            { icon: Target, label: 'Practice Quiz', count: 12, color: 'text-streak', bg: 'bg-streak/10' },
+          ].map((tool, i) => (
+            <div
+              key={tool.label}
+              className="bg-card rounded-xl p-4 border border-border hover:border-accent/30 hover:shadow-soft transition-all cursor-pointer flex items-center gap-4"
+            >
+              <div className={`w-12 h-12 rounded-xl ${tool.bg} flex items-center justify-center`}>
+                <tool.icon className={`w-6 h-6 ${tool.color}`} />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">{tool.label}</p>
+                <p className="text-sm text-muted-foreground">{tool.count} available</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </DashboardLayout>
   );
 };
 
