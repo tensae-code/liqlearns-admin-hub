@@ -1,0 +1,231 @@
+import { motion } from 'framer-motion';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import {
+  Users,
+  BookOpen,
+  DollarSign,
+  TrendingUp,
+  Globe,
+  Target,
+  Award,
+  Building2,
+  ChevronRight,
+  BarChart3,
+  PieChart,
+  ArrowUpRight,
+  ArrowDownRight
+} from 'lucide-react';
+
+const CEODashboard = () => {
+  const stats = [
+    { label: 'Total Revenue', value: '$2.4M', change: '+28%', isUp: true, icon: DollarSign, color: 'text-success', bg: 'bg-success/10' },
+    { label: 'Active Users', value: '45,280', change: '+15%', isUp: true, icon: Users, color: 'text-accent', bg: 'bg-accent/10' },
+    { label: 'Course Catalog', value: '320', change: '+12', isUp: true, icon: BookOpen, color: 'text-gold', bg: 'bg-gold/10' },
+    { label: 'Global Reach', value: '45 Countries', change: '+3', isUp: true, icon: Globe, color: 'text-primary', bg: 'bg-primary/10' },
+  ];
+
+  const departments = [
+    { name: 'Engineering', head: 'Dawit M.', employees: 24, budget: '$450K', status: 'On Track' },
+    { name: 'Marketing', head: 'Sara T.', employees: 12, budget: '$180K', status: 'On Track' },
+    { name: 'Content', head: 'Tigist K.', employees: 18, budget: '$220K', status: 'Needs Review' },
+    { name: 'Support', head: 'Yonas G.', employees: 8, budget: '$95K', status: 'On Track' },
+  ];
+
+  const goals = [
+    { title: 'Q4 Revenue Target', current: 85, target: 100, unit: '%' },
+    { title: 'User Acquisition', current: 12500, target: 15000, unit: 'users' },
+    { title: 'Course Completion Rate', current: 78, target: 85, unit: '%' },
+    { title: 'Customer Satisfaction', current: 92, target: 95, unit: '%' },
+  ];
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-4 md:space-y-6">
+        {/* Header */}
+        <motion.div
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div>
+            <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
+              CEO Dashboard 👑
+            </h1>
+            <p className="text-muted-foreground text-sm md:text-base">Company overview and strategic metrics</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="text-xs md:text-sm">
+              <BarChart3 className="w-4 h-4 mr-1 md:mr-2" /> 
+              <span className="hidden sm:inline">Reports</span>
+            </Button>
+            <Button size="sm" className="text-xs md:text-sm">
+              <PieChart className="w-4 h-4 mr-1 md:mr-2" /> 
+              <span className="hidden sm:inline">Analytics</span>
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          {stats.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              className="bg-card rounded-xl p-3 md:p-5 border border-border"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <div className="flex items-center justify-between mb-2 md:mb-3">
+                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg ${stat.bg} flex items-center justify-center`}>
+                  <stat.icon className={`w-4 h-4 md:w-5 md:h-5 ${stat.color}`} />
+                </div>
+                <span className={`text-xs font-medium flex items-center gap-0.5 ${stat.isUp ? 'text-success' : 'text-destructive'}`}>
+                  {stat.isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                  {stat.change}
+                </span>
+              </div>
+              <p className="text-lg md:text-2xl font-display font-bold text-foreground">{stat.value}</p>
+              <p className="text-xs md:text-sm text-muted-foreground">{stat.label}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Goals Section */}
+        <motion.div
+          className="bg-card rounded-xl border border-border p-4 md:p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
+              <Target className="w-5 h-5 text-accent" />
+              Strategic Goals
+            </h2>
+            <Button variant="ghost" size="sm">
+              View All <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {goals.map((goal, i) => {
+              const percentage = (goal.current / goal.target) * 100;
+              return (
+                <div key={i} className="p-3 md:p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-foreground">{goal.title}</p>
+                    <span className={`text-xs font-medium ${percentage >= 90 ? 'text-success' : percentage >= 70 ? 'text-gold' : 'text-destructive'}`}>
+                      {percentage.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        percentage >= 90 ? 'bg-success' : percentage >= 70 ? 'bg-gold' : 'bg-destructive'
+                      }`}
+                      style={{ width: `${Math.min(percentage, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {goal.current.toLocaleString()} / {goal.target.toLocaleString()} {goal.unit}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Departments */}
+        <motion.div
+          className="bg-card rounded-xl border border-border"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="p-4 md:p-5 border-b border-border flex items-center justify-between">
+            <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-gold" />
+              Departments
+            </h2>
+            <Button variant="ghost" size="sm">
+              Manage <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+          <div className="divide-y divide-border">
+            {departments.map((dept) => (
+              <div key={dept.name} className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground">{dept.name}</p>
+                    <p className="text-xs text-muted-foreground">Head: {dept.head}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-foreground">{dept.employees}</span>
+                  </div>
+                  <div className="hidden sm:block text-foreground font-medium">{dept.budget}</div>
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                    dept.status === 'On Track' ? 'bg-success/10 text-success' : 'bg-gold/10 text-gold'
+                  }`}>
+                    {dept.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Quick Stats Row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <motion.div
+            className="bg-gradient-hero text-primary-foreground rounded-xl p-4 md:p-5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Award className="w-6 h-6 mb-2 opacity-80" />
+            <p className="text-xl md:text-2xl font-bold">Top 5</p>
+            <p className="text-xs md:text-sm opacity-80">EdTech Platform</p>
+          </motion.div>
+          <motion.div
+            className="bg-success/10 border border-success/20 rounded-xl p-4 md:p-5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <TrendingUp className="w-6 h-6 mb-2 text-success" />
+            <p className="text-xl md:text-2xl font-bold text-foreground">+156%</p>
+            <p className="text-xs md:text-sm text-muted-foreground">YoY Growth</p>
+          </motion.div>
+          <motion.div
+            className="bg-gold/10 border border-gold/20 rounded-xl p-4 md:p-5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Users className="w-6 h-6 mb-2 text-gold" />
+            <p className="text-xl md:text-2xl font-bold text-foreground">86</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Team Members</p>
+          </motion.div>
+          <motion.div
+            className="bg-accent/10 border border-accent/20 rounded-xl p-4 md:p-5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+          >
+            <BookOpen className="w-6 h-6 mb-2 text-accent" />
+            <p className="text-xl md:text-2xl font-bold text-foreground">98.5%</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Uptime</p>
+          </motion.div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default CEODashboard;
