@@ -21,6 +21,8 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import CourseDetail from "./pages/CourseDetail";
 import AdminDashboard from "./pages/AdminDashboard";
+import CEODashboard from "./pages/CEODashboard";
+import SupportDashboard from "./pages/SupportDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +46,8 @@ const AppRoutes = () => (
     <Route path="/profile" element={<Profile />} />
     <Route path="/course/:id" element={<CourseDetail />} />
     <Route path="/admin" element={<AdminDashboard />} />
+    <Route path="/ceo" element={<CEODashboard />} />
+    <Route path="/support" element={<SupportDashboard />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

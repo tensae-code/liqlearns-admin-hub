@@ -79,57 +79,57 @@ const Dashboard = () => {
     <DashboardLayout>
       {/* Welcome Header */}
       <motion.div
-        className="mb-6"
+        className="mb-4 md:mb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-3xl font-display font-bold text-foreground mb-1">
+        <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-1">
           Good morning, {user?.email?.split('@')[0] || 'Learner'}! 👋
         </h1>
-        <p className="text-muted-foreground">Continue your learning journey today</p>
+        <p className="text-muted-foreground text-sm md:text-base">Continue your learning journey today</p>
       </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
-            className="bg-card rounded-xl p-4 border border-border hover:border-accent/30 hover:shadow-soft transition-all cursor-pointer"
+            className="bg-card rounded-xl p-3 md:p-4 border border-border hover:border-accent/30 hover:shadow-soft transition-all cursor-pointer"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
           >
-            <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
-              <stat.icon className={`w-5 h-5 ${stat.color}`} />
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-2 md:mb-3`}>
+              <stat.icon className={`w-4 h-4 md:w-5 md:h-5 ${stat.color}`} />
             </div>
-            <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
-            <p className="text-sm text-muted-foreground">{stat.label}</p>
+            <p className="text-lg md:text-2xl font-display font-bold text-foreground">{stat.value}</p>
+            <p className="text-xs md:text-sm text-muted-foreground">{stat.label}</p>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
         {/* Today's Quest */}
         <motion.div
-          className="lg:col-span-1 bg-card rounded-xl border border-border p-5"
+          className="lg:col-span-1 bg-card rounded-xl border border-border p-4 md:p-5"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-display font-semibold text-foreground">Today's Quest</h2>
+          <div className="flex items-center justify-between mb-3 md:mb-4">
+            <h2 className="text-base md:text-lg font-display font-semibold text-foreground">Today's Quest</h2>
             <div className="text-sm text-muted-foreground">
               {completedCount}/{quests.length}
             </div>
           </div>
 
-          <div className="space-y-3 mb-4">
+          <div className="space-y-2 md:space-y-3 mb-3 md:mb-4">
             {quests.map((quest) => {
               const isCompleted = completedQuests.includes(quest.id);
               return (
                 <label
                   key={quest.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                  className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-lg border cursor-pointer transition-all ${
                     isCompleted 
                       ? 'border-success/30 bg-success/5' 
                       : 'border-border hover:border-accent/30'
@@ -140,7 +140,7 @@ const Dashboard = () => {
                     onCheckedChange={() => toggleQuest(quest.id)}
                     className={isCompleted ? 'border-success text-success' : ''}
                   />
-                  <span className={`flex-1 text-sm ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                  <span className={`flex-1 text-xs md:text-sm ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                     {quest.title}
                   </span>
                   <span className={`text-xs font-medium ${isCompleted ? 'text-success' : 'text-gold'}`}>
@@ -152,8 +152,8 @@ const Dashboard = () => {
           </div>
 
           {totalXP > 0 && (
-            <div className="p-3 rounded-lg bg-gold/10 border border-gold/30">
-              <p className="text-sm text-foreground">
+            <div className="p-2.5 md:p-3 rounded-lg bg-gold/10 border border-gold/30">
+              <p className="text-xs md:text-sm text-foreground">
                 🎉 You've earned <strong className="text-gold">{totalXP} XP</strong> today!
               </p>
             </div>
@@ -167,45 +167,45 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-display font-semibold text-foreground">Continue Learning</h2>
-            <Button variant="ghost" size="sm">
+          <div className="flex items-center justify-between mb-3 md:mb-4">
+            <h2 className="text-base md:text-lg font-display font-semibold text-foreground">Continue Learning</h2>
+            <Button variant="ghost" size="sm" className="text-xs md:text-sm">
               View All <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             {courses.map((course, i) => (
               <motion.div
                 key={course.title}
-                className="bg-card rounded-xl p-5 border border-border hover:border-accent/30 hover:shadow-elevated transition-all cursor-pointer group"
+                className="bg-card rounded-xl p-4 md:p-5 border border-border hover:border-accent/30 hover:shadow-elevated transition-all cursor-pointer group"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.1 }}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <span className="text-3xl">{course.icon}</span>
-                  <span className="text-xs font-medium text-muted-foreground px-2 py-1 bg-muted rounded-full">
+                <div className="flex items-start justify-between mb-2 md:mb-3">
+                  <span className="text-2xl md:text-3xl">{course.icon}</span>
+                  <span className="text-[10px] md:text-xs font-medium text-muted-foreground px-1.5 md:px-2 py-0.5 md:py-1 bg-muted rounded-full">
                     {course.category}
                   </span>
                 </div>
-                <h3 className="font-display font-semibold text-foreground mb-2 group-hover:text-accent transition-colors">
+                <h3 className="font-display font-semibold text-foreground mb-1 md:mb-2 group-hover:text-accent transition-colors text-sm md:text-base">
                   {course.title}
                 </h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                  <Clock className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground mb-2 md:mb-3">
+                  <Clock className="w-3 h-3 md:w-4 md:h-4" />
                   <span>{course.lessons} lessons</span>
                 </div>
-                <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2">
+                <div className="w-full h-1.5 md:h-2 bg-muted rounded-full overflow-hidden mb-2">
                   <div 
                     className="h-full bg-gradient-to-r from-accent to-success rounded-full transition-all"
                     style={{ width: `${course.progress}%` }}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">{course.progress}% complete</span>
+                  <span className="text-[10px] md:text-xs text-muted-foreground">{course.progress}% complete</span>
                   <Button variant="ghost" size="sm" className="p-0 h-auto text-accent">
-                    <Play className="w-4 h-4" />
+                    <Play className="w-3 h-3 md:w-4 md:h-4" />
                   </Button>
                 </div>
               </motion.div>
@@ -216,23 +216,23 @@ const Dashboard = () => {
 
       {/* Daily Goal Banner */}
       <motion.div
-        className="mt-6 p-6 rounded-2xl bg-gradient-hero text-primary-foreground relative overflow-hidden"
+        className="mt-4 md:mt-6 p-4 md:p-6 rounded-2xl bg-gradient-hero text-primary-foreground relative overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
       >
         <div className="flex items-center justify-between relative z-10">
           <div>
-            <h3 className="font-display font-semibold text-lg mb-1">Daily Goal</h3>
-            <p className="text-primary-foreground/70">
+            <h3 className="font-display font-semibold text-base md:text-lg mb-1">Daily Goal</h3>
+            <p className="text-primary-foreground/70 text-sm md:text-base">
               Complete {5 - completedCount} more quests to earn bonus XP!
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-16 h-16 rounded-full border-4 border-gold/30 flex items-center justify-center">
+            <div className="w-12 h-12 md:w-16 md:h-16 rounded-full border-4 border-gold/30 flex items-center justify-center">
               <div className="text-center">
-                <Target className="w-6 h-6 text-gold mx-auto" />
-                <span className="text-sm font-bold">{completedCount}/5</span>
+                <Target className="w-4 h-4 md:w-6 md:h-6 text-gold mx-auto" />
+                <span className="text-xs md:text-sm font-bold">{completedCount}/5</span>
               </div>
             </div>
           </div>
@@ -241,13 +241,13 @@ const Dashboard = () => {
 
       {/* Learning Tools */}
       <motion.div
-        className="mt-6"
+        className="mt-4 md:mt-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
       >
-        <h2 className="text-lg font-display font-semibold text-foreground mb-4">Quick Access</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <h2 className="text-base md:text-lg font-display font-semibold text-foreground mb-3 md:mb-4">Quick Access</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {[
             { icon: Video, label: 'Video Lessons', count: 45, color: 'text-accent', bg: 'bg-accent/10' },
             { icon: Headphones, label: 'Audio Guides', count: 23, color: 'text-gold', bg: 'bg-gold/10' },
@@ -256,14 +256,14 @@ const Dashboard = () => {
           ].map((tool, i) => (
             <div
               key={tool.label}
-              className="bg-card rounded-xl p-4 border border-border hover:border-accent/30 hover:shadow-soft transition-all cursor-pointer flex items-center gap-4"
+              className="bg-card rounded-xl p-3 md:p-4 border border-border hover:border-accent/30 hover:shadow-soft transition-all cursor-pointer flex items-center gap-3 md:gap-4"
             >
-              <div className={`w-12 h-12 rounded-xl ${tool.bg} flex items-center justify-center`}>
-                <tool.icon className={`w-6 h-6 ${tool.color}`} />
+              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl ${tool.bg} flex items-center justify-center flex-shrink-0`}>
+                <tool.icon className={`w-5 h-5 md:w-6 md:h-6 ${tool.color}`} />
               </div>
-              <div>
-                <p className="font-medium text-foreground">{tool.label}</p>
-                <p className="text-sm text-muted-foreground">{tool.count} available</p>
+              <div className="min-w-0">
+                <p className="font-medium text-foreground text-sm md:text-base truncate">{tool.label}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{tool.count} available</p>
               </div>
             </div>
           ))}
@@ -271,7 +271,7 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Leaderboard & Skills */}
-      <div className="grid lg:grid-cols-2 gap-6 mt-6">
+      <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

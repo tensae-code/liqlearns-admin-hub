@@ -132,15 +132,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const getDashboardPath = (): string => {
     switch (userRole) {
+      case 'ceo':
+        return '/ceo';
+      case 'admin':
+        return '/admin';
+      case 'support':
+        return '/support';
       case 'teacher':
         return '/teacher';
       case 'parent':
         return '/parent';
-      case 'admin':
-      case 'ceo':
-        return '/admin';
-      case 'support':
-        return '/admin';
       case 'student':
       default:
         return '/dashboard';
