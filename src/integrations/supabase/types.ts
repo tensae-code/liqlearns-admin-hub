@@ -346,6 +346,48 @@ export type Database = {
           },
         ]
       }
+      parent_children: {
+        Row: {
+          child_id: string
+          created_at: string
+          id: string
+          nickname: string | null
+          parent_id: string
+          relationship: string | null
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          id?: string
+          nickname?: string | null
+          parent_id: string
+          relationship?: string | null
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          id?: string
+          nickname?: string | null
+          parent_id?: string
+          relationship?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_children_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_children_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_stats: {
         Row: {
           id: string
