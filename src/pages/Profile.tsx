@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
@@ -25,21 +26,22 @@ import {
 
 const Profile = () => {
   const { user } = useAuth();
+  const { profile, loading } = useProfile();
 
   const stats = [
-    { label: 'Total XP', value: '12,450', icon: Star, color: 'text-gold' },
+    { label: 'Total XP', value: profile?.xp_points?.toLocaleString() || '0', icon: Star, color: 'text-gold' },
     { label: 'Aura Points', value: '3,200', icon: Sparkles, color: 'text-accent' },
-    { label: 'Day Streak', value: '45', icon: Flame, color: 'text-streak' },
+    { label: 'Day Streak', value: profile?.current_streak?.toString() || '0', icon: Flame, color: 'text-streak' },
     { label: 'Rank', value: '#42', icon: Trophy, color: 'text-primary' },
   ];
 
   const achievements = [
     { title: 'First Steps', description: 'Complete your first lesson', icon: '🎯', earned: true },
-    { title: 'Week Warrior', description: '7-day streak', icon: '🔥', earned: true },
+    { title: 'Week Warrior', description: '7-day streak', icon: '🔥', earned: (profile?.longest_streak || 0) >= 7 },
     { title: 'Vocabulary Master', description: 'Learn 500 words', icon: '📚', earned: true },
     { title: 'Social Butterfly', description: 'Join 5 study rooms', icon: '🦋', earned: true },
     { title: 'Quiz Champion', description: 'Score 100% on 10 quizzes', icon: '🏆', earned: false },
-    { title: 'Month Master', description: '30-day streak', icon: '⭐', earned: false },
+    { title: 'Month Master', description: '30-day streak', icon: '⭐', earned: (profile?.longest_streak || 0) >= 30 },
   ];
 
   const badges = [
@@ -56,6 +58,16 @@ const Profile = () => {
     { name: 'Speaking', level: 2, progress: 35 },
   ];
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto">
@@ -68,15 +80,15 @@ const Profile = () => {
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
             <Avatar className="h-24 w-24 border-4 border-white/20">
               <AvatarFallback className="bg-white/20 text-primary-foreground text-3xl font-bold">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
+                {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-2xl font-display font-bold text-primary-foreground mb-1">
-                {user?.email?.split('@')[0] || 'User'}
+                {profile?.full_name || user?.email?.split('@')[0] || 'User'}
               </h1>
-              <p className="text-primary-foreground/70 mb-3">@{user?.email?.split('@')[0]?.toLowerCase() || 'user'}</p>
+              <p className="text-primary-foreground/70 mb-3">@{profile?.username || user?.email?.split('@')[0]?.toLowerCase() || 'user'}</p>
               
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-primary-foreground/70">
                 <span className="flex items-center gap-1">
