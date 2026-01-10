@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,10 +18,13 @@ import {
   ChevronRight,
   Mail,
   Phone,
-  MoreVertical
+  MoreVertical,
+  Settings
 } from 'lucide-react';
 
 const SupportDashboard = () => {
+  const navigate = useNavigate();
+  const { profile } = useProfile();
   const [activeTab, setActiveTab] = useState<'all' | 'open' | 'pending' | 'resolved'>('all');
 
   const stats = [
@@ -73,9 +78,14 @@ const SupportDashboard = () => {
             </h1>
             <p className="text-muted-foreground text-sm md:text-base">Manage customer tickets and inquiries</p>
           </div>
-          <Button size="sm" className="w-fit">
-            <MessageSquare className="w-4 h-4 mr-2" /> New Ticket
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" className="w-fit" onClick={() => navigate('/support')}>
+              <MessageSquare className="w-4 h-4 mr-2" /> New Ticket
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => navigate('/settings')}>
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
         </motion.div>
 
         {/* Stats Grid - Colorful Gradient Cards */}

@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import {
   Users,
@@ -14,10 +16,14 @@ import {
   BarChart3,
   PieChart,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  FileText,
+  Settings
 } from 'lucide-react';
 
 const CEODashboard = () => {
+  const navigate = useNavigate();
+  const { profile } = useProfile();
   const stats = [
     { label: 'Total Revenue', value: '$2.4M', change: '+28%', isUp: true, icon: DollarSign, gradient: 'from-emerald-500 to-green-400' },
     { label: 'Active Users', value: '45,280', change: '+15%', isUp: true, icon: Users, gradient: 'from-blue-500 to-cyan-400' },
@@ -55,13 +61,17 @@ const CEODashboard = () => {
             <p className="text-muted-foreground text-sm md:text-base">Company overview and strategic metrics</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="text-xs md:text-sm">
+            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => navigate('/ceo')}>
               <BarChart3 className="w-4 h-4 mr-1 md:mr-2" /> 
               <span className="hidden sm:inline">Reports</span>
             </Button>
-            <Button size="sm" className="text-xs md:text-sm">
+            <Button size="sm" className="text-xs md:text-sm" onClick={() => navigate('/ceo')}>
               <PieChart className="w-4 h-4 mr-1 md:mr-2" /> 
               <span className="hidden sm:inline">Analytics</span>
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => navigate('/settings')}>
+              <Settings className="w-4 h-4 mr-1 md:mr-2" /> 
+              <span className="hidden sm:inline">Settings</span>
             </Button>
           </div>
         </motion.div>
