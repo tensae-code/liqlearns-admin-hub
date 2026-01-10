@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 import {
   User,
   Bell,
@@ -18,7 +21,10 @@ import {
   LogOut,
   Camera,
   Save,
-  ChevronRight
+  ChevronRight,
+  Loader2,
+  Upload,
+  Trash2
 } from 'lucide-react';
 
 const settingSections = [
@@ -32,7 +38,16 @@ const settingSections = [
 
 const Settings = () => {
   const { user, signOut } = useAuth();
+  const { profile, refetch } = useProfile();
   const [activeSection, setActiveSection] = useState('profile');
+  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    username: '',
+    phone: '',
+    bio: '',
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -40,6 +55,134 @@ const Settings = () => {
     newContent: false,
     community: true,
   });
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please upload a valid image (JPEG, PNG, WebP, or GIF)');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar-${Date.now()}.${fileExt}`;
+
+      // Delete old avatar if exists
+      if (profile?.avatar_url) {
+        const oldPath = profile.avatar_url.split('/avatars/')[1];
+        if (oldPath) {
+          await supabase.storage.from('avatars').remove([oldPath]);
+        }
+      }
+
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Avatar updated successfully!');
+      refetch();
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast.error(error.message || 'Failed to upload avatar');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user || !profile?.avatar_url) return;
+
+    setUploading(true);
+
+    try {
+      // Delete from storage
+      const oldPath = profile.avatar_url.split('/avatars/')[1];
+      if (oldPath) {
+        await supabase.storage.from('avatars').remove([oldPath]);
+      }
+
+      // Update profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Avatar removed');
+      refetch();
+    } catch (error: any) {
+      console.error('Error removing avatar:', error);
+      toast.error('Failed to remove avatar');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    try {
+      const updates: any = {};
+      if (formData.fullName) updates.full_name = formData.fullName;
+      if (formData.username) updates.username = formData.username;
+      if (formData.phone) updates.phone = formData.phone;
+      if (formData.bio) updates.bio = formData.bio;
+
+      if (Object.keys(updates).length === 0) {
+        toast.info('No changes to save');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Profile updated!');
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update profile');
+    }
+  };
+
+  const getInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return user?.email?.charAt(0).toUpperCase() || 'U';
+  };
 
   return (
     <DashboardLayout>
@@ -104,24 +247,63 @@ const Settings = () => {
             <div className="p-6 rounded-xl bg-card border border-border">
               <h2 className="text-xl font-display font-semibold text-foreground mb-6">Profile Settings</h2>
               
-              {/* Avatar */}
-              <div className="flex items-center gap-6 mb-8">
+              {/* Avatar Upload */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-8">
                 <div className="relative">
-                  <Avatar className="h-24 w-24">
-                    <AvatarFallback className="bg-gradient-accent text-accent-foreground text-2xl">
-                      {user?.email?.charAt(0).toUpperCase() || 'U'}
+                  <Avatar className="h-24 w-24 border-4 border-border">
+                    {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="Avatar" />}
+                    <AvatarFallback className="bg-gradient-hero text-primary-foreground text-2xl">
+                      {getInitials()}
                     </AvatarFallback>
                   </Avatar>
-                  <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center hover:opacity-90 transition-opacity">
-                    <Camera className="w-4 h-4" />
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {uploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Camera className="w-4 h-4" />
+                    )}
                   </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
                 </div>
-                <div>
-                  <h3 className="font-medium text-foreground">{user?.email?.split('@')[0] || 'User'}</h3>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
-                  <Button variant="outline" size="sm" className="mt-2">
-                    Change Photo
-                  </Button>
+                <div className="flex-1">
+                  <h3 className="font-medium text-foreground">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{user?.email}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploading ? 'Uploading...' : 'Upload Photo'}
+                    </Button>
+                    {profile?.avatar_url && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleRemoveAvatar}
+                        disabled={uploading}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Supported: JPEG, PNG, WebP, GIF (max 5MB)
+                  </p>
                 </div>
               </div>
 
@@ -129,11 +311,21 @@ const Settings = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name</Label>
-                  <Input id="fullName" placeholder="Enter your full name" />
+                  <Input 
+                    id="fullName" 
+                    placeholder="Enter your full name" 
+                    defaultValue={profile?.full_name || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
-                  <Input id="username" placeholder="Enter your username" />
+                  <Input 
+                    id="username" 
+                    placeholder="Enter your username" 
+                    defaultValue={profile?.username || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -141,16 +333,29 @@ const Settings = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" placeholder="Enter your phone number" />
+                  <Input 
+                    id="phone" 
+                    placeholder="Enter your phone number" 
+                    defaultValue={profile?.phone || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="bio">Bio</Label>
-                  <Input id="bio" placeholder="Tell us about yourself" />
+                  <Input 
+                    id="bio" 
+                    placeholder="Tell us about yourself" 
+                    defaultValue={profile?.bio || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                  />
                 </div>
               </div>
 
               <div className="flex justify-end mt-6">
-                <Button className="bg-gradient-accent text-accent-foreground hover:opacity-90">
+                <Button 
+                  onClick={handleSaveProfile}
+                  className="bg-gradient-accent text-accent-foreground hover:opacity-90"
+                >
                   <Save className="w-4 h-4 mr-2" />
                   Save Changes
                 </Button>
