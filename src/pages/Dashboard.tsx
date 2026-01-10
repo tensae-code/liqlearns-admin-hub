@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Leaderboard from '@/components/dashboard/Leaderboard';
 import SkillsTracker from '@/components/dashboard/SkillsTracker';
@@ -27,6 +28,7 @@ import {
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
+  const { profile, updateStreak } = useProfile();
   const navigate = useNavigate();
   const [completedQuests, setCompletedQuests] = useState<string[]>([]);
 
@@ -35,6 +37,13 @@ const Dashboard = () => {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  // Update streak on dashboard load
+  useEffect(() => {
+    if (user && profile) {
+      updateStreak();
+    }
+  }, [user, profile?.id]);
 
   if (loading) {
     return (
@@ -47,8 +56,8 @@ const Dashboard = () => {
   const stats = [
     { icon: BookOpen, label: 'Lessons', value: '24', gradient: 'from-orange-500 to-amber-400' },
     { icon: Award, label: 'Badges', value: '5', gradient: 'from-purple-500 to-pink-400' },
-    { icon: Star, label: 'XP', value: '1,250', gradient: 'from-emerald-500 to-teal-400' },
-    { icon: Flame, label: 'Streak', value: '7', gradient: 'from-red-500 to-orange-400' },
+    { icon: Star, label: 'XP', value: profile?.xp_points?.toLocaleString() || '0', gradient: 'from-emerald-500 to-teal-400' },
+    { icon: Flame, label: 'Streak', value: profile?.current_streak?.toString() || '0', gradient: 'from-red-500 to-orange-400' },
   ];
 
   const quests = [
@@ -83,7 +92,7 @@ const Dashboard = () => {
         animate={{ opacity: 1, y: 0 }}
       >
         <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-1">
-          Good morning, {user?.email?.split('@')[0] || 'Learner'}! 👋
+          Good morning, {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Learner'}! 👋
         </h1>
         <p className="text-muted-foreground text-sm md:text-base">Continue your learning journey today</p>
       </motion.div>

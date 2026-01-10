@@ -48,6 +48,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     role: 'student',
     fullName: '',
@@ -65,10 +66,11 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
+    if (user && !redirecting) {
+      setRedirecting(true);
       navigate(getDashboardPath());
     }
-  }, [user, navigate, getDashboardPath]);
+  }, [user, navigate, getDashboardPath, redirecting]);
 
   const steps = isSignUp ? ['Role', 'Details', 'Policies', 'Complete'] : ['Login'];
   
@@ -86,17 +88,19 @@ const Auth = () => {
     const { error, role } = await signIn(email, password);
     if (error) {
       toast({ title: error.message, variant: 'destructive' });
+      setLoading(false);
     } else {
       toast({ title: 'Welcome back!' });
+      setRedirecting(true);
       // Navigate based on role using getDashboardPath
       const dashboardPath = role === 'ceo' ? '/ceo'
         : role === 'admin' ? '/admin'
         : role === 'support' ? '/support'
         : role === 'teacher' ? '/teacher'
+        : role === 'parent' ? '/parent'
         : '/dashboard';
       navigate(dashboardPath);
     }
-    setLoading(false);
   };
 
   const demoAccounts = [
@@ -127,10 +131,11 @@ const Auth = () => {
       setLoading(false);
     } else {
       toast({ title: 'Account created! Welcome to LiqLearns.' });
+      setRedirecting(true);
       // Navigate based on role
       const dashboardPath = formData.role === 'teacher' ? '/teacher' 
         : formData.role === 'parent' ? '/parent'
-        : formData.role === 'support' ? '/admin'
+        : formData.role === 'support' ? '/support'
         : '/dashboard';
       navigate(dashboardPath);
     }
@@ -436,6 +441,28 @@ const Auth = () => {
       default: return null;
     }
   };
+
+  // Loading/Redirecting screen
+  if (redirecting) {
+    return (
+      <div className="min-h-screen bg-gradient-hero flex flex-col items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-accent flex items-center justify-center">
+            <BookOpen className="w-10 h-10 text-accent-foreground" />
+          </div>
+          <div className="w-12 h-12 mx-auto mb-4 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+          <h2 className="text-xl font-display font-semibold text-primary-foreground mb-2">
+            Preparing your dashboard...
+          </h2>
+          <p className="text-primary-foreground/70">Just a moment</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
