@@ -4,6 +4,9 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import GenealogyTree from '@/components/dashboard/GenealogyTree';
+import EarningsPanel from '@/components/dashboard/EarningsPanel';
 import { 
   Users, 
   TrendingUp, 
@@ -18,7 +21,9 @@ import {
   Crown,
   Star,
   Gift,
-  Zap
+  Zap,
+  Network,
+  PiggyBank
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -273,49 +278,78 @@ const BusinessDashboard = () => {
         </motion.div>
       </div>
 
-      {/* Commission History */}
+      {/* Tabs for Detailed Views */}
       <motion.div
-        className="mt-6 bg-card rounded-xl border border-border p-5"
+        className="mt-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-gold" />
-            <h2 className="text-lg font-display font-semibold text-foreground">Commission History</h2>
-          </div>
-          <Button variant="ghost" size="sm">
-            View All <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
+        <Tabs defaultValue="earnings" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="earnings" className="flex items-center gap-2">
+              <PiggyBank className="w-4 h-4" />
+              Money Machine
+            </TabsTrigger>
+            <TabsTrigger value="genealogy" className="flex items-center gap-2">
+              <Network className="w-4 h-4" />
+              Genealogy Tree
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <Zap className="w-4 h-4" />
+              Commission History
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left text-sm text-muted-foreground border-b border-border">
-                <th className="pb-3 font-medium">Type</th>
-                <th className="pb-3 font-medium">User</th>
-                <th className="pb-3 font-medium">Date</th>
-                <th className="pb-3 font-medium text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {commissionHistory.map((item, i) => (
-                <tr key={i} className="border-b border-border last:border-0">
-                  <td className="py-3">
-                    <Badge variant="outline" className="text-xs">
-                      {item.type}
-                    </Badge>
-                  </td>
-                  <td className="py-3 text-foreground">{item.user}</td>
-                  <td className="py-3 text-muted-foreground text-sm">{item.date}</td>
-                  <td className="py-3 text-right font-medium text-success">+{item.amount} ETB</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          <TabsContent value="earnings">
+            <EarningsPanel />
+          </TabsContent>
+
+          <TabsContent value="genealogy">
+            <GenealogyTree />
+          </TabsContent>
+
+          <TabsContent value="history">
+            <div className="bg-card rounded-xl border border-border p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-gold" />
+                  <h2 className="text-lg font-display font-semibold text-foreground">Commission History</h2>
+                </div>
+                <Button variant="ghost" size="sm">
+                  View All <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left text-sm text-muted-foreground border-b border-border">
+                      <th className="pb-3 font-medium">Type</th>
+                      <th className="pb-3 font-medium">User</th>
+                      <th className="pb-3 font-medium">Date</th>
+                      <th className="pb-3 font-medium text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {commissionHistory.map((item, i) => (
+                      <tr key={i} className="border-b border-border last:border-0">
+                        <td className="py-3">
+                          <Badge variant="outline" className="text-xs">
+                            {item.type}
+                          </Badge>
+                        </td>
+                        <td className="py-3 text-foreground">{item.user}</td>
+                        <td className="py-3 text-muted-foreground text-sm">{item.date}</td>
+                        <td className="py-3 text-right font-medium text-success">+{item.amount} ETB</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </motion.div>
     </DashboardLayout>
   );
