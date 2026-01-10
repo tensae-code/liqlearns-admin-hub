@@ -76,23 +76,39 @@ const Auth = () => {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent, demoEmail?: string, demoPassword?: string) => {
+    if (e) e.preventDefault();
     setLoading(true);
     
-    const { error, role } = await signIn(formData.email, formData.password);
+    const email = demoEmail || formData.email;
+    const password = demoPassword || formData.password;
+    
+    const { error, role } = await signIn(email, password);
     if (error) {
       toast({ title: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Welcome back!' });
-      // Navigate based on role
-      const dashboardPath = role === 'teacher' ? '/teacher' 
-        : role === 'parent' ? '/parent'
-        : role === 'admin' || role === 'ceo' || role === 'support' ? '/admin'
+      // Navigate based on role using getDashboardPath
+      const dashboardPath = role === 'ceo' ? '/ceo'
+        : role === 'admin' ? '/admin'
+        : role === 'support' ? '/support'
+        : role === 'teacher' ? '/teacher'
         : '/dashboard';
       navigate(dashboardPath);
     }
     setLoading(false);
+  };
+
+  const demoAccounts = [
+    { email: 'ceo@liqlearns.com', password: 'ceo123', role: 'CEO' },
+    { email: 'admin@liqlearns.com', password: 'admin123', role: 'Admin' },
+    { email: 'student@liqlearns.com', password: 'student123', role: 'Student' },
+    { email: 'teacher@liqlearns.com', password: 'teacher123', role: 'Teacher' },
+    { email: 'support@liqlearns.com', password: 'support123', role: 'Support' },
+  ];
+
+  const handleDemoLogin = (email: string, password: string) => {
+    handleLogin(undefined, email, password);
   };
 
   const handleSignUp = async () => {
@@ -190,6 +206,28 @@ const Auth = () => {
       <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
         {loading ? 'Signing in...' : 'Sign In'}
       </Button>
+
+      {/* Demo Credentials Section */}
+      <div className="mt-6 p-4 rounded-xl bg-muted/50 border border-border">
+        <p className="text-sm font-medium text-foreground flex items-center gap-2 mb-3">
+          🔑 Demo Credentials (5 Roles):
+        </p>
+        <div className="space-y-2">
+          {demoAccounts.map((demo) => (
+            <button
+              key={demo.email}
+              type="button"
+              onClick={() => handleDemoLogin(demo.email, demo.password)}
+              disabled={loading}
+              className="w-full flex items-center justify-between text-xs p-2 rounded-lg hover:bg-accent/10 transition-colors"
+            >
+              <span className="text-muted-foreground">{demo.email}</span>
+              <span className="text-muted-foreground">{demo.password}</span>
+              <span className="text-accent font-medium">({demo.role})</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </form>
   );
 
