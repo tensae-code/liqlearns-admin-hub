@@ -5,8 +5,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Leaderboard from '@/components/dashboard/Leaderboard';
-import SkillsTracker from '@/components/dashboard/SkillsTracker';
 import AICoach from '@/components/dashboard/AICoach';
+import CircularSkillRing from '@/components/dashboard/CircularSkillRing';
+import AuraPointsPanel from '@/components/dashboard/AuraPointsPanel';
+import StreakTracker from '@/components/dashboard/StreakTracker';
+import LearningResources from '@/components/dashboard/LearningResources';
+import RecentActivity from '@/components/dashboard/RecentActivity';
+import DailyBonusSpinner from '@/components/dashboard/DailyBonusSpinner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
@@ -18,12 +23,12 @@ import {
   ChevronRight,
   Star,
   Award,
-  CheckCircle2,
-  Circle,
   Play,
-  FileText,
   Headphones,
-  Video
+  Pen,
+  Mic,
+  Video,
+  FileText
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -277,26 +282,44 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      {/* Leaderboard & Skills */}
+      {/* Skills Progress - Circular Rings */}
+      <motion.div
+        className="mt-4 md:mt-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.65 }}
+      >
+        <h2 className="text-base md:text-lg font-display font-semibold text-foreground mb-3 md:mb-4">Skills Progress</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <CircularSkillRing name="Listening" icon={<Headphones className="w-full h-full" />} progress={65} color="text-accent" bgColor="bg-accent/10" label="Great" />
+          <CircularSkillRing name="Reading" icon={<BookOpen className="w-full h-full" />} progress={80} color="text-gold" bgColor="bg-gold/10" label="Bravo" />
+          <CircularSkillRing name="Writing" icon={<Pen className="w-full h-full" />} progress={45} color="text-success" bgColor="bg-success/10" label="Fair" />
+          <CircularSkillRing name="Speaking" icon={<Mic className="w-full h-full" />} progress={35} color="text-streak" bgColor="bg-streak/10" label="Keep Going" />
+        </div>
+      </motion.div>
+
+      {/* Aura Points & Streak */}
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <Leaderboard />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.75 }}
-        >
-          <SkillsTracker />
-        </motion.div>
+        <AuraPointsPanel auraPoints={profile?.xp_points || 2450} level={5} nextLevelPoints={3000} />
+        <StreakTracker currentStreak={profile?.current_streak || 7} longestStreak={profile?.longest_streak || 45} weekProgress={[true, true, true, true, true, true, false]} />
+      </div>
+
+      {/* Learning Resources - 12 Types */}
+      <div className="mt-4 md:mt-6">
+        <LearningResources userLevel={5} />
+      </div>
+
+      {/* Leaderboard & Recent Activity */}
+      <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
+        <Leaderboard />
+        <RecentActivity />
       </div>
 
       {/* AI Coach */}
       <AICoach />
+      
+      {/* Daily Bonus Spinner */}
+      <DailyBonusSpinner />
     </DashboardLayout>
   );
 };
