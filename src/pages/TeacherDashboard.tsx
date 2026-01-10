@@ -28,10 +28,10 @@ const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'earnings'>('overview');
 
   const stats = [
-    { label: 'Total Students', value: '1,248', icon: Users, color: 'text-accent', bg: 'bg-accent/10', change: '+12%' },
-    { label: 'Active Courses', value: '8', icon: BookOpen, color: 'text-gold', bg: 'bg-gold/10' },
-    { label: 'Total Revenue', value: '45,200 ETB', icon: DollarSign, color: 'text-success', bg: 'bg-success/10', change: '+23%' },
-    { label: 'Avg. Rating', value: '4.8', icon: Star, color: 'text-streak', bg: 'bg-streak/10' },
+    { label: 'Total Students', value: '1,248', icon: Users, gradient: 'from-blue-500 to-cyan-400', change: '+12%' },
+    { label: 'Active Courses', value: '8', icon: BookOpen, gradient: 'from-purple-500 to-pink-400' },
+    { label: 'Total Revenue', value: '45.2K', icon: DollarSign, gradient: 'from-emerald-500 to-teal-400', change: '+23%' },
+    { label: 'Avg. Rating', value: '4.8', icon: Star, gradient: 'from-orange-500 to-amber-400' },
   ];
 
   const courses = [
@@ -59,42 +59,41 @@ const TeacherDashboard = () => {
     <DashboardLayout>
       {/* Header */}
       <motion.div
-        className="mb-6"
+        className="mb-4 md:mb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-display font-bold text-foreground mb-1">
+            <h1 className="text-xl md:text-3xl font-display font-bold text-foreground mb-1">
               Teacher Dashboard 👨‍🏫
             </h1>
-            <p className="text-muted-foreground">Manage your courses and track student progress</p>
+            <p className="text-sm md:text-base text-muted-foreground">Manage courses & students</p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2 w-full sm:w-auto">
             <Plus className="w-4 h-4" />
             Create Course
           </Button>
         </div>
       </motion.div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      {/* Stats Grid - Colorful Gradient Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
-            className="bg-card rounded-xl p-4 border border-border"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 + i * 0.05 }}
           >
-            <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
-              <stat.icon className={`w-5 h-5 ${stat.color}`} />
-            </div>
-            <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
+            <stat.icon className="w-5 h-5 md:w-6 md:h-6 mb-2 opacity-90" />
+            <p className="text-xl md:text-2xl font-display font-bold">{stat.value}</p>
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
+              <p className="text-xs opacity-80">{stat.label}</p>
               {stat.change && (
-                <span className="text-xs text-success">{stat.change}</span>
+                <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{stat.change}</span>
               )}
             </div>
           </motion.div>

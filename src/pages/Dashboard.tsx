@@ -45,11 +45,10 @@ const Dashboard = () => {
   }
 
   const stats = [
-    { icon: BookOpen, label: 'Total Lessons', value: '24', color: 'text-accent', bg: 'bg-accent/10' },
-    { icon: Award, label: 'Total Badges', value: '5', color: 'text-gold', bg: 'bg-gold/10' },
-    { icon: Star, label: 'Total XP', value: '1,250', color: 'text-success', bg: 'bg-success/10' },
-    { icon: Trophy, label: 'Certificates', value: '2', color: 'text-primary', bg: 'bg-primary/10' },
-    { icon: Flame, label: 'Current Streak', value: '7', color: 'text-streak', bg: 'bg-streak/10' },
+    { icon: BookOpen, label: 'Lessons', value: '24', gradient: 'from-orange-500 to-amber-400' },
+    { icon: Award, label: 'Badges', value: '5', gradient: 'from-purple-500 to-pink-400' },
+    { icon: Star, label: 'XP', value: '1,250', gradient: 'from-emerald-500 to-teal-400' },
+    { icon: Flame, label: 'Streak', value: '7', gradient: 'from-red-500 to-orange-400' },
   ];
 
   const quests = [
@@ -89,21 +88,20 @@ const Dashboard = () => {
         <p className="text-muted-foreground text-sm md:text-base">Continue your learning journey today</p>
       </motion.div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
+      {/* Stats Grid - Colorful Gradient Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
-            className="bg-card rounded-xl p-3 md:p-4 border border-border hover:border-accent/30 hover:shadow-soft transition-all cursor-pointer"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.05 }}
           >
-            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-2 md:mb-3`}>
-              <stat.icon className={`w-4 h-4 md:w-5 md:h-5 ${stat.color}`} />
-            </div>
-            <p className="text-lg md:text-2xl font-display font-bold text-foreground">{stat.value}</p>
-            <p className="text-xs md:text-sm text-muted-foreground">{stat.label}</p>
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
+            <stat.icon className="w-6 h-6 mb-2 opacity-90" />
+            <p className="text-2xl font-display font-bold">{stat.value}</p>
+            <p className="text-xs opacity-80">{stat.label}</p>
           </motion.div>
         ))}
       </div>

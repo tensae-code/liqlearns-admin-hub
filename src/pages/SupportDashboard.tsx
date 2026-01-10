@@ -23,10 +23,10 @@ const SupportDashboard = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'open' | 'pending' | 'resolved'>('all');
 
   const stats = [
-    { label: 'Open Tickets', value: '23', icon: MessageSquare, color: 'text-accent', bg: 'bg-accent/10' },
-    { label: 'Pending', value: '8', icon: Clock, color: 'text-gold', bg: 'bg-gold/10' },
-    { label: 'Resolved Today', value: '45', icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
-    { label: 'Avg. Response', value: '2.5h', icon: HeadphonesIcon, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: 'Open Tickets', value: '23', icon: MessageSquare, gradient: 'from-orange-500 to-amber-400' },
+    { label: 'Pending', value: '8', icon: Clock, gradient: 'from-yellow-500 to-amber-400' },
+    { label: 'Resolved Today', value: '45', icon: CheckCircle2, gradient: 'from-emerald-500 to-green-400' },
+    { label: 'Avg. Response', value: '2.5h', icon: HeadphonesIcon, gradient: 'from-blue-500 to-cyan-400' },
   ];
 
   const tickets = [
@@ -78,21 +78,20 @@ const SupportDashboard = () => {
           </Button>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {/* Stats Grid - Colorful Gradient Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              className="bg-card rounded-xl p-3 md:p-5 border border-border"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
             >
-              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-2 md:mb-3`}>
-                <stat.icon className={`w-4 h-4 md:w-5 md:h-5 ${stat.color}`} />
-              </div>
-              <p className="text-lg md:text-2xl font-display font-bold text-foreground">{stat.value}</p>
-              <p className="text-xs md:text-sm text-muted-foreground">{stat.label}</p>
+              <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
+              <stat.icon className="w-5 h-5 md:w-6 md:h-6 mb-2 opacity-90" />
+              <p className="text-xl md:text-2xl font-display font-bold">{stat.value}</p>
+              <p className="text-xs opacity-80">{stat.label}</p>
             </motion.div>
           ))}
         </div>
