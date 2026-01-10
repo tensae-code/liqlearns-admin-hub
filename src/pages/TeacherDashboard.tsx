@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -21,10 +23,14 @@ import {
   MoreVertical,
   BarChart3,
   MessageSquare,
-  Award
+  Award,
+  Settings,
+  Calendar
 } from 'lucide-react';
 
 const TeacherDashboard = () => {
+  const navigate = useNavigate();
+  const { profile } = useProfile();
   const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'earnings'>('overview');
 
   const stats = [
@@ -70,10 +76,19 @@ const TeacherDashboard = () => {
             </h1>
             <p className="text-sm md:text-base text-muted-foreground">Manage courses & students</p>
           </div>
-          <Button className="gap-2 w-full sm:w-auto">
-            <Plus className="w-4 h-4" />
-            Create Course
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button className="gap-2 flex-1 sm:flex-none" onClick={() => navigate('/teacher')}>
+              <Plus className="w-4 h-4" />
+              Create Course
+            </Button>
+            <Button variant="outline" className="gap-2 flex-1 sm:flex-none" onClick={() => navigate('/events')}>
+              <Calendar className="w-4 h-4" />
+              <span className="hidden sm:inline">Events</span>
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => navigate('/settings')}>
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </motion.div>
 

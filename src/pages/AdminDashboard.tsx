@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -27,6 +29,8 @@ import {
 } from 'lucide-react';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const { profile } = useProfile();
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'courses' | 'approvals'>('overview');
 
   const stats = [
@@ -72,11 +76,14 @@ const AdminDashboard = () => {
             <p className="text-sm md:text-base text-muted-foreground">Manage platform & users</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => navigate('/admin')}>
               <BarChart3 className="w-4 h-4 mr-1 md:mr-2" /> <span className="hidden sm:inline">Reports</span>
             </Button>
-            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => navigate('/settings')}>
               <Settings className="w-4 h-4 mr-1 md:mr-2" /> <span className="hidden sm:inline">Settings</span>
+            </Button>
+            <Button size="sm" className="flex-1 sm:flex-none" onClick={() => navigate('/courses')}>
+              <BookOpen className="w-4 h-4 mr-1 md:mr-2" /> <span className="hidden sm:inline">Courses</span>
             </Button>
           </div>
         </motion.div>

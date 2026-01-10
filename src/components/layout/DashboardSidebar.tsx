@@ -40,39 +40,72 @@ interface NavItem {
   roles?: string[];
 }
 
-const allNavItems: NavItem[] = [
-  // Student items
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['student'] },
-  { icon: Library, label: 'Courses', path: '/courses', roles: ['student', 'teacher'] },
-  { icon: GraduationCap, label: 'Quest', path: '/quest', roles: ['student'] },
-  { icon: Users, label: 'Study Rooms', path: '/study-rooms', roles: ['student'] },
-  { icon: Calendar, label: 'Events', path: '/events', roles: ['student', 'teacher'] },
-  { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace', roles: ['student'] },
-  { icon: MessageSquare, label: 'Community', path: '/community', roles: ['student', 'teacher'] },
-  { icon: Briefcase, label: 'Business', path: '/business', roles: ['student'] },
-  { icon: Trophy, label: 'Profile', path: '/profile', roles: ['student', 'teacher', 'parent'] },
-  
-  // Teacher items
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/teacher', roles: ['teacher'] },
-  { icon: FileText, label: 'My Courses', path: '/teacher', roles: ['teacher'] },
-  { icon: UserCheck, label: 'Students', path: '/teacher', roles: ['teacher'] },
-  { icon: BarChart3, label: 'Analytics', path: '/teacher', roles: ['teacher'] },
-  
-  // Parent items
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/parent', roles: ['parent'] },
-  { icon: Baby, label: 'My Children', path: '/parent', roles: ['parent'] },
-  { icon: BarChart3, label: 'Progress', path: '/parent', roles: ['parent'] },
-  
-  // Admin items
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', roles: ['admin', 'ceo', 'support'] },
-  { icon: Users, label: 'Users', path: '/admin', roles: ['admin', 'ceo'] },
-  { icon: Library, label: 'Courses', path: '/admin', roles: ['admin', 'ceo'] },
-  { icon: Shield, label: 'Moderation', path: '/admin', roles: ['admin', 'ceo', 'support'] },
-  
-  // Common items
-  { icon: HelpCircle, label: 'Help', path: '/help' },
-  { icon: Settings, label: 'Settings', path: '/settings' },
-];
+// Role-specific navigation configurations
+const getNavItemsForRole = (role: string | null): NavItem[] => {
+  switch (role) {
+    case 'ceo':
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/ceo' },
+        { icon: BarChart3, label: 'Analytics', path: '/ceo' },
+        { icon: Users, label: 'Team', path: '/ceo' },
+        { icon: Library, label: 'Courses', path: '/courses' },
+        { icon: FileText, label: 'Reports', path: '/ceo' },
+        { icon: HelpCircle, label: 'Help', path: '/help' },
+        { icon: Settings, label: 'Settings', path: '/settings' },
+      ];
+    case 'admin':
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+        { icon: Users, label: 'Users', path: '/admin' },
+        { icon: Library, label: 'Courses', path: '/courses' },
+        { icon: Shield, label: 'Moderation', path: '/admin' },
+        { icon: BarChart3, label: 'Reports', path: '/admin' },
+        { icon: HelpCircle, label: 'Help', path: '/help' },
+        { icon: Settings, label: 'Settings', path: '/settings' },
+      ];
+    case 'support':
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/support' },
+        { icon: MessageSquare, label: 'Tickets', path: '/support' },
+        { icon: Users, label: 'Users', path: '/support' },
+        { icon: HelpCircle, label: 'Help', path: '/help' },
+        { icon: Settings, label: 'Settings', path: '/settings' },
+      ];
+    case 'teacher':
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/teacher' },
+        { icon: Library, label: 'My Courses', path: '/teacher' },
+        { icon: Users, label: 'Students', path: '/teacher' },
+        { icon: BarChart3, label: 'Earnings', path: '/teacher' },
+        { icon: Calendar, label: 'Events', path: '/events' },
+        { icon: MessageSquare, label: 'Community', path: '/community' },
+        { icon: HelpCircle, label: 'Help', path: '/help' },
+        { icon: Settings, label: 'Settings', path: '/settings' },
+      ];
+    case 'parent':
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/parent' },
+        { icon: Baby, label: 'My Children', path: '/parent' },
+        { icon: BarChart3, label: 'Progress', path: '/parent' },
+        { icon: HelpCircle, label: 'Help', path: '/help' },
+        { icon: Settings, label: 'Settings', path: '/settings' },
+      ];
+    default: // student
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+        { icon: Library, label: 'Courses', path: '/courses' },
+        { icon: GraduationCap, label: 'Quest', path: '/quest' },
+        { icon: Users, label: 'Study Rooms', path: '/study-rooms' },
+        { icon: Calendar, label: 'Events', path: '/events' },
+        { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
+        { icon: MessageSquare, label: 'Community', path: '/community' },
+        { icon: Briefcase, label: 'Business', path: '/business' },
+        { icon: Trophy, label: 'Profile', path: '/profile' },
+        { icon: HelpCircle, label: 'Help', path: '/help' },
+        { icon: Settings, label: 'Settings', path: '/settings' },
+      ];
+  }
+};
 
 const DashboardSidebar = ({ className }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -85,12 +118,8 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
     navigate('/');
   };
 
-  // Filter nav items based on user role
-  const navItems = allNavItems.filter(item => {
-    if (!item.roles) return true; // Show items without role restriction
-    if (!userRole) return item.roles.includes('student'); // Default to student
-    return item.roles.includes(userRole);
-  });
+  // Get nav items for user role
+  const navItems = getNavItemsForRole(userRole);
 
   const getRoleLabel = () => {
     switch (userRole) {

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -20,10 +22,13 @@ import {
   Lock,
   Plus,
   Award,
-  TrendingUp
+  TrendingUp,
+  Settings
 } from 'lucide-react';
 
 const ParentDashboard = () => {
+  const navigate = useNavigate();
+  const { profile } = useProfile();
   const [selectedChild, setSelectedChild] = useState('child1');
 
   const children = [
@@ -84,10 +89,15 @@ const ParentDashboard = () => {
             </h1>
             <p className="text-muted-foreground">Monitor your child's learning progress</p>
           </div>
-          <Button variant="outline" className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Child
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => navigate('/parent')}>
+              <Plus className="w-4 h-4" />
+              Add Child
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => navigate('/settings')}>
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </motion.div>
 
