@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
 import { 
   Users, 
   BookOpen, 
@@ -30,6 +31,12 @@ const ParentDashboard = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const [selectedChild, setSelectedChild] = useState('child1');
+  const [controls, setControls] = useState({
+    timeLimit: true,
+    contentFilter: true,
+    studyRoomAccess: false,
+    weeklyReports: true,
+  });
 
   const children = [
     { id: 'child1', name: 'Abebe', age: 10, avatar: 'A', xp: 2450, streak: 12, courses: 3 },
@@ -54,9 +61,9 @@ const ParentDashboard = () => {
   ];
 
   const enrolledCourses = [
-    { title: 'Kids Amharic Fun', progress: 65, lessonsComplete: 20, totalLessons: 30, timeSpent: '8h 30m' },
-    { title: 'Ethiopian Stories', progress: 40, lessonsComplete: 6, totalLessons: 15, timeSpent: '3h 15m' },
-    { title: 'Numbers & Counting', progress: 85, lessonsComplete: 17, totalLessons: 20, timeSpent: '5h 45m' },
+    { id: '1', title: 'Kids Amharic Fun', progress: 65, lessonsComplete: 20, totalLessons: 30, timeSpent: '8h 30m' },
+    { id: '2', title: 'Ethiopian Stories', progress: 40, lessonsComplete: 6, totalLessons: 15, timeSpent: '3h 15m' },
+    { id: '3', title: 'Numbers & Counting', progress: 85, lessonsComplete: 17, totalLessons: 20, timeSpent: '5h 45m' },
   ];
 
   const weeklyReport = {
@@ -67,12 +74,22 @@ const ParentDashboard = () => {
     avgScore: 92,
   };
 
-  const parentalControls = [
-    { label: 'Daily time limit', description: '2 hours per day', enabled: true },
-    { label: 'Content filter', description: 'Age-appropriate content only', enabled: true },
-    { label: 'Study room access', description: 'Require approval to join', enabled: false },
-    { label: 'Weekly progress reports', description: 'Email every Sunday', enabled: true },
-  ];
+  const handleAddChild = () => {
+    toast.info('Add child feature coming soon!', {
+      description: 'You will be able to link and manage multiple children\'s accounts.',
+    });
+  };
+
+  const handleControlToggle = (key: keyof typeof controls) => {
+    setControls(prev => {
+      const newState = { ...prev, [key]: !prev[key] };
+      toast.success(`${key === 'timeLimit' ? 'Daily time limit' : 
+        key === 'contentFilter' ? 'Content filter' :
+        key === 'studyRoomAccess' ? 'Study room access' : 
+        'Weekly reports'} ${newState[key] ? 'enabled' : 'disabled'}`);
+      return newState;
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -90,7 +107,7 @@ const ParentDashboard = () => {
             <p className="text-muted-foreground">Monitor your child's learning progress</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2" onClick={() => navigate('/parent')}>
+            <Button variant="outline" className="gap-2" onClick={handleAddChild}>
               <Plus className="w-4 h-4" />
               Add Child
             </Button>
@@ -165,13 +182,17 @@ const ParentDashboard = () => {
               <BookOpen className="w-5 h-5 text-accent" />
               <h2 className="font-display font-semibold text-foreground">Enrolled Courses</h2>
             </div>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/courses')}>
               View All <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
           <div className="divide-y divide-border">
-            {enrolledCourses.map((course, i) => (
-              <div key={i} className="p-4">
+            {enrolledCourses.map((course) => (
+              <div 
+                key={course.id} 
+                className="p-4 hover:bg-muted/30 cursor-pointer transition-colors"
+                onClick={() => navigate(`/course/${course.id}`)}
+              >
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-medium text-foreground">{course.title}</h3>
                   <Badge className="bg-accent/10 text-accent border-accent/30">
@@ -228,7 +249,11 @@ const ParentDashboard = () => {
             </div>
           </div>
           <div className="p-4 border-t border-border">
-            <Button className="w-full" variant="outline">
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => toast.info('Detailed weekly report coming soon!')}
+            >
               <Calendar className="w-4 h-4 mr-2" />
               View Full Report
             </Button>
@@ -284,26 +309,35 @@ const ParentDashboard = () => {
             <h2 className="font-display font-semibold text-foreground">Parental Controls</h2>
           </div>
           <div className="divide-y divide-border">
-            {parentalControls.map((control, i) => (
-              <div key={i} className="p-4 flex items-center justify-between">
+            {[
+              { key: 'timeLimit' as const, label: 'Daily time limit', description: '2 hours per day', icon: Clock },
+              { key: 'contentFilter' as const, label: 'Content filter', description: 'Age-appropriate content only', icon: Eye },
+              { key: 'studyRoomAccess' as const, label: 'Study room access', description: 'Require approval to join', icon: Lock },
+              { key: 'weeklyReports' as const, label: 'Weekly progress reports', description: 'Email every Sunday', icon: Bell },
+            ].map((control) => (
+              <div key={control.key} className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                    {i === 0 ? <Clock className="w-5 h-5 text-muted-foreground" /> :
-                     i === 1 ? <Eye className="w-5 h-5 text-muted-foreground" /> :
-                     i === 2 ? <Lock className="w-5 h-5 text-muted-foreground" /> :
-                     <Bell className="w-5 h-5 text-muted-foreground" />}
+                    <control.icon className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{control.label}</p>
                     <p className="text-sm text-muted-foreground">{control.description}</p>
                   </div>
                 </div>
-                <Switch checked={control.enabled} />
+                <Switch 
+                  checked={controls[control.key]} 
+                  onCheckedChange={() => handleControlToggle(control.key)}
+                />
               </div>
             ))}
           </div>
           <div className="p-4 border-t border-border">
-            <Button className="w-full" variant="outline">
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => navigate('/settings')}
+            >
               <Shield className="w-4 h-4 mr-2" />
               More Settings
             </Button>
