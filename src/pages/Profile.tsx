@@ -3,7 +3,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import {
   User,
@@ -79,6 +79,7 @@ const Profile = () => {
         >
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
             <Avatar className="h-24 w-24 border-4 border-white/20">
+              {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
               <AvatarFallback className="bg-white/20 text-primary-foreground text-3xl font-bold">
                 {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
               </AvatarFallback>
