@@ -11,7 +11,11 @@ import {
   BarChart3,
   Shield,
   Baby,
-  HeadphonesIcon
+  HeadphonesIcon,
+  User,
+  HelpCircle,
+  LogOut,
+  ChevronRight
 } from 'lucide-react';
 import {
   Drawer,
@@ -78,8 +82,8 @@ const MobileBottomNav = () => {
   const navItems = getNavItems();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-border safe-area-bottom">
-      <div className="flex items-center justify-around px-2 py-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-lg border-t border-border">
+      <div className="flex items-center justify-around px-1 py-1.5 pb-safe">
         {navItems.slice(0, 4).map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -87,74 +91,108 @@ const MobileBottomNav = () => {
               key={item.path + item.label}
               to={item.path}
               className={cn(
-                'flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[60px]',
+                'flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all min-w-[56px]',
                 isActive
-                  ? 'text-accent'
-                  : 'text-muted-foreground'
+                  ? 'bg-accent/10'
+                  : 'hover:bg-muted/50'
               )}
             >
-              <item.icon className={cn('w-5 h-5', isActive && 'text-accent')} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <div className={cn(
+                'w-6 h-6 flex items-center justify-center rounded-lg transition-all',
+                isActive && 'bg-accent text-accent-foreground'
+              )}>
+                <item.icon className={cn('w-4 h-4', isActive ? 'text-accent-foreground' : 'text-muted-foreground')} />
+              </div>
+              <span className={cn(
+                'text-[10px] font-medium',
+                isActive ? 'text-accent' : 'text-muted-foreground'
+              )}>
+                {item.label}
+              </span>
             </Link>
           );
         })}
         
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DrawerTrigger asChild>
-            <button className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-muted-foreground min-w-[60px]">
-              <Menu className="w-5 h-5" />
+            <button className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-muted-foreground min-w-[56px] hover:bg-muted/50 transition-all">
+              <div className="w-6 h-6 flex items-center justify-center">
+                <Menu className="w-4 h-4" />
+              </div>
               <span className="text-[10px] font-medium">More</span>
             </button>
           </DrawerTrigger>
           <DrawerContent className="max-h-[85vh]">
-            <DrawerHeader>
+            <DrawerHeader className="pb-2">
               <DrawerTitle className="text-left">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-accent/10 to-gold/10">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent to-gold flex items-center justify-center text-white font-bold text-lg">
                     {user?.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <div>
-                    <p className="font-semibold text-foreground">{user?.email?.split('@')[0] || 'User'}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{userRole || 'Student'}</p>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground text-base">{user?.email?.split('@')[0] || 'User'}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{userRole || 'Student'} Account</p>
                   </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
                 </div>
               </DrawerTitle>
             </DrawerHeader>
-            <div className="p-4 space-y-2">
+            <div className="px-4 pb-6 space-y-1">
               <Link
                 to="/profile"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
                 onClick={() => setDrawerOpen(false)}
               >
-                <Users className="w-5 h-5 text-muted-foreground" />
-                <span>Profile</span>
+                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <User className="w-5 h-5 text-accent" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">Profile</span>
+                  <p className="text-xs text-muted-foreground">View and edit your profile</p>
+                </div>
               </Link>
               <Link
                 to="/settings"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
                 onClick={() => setDrawerOpen(false)}
               >
-                <Settings className="w-5 h-5 text-muted-foreground" />
-                <span>Settings</span>
+                <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                  <Settings className="w-5 h-5 text-gold" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">Settings</span>
+                  <p className="text-xs text-muted-foreground">App preferences & security</p>
+                </div>
               </Link>
               <Link
                 to="/help"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
                 onClick={() => setDrawerOpen(false)}
               >
-                <HeadphonesIcon className="w-5 h-5 text-muted-foreground" />
-                <span>Help & Support</span>
+                <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+                  <HelpCircle className="w-5 h-5 text-success" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">Help & Support</span>
+                  <p className="text-xs text-muted-foreground">FAQs and contact support</p>
+                </div>
               </Link>
-              <div className="pt-2 border-t border-border mt-2">
+              <div className="pt-3 mt-2 border-t border-border">
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 h-12 rounded-xl"
                   onClick={() => {
                     signOut();
                     setDrawerOpen(false);
                   }}
                 >
-                  Sign Out
+                  <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center mr-3">
+                    <LogOut className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <span className="font-medium">Sign Out</span>
+                    <p className="text-xs opacity-70">Log out of your account</p>
+                  </div>
                 </Button>
               </div>
             </div>

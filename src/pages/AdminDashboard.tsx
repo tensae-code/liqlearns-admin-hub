@@ -30,10 +30,10 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'courses' | 'approvals'>('overview');
 
   const stats = [
-    { label: 'Total Users', value: '12,458', change: '+12%', icon: Users, color: 'text-accent', bgColor: 'bg-accent/10' },
-    { label: 'Active Courses', value: '156', change: '+8%', icon: BookOpen, color: 'text-gold', bgColor: 'bg-gold/10' },
-    { label: 'Monthly Revenue', value: '$45,280', change: '+23%', icon: DollarSign, color: 'text-success', bgColor: 'bg-success/10' },
-    { label: 'Engagement Rate', value: '78%', change: '+5%', icon: TrendingUp, color: 'text-primary', bgColor: 'bg-primary/10' },
+    { label: 'Total Users', value: '12,458', change: '+12%', icon: Users, gradient: 'from-violet-500 to-purple-400' },
+    { label: 'Active Courses', value: '156', change: '+8%', icon: BookOpen, gradient: 'from-amber-500 to-orange-400' },
+    { label: 'Monthly Revenue', value: '$45.2K', change: '+23%', icon: DollarSign, gradient: 'from-emerald-500 to-green-400' },
+    { label: 'Engagement', value: '78%', change: '+5%', icon: TrendingUp, gradient: 'from-blue-500 to-cyan-400' },
   ];
 
   const recentUsers = [
@@ -60,47 +60,46 @@ const AdminDashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Header */}
         <motion.div
-          className="flex items-center justify-between"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <div>
-            <h1 className="text-3xl font-display font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage your platform and users</p>
+            <h1 className="text-xl md:text-3xl font-display font-bold text-foreground">Admin Dashboard</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Manage platform & users</p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline">
-              <BarChart3 className="w-4 h-4 mr-2" /> Reports
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+              <BarChart3 className="w-4 h-4 mr-1 md:mr-2" /> <span className="hidden sm:inline">Reports</span>
             </Button>
-            <Button variant="outline">
-              <Settings className="w-4 h-4 mr-2" /> Settings
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+              <Settings className="w-4 h-4 mr-1 md:mr-2" /> <span className="hidden sm:inline">Settings</span>
             </Button>
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Stats Grid - Colorful Gradient Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              className="bg-card rounded-xl p-5 border border-border"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                </div>
-                <span className="text-xs font-medium text-success bg-success/10 px-2 py-1 rounded-full">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
+              <div className="flex items-center justify-between mb-2">
+                <stat.icon className="w-5 h-5 md:w-6 md:h-6 opacity-90" />
+                <span className="text-[10px] md:text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
                   {stat.change}
                 </span>
               </div>
-              <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
+              <p className="text-xl md:text-2xl font-display font-bold">{stat.value}</p>
+              <p className="text-xs opacity-80">{stat.label}</p>
             </motion.div>
           ))}
         </div>

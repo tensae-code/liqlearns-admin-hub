@@ -19,10 +19,10 @@ import {
 
 const CEODashboard = () => {
   const stats = [
-    { label: 'Total Revenue', value: '$2.4M', change: '+28%', isUp: true, icon: DollarSign, color: 'text-success', bg: 'bg-success/10' },
-    { label: 'Active Users', value: '45,280', change: '+15%', isUp: true, icon: Users, color: 'text-accent', bg: 'bg-accent/10' },
-    { label: 'Course Catalog', value: '320', change: '+12', isUp: true, icon: BookOpen, color: 'text-gold', bg: 'bg-gold/10' },
-    { label: 'Global Reach', value: '45 Countries', change: '+3', isUp: true, icon: Globe, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: 'Total Revenue', value: '$2.4M', change: '+28%', isUp: true, icon: DollarSign, gradient: 'from-emerald-500 to-green-400' },
+    { label: 'Active Users', value: '45,280', change: '+15%', isUp: true, icon: Users, gradient: 'from-blue-500 to-cyan-400' },
+    { label: 'Course Catalog', value: '320', change: '+12', isUp: true, icon: BookOpen, gradient: 'from-purple-500 to-violet-400' },
+    { label: 'Global Reach', value: '45 Countries', change: '+3', isUp: true, icon: Globe, gradient: 'from-orange-500 to-amber-400' },
   ];
 
   const departments = [
@@ -66,27 +66,26 @@ const CEODashboard = () => {
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {/* Stats Grid - Colorful Gradient Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              className="bg-card rounded-xl p-3 md:p-5 border border-border"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
             >
-              <div className="flex items-center justify-between mb-2 md:mb-3">
-                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg ${stat.bg} flex items-center justify-center`}>
-                  <stat.icon className={`w-4 h-4 md:w-5 md:h-5 ${stat.color}`} />
-                </div>
-                <span className={`text-xs font-medium flex items-center gap-0.5 ${stat.isUp ? 'text-success' : 'text-destructive'}`}>
+              <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
+              <div className="flex items-center justify-between mb-2">
+                <stat.icon className="w-5 h-5 md:w-6 md:h-6 opacity-90" />
+                <span className="text-[10px] md:text-xs bg-white/20 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                   {stat.isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                   {stat.change}
                 </span>
               </div>
-              <p className="text-lg md:text-2xl font-display font-bold text-foreground">{stat.value}</p>
-              <p className="text-xs md:text-sm text-muted-foreground">{stat.label}</p>
+              <p className="text-lg md:text-2xl font-display font-bold">{stat.value}</p>
+              <p className="text-xs opacity-80">{stat.label}</p>
             </motion.div>
           ))}
         </div>
