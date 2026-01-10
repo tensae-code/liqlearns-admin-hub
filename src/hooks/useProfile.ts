@@ -7,6 +7,7 @@ interface Profile {
   full_name: string;
   username: string;
   email: string;
+  phone: string | null;
   avatar_url: string | null;
   xp_points: number;
   current_streak: number;
@@ -23,36 +24,41 @@ export const useProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchProfile = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        setError(error.message);
+      } else {
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Failed to fetch profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Error fetching profile:', error);
-          setError(error.message);
-        } else {
-          setProfile(data);
-        }
-      } catch (err) {
-        console.error('Error:', err);
-        setError('Failed to fetch profile');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProfile();
   }, [user]);
+
+  const refetch = () => {
+    setLoading(true);
+    fetchProfile();
+  };
 
   const updateStreak = async () => {
     if (!user || !profile) return;
@@ -92,5 +98,5 @@ export const useProfile = () => {
     }
   };
 
-  return { profile, loading, error, updateStreak };
+  return { profile, loading, error, updateStreak, refetch };
 };
