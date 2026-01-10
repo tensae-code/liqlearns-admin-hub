@@ -44,6 +44,68 @@ export type Database = {
         }
         Relationships: []
       }
+      brain_bank: {
+        Row: {
+          category: string | null
+          content: string | null
+          created_at: string
+          id: string
+          is_favorite: boolean | null
+          last_reviewed_at: string | null
+          mastery_level: number | null
+          pronunciation: string | null
+          review_count: number | null
+          tags: string[] | null
+          title: string
+          translation: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_favorite?: boolean | null
+          last_reviewed_at?: string | null
+          mastery_level?: number | null
+          pronunciation?: string | null
+          review_count?: number | null
+          tags?: string[] | null
+          title: string
+          translation?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_favorite?: boolean | null
+          last_reviewed_at?: string | null
+          mastery_level?: number | null
+          pronunciation?: string | null
+          review_count?: number | null
+          tags?: string[] | null
+          title?: string
+          translation?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brain_bank_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           category: string
