@@ -15,7 +15,8 @@ import {
   User,
   HelpCircle,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import {
   Drawer,
@@ -37,9 +38,9 @@ const MobileBottomNav = () => {
       case 'ceo':
         return [
           { icon: LayoutDashboard, label: 'Overview', path: '/ceo' },
-          { icon: BarChart3, label: 'Analytics', path: '/ceo' },
-          { icon: Users, label: 'Team', path: '/ceo' },
-          { icon: Settings, label: 'Settings', path: '/settings' },
+          { icon: BarChart3, label: 'Analytics', path: '/ceo/analytics' },
+          { icon: Users, label: 'Team', path: '/ceo/team' },
+          { icon: FileText, label: 'Reports', path: '/ceo/reports' },
         ];
       case 'admin':
         return [
@@ -81,11 +82,22 @@ const MobileBottomNav = () => {
 
   const navItems = getNavItems();
 
+  // Check if current path matches the item path (exact match for CEO dashboard, startsWith for sub-routes)
+  const isItemActive = (itemPath: string) => {
+    // Exact match for main dashboard routes
+    if (itemPath === '/ceo' || itemPath === '/admin' || itemPath === '/support' || 
+        itemPath === '/teacher' || itemPath === '/parent' || itemPath === '/dashboard') {
+      return location.pathname === itemPath;
+    }
+    // For sub-routes, use exact match
+    return location.pathname === itemPath;
+  };
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-lg border-t border-border">
       <div className="flex items-center justify-around px-1 py-1.5 pb-safe">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = isItemActive(item.path);
           return (
             <Link
               key={item.path + item.label}
@@ -149,6 +161,19 @@ const MobileBottomNav = () => {
                 <div className="flex-1">
                   <span className="font-medium text-foreground">Profile</span>
                   <p className="text-xs text-muted-foreground">View and edit your profile</p>
+                </div>
+              </Link>
+              <Link
+                to="/courses"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">Courses</span>
+                  <p className="text-xs text-muted-foreground">Browse all courses</p>
                 </div>
               </Link>
               <Link
