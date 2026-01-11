@@ -61,11 +61,11 @@ const CEODashboard = () => {
             <p className="text-muted-foreground text-sm md:text-base">Company overview and strategic metrics</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => navigate('/ceo')}>
-              <BarChart3 className="w-4 h-4 mr-1 md:mr-2" /> 
+            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => navigate('/ceo/reports')}>
+              <FileText className="w-4 h-4 mr-1 md:mr-2" /> 
               <span className="hidden sm:inline">Reports</span>
             </Button>
-            <Button size="sm" className="text-xs md:text-sm" onClick={() => navigate('/ceo')}>
+            <Button size="sm" className="text-xs md:text-sm" onClick={() => navigate('/ceo/analytics')}>
               <PieChart className="w-4 h-4 mr-1 md:mr-2" /> 
               <span className="hidden sm:inline">Analytics</span>
             </Button>
@@ -112,7 +112,7 @@ const CEODashboard = () => {
               <Target className="w-5 h-5 text-accent" />
               Strategic Goals
             </h2>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/ceo/reports')}>
               View All <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
@@ -156,7 +156,7 @@ const CEODashboard = () => {
               <Building2 className="w-5 h-5 text-gold" />
               Departments
             </h2>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/ceo/team')}>
               Manage <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
