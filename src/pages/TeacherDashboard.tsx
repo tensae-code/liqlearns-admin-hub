@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
+import CreateCourseModal from '@/components/teacher/CreateCourseModal';
 import { 
   BookOpen, 
   Users, 
@@ -32,6 +33,7 @@ const TeacherDashboard = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'earnings'>('overview');
+  const [createCourseOpen, setCreateCourseOpen] = useState(false);
 
   const stats = [
     { label: 'Total Students', value: '1,248', icon: Users, gradient: 'from-blue-500 to-cyan-400', change: '+12%' },
@@ -62,6 +64,7 @@ const TeacherDashboard = () => {
   ];
 
   return (
+    <>
     <DashboardLayout>
       {/* Header */}
       <motion.div
@@ -77,7 +80,7 @@ const TeacherDashboard = () => {
             <p className="text-sm md:text-base text-muted-foreground">Manage courses & students</p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button className="gap-2 flex-1 sm:flex-none" onClick={() => navigate('/teacher')}>
+            <Button className="gap-2 flex-1 sm:flex-none" onClick={() => setCreateCourseOpen(true)}>
               <Plus className="w-4 h-4" />
               Create Course
             </Button>
@@ -383,6 +386,10 @@ const TeacherDashboard = () => {
         </div>
       )}
     </DashboardLayout>
+
+      {/* Create Course Modal */}
+      <CreateCourseModal open={createCourseOpen} onOpenChange={setCreateCourseOpen} />
+    </>
   );
 };
 

@@ -1,0 +1,444 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import {
+  BookOpen,
+  DollarSign,
+  Image,
+  Plus,
+  X,
+  Sparkles,
+  Clock,
+  Target,
+  Save,
+  Eye
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+interface CreateCourseModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const courseEmojis = ['📚', '🎯', '💡', '🌟', '🔥', '🚀', '💻', '🎨', '🎵', '📖', '✏️', '🧠'];
+
+const categories = [
+  { id: 'language', label: 'Language' },
+  { id: 'business', label: 'Business' },
+  { id: 'technology', label: 'Technology' },
+  { id: 'culture', label: 'Culture & History' },
+  { id: 'kids', label: 'Kids' },
+  { id: 'professional', label: 'Professional Development' },
+];
+
+const difficulties = [
+  { id: 'beginner', label: 'Beginner', color: 'bg-success/10 text-success' },
+  { id: 'intermediate', label: 'Intermediate', color: 'bg-gold/10 text-gold' },
+  { id: 'advanced', label: 'Advanced', color: 'bg-destructive/10 text-destructive' },
+];
+
+const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    difficulty: 'beginner',
+    price: '',
+    isFree: true,
+    thumbnail_emoji: '📚',
+    estimatedDuration: '',
+    objectives: [''],
+  });
+
+  const handleAddObjective = () => {
+    setFormData({
+      ...formData,
+      objectives: [...formData.objectives, ''],
+    });
+  };
+
+  const handleRemoveObjective = (index: number) => {
+    setFormData({
+      ...formData,
+      objectives: formData.objectives.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleObjectiveChange = (index: number, value: string) => {
+    const newObjectives = [...formData.objectives];
+    newObjectives[index] = value;
+    setFormData({ ...formData, objectives: newObjectives });
+  };
+
+  const handleSubmit = () => {
+    if (!formData.title || !formData.category) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    toast.success('Course created successfully!', {
+      description: 'Your course has been saved as a draft. Add lessons to publish it.',
+    });
+    onOpenChange(false);
+    setStep(1);
+    setFormData({
+      title: '',
+      description: '',
+      category: '',
+      difficulty: 'beginner',
+      price: '',
+      isFree: true,
+      thumbnail_emoji: '📚',
+      estimatedDuration: '',
+      objectives: [''],
+    });
+  };
+
+  const handleSaveDraft = () => {
+    toast.success('Draft saved!');
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <BookOpen className="w-5 h-5 text-accent" />
+            Create New Course
+          </DialogTitle>
+          <DialogDescription>
+            Fill in the details to create your new course. You can save as draft anytime.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Step Indicators */}
+        <div className="flex items-center gap-2 mb-6">
+          {[1, 2, 3].map((s) => (
+            <button
+              key={s}
+              onClick={() => setStep(s)}
+              className={`flex-1 h-2 rounded-full transition-all ${
+                step >= s ? 'bg-accent' : 'bg-muted'
+              }`}
+            />
+          ))}
+        </div>
+
+        <AnimatePresence mode="wait">
+          {step === 1 && (
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-gold" />
+                  Basic Information
+                </h3>
+
+                {/* Emoji Selection */}
+                <div>
+                  <Label>Course Icon</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {courseEmojis.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => setFormData({ ...formData, thumbnail_emoji: emoji })}
+                        className={`w-12 h-12 text-2xl rounded-lg border-2 transition-all hover:scale-110 ${
+                          formData.thumbnail_emoji === emoji
+                            ? 'border-accent bg-accent/10'
+                            : 'border-border bg-muted/30'
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="title">Course Title *</Label>
+                  <Input
+                    id="title"
+                    placeholder="e.g., Amharic for Beginners"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="What will students learn in this course?"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="mt-1 min-h-[100px]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Category *</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Difficulty</Label>
+                    <Select
+                      value={formData.difficulty}
+                      onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {difficulties.map((diff) => (
+                          <SelectItem key={diff.id} value={diff.id}>
+                            <div className="flex items-center gap-2">
+                              <Badge className={diff.color} variant="secondary">
+                                {diff.label}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={handleSaveDraft}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Draft
+                </Button>
+                <Button onClick={() => setStep(2)}>
+                  Next Step
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-success" />
+                  Pricing & Duration
+                </h3>
+
+                <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
+                  <Switch
+                    id="free"
+                    checked={formData.isFree}
+                    onCheckedChange={(checked) => setFormData({ ...formData, isFree: checked })}
+                  />
+                  <Label htmlFor="free" className="cursor-pointer">
+                    <p className="font-medium">Free Course</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formData.isFree 
+                        ? 'This course will be available for free' 
+                        : 'Set a price for this course'}
+                    </p>
+                  </Label>
+                </div>
+
+                {!formData.isFree && (
+                  <div>
+                    <Label htmlFor="price">Price (ETB)</Label>
+                    <div className="relative mt-1">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="price"
+                        type="number"
+                        placeholder="0"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <Label htmlFor="duration">Estimated Duration (hours)</Label>
+                  <div className="relative mt-1">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="duration"
+                      type="number"
+                      placeholder="e.g., 10"
+                      value={formData.estimatedDuration}
+                      onChange={(e) => setFormData({ ...formData, estimatedDuration: e.target.value })}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setStep(1)}>
+                  Back
+                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleSaveDraft}>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Draft
+                  </Button>
+                  <Button onClick={() => setStep(3)}>
+                    Next Step
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Target className="w-4 h-4 text-accent" />
+                  Learning Objectives
+                </h3>
+
+                <p className="text-sm text-muted-foreground">
+                  What will students be able to do after completing this course?
+                </p>
+
+                <div className="space-y-3">
+                  {formData.objectives.map((obj, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        placeholder={`Objective ${index + 1}`}
+                        value={obj}
+                        onChange={(e) => handleObjectiveChange(index, e.target.value)}
+                      />
+                      {formData.objectives.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveObjective(index)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={handleAddObjective}
+                    className="w-full border-dashed"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Objective
+                  </Button>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Eye className="w-4 h-4" />
+                  Course Preview
+                </h4>
+                <div className="flex items-start gap-4">
+                  <span className="text-4xl">{formData.thumbnail_emoji}</span>
+                  <div>
+                    <p className="font-semibold text-foreground">
+                      {formData.title || 'Untitled Course'}
+                    </p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {formData.description || 'No description yet'}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="secondary">
+                        {categories.find(c => c.id === formData.category)?.label || 'Category'}
+                      </Badge>
+                      <Badge className={difficulties.find(d => d.id === formData.difficulty)?.color}>
+                        {difficulties.find(d => d.id === formData.difficulty)?.label}
+                      </Badge>
+                      {formData.isFree ? (
+                        <Badge className="bg-success/10 text-success">Free</Badge>
+                      ) : (
+                        <Badge variant="outline">{formData.price || '0'} ETB</Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setStep(2)}>
+                  Back
+                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleSaveDraft}>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save as Draft
+                  </Button>
+                  <Button onClick={handleSubmit} className="bg-gradient-accent">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Create Course
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default CreateCourseModal;

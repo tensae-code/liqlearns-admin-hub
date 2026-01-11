@@ -9,7 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
-import BusinessDashboard from "./pages/BusinessDashboard";
+import EnterpriseDashboard from "./pages/EnterpriseDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import ParentDashboard from "./pages/ParentDashboard";
 import Marketplace from "./pages/Marketplace";
@@ -37,7 +37,7 @@ const AppRoutes = () => (
     <Route path="/auth" element={<Auth />} />
     <Route path="/dashboard" element={<Dashboard />} />
     <Route path="/courses" element={<Courses />} />
-    <Route path="/business" element={<BusinessDashboard />} />
+    <Route path="/enterprise" element={<EnterpriseDashboard />} />
     <Route path="/teacher" element={<TeacherDashboard />} />
     <Route path="/parent" element={<ParentDashboard />} />
     <Route path="/marketplace" element={<Marketplace />} />

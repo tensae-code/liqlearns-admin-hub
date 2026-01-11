@@ -64,13 +64,29 @@ interface EthiopianCalendarProps {
   onDateClick?: (day: number, month: number, year: number) => void;
   onEventClick?: (event: CalendarEvent) => void;
   showAmharic?: boolean;
+  showDualDates?: boolean;
 }
+
+// Helper function to convert Ethiopian date to Gregorian (simplified approximation)
+const ethiopianToGregorian = (ethDay: number, ethMonth: number, ethYear: number) => {
+  // Ethiopian New Year is typically September 11 (or 12 in leap year)
+  // This is a simplified conversion - for production use a proper library
+  const baseGregorianYear = ethYear + 7; // Ethiopian year + 7/8 = Gregorian year
+  const monthOffset = ethMonth; // 0 = Meskerem (September)
+  
+  // Approximate Gregorian month calculation
+  const gregorianMonth = ((monthOffset + 8) % 12) + 1; // September = 9
+  const gregorianYear = monthOffset < 4 ? baseGregorianYear : baseGregorianYear + 1;
+  
+  return { day: ethDay, month: gregorianMonth, year: gregorianYear };
+};
 
 const EthiopianCalendar = ({
   events = [],
   onDateClick,
   onEventClick,
   showAmharic = true,
+  showDualDates = true,
 }: EthiopianCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(1); // Tikimt (0-indexed)
   const [currentYear, setCurrentYear] = useState(2017);
@@ -281,6 +297,7 @@ const EthiopianCalendar = ({
           const dayEvents = getEventsForDay(day);
           const isSelected = selectedDay === day;
           const hasEvents = dayEvents.length > 0;
+          const gregorianDate = showDualDates ? ethiopianToGregorian(day, currentMonth, currentYear) : null;
 
           return (
             <motion.div
@@ -295,12 +312,19 @@ const EthiopianCalendar = ({
               whileHover={{ scale: 0.98 }}
               whileTap={{ scale: 0.95 }}
             >
-              <div className={cn(
-                "w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium",
-                isSelected && "bg-accent text-accent-foreground",
-                hasEvents && !isSelected && "bg-primary/20 text-primary"
-              )}>
-                {day}
+              <div className="flex items-start justify-between">
+                <div className={cn(
+                  "w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium",
+                  isSelected && "bg-accent text-accent-foreground",
+                  hasEvents && !isSelected && "bg-primary/20 text-primary"
+                )}>
+                  {day}
+                </div>
+                {showDualDates && gregorianDate && (
+                  <span className="text-[10px] text-muted-foreground/70 bg-muted/50 px-1 rounded">
+                    {gregorianDate.day}/{gregorianDate.month}
+                  </span>
+                )}
               </div>
 
               {/* Event indicators */}

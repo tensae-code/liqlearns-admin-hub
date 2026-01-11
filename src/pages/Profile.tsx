@@ -5,6 +5,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import {
   User,
   Star,
@@ -21,19 +22,89 @@ import {
   TrendingUp,
   Medal,
   Crown,
-  Sparkles
+  Sparkles,
+  Headphones,
+  MessageSquare,
+  Users,
+  Shield,
+  Briefcase
 } from 'lucide-react';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { profile, loading } = useProfile();
 
-  const stats = [
-    { label: 'Total XP', value: profile?.xp_points?.toLocaleString() || '0', icon: Star, color: 'text-gold' },
-    { label: 'Aura Points', value: '3,200', icon: Sparkles, color: 'text-accent' },
-    { label: 'Day Streak', value: profile?.current_streak?.toString() || '0', icon: Flame, color: 'text-streak' },
-    { label: 'Rank', value: '#42', icon: Trophy, color: 'text-primary' },
-  ];
+  // Role-specific stats
+  const getRoleStats = () => {
+    switch (userRole) {
+      case 'support':
+        return [
+          { label: 'Tickets Resolved', value: '248', icon: Headphones, color: 'text-success' },
+          { label: 'Avg Response', value: '2.5h', icon: MessageSquare, color: 'text-accent' },
+          { label: 'Satisfaction', value: '98%', icon: Star, color: 'text-gold' },
+          { label: 'This Week', value: '34', icon: TrendingUp, color: 'text-primary' },
+        ];
+      case 'teacher':
+        return [
+          { label: 'Total Students', value: '1,248', icon: Users, color: 'text-accent' },
+          { label: 'Active Courses', value: '8', icon: BookOpen, color: 'text-primary' },
+          { label: 'Avg. Rating', value: '4.8', icon: Star, color: 'text-gold' },
+          { label: 'Revenue', value: '45.2K', icon: TrendingUp, color: 'text-success' },
+        ];
+      case 'admin':
+        return [
+          { label: 'Users Managed', value: '5.2K', icon: Users, color: 'text-accent' },
+          { label: 'Actions Today', value: '42', icon: Shield, color: 'text-primary' },
+          { label: 'Reports Handled', value: '156', icon: MessageSquare, color: 'text-gold' },
+          { label: 'Uptime', value: '99.9%', icon: TrendingUp, color: 'text-success' },
+        ];
+      case 'ceo':
+        return [
+          { label: 'Total Users', value: '52.4K', icon: Users, color: 'text-accent' },
+          { label: 'Revenue', value: '2.4M', icon: TrendingUp, color: 'text-success' },
+          { label: 'Enterprises', value: '148', icon: Briefcase, color: 'text-gold' },
+          { label: 'Growth', value: '+28%', icon: Star, color: 'text-primary' },
+        ];
+      case 'parent':
+        return [
+          { label: 'Children', value: '2', icon: Users, color: 'text-accent' },
+          { label: 'Total Progress', value: '78%', icon: TrendingUp, color: 'text-success' },
+          { label: 'Courses Enrolled', value: '6', icon: BookOpen, color: 'text-gold' },
+          { label: 'Hours Learned', value: '124', icon: Star, color: 'text-primary' },
+        ];
+      default: // student
+        return [
+          { label: 'Total XP', value: profile?.xp_points?.toLocaleString() || '0', icon: Star, color: 'text-gold' },
+          { label: 'Aura Points', value: '3,200', icon: Sparkles, color: 'text-accent' },
+          { label: 'Day Streak', value: profile?.current_streak?.toString() || '0', icon: Flame, color: 'text-streak' },
+          { label: 'Rank', value: '#42', icon: Trophy, color: 'text-primary' },
+        ];
+    }
+  };
+
+  const getRoleTitle = () => {
+    switch (userRole) {
+      case 'support': return 'Support Agent';
+      case 'teacher': return 'Instructor';
+      case 'admin': return 'Administrator';
+      case 'ceo': return 'CEO';
+      case 'parent': return 'Parent';
+      default: return 'Pro Learner';
+    }
+  };
+
+  const getRoleBadgeColor = () => {
+    switch (userRole) {
+      case 'support': return 'bg-blue-500/10 text-blue-500 border-blue-500/30';
+      case 'teacher': return 'bg-purple-500/10 text-purple-500 border-purple-500/30';
+      case 'admin': return 'bg-red-500/10 text-red-500 border-red-500/30';
+      case 'ceo': return 'bg-gold/10 text-gold border-gold/30';
+      case 'parent': return 'bg-green-500/10 text-green-500 border-green-500/30';
+      default: return 'bg-accent/10 text-accent border-accent/30';
+    }
+  };
+
+  const stats = getRoleStats();
 
   const achievements = [
     { title: 'First Steps', description: 'Complete your first lesson', icon: '🎯', earned: true },
@@ -117,8 +188,15 @@ const Profile = () => {
           {/* Rank Badge */}
           <div className="absolute top-4 right-4 flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1">
             <Crown className="w-4 h-4 text-gold" />
-            <span className="text-sm font-medium text-primary-foreground">Pro Learner</span>
+            <span className="text-sm font-medium text-primary-foreground">{getRoleTitle()}</span>
           </div>
+
+          {/* Role Badge for non-students */}
+          {userRole && userRole !== 'student' && (
+            <Badge className={`absolute top-14 right-4 ${getRoleBadgeColor()}`}>
+              {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+            </Badge>
+          )}
         </motion.div>
 
         {/* Stats Grid */}
