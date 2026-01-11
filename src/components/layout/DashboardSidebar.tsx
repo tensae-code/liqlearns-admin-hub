@@ -5,6 +5,11 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   BookOpen,
   LayoutDashboard,
   GraduationCap,
@@ -46,10 +51,10 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     case 'ceo':
       return [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/ceo' },
-        { icon: BarChart3, label: 'Analytics', path: '/ceo' },
-        { icon: Users, label: 'Team', path: '/ceo' },
+        { icon: BarChart3, label: 'Analytics', path: '/ceo/analytics' },
+        { icon: Users, label: 'Team', path: '/ceo/team' },
         { icon: Library, label: 'Courses', path: '/courses' },
-        { icon: FileText, label: 'Reports', path: '/ceo' },
+        { icon: FileText, label: 'Reports', path: '/ceo/reports' },
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
       ];
@@ -143,6 +148,48 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
     }
   };
 
+  // Check if current path matches or is a sub-route of the item path
+  const isItemActive = (itemPath: string) => {
+    if (itemPath === '/ceo' && location.pathname === '/ceo') return true;
+    if (itemPath !== '/ceo' && location.pathname.startsWith(itemPath)) return true;
+    return location.pathname === itemPath;
+  };
+
+  const NavItemComponent = ({ item, index }: { item: NavItem; index: number }) => {
+    const isActive = isItemActive(item.path);
+    
+    const linkContent = (
+      <Link
+        to={item.path}
+        className={cn(
+          'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all',
+          isActive
+            ? 'bg-accent text-accent-foreground font-medium'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+          collapsed && 'justify-center px-2'
+        )}
+      >
+        <item.icon className="w-5 h-5 flex-shrink-0" />
+        {!collapsed && <span>{item.label}</span>}
+      </Link>
+    );
+
+    if (collapsed) {
+      return (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            {linkContent}
+          </TooltipTrigger>
+          <TooltipContent side="right" className="font-medium">
+            {item.label}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return linkContent;
+  };
+
   return (
     <aside
       className={cn(
@@ -152,7 +199,7 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
       )}
     >
       {/* Logo */}
-      <div className="p-4 border-b border-border">
+      <div className={cn('p-4 border-b border-border', collapsed && 'flex justify-center')}>
         <Link to="/" className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-hero flex items-center justify-center flex-shrink-0">
             <BookOpen className="w-5 h-5 text-primary-foreground" />
@@ -164,7 +211,7 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
       </div>
 
       {/* User Stats */}
-      {!collapsed && (
+      {!collapsed ? (
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3 mb-3">
             <Avatar className="h-10 w-10">
@@ -192,43 +239,63 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
             </div>
           )}
         </div>
+      ) : (
+        <div className="p-2 border-b border-border flex justify-center">
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Avatar className="h-10 w-10 cursor-pointer">
+                <AvatarFallback className="bg-gradient-accent text-accent-foreground font-semibold">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <div>
+                <p className="font-medium">{user?.email?.split('@')[0] || 'User'}</p>
+                <p className="text-xs text-muted-foreground">{getRoleLabel()}</p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       )}
 
       {/* Navigation */}
       <nav className="flex-1 p-3 overflow-y-auto">
         <ul className="space-y-1">
-          {navItems.map((item, index) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <li key={`${item.path}-${index}`}>
-                <Link
-                  to={item.path}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all',
-                    isActive
-                      ? 'bg-accent text-accent-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  )}
-                >
-                  <item.icon className="w-5 h-5 flex-shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
-                </Link>
-              </li>
-            );
-          })}
+          {navItems.map((item, index) => (
+            <li key={`${item.path}-${index}`}>
+              <NavItemComponent item={item} index={index} />
+            </li>
+          ))}
         </ul>
       </nav>
 
       {/* Footer */}
       <div className="p-3 border-t border-border">
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={handleSignOut}
-        >
-          <LogOut className="w-5 h-5" />
-          {!collapsed && <span className="ml-3">Sign Out</span>}
-        </Button>
+        {collapsed ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={handleSignOut}
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Sign Out</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleSignOut}
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="ml-3">Sign Out</span>
+          </Button>
+        )}
 
         <Button
           variant="ghost"

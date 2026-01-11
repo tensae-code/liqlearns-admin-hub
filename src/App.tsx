@@ -23,6 +23,9 @@ import Profile from "./pages/Profile";
 import CourseDetail from "./pages/CourseDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import CEODashboard from "./pages/CEODashboard";
+import CEOAnalytics from "./pages/CEOAnalytics";
+import CEOTeam from "./pages/CEOTeam";
+import CEOReports from "./pages/CEOReports";
 import SupportDashboard from "./pages/SupportDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -48,6 +51,9 @@ const AppRoutes = () => (
     <Route path="/course/:id" element={<CourseDetail />} />
     <Route path="/admin" element={<AdminDashboard />} />
     <Route path="/ceo" element={<CEODashboard />} />
+    <Route path="/ceo/analytics" element={<CEOAnalytics />} />
+    <Route path="/ceo/team" element={<CEOTeam />} />
+    <Route path="/ceo/reports" element={<CEOReports />} />
     <Route path="/support" element={<SupportDashboard />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
