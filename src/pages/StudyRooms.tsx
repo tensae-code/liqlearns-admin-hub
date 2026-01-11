@@ -18,6 +18,7 @@ import {
   MicOff,
   MessageSquare
 } from 'lucide-react';
+import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
 
 const studyRooms = [
   {
@@ -333,6 +334,9 @@ const StudyRooms = () => {
           </Button>
         </div>
       )}
+
+      {/* Quick Access Button */}
+      <QuickAccessButton />
     </DashboardLayout>
   );
 };
