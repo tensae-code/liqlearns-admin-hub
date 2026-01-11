@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useAppearance } from '@/hooks/useAppearance';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,7 @@ const settingSections = [
 const Settings = () => {
   const { user, signOut } = useAuth();
   const { profile, refetch } = useProfile();
+  const { darkMode, reduceAnimations, compactView, toggleDarkMode, toggleReduceAnimations, toggleCompactView } = useAppearance();
   const [activeSection, setActiveSection] = useState('profile');
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -494,7 +496,10 @@ const Settings = () => {
                     <h3 className="font-medium text-foreground">Dark Mode</h3>
                     <p className="text-sm text-muted-foreground">Switch to dark theme</p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={darkMode}
+                    onCheckedChange={toggleDarkMode}
+                  />
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -502,7 +507,10 @@ const Settings = () => {
                     <h3 className="font-medium text-foreground">Reduce Animations</h3>
                     <p className="text-sm text-muted-foreground">Minimize motion effects</p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={reduceAnimations}
+                    onCheckedChange={toggleReduceAnimations}
+                  />
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -510,7 +518,10 @@ const Settings = () => {
                     <h3 className="font-medium text-foreground">Compact View</h3>
                     <p className="text-sm text-muted-foreground">Show more content with less spacing</p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={compactView}
+                    onCheckedChange={toggleCompactView}
+                  />
                 </div>
               </div>
             </div>

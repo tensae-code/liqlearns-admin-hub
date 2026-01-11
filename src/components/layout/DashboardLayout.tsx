@@ -40,8 +40,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <DashboardSidebar />
       </div>
       
-      {/* Main content area */}
-      <div className="md:pl-64 transition-all duration-300">
+      {/* Main content area - adjusts based on sidebar state */}
+      <div className="md:ml-20 lg:ml-64 transition-all duration-300">
         {/* Role-specific Navbar */}
         {renderNavbar()}
         

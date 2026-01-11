@@ -148,10 +148,9 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
     }
   };
 
-  // Check if current path matches or is a sub-route of the item path
+  // Check if current path matches exactly (prevent multiple highlights)
   const isItemActive = (itemPath: string) => {
-    if (itemPath === '/ceo' && location.pathname === '/ceo') return true;
-    if (itemPath !== '/ceo' && location.pathname.startsWith(itemPath)) return true;
+    // Exact match only to prevent multiple highlights
     return location.pathname === itemPath;
   };
 

@@ -12,7 +12,7 @@ import StreakTracker from '@/components/dashboard/StreakTracker';
 import LearningResources from '@/components/dashboard/LearningResources';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import DailyBonusSpinner from '@/components/dashboard/DailyBonusSpinner';
-import BrainBankButton from '@/components/brain-bank/BrainBankButton';
+import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
@@ -322,8 +322,8 @@ const Dashboard = () => {
       {/* Daily Bonus Spinner */}
       <DailyBonusSpinner />
 
-      {/* Brain Bank Button */}
-      <BrainBankButton />
+      {/* Quick Access Button */}
+      <QuickAccessButton />
     </DashboardLayout>
   );
 };
