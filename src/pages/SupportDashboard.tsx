@@ -6,6 +6,14 @@ import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   HeadphonesIcon,
   MessageSquare,
@@ -18,14 +26,28 @@ import {
   ChevronRight,
   Mail,
   Phone,
-  MoreVertical,
-  Settings
+  Settings,
+  Send,
+  X
 } from 'lucide-react';
+
+interface Ticket {
+  id: string;
+  subject: string;
+  user: string;
+  email: string;
+  priority: string;
+  status: string;
+  time: string;
+  description?: string;
+}
 
 const SupportDashboard = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const [activeTab, setActiveTab] = useState<'all' | 'open' | 'pending' | 'resolved'>('all');
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [reply, setReply] = useState('');
 
   const stats = [
     { label: 'Open Tickets', value: '23', icon: MessageSquare, gradient: 'from-orange-500 to-amber-400' },
@@ -34,13 +56,13 @@ const SupportDashboard = () => {
     { label: 'Avg. Response', value: '2.5h', icon: HeadphonesIcon, gradient: 'from-blue-500 to-cyan-400' },
   ];
 
-  const tickets = [
-    { id: 'TK-1234', subject: 'Cannot access course materials', user: 'Alemayehu M.', email: 'alem@email.com', priority: 'high', status: 'open', time: '5 min ago' },
-    { id: 'TK-1233', subject: 'Payment issue with subscription', user: 'Sara T.', email: 'sara@email.com', priority: 'high', status: 'open', time: '15 min ago' },
-    { id: 'TK-1232', subject: 'How to download certificates?', user: 'Dawit B.', email: 'dawit@email.com', priority: 'low', status: 'pending', time: '1 hour ago' },
-    { id: 'TK-1231', subject: 'Video not playing on mobile', user: 'Tigist K.', email: 'tigist@email.com', priority: 'medium', status: 'open', time: '2 hours ago' },
-    { id: 'TK-1230', subject: 'Request for course refund', user: 'Yonas G.', email: 'yonas@email.com', priority: 'high', status: 'pending', time: '3 hours ago' },
-    { id: 'TK-1229', subject: 'Quiz score not updating', user: 'Hanna A.', email: 'hanna@email.com', priority: 'medium', status: 'resolved', time: '5 hours ago' },
+  const tickets: Ticket[] = [
+    { id: 'TK-1234', subject: 'Cannot access course materials', user: 'Alemayehu M.', email: 'alem@email.com', priority: 'high', status: 'open', time: '5 min ago', description: 'I purchased the Advanced Amharic course but I cannot access any of the video lessons. When I click on them, it shows a loading spinner but never loads.' },
+    { id: 'TK-1233', subject: 'Payment issue with subscription', user: 'Sara T.', email: 'sara@email.com', priority: 'high', status: 'open', time: '15 min ago', description: 'My credit card was charged twice for my monthly subscription. Please help me get a refund for the duplicate charge.' },
+    { id: 'TK-1232', subject: 'How to download certificates?', user: 'Dawit B.', email: 'dawit@email.com', priority: 'low', status: 'pending', time: '1 hour ago', description: 'I completed the Basic Amharic course but I cannot find where to download my certificate. Can you please guide me?' },
+    { id: 'TK-1231', subject: 'Video not playing on mobile', user: 'Tigist K.', email: 'tigist@email.com', priority: 'medium', status: 'open', time: '2 hours ago', description: 'Videos work fine on my laptop but when I try to watch on my Android phone, they just show a black screen.' },
+    { id: 'TK-1230', subject: 'Request for course refund', user: 'Yonas G.', email: 'yonas@email.com', priority: 'high', status: 'pending', time: '3 hours ago', description: 'I would like to request a full refund for the Ethiopian History course. I realized it is not what I was looking for.' },
+    { id: 'TK-1229', subject: 'Quiz score not updating', user: 'Hanna A.', email: 'hanna@email.com', priority: 'medium', status: 'resolved', time: '5 hours ago', description: 'I completed the quiz for Lesson 5 but my score is still showing as 0%. I definitely got most questions correct.' },
   ];
 
   const getPriorityColor = (priority: string) => {
@@ -62,6 +84,22 @@ const SupportDashboard = () => {
   };
 
   const filteredTickets = activeTab === 'all' ? tickets : tickets.filter(t => t.status === activeTab);
+
+  const handleViewTicket = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+  };
+
+  const handleSendReply = () => {
+    if (!reply.trim()) return;
+    toast.success('Reply sent!', { description: `Response sent to ${selectedTicket?.user}` });
+    setReply('');
+    setSelectedTicket(null);
+  };
+
+  const handleUpdateStatus = (status: string) => {
+    toast.success('Status updated', { description: `Ticket ${selectedTicket?.id} marked as ${status}` });
+    setSelectedTicket(null);
+  };
 
   return (
     <DashboardLayout>
@@ -176,7 +214,7 @@ const SupportDashboard = () => {
                     <Button variant="ghost" size="icon" className="h-8 w-8">
                       <Mail className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleViewTicket(ticket)}>
                       View <ChevronRight className="w-4 h-4 ml-1" />
                     </Button>
                   </div>
@@ -187,7 +225,7 @@ const SupportDashboard = () => {
         </motion.div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <motion.div
             className="bg-card rounded-xl border border-border p-4 hover:border-accent/30 transition-colors cursor-pointer"
             initial={{ opacity: 0, y: 20 }}
@@ -218,7 +256,85 @@ const SupportDashboard = () => {
             <h3 className="font-medium text-foreground">Escalations</h3>
             <p className="text-sm text-muted-foreground">3 urgent issues</p>
           </motion.div>
+          <motion.div
+            className="bg-gradient-to-br from-emerald-500 to-teal-400 rounded-xl p-4 cursor-pointer text-white"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            onClick={() => toast.info('Live Chat', { description: 'Opening live chat...' })}
+          >
+            <MessageSquare className="w-8 h-8 mb-3" />
+            <h3 className="font-medium">Live Chat</h3>
+            <p className="text-sm opacity-80">12 active conversations</p>
+          </motion.div>
         </div>
+
+        {/* Ticket Detail Modal */}
+        <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <span className="text-muted-foreground text-sm">{selectedTicket?.id}</span>
+                {selectedTicket?.priority && (
+                  <Badge className={getPriorityColor(selectedTicket.priority)}>
+                    {selectedTicket.priority}
+                  </Badge>
+                )}
+                {selectedTicket?.status && (
+                  <Badge className={getStatusColor(selectedTicket.status)}>
+                    {selectedTicket.status}
+                  </Badge>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedTicket && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-lg text-foreground">{selectedTicket.subject}</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                    <User className="w-4 h-4" />
+                    <span>{selectedTicket.user}</span>
+                    <span>•</span>
+                    <Mail className="w-4 h-4" />
+                    <span>{selectedTicket.email}</span>
+                    <span>•</span>
+                    <Clock className="w-4 h-4" />
+                    <span>{selectedTicket.time}</span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                  <p className="text-foreground">{selectedTicket.description}</p>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Your Reply</label>
+                  <Textarea 
+                    placeholder="Type your response to the customer..."
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    className="min-h-[120px]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleUpdateStatus('pending')}>
+                      <Clock className="w-4 h-4 mr-1" /> Mark Pending
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-success" onClick={() => handleUpdateStatus('resolved')}>
+                      <CheckCircle2 className="w-4 h-4 mr-1" /> Mark Resolved
+                    </Button>
+                  </div>
+                  <Button onClick={handleSendReply} disabled={!reply.trim()}>
+                    <Send className="w-4 h-4 mr-2" /> Send Reply
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

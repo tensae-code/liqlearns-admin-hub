@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { toast } from 'sonner';
 import {
   MessageSquare,
   Heart,
@@ -97,6 +98,14 @@ const Community = () => {
     );
   };
 
+  const handlePost = () => {
+    if (!newPost.trim()) {
+      return;
+    }
+    toast.success('Post created!', { description: 'Your post has been shared with the community.' });
+    setNewPost('');
+  };
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -170,7 +179,11 @@ const Community = () => {
                           <Smile className="w-5 h-5 text-muted-foreground" />
                         </Button>
                       </div>
-                      <Button className="bg-gradient-accent text-accent-foreground hover:opacity-90">
+                      <Button 
+                        className="bg-gradient-accent text-accent-foreground hover:opacity-90"
+                        onClick={handlePost}
+                        disabled={!newPost.trim()}
+                      >
                         <Send className="w-4 h-4 mr-2" />
                         Post
                       </Button>
