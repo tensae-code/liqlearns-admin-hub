@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState, createContext, useContext } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
 import MobileBottomNav from './MobileBottomNav';
@@ -13,8 +13,22 @@ interface DashboardLayoutProps {
   children: ReactNode;
 }
 
+// Create context for sidebar state
+interface SidebarContextType {
+  collapsed: boolean;
+  setCollapsed: (collapsed: boolean) => void;
+}
+
+const SidebarContext = createContext<SidebarContextType>({
+  collapsed: false,
+  setCollapsed: () => {},
+});
+
+export const useSidebarContext = () => useContext(SidebarContext);
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { userRole } = useAuth();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const renderNavbar = () => {
     switch (userRole) {
@@ -34,28 +48,32 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block">
-        <DashboardSidebar />
-      </div>
-      
-      {/* Main content area - adjusts based on sidebar state */}
-      <div className="md:ml-20 lg:ml-64 transition-all duration-300">
-        {/* Role-specific Navbar */}
-        {renderNavbar()}
+    <SidebarContext.Provider value={{ collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed }}>
+      <div className="min-h-screen bg-background">
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block">
+          <DashboardSidebar onCollapseChange={setSidebarCollapsed} />
+        </div>
         
-        {/* Page content */}
-        <main className="pb-20 md:pb-0">
-          <div className="p-4 md:p-6">
-            {children}
-          </div>
-        </main>
+        {/* Main content area - adjusts based on sidebar state */}
+        <div 
+          className={`transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}`}
+        >
+          {/* Role-specific Navbar */}
+          {renderNavbar()}
+          
+          {/* Page content */}
+          <main className="pb-20 md:pb-0">
+            <div className="p-4 md:p-6">
+              {children}
+            </div>
+          </main>
+        </div>
+        
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav />
       </div>
-      
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
-    </div>
+    </SidebarContext.Provider>
   );
 };
 

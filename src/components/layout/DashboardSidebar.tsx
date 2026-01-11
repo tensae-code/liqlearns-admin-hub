@@ -36,6 +36,7 @@ import {
 
 interface SidebarProps {
   className?: string;
+  onCollapseChange?: (collapsed: boolean) => void;
 }
 
 interface NavItem {
@@ -112,8 +113,13 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
   }
 };
 
-const DashboardSidebar = ({ className }: SidebarProps) => {
-  const [collapsed, setCollapsed] = useState(false);
+const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
+  const [collapsed, setCollapsedState] = useState(false);
+  
+  const setCollapsed = (value: boolean) => {
+    setCollapsedState(value);
+    onCollapseChange?.(value);
+  };
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut, userRole } = useAuth();
@@ -154,6 +160,17 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
     return location.pathname === itemPath;
   };
 
+  const getNavItemColors = (isActive: boolean) => {
+    const isSpecialRole = userRole && userRole !== 'student';
+    if (isActive) {
+      return 'bg-white/20 text-white font-medium';
+    }
+    if (isSpecialRole) {
+      return 'text-white/70 hover:bg-white/10 hover:text-white';
+    }
+    return 'text-muted-foreground hover:bg-muted hover:text-foreground';
+  };
+
   const NavItemComponent = ({ item, index }: { item: NavItem; index: number }) => {
     const isActive = isItemActive(item.path);
     
@@ -162,9 +179,7 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
         to={item.path}
         className={cn(
           'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all',
-          isActive
-            ? 'bg-accent text-accent-foreground font-medium'
-            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+          getNavItemColors(isActive),
           collapsed && 'justify-center px-2'
         )}
       >
@@ -189,64 +204,62 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
     return linkContent;
   };
 
+  // Get sidebar gradient based on role
+  const getSidebarGradient = () => {
+    switch (userRole) {
+      case 'ceo': return 'bg-gradient-to-b from-amber-950/90 via-amber-900/80 to-amber-950/90';
+      case 'admin': return 'bg-gradient-to-b from-red-950/90 via-red-900/80 to-red-950/90';
+      case 'support': return 'bg-gradient-to-b from-blue-950/90 via-blue-900/80 to-blue-950/90';
+      case 'teacher': return 'bg-gradient-to-b from-purple-950/90 via-purple-900/80 to-purple-950/90';
+      case 'parent': return 'bg-gradient-to-b from-green-950/90 via-green-900/80 to-green-950/90';
+      default: return 'bg-card';
+    }
+  };
+
+  const getSidebarTextColor = () => {
+    return userRole && userRole !== 'student' ? 'text-white/90' : 'text-foreground';
+  };
+
+  const getSidebarMutedColor = () => {
+    return userRole && userRole !== 'student' ? 'text-white/60' : 'text-muted-foreground';
+  };
+
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-card border-r border-border transition-all duration-300 flex flex-col',
-        collapsed ? 'w-20' : 'w-64',
+        'fixed left-0 top-0 z-40 h-screen border-r border-border transition-all duration-300 flex flex-col',
+        collapsed ? 'w-16' : 'w-64',
+        getSidebarGradient(),
         className
       )}
     >
       {/* Logo */}
-      <div className={cn('p-4 border-b border-border', collapsed && 'flex justify-center')}>
+      <div className={cn('p-3 border-b border-white/10', collapsed && 'flex justify-center')}>
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-hero flex items-center justify-center flex-shrink-0">
+          <div className={cn(
+            'rounded-xl bg-gradient-hero flex items-center justify-center flex-shrink-0',
+            collapsed ? 'w-10 h-10' : 'w-10 h-10'
+          )}>
             <BookOpen className="w-5 h-5 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <span className="text-xl font-display font-bold text-foreground">LiqLearns</span>
+            <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
           )}
         </Link>
       </div>
 
-      {/* User Stats */}
-      {!collapsed ? (
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-3 mb-3">
-            <Avatar className="h-10 w-10">
-              <AvatarFallback className="bg-gradient-accent text-accent-foreground font-semibold">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="overflow-hidden">
-              <p className="font-medium text-foreground truncate">{user?.email?.split('@')[0] || 'User'}</p>
-              <span className={cn('text-xs px-2 py-0.5 rounded-full', getRoleBadgeColor())}>
-                {getRoleLabel()}
-              </span>
-            </div>
-          </div>
-          {(userRole === 'student' || !userRole) && (
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-1 text-gold">
-                <Star className="w-4 h-4" />
-                <span className="font-medium">1,250 XP</span>
-              </div>
-              <div className="flex items-center gap-1 text-streak">
-                <Flame className="w-4 h-4" />
-                <span className="font-medium">7 day</span>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="p-2 border-b border-border flex justify-center">
+      {/* User Stats - Collapsed shows avatar only */}
+      <div className={cn('border-b border-white/10', collapsed ? 'p-2' : 'p-4')}>
+        {collapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
-              <Avatar className="h-10 w-10 cursor-pointer">
-                <AvatarFallback className="bg-gradient-accent text-accent-foreground font-semibold">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
+              <div className="flex justify-center">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-gradient-accent text-accent-foreground font-semibold text-sm">
+                    {user?.email?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
             </TooltipTrigger>
             <TooltipContent side="right">
               <div>
@@ -255,11 +268,39 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
               </div>
             </TooltipContent>
           </Tooltip>
-        </div>
-      )}
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-3">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-gradient-accent text-accent-foreground font-semibold">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="overflow-hidden">
+                <p className={cn('font-medium truncate', getSidebarTextColor())}>{user?.email?.split('@')[0] || 'User'}</p>
+                <span className={cn('text-xs px-2 py-0.5 rounded-full', getRoleBadgeColor())}>
+                  {getRoleLabel()}
+                </span>
+              </div>
+            </div>
+            {(userRole === 'student' || !userRole) && (
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1 text-gold">
+                  <Star className="w-4 h-4" />
+                  <span className="font-medium">1,250 XP</span>
+                </div>
+                <div className="flex items-center gap-1 text-streak">
+                  <Flame className="w-4 h-4" />
+                  <span className="font-medium">7 day</span>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 overflow-y-auto">
+      <nav className={cn('flex-1 overflow-y-auto', collapsed ? 'p-2' : 'p-3')}>
         <ul className="space-y-1">
           {navItems.map((item, index) => (
             <li key={`${item.path}-${index}`}>
@@ -270,40 +311,62 @@ const DashboardSidebar = ({ className }: SidebarProps) => {
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-border">
+      <div className={cn('border-t border-white/10', collapsed ? 'p-2' : 'p-3')}>
         {collapsed ? (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={handleSignOut}
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Sign Out</TooltipContent>
-          </Tooltip>
+          <div className="flex flex-col gap-2">
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Sign Out</TooltipContent>
+            </Tooltip>
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn('w-full', userRole && userRole !== 'student' ? 'text-white/70 hover:text-white hover:bg-white/10' : '')}
+                  onClick={() => setCollapsed(!collapsed)}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Expand</TooltipContent>
+            </Tooltip>
+          </div>
         ) : (
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={handleSignOut}
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="ml-3">Sign Out</span>
-          </Button>
-        )}
+          <>
+            <Button
+              variant="ghost"
+              className={cn(
+                'w-full justify-start',
+                userRole && userRole !== 'student' 
+                  ? 'text-red-400 hover:text-red-300 hover:bg-red-500/20' 
+                  : 'text-destructive hover:text-destructive hover:bg-destructive/10'
+              )}
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="ml-3">Sign Out</span>
+            </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-full mt-2"
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-        </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn('w-full mt-2', userRole && userRole !== 'student' ? 'text-white/70 hover:text-white hover:bg-white/10' : '')}
+              onClick={() => setCollapsed(!collapsed)}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+          </>
+        )}
       </div>
     </aside>
   );
