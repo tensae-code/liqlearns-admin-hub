@@ -71,11 +71,25 @@ export const useParentChildren = () => {
   }, [user, profile]);
 
   const searchChildByUsername = async (username: string) => {
+    // Require minimum username length to prevent enumeration
+    if (!username || username.trim().length < 3) {
+      return [];
+    }
+    
+    // Sanitize input - only allow alphanumeric and underscore
+    const sanitizedUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    
+    if (sanitizedUsername.length < 3) {
+      return [];
+    }
+    
+    // Use the public_profiles view for safe search (only exposes safe fields)
+    // Using exact match to prevent enumeration attacks
     const { data, error } = await supabase
-      .from('profiles')
+      .from('public_profiles')
       .select('id, full_name, username, avatar_url')
-      .ilike('username', `%${username}%`)
-      .limit(5);
+      .eq('username', sanitizedUsername)
+      .limit(1);
 
     if (error) throw error;
     return data || [];

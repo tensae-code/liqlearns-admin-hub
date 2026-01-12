@@ -103,17 +103,17 @@ const Auth = () => {
     }
   };
 
-  const demoAccounts = [
-    { email: 'ceo@liqlearns.com', password: 'ceo123', role: 'CEO' },
-    { email: 'admin@liqlearns.com', password: 'admin123', role: 'Admin' },
-    { email: 'student@liqlearns.com', password: 'student123', role: 'Student' },
-    { email: 'teacher@liqlearns.com', password: 'teacher123', role: 'Teacher' },
-    { email: 'support@liqlearns.com', password: 'support123', role: 'Support' },
-  ];
-
-  const handleDemoLogin = (email: string, password: string) => {
-    handleLogin(undefined, email, password);
-  };
+  // Demo mode is only enabled in development environment
+  const isDemoMode = import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true';
+  
+  // Demo accounts are only shown in demo mode - credentials are not hardcoded for production
+  const demoAccounts = isDemoMode ? [
+    { email: 'ceo@liqlearns.com', role: 'CEO' },
+    { email: 'admin@liqlearns.com', role: 'Admin' },
+    { email: 'student@liqlearns.com', role: 'Student' },
+    { email: 'teacher@liqlearns.com', role: 'Teacher' },
+    { email: 'support@liqlearns.com', role: 'Support' },
+  ] : [];
 
   const handleSignUp = async () => {
     setLoading(true);
@@ -212,27 +212,28 @@ const Auth = () => {
         {loading ? 'Signing in...' : 'Sign In'}
       </Button>
 
-      {/* Demo Credentials Section */}
-      <div className="mt-6 p-4 rounded-xl bg-muted/50 border border-border">
-        <p className="text-sm font-medium text-foreground flex items-center gap-2 mb-3">
-          🔑 Demo Credentials (5 Roles):
-        </p>
-        <div className="space-y-2">
-          {demoAccounts.map((demo) => (
-            <button
-              key={demo.email}
-              type="button"
-              onClick={() => handleDemoLogin(demo.email, demo.password)}
-              disabled={loading}
-              className="w-full flex items-center justify-between text-xs p-2 rounded-lg hover:bg-accent/10 transition-colors"
-            >
-              <span className="text-muted-foreground">{demo.email}</span>
-              <span className="text-muted-foreground">{demo.password}</span>
-              <span className="text-accent font-medium">({demo.role})</span>
-            </button>
-          ))}
+      {/* Demo Credentials Section - Only in development/demo mode */}
+      {isDemoMode && demoAccounts.length > 0 && (
+        <div className="mt-6 p-4 rounded-xl bg-muted/50 border border-border">
+          <p className="text-sm font-medium text-foreground flex items-center gap-2 mb-3">
+            🔑 Demo Accounts (Development Mode):
+          </p>
+          <p className="text-xs text-muted-foreground mb-3">
+            Enter any email below and use the default demo password to test.
+          </p>
+          <div className="space-y-2">
+            {demoAccounts.map((demo) => (
+              <div
+                key={demo.email}
+                className="w-full flex items-center justify-between text-xs p-2 rounded-lg bg-accent/5"
+              >
+                <span className="text-muted-foreground">{demo.email}</span>
+                <span className="text-accent font-medium">({demo.role})</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </form>
   );
 

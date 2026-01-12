@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -38,8 +39,6 @@ const AppRoutes = () => (
     <Route path="/dashboard" element={<Dashboard />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/enterprise" element={<EnterpriseDashboard />} />
-    <Route path="/teacher" element={<TeacherDashboard />} />
-    <Route path="/parent" element={<ParentDashboard />} />
     <Route path="/marketplace" element={<Marketplace />} />
     <Route path="/quest" element={<Quest />} />
     <Route path="/study-rooms" element={<StudyRooms />} />
@@ -49,12 +48,57 @@ const AppRoutes = () => (
     <Route path="/settings" element={<Settings />} />
     <Route path="/profile" element={<Profile />} />
     <Route path="/course/:id" element={<CourseDetail />} />
-    <Route path="/admin" element={<AdminDashboard />} />
-    <Route path="/ceo" element={<CEODashboard />} />
-    <Route path="/ceo/analytics" element={<CEOAnalytics />} />
-    <Route path="/ceo/team" element={<CEOTeam />} />
-    <Route path="/ceo/reports" element={<CEOReports />} />
-    <Route path="/support" element={<SupportDashboard />} />
+    
+    {/* Protected Teacher Routes */}
+    <Route path="/teacher" element={
+      <ProtectedRoute allowedRoles={['teacher', 'admin', 'ceo']}>
+        <TeacherDashboard />
+      </ProtectedRoute>
+    } />
+    
+    {/* Protected Parent Routes */}
+    <Route path="/parent" element={
+      <ProtectedRoute allowedRoles={['parent', 'admin', 'ceo']}>
+        <ParentDashboard />
+      </ProtectedRoute>
+    } />
+    
+    {/* Protected Admin Routes */}
+    <Route path="/admin" element={
+      <ProtectedRoute allowedRoles={['admin', 'ceo']}>
+        <AdminDashboard />
+      </ProtectedRoute>
+    } />
+    
+    {/* Protected CEO Routes */}
+    <Route path="/ceo" element={
+      <ProtectedRoute allowedRoles={['ceo']}>
+        <CEODashboard />
+      </ProtectedRoute>
+    } />
+    <Route path="/ceo/analytics" element={
+      <ProtectedRoute allowedRoles={['ceo']}>
+        <CEOAnalytics />
+      </ProtectedRoute>
+    } />
+    <Route path="/ceo/team" element={
+      <ProtectedRoute allowedRoles={['ceo']}>
+        <CEOTeam />
+      </ProtectedRoute>
+    } />
+    <Route path="/ceo/reports" element={
+      <ProtectedRoute allowedRoles={['ceo']}>
+        <CEOReports />
+      </ProtectedRoute>
+    } />
+    
+    {/* Protected Support Routes */}
+    <Route path="/support" element={
+      <ProtectedRoute allowedRoles={['support', 'admin', 'ceo']}>
+        <SupportDashboard />
+      </ProtectedRoute>
+    } />
+    
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
