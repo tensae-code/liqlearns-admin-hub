@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Users, User, Plus, Settings, Compass } from 'lucide-react';
+import { Search, Users, User, Plus, Settings, Compass, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface Conversation {
   id: string;
@@ -26,6 +28,7 @@ interface ConversationListProps {
   onCreateGroup?: () => void;
   onNewDM?: () => void;
   onFindGroups?: () => void;
+  onMessageRequests?: () => void;
   filter: 'all' | 'dms' | 'groups';
   onFilterChange: (filter: 'all' | 'dms' | 'groups') => void;
 }
@@ -37,10 +40,38 @@ const ConversationList = ({
   onCreateGroup,
   onNewDM,
   onFindGroups,
+  onMessageRequests,
   filter,
   onFilterChange
 }: ConversationListProps) => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [requestCount, setRequestCount] = useState(0);
+
+  // Fetch pending request count
+  useEffect(() => {
+    const fetchRequestCount = async () => {
+      if (!user) return;
+
+      const { data: myProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (myProfile) {
+        const { count } = await supabase
+          .from('message_requests')
+          .select('id', { count: 'exact', head: true })
+          .eq('receiver_id', myProfile.id)
+          .eq('status', 'pending');
+
+        setRequestCount(count || 0);
+      }
+    };
+
+    fetchRequestCount();
+  }, [user]);
 
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = conv.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -65,6 +96,20 @@ const ConversationList = ({
             </Button>
             <Button variant="ghost" size="icon" onClick={onFindGroups} title="Find Groups">
               <Compass className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onMessageRequests} 
+              title="Message Requests"
+              className="relative"
+            >
+              <Inbox className="w-4 h-4" />
+              {requestCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-4 min-w-4 text-[10px] p-0 flex items-center justify-center bg-accent text-accent-foreground">
+                  {requestCount > 9 ? '9+' : requestCount}
+                </Badge>
+              )}
             </Button>
           </div>
         </div>

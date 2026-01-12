@@ -422,7 +422,7 @@ export const useMessaging = () => {
           filter: `receiver_id=eq.${user.id}`,
         },
         (payload) => {
-          // Refresh conversations
+          // Refresh conversations without causing infinite loop
           fetchConversations();
           
           // If viewing this conversation, refresh messages
@@ -436,12 +436,14 @@ export const useMessaging = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, currentConversation, fetchConversations, fetchMessages]);
+  }, [user]); // Remove fetchConversations and fetchMessages from dependencies
 
-  // Initial fetch
+  // Initial fetch - only run once when user changes
   useEffect(() => {
-    fetchConversations();
-  }, [fetchConversations]);
+    if (user) {
+      fetchConversations();
+    }
+  }, [user?.id]); // Only depend on user.id, not the whole user object or fetchConversations
 
   return {
     conversations,
