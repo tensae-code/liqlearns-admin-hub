@@ -7,6 +7,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { 
   BookOpen, 
   Mail, 
@@ -20,7 +28,8 @@ import {
   HeadphonesIcon,
   Shield,
   Check,
-  Users
+  Users,
+  KeyRound
 } from 'lucide-react';
 
 type Role = 'student' | 'teacher' | 'parent' | 'support' | 'admin';
@@ -49,6 +58,9 @@ const Auth = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     role: 'student',
     fullName: '',
@@ -164,6 +176,28 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail) {
+      toast({ title: 'Please enter your email address', variant: 'destructive' });
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+
+    if (error) {
+      toast({ title: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Password reset email sent! Check your inbox.' });
+      setShowForgotPassword(false);
+      setForgotPasswordEmail('');
+    }
+    setForgotPasswordLoading(false);
+  };
+
   const renderLoginForm = () => (
     <form onSubmit={handleLogin} className="space-y-4">
       <div>
@@ -203,7 +237,11 @@ const Auth = () => {
           <Checkbox />
           <span className="text-muted-foreground">Remember me</span>
         </label>
-        <button type="button" className="text-accent hover:underline">
+        <button 
+          type="button" 
+          className="text-accent hover:underline"
+          onClick={() => setShowForgotPassword(true)}
+        >
           Forgot password?
         </button>
       </div>
@@ -566,6 +604,56 @@ const Auth = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-accent" />
+              Reset Password
+            </DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div>
+              <Label htmlFor="forgot-email">Email Address</Label>
+              <div className="relative mt-1">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowForgotPassword(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="hero"
+                disabled={forgotPasswordLoading}
+                className="flex-1"
+              >
+                {forgotPasswordLoading ? 'Sending...' : 'Send Reset Link'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
