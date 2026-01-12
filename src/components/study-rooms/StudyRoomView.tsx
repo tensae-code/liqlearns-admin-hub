@@ -20,8 +20,9 @@ import {
   UserPlus,
   Monitor,
   MonitorOff,
-  LayoutGrid,
-  List
+  ExternalLink,
+  PanelRightClose,
+  PanelRightOpen,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,7 +32,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useVideoChat } from '@/hooks/useVideoChat';
+import ParticipantSidebar from './ParticipantSidebar';
 import type { RoomParticipant, StudyRoom } from '@/hooks/useStudyRooms';
+
+interface DisplaySettings {
+  showXP: boolean;
+  showStreak: boolean;
+  showEducation: boolean;
+  showCountry: boolean;
+  showStudyTitle: boolean;
+  showPinCount: boolean;
+}
 
 interface StudyRoomViewProps {
   room: StudyRoom;
@@ -46,7 +57,17 @@ interface StudyRoomViewProps {
   onLeaveRoom: () => void;
   onAddFriend: (userId: string) => void;
   onReport: (userId: string) => void;
+  onPopout?: () => void;
 }
+
+const defaultDisplaySettings: DisplaySettings = {
+  showXP: true,
+  showStreak: true,
+  showEducation: true,
+  showCountry: true,
+  showStudyTitle: true,
+  showPinCount: true,
+};
 
 const StudyRoomView = ({
   room,
@@ -61,10 +82,15 @@ const StudyRoomView = ({
   onLeaveRoom,
   onAddFriend,
   onReport,
+  onPopout,
 }: StudyRoomViewProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(myStudyTitle);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(() => {
+    const saved = localStorage.getItem('studyRoomDisplaySettings');
+    return saved ? JSON.parse(saved) : defaultDisplaySettings;
+  });
 
   const {
     isVideoOn,
@@ -74,7 +100,6 @@ const StudyRoomView = ({
     toggleVideo,
     toggleMic: toggleLocalMic,
     toggleScreenShare,
-    videoRef,
     screenRef,
   } = useVideoChat();
 
@@ -86,6 +111,14 @@ const StudyRoomView = ({
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
+
+  const updateDisplaySetting = (key: keyof DisplaySettings, value: boolean) => {
+    setDisplaySettings(prev => {
+      const updated = { ...prev, [key]: value };
+      localStorage.setItem('studyRoomDisplaySettings', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Sort participants: pinned first, then by pin count
   const sortedParticipants = [...participants].sort((a, b) => {
@@ -116,130 +149,137 @@ const StudyRoomView = ({
     : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)]">
-      {/* Top Bar */}
-      <div className={`flex items-center justify-between p-4 border-b border-border ${
-        room.is_system_room 
-          ? 'bg-gradient-to-r from-accent/10 to-primary/10' 
-          : 'bg-card'
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-display font-semibold text-foreground">{room.name}</h2>
-              {room.is_system_room && (
-                <Badge className="bg-gradient-to-r from-accent to-primary text-white text-xs">
-                  Official
-                </Badge>
-              )}
+    <div className="flex h-[calc(100vh-120px)]">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Top Bar */}
+        <div className={`flex items-center justify-between p-4 border-b border-border ${
+          room.is_system_room 
+            ? 'bg-gradient-to-r from-accent/10 to-primary/10' 
+            : 'bg-card'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-display font-semibold text-foreground">{room.name}</h2>
+                {room.is_system_room && (
+                  <Badge className="bg-gradient-to-r from-accent to-primary text-white text-xs">
+                    Official
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {room.study_topic && `📚 ${room.study_topic} • `}
+                {participants.length} participant{participants.length !== 1 ? 's' : ''}
+                {room.is_always_muted && ' • 🔇 Muted Room'}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {room.study_topic && `📚 ${room.study_topic} • `}
-              {participants.length} participant{participants.length !== 1 ? 's' : ''}
-              {room.is_always_muted && ' • 🔇 Muted Room'}
-            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {room.room_type === 'kids' && (
+              <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/30">
+                🧒 Kids Room
+              </Badge>
+            )}
+            {room.education_level && (
+              <Badge variant="outline">{room.education_level}</Badge>
+            )}
+            {room.country && (
+              <Badge variant="secondary">{room.country}</Badge>
+            )}
+            {onPopout && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onPopout}
+                title="Pop out room"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSidebar(!showSidebar)}
+              title={showSidebar ? 'Hide participants' : 'Show participants'}
+              className="hidden md:flex"
+            >
+              {showSidebar ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+            </Button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {room.room_type === 'kids' && (
-            <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/30">
-              🧒 Kids Room
-            </Badge>
-          )}
-          {room.education_level && (
-            <Badge variant="outline">{room.education_level}</Badge>
-          )}
-          {room.country && (
-            <Badge variant="secondary">{room.country}</Badge>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            title={viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view'}
-          >
-            {viewMode === 'grid' ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
-          </Button>
-        </div>
-      </div>
-
-      {/* My Study Title */}
-      <div className="p-3 bg-muted/50 border-b border-border">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">I'm studying:</span>
-          {isEditingTitle ? (
-            <div className="flex items-center gap-2 flex-1">
-              <Input
-                value={titleInput}
-                onChange={(e) => setTitleInput(e.target.value)}
-                placeholder="What are you studying?"
-                className="h-8 text-sm"
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && handleTitleSave()}
-              />
-              <Button size="sm" onClick={handleTitleSave}>Save</Button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setIsEditingTitle(true)}
-              className="text-sm font-medium text-accent hover:underline"
-            >
-              {myStudyTitle || 'Click to set your study topic'}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Participants Grid */}
-      <div className="flex-1 overflow-auto p-4">
-        <div className={cn(
-          'grid gap-4',
-          viewMode === 'grid' ? gridCols : 'grid-cols-1'
-        )}>
-          {/* Screen Share (if active) */}
-          {isScreenSharing && screenStream && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="relative rounded-xl border-2 border-accent bg-black overflow-hidden col-span-full aspect-video"
-            >
-              <video
-                ref={screenRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-contain"
-              />
-              <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                <Monitor className="w-4 h-4 text-accent" />
-                <span className="text-sm font-medium">Your Screen</span>
+        {/* My Study Title */}
+        <div className="p-3 bg-muted/50 border-b border-border">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">I'm studying:</span>
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2 flex-1">
+                <Input
+                  value={titleInput}
+                  onChange={(e) => setTitleInput(e.target.value)}
+                  placeholder="What are you studying?"
+                  className="h-8 text-sm"
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && handleTitleSave()}
+                />
+                <Button size="sm" onClick={handleTitleSave}>Save</Button>
               </div>
-            </motion.div>
-          )}
+            ) : (
+              <button
+                onClick={() => setIsEditingTitle(true)}
+                className="text-sm font-medium text-accent hover:underline"
+              >
+                {myStudyTitle || 'Click to set your study topic'}
+              </button>
+            )}
+          </div>
+        </div>
 
-          {sortedParticipants.map((participant, index) => {
-            const isMe = participant.user_id === currentUserId;
-            const initials = participant.profile?.full_name?.split(' ').map(n => n[0]).join('') || '?';
-            const showLocalVideo = isMe && isVideoOn && localStream;
-
-            return (
+        {/* Participants Grid */}
+        <div className="flex-1 overflow-auto p-4">
+          <div className={cn('grid gap-4', gridCols)}>
+            {/* Screen Share (if active) */}
+            {isScreenSharing && screenStream && (
               <motion.div
-                key={participant.id}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
-                className={cn(
-                  'relative rounded-xl border-2 overflow-hidden transition-all',
-                  participant.is_pinned_by_me
-                    ? 'border-gold bg-gold/5'
-                    : 'border-border bg-card',
-                  viewMode === 'grid' ? 'aspect-video' : 'p-4'
-                )}
+                className="relative rounded-xl border-2 border-accent bg-black overflow-hidden col-span-full aspect-video"
               >
-                {/* Grid View */}
-                {viewMode === 'grid' ? (
+                <video
+                  ref={screenRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                  <Monitor className="w-4 h-4 text-accent" />
+                  <span className="text-sm font-medium">Your Screen</span>
+                </div>
+              </motion.div>
+            )}
+
+            {sortedParticipants.map((participant, index) => {
+              const isMe = participant.user_id === currentUserId;
+              const initials = participant.profile?.full_name?.split(' ').map(n => n[0]).join('') || '?';
+              const showLocalVideo = isMe && isVideoOn && localStream;
+
+              return (
+                <motion.div
+                  key={participant.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={cn(
+                    'relative rounded-xl border-2 overflow-hidden transition-all aspect-video',
+                    participant.is_pinned_by_me
+                      ? 'border-gold bg-gold/5'
+                      : 'border-border bg-card'
+                  )}
+                >
                   <div className="absolute inset-0 flex flex-col">
                     {/* Video / Avatar */}
                     <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 relative">
@@ -277,7 +317,7 @@ const StudyRoomView = ({
                         </div>
 
                         <div className="flex items-center gap-1">
-                          {(participant.pin_count || 0) > 0 && (
+                          {displaySettings.showPinCount && (participant.pin_count || 0) > 0 && (
                             <Badge variant="secondary" className="text-xs">
                               <Pin className="w-3 h-3 mr-1" />
                               {participant.pin_count}
@@ -285,40 +325,56 @@ const StudyRoomView = ({
                           )}
 
                           {!isMe && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7">
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => 
+                            <>
+                              {/* Quick Pin Button */}
+                              <Button
+                                variant={participant.is_pinned_by_me ? "default" : "ghost"}
+                                size="icon"
+                                className={cn(
+                                  "h-7 w-7",
+                                  participant.is_pinned_by_me && "bg-gold hover:bg-gold/90"
+                                )}
+                                onClick={() => 
                                   participant.is_pinned_by_me 
                                     ? onUnpinUser(participant.user_id)
                                     : onPinUser(participant.user_id)
-                                }>
-                                  {participant.is_pinned_by_me ? (
-                                    <><PinOff className="w-4 h-4 mr-2" /> Unpin</>
-                                  ) : (
-                                    <><Pin className="w-4 h-4 mr-2" /> Pin</>
-                                  )}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onAddFriend(participant.user_id)}>
-                                  <UserPlus className="w-4 h-4 mr-2" /> Add Friend
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => onReport(participant.user_id)}
-                                  className="text-destructive"
-                                >
-                                  <Flag className="w-4 h-4 mr-2" /> Report
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                }
+                              >
+                                <Pin className={cn("w-3.5 h-3.5", participant.is_pinned_by_me && "fill-current")} />
+                              </Button>
+
+                              {/* Quick Add Friend Button */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => onAddFriend(participant.user_id)}
+                              >
+                                <UserPlus className="w-3.5 h-3.5" />
+                              </Button>
+
+                              {/* More Options */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                                    <MoreVertical className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={() => onReport(participant.user_id)}
+                                    className="text-destructive"
+                                  >
+                                    <Flag className="w-4 h-4 mr-2" /> Report
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </>
                           )}
                         </div>
                       </div>
 
-                      {participant.study_title && (
+                      {displaySettings.showStudyTitle && participant.study_title && (
                         <p className="text-xs text-muted-foreground mt-1 truncate">
                           📚 {participant.study_title}
                         </p>
@@ -332,180 +388,129 @@ const StudyRoomView = ({
                       </div>
                     )}
                   </div>
-                ) : (
-                  /* List View */
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      {showLocalVideo ? (
-                        <div className="w-12 h-12 rounded-full overflow-hidden">
-                          <video
-                            ref={localVideoRef}
-                            autoPlay
-                            playsInline
-                            muted
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <Avatar className="w-12 h-12">
-                          <AvatarImage src={participant.profile?.avatar_url || undefined} />
-                          <AvatarFallback className="bg-accent text-accent-foreground">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
+                </motion.div>
+              );
+            })}
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">
-                          {participant.profile?.full_name || 'Unknown'}
-                        </span>
-                        {isMe && <Badge variant="secondary">You</Badge>}
-                        {participant.is_mic_on || (isMe && isMicOn) ? (
-                          <Mic className="w-4 h-4 text-success" />
-                        ) : (
-                          <MicOff className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </div>
-                      {participant.study_title && (
-                        <p className="text-sm text-muted-foreground truncate">
-                          📚 {participant.study_title}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {(participant.pin_count || 0) > 0 && (
-                        <Badge variant="secondary">
-                          <Pin className="w-3 h-3 mr-1" />
-                          {participant.pin_count}
-                        </Badge>
-                      )}
-
-                      {!isMe && (
-                        <Button
-                          variant={participant.is_pinned_by_me ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => 
-                            participant.is_pinned_by_me 
-                              ? onUnpinUser(participant.user_id)
-                              : onPinUser(participant.user_id)
-                          }
-                        >
-                          {participant.is_pinned_by_me ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
-
-          {/* Empty state when alone */}
-          {sortedParticipants.length === 0 && (
-            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-              <Users className="w-16 h-16 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">You're the first one here!</h3>
-              <p className="text-muted-foreground max-w-md">
-                Wait for others to join or invite your friends to study together.
-              </p>
-            </div>
-          )}
+            {/* Empty state when alone */}
+            {sortedParticipants.length === 0 && (
+              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                <Users className="w-16 h-16 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">You're the first one here!</h3>
+                <p className="text-muted-foreground max-w-md">
+                  Wait for others to join or invite your friends to study together.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Bottom Controls */}
-      <div className="p-4 border-t border-border bg-card">
-        <div className="flex items-center justify-center gap-3">
-          {/* Mic Button */}
-          {room.is_always_muted ? (
+        {/* Bottom Controls */}
+        <div className="p-4 border-t border-border bg-card">
+          <div className="flex items-center justify-center gap-3">
+            {/* Mic Button */}
+            {room.is_always_muted ? (
+              <Button
+                variant="outline"
+                size="lg"
+                className="rounded-full w-14 h-14 opacity-50 cursor-not-allowed"
+                disabled
+                title="Microphones are disabled in this room"
+              >
+                <MicOff className="w-6 h-6" />
+              </Button>
+            ) : (
+              <Button
+                variant={isMicOn ? "default" : "outline"}
+                size="lg"
+                className={cn(
+                  "rounded-full w-14 h-14",
+                  isMicOn && "bg-accent hover:bg-accent/90"
+                )}
+                onClick={handleMicToggle}
+                title={isMicOn ? "Turn off microphone" : "Turn on microphone"}
+              >
+                {isMicOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+              </Button>
+            )}
+
+            {/* Video Button */}
             <Button
-              variant="outline"
-              size="lg"
-              className="rounded-full w-14 h-14 opacity-50 cursor-not-allowed"
-              disabled
-              title="Microphones are disabled in this room"
-            >
-              <MicOff className="w-6 h-6" />
-            </Button>
-          ) : (
-            <Button
-              variant={isMicOn ? "default" : "outline"}
+              variant={isVideoOn ? "default" : "outline"}
               size="lg"
               className={cn(
                 "rounded-full w-14 h-14",
-                isMicOn && "bg-accent hover:bg-accent/90"
+                isVideoOn && "bg-accent hover:bg-accent/90"
               )}
-              onClick={handleMicToggle}
-              title={isMicOn ? "Turn off microphone" : "Turn on microphone"}
+              onClick={toggleVideo}
+              title={isVideoOn ? "Turn off camera" : "Turn on camera"}
             >
-              {isMicOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+              {isVideoOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
             </Button>
-          )}
 
-          {/* Video Button */}
-          <Button
-            variant={isVideoOn ? "default" : "outline"}
-            size="lg"
-            className={cn(
-              "rounded-full w-14 h-14",
-              isVideoOn && "bg-accent hover:bg-accent/90"
-            )}
-            onClick={toggleVideo}
-            title={isVideoOn ? "Turn off camera" : "Turn on camera"}
-          >
-            {isVideoOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
-          </Button>
+            {/* Screen Share Button */}
+            <Button
+              variant={isScreenSharing ? "default" : "outline"}
+              size="lg"
+              className={cn(
+                "rounded-full w-14 h-14",
+                isScreenSharing && "bg-accent hover:bg-accent/90"
+              )}
+              onClick={toggleScreenShare}
+              title={isScreenSharing ? "Stop sharing screen" : "Share screen"}
+            >
+              {isScreenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
+            </Button>
 
-          {/* Screen Share Button */}
-          <Button
-            variant={isScreenSharing ? "default" : "outline"}
-            size="lg"
-            className={cn(
-              "rounded-full w-14 h-14",
-              isScreenSharing && "bg-accent hover:bg-accent/90"
-            )}
-            onClick={toggleScreenShare}
-            title={isScreenSharing ? "Stop sharing screen" : "Share screen"}
-          >
-            {isScreenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
-          </Button>
+            {/* Chat Button (Coming Soon) */}
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-full w-14 h-14"
+              disabled
+              title="Chat coming soon"
+            >
+              <MessageSquare className="w-6 h-6" />
+            </Button>
 
-          {/* Chat Button (Coming Soon) */}
-          <Button
-            variant="outline"
-            size="lg"
-            className="rounded-full w-14 h-14"
-            disabled
-            title="Chat coming soon"
-          >
-            <MessageSquare className="w-6 h-6" />
-          </Button>
+            {/* Settings Button */}
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-full w-14 h-14"
+              title="Settings"
+            >
+              <Settings className="w-6 h-6" />
+            </Button>
 
-          {/* Settings Button */}
-          <Button
-            variant="outline"
-            size="lg"
-            className="rounded-full w-14 h-14"
-            title="Settings"
-          >
-            <Settings className="w-6 h-6" />
-          </Button>
-
-          {/* Leave Button */}
-          <Button
-            variant="destructive"
-            size="lg"
-            className="rounded-full w-14 h-14"
-            onClick={onLeaveRoom}
-            title="Leave room"
-          >
-            <PhoneOff className="w-6 h-6" />
-          </Button>
+            {/* Leave Button */}
+            <Button
+              variant="destructive"
+              size="lg"
+              className="rounded-full w-14 h-14"
+              onClick={onLeaveRoom}
+              title="Leave room"
+            >
+              <PhoneOff className="w-6 h-6" />
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Sidebar - Hidden on mobile, toggleable on desktop */}
+      {showSidebar && (
+        <div className="hidden md:block">
+          <ParticipantSidebar
+            participants={participants}
+            currentUserId={currentUserId}
+            displaySettings={displaySettings}
+            onUpdateDisplaySetting={updateDisplaySetting}
+            onPinUser={onPinUser}
+            onUnpinUser={onUnpinUser}
+            onAddFriend={onAddFriend}
+          />
+        </div>
+      )}
     </div>
   );
 };
