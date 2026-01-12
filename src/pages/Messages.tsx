@@ -6,6 +6,7 @@ import ChatWindow from '@/components/messaging/ChatWindow';
 import CreateGroupModal from '@/components/messaging/CreateGroupModal';
 import NewDMModal, { UserSearchResult } from '@/components/messaging/NewDMModal';
 import GroupInfoSheet from '@/components/messaging/GroupInfoSheet';
+import FindGroupsModal from '@/components/messaging/FindGroupsModal';
 import useMessaging from '@/hooks/useMessaging';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,12 +28,14 @@ const Messages = () => {
     createGroup,
     startDM,
     fetchGroupDetails,
+    fetchConversations,
   } = useMessaging();
 
   const [filter, setFilter] = useState<'all' | 'dms' | 'groups'>('all');
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showNewDM, setShowNewDM] = useState(false);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [showFindGroups, setShowFindGroups] = useState(false);
   const [searchUsers, setSearchUsers] = useState<UserSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -140,6 +143,7 @@ const Messages = () => {
               onSelect={handleSelectConversation}
               onCreateGroup={() => setShowCreateGroup(true)}
               onNewDM={() => setShowNewDM(true)}
+              onFindGroups={() => setShowFindGroups(true)}
               filter={filter}
               onFilterChange={setFilter}
             />
@@ -202,6 +206,15 @@ const Messages = () => {
           }}
         />
       )}
+
+      {/* Find Groups Modal */}
+      <FindGroupsModal
+        open={showFindGroups}
+        onOpenChange={setShowFindGroups}
+        onJoinGroup={(groupId) => {
+          fetchConversations();
+        }}
+      />
     </DashboardLayout>
   );
 };

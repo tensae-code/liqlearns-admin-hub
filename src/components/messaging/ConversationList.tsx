@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Users, User, Plus, Settings } from 'lucide-react';
+import { Search, Users, User, Plus, Settings, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +25,7 @@ interface ConversationListProps {
   onSelect: (conversation: Conversation) => void;
   onCreateGroup?: () => void;
   onNewDM?: () => void;
+  onFindGroups?: () => void;
   filter: 'all' | 'dms' | 'groups';
   onFilterChange: (filter: 'all' | 'dms' | 'groups') => void;
 }
@@ -35,6 +36,7 @@ const ConversationList = ({
   onSelect,
   onCreateGroup,
   onNewDM,
+  onFindGroups,
   filter,
   onFilterChange
 }: ConversationListProps) => {
@@ -60,6 +62,9 @@ const ConversationList = ({
             </Button>
             <Button variant="ghost" size="icon" onClick={onCreateGroup} title="Create Group">
               <Users className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onFindGroups} title="Find Groups">
+              <Compass className="w-4 h-4" />
             </Button>
           </div>
         </div>
