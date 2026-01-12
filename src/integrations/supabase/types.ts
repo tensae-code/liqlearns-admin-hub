@@ -309,6 +309,27 @@ export type Database = {
           },
         ]
       }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       friendships: {
         Row: {
           addressee_id: string
@@ -616,6 +637,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      message_requests: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -1458,11 +1506,25 @@ export type Database = {
       }
     }
     Functions: {
+      can_message: {
+        Args: { receiver_profile_id: string; sender_profile_id: string }
+        Returns: boolean
+      }
+      get_follower_count: { Args: { profile_id: string }; Returns: number }
+      get_following_count: { Args: { profile_id: string }; Returns: number }
+      get_pending_request_count: {
+        Args: { receiver: string; sender: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_following: {
+        Args: { follower: string; following: string }
         Returns: boolean
       }
       is_parent_of_profile: { Args: { profile_id: string }; Returns: boolean }

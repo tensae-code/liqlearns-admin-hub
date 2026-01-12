@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ConversationList, { Conversation } from '@/components/messaging/ConversationList';
@@ -7,6 +7,7 @@ import CreateGroupModal from '@/components/messaging/CreateGroupModal';
 import NewDMModal, { UserSearchResult } from '@/components/messaging/NewDMModal';
 import GroupInfoSheet from '@/components/messaging/GroupInfoSheet';
 import FindGroupsModal from '@/components/messaging/FindGroupsModal';
+import MessageRequestsModal from '@/components/messaging/MessageRequestsModal';
 import useMessaging from '@/hooks/useMessaging';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +37,7 @@ const Messages = () => {
   const [showNewDM, setShowNewDM] = useState(false);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showFindGroups, setShowFindGroups] = useState(false);
+  const [showMessageRequests, setShowMessageRequests] = useState(false);
   const [searchUsers, setSearchUsers] = useState<UserSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -144,6 +146,7 @@ const Messages = () => {
               onCreateGroup={() => setShowCreateGroup(true)}
               onNewDM={() => setShowNewDM(true)}
               onFindGroups={() => setShowFindGroups(true)}
+              onMessageRequests={() => setShowMessageRequests(true)}
               filter={filter}
               onFilterChange={setFilter}
             />
@@ -212,6 +215,15 @@ const Messages = () => {
         open={showFindGroups}
         onOpenChange={setShowFindGroups}
         onJoinGroup={(groupId) => {
+          fetchConversations();
+        }}
+      />
+
+      {/* Message Requests Modal */}
+      <MessageRequestsModal
+        open={showMessageRequests}
+        onOpenChange={setShowMessageRequests}
+        onAccept={(senderId) => {
           fetchConversations();
         }}
       />
