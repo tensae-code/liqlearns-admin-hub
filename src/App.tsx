@@ -109,8 +109,8 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <ScrollToTop />
         <AuthProvider>
+          <ScrollToTop />
           <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
