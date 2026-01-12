@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useStudyRooms } from '@/hooks/useStudyRooms';
 import { useProfile } from '@/hooks/useProfile';
@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import CreateRoomModal from '@/components/study-rooms/CreateRoomModal';
 import JoinRoomModal from '@/components/study-rooms/JoinRoomModal';
 import StudyRoomView from '@/components/study-rooms/StudyRoomView';
+import FloatingStudyRoom from '@/components/study-rooms/FloatingStudyRoom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,7 @@ import {
   MicOff
 } from 'lucide-react';
 import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
+import { supabase } from '@/integrations/supabase/client';
 
 const StudyRooms = () => {
   const {
@@ -64,6 +66,7 @@ const StudyRooms = () => {
   const [joinModalRoom, setJoinModalRoom] = useState<typeof rooms[0] | null>(null);
   const [isMicOn, setIsMicOn] = useState(false);
   const [myStudyTitle, setMyStudyTitle] = useState('');
+  const [isPopout, setIsPopout] = useState(false);
 
   // Get unique countries from rooms based on current age category
   const currentRooms = rooms.filter(r => 
@@ -129,6 +132,7 @@ const StudyRooms = () => {
     setCurrentRoom(null);
     setMyStudyTitle('');
     setIsMicOn(false);
+    setIsPopout(false);
   };
 
   // Handle mic toggle
@@ -160,8 +164,30 @@ const StudyRooms = () => {
   };
 
   // Handle add friend
-  const handleAddFriend = (userId: string) => {
-    toast({ title: 'Friend Request', description: 'Friend request sent!' });
+  const handleAddFriend = async (userId: string) => {
+    if (!profile?.id) {
+      toast({ title: 'Error', description: 'Please log in to add friends', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('friendships')
+        .insert({
+          requester_id: profile.id,
+          addressee_id: userId,
+          status: 'pending',
+        });
+
+      if (error) throw error;
+      toast({ title: 'Friend Request Sent!', description: 'Waiting for them to accept.' });
+    } catch (error: any) {
+      if (error.code === '23505') {
+        toast({ title: 'Already Sent', description: 'Friend request already exists.' });
+      } else {
+        toast({ title: 'Error', description: 'Failed to send friend request.', variant: 'destructive' });
+      }
+    }
   };
 
   // Handle report
@@ -169,8 +195,17 @@ const StudyRooms = () => {
     toast({ title: 'Report Submitted', description: 'Thank you for reporting. Our team will review this.' });
   };
 
-  // If in a room, show the room view
-  if (currentRoom) {
+  // Handle popout
+  const handlePopout = () => {
+    setIsPopout(true);
+  };
+
+  const handleExpandFromPopout = () => {
+    setIsPopout(false);
+  };
+
+  // If in a room but NOT in popout mode, show the full room view
+  if (currentRoom && !isPopout) {
     return (
       <DashboardLayout>
         <StudyRoomView
@@ -186,6 +221,7 @@ const StudyRooms = () => {
           onLeaveRoom={handleLeaveRoom}
           onAddFriend={handleAddFriend}
           onReport={handleReport}
+          onPopout={handlePopout}
         />
       </DashboardLayout>
     );
@@ -492,6 +528,21 @@ const StudyRooms = () => {
 
       {/* Quick Access Button */}
       <QuickAccessButton />
+
+      {/* Floating Study Room (when in popout mode) */}
+      <AnimatePresence>
+        {isPopout && currentRoom && (
+          <FloatingStudyRoom
+            room={currentRoom}
+            participants={participants}
+            currentUserId={profile?.id || ''}
+            isMicOn={isMicOn}
+            onToggleMic={handleToggleMic}
+            onLeaveRoom={handleLeaveRoom}
+            onExpand={handleExpandFromPopout}
+          />
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 };
