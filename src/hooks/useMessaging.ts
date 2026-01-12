@@ -88,7 +88,7 @@ export const useMessaging = () => {
         .from('group_members')
         .select(`
           group_id,
-          groups (
+          groups:group_id (
             id,
             name,
             username,
