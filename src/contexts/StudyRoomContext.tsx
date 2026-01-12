@@ -131,11 +131,16 @@ export const StudyRoomProvider = ({ children }: { children: ReactNode }) => {
   const [myStudyTitle, setMyStudyTitle] = useState('');
   const [myStudyField, setMyStudyField] = useState('');
   
-  // Pinned users
-  const [pinnedUsers, setPinnedUsers] = useState<string[]>(() => {
-    const saved = localStorage.getItem('studyRoomPinnedUsers');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Pinned users - stored per room
+  const [pinnedUsers, setPinnedUsers] = useState<string[]>([]);
+  
+  // Sync pinned users from participants
+  useEffect(() => {
+    const pinned = activeParticipants
+      .filter(p => p.is_pinned_by_me)
+      .map(p => p.user_id);
+    setPinnedUsers(pinned);
+  }, [activeParticipants]);
   
   // Display settings
   const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(() => {
@@ -143,10 +148,6 @@ export const StudyRoomProvider = ({ children }: { children: ReactNode }) => {
     return saved ? { ...defaultDisplaySettings, ...JSON.parse(saved) } : defaultDisplaySettings;
   });
 
-  // Persist pinned users
-  useEffect(() => {
-    localStorage.setItem('studyRoomPinnedUsers', JSON.stringify(pinnedUsers));
-  }, [pinnedUsers]);
 
   // Start session timer when joining room
   useEffect(() => {

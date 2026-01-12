@@ -151,16 +151,18 @@ const StudyRooms = () => {
     updateStudyTitle(currentRoom.id, title);
   };
 
-  // Handle pin/unpin
-  const handlePinUser = (userId: string) => {
+  // Handle pin/unpin - sync with context
+  const handlePinUser = async (userId: string) => {
     if (!currentRoom) return;
-    pinUser(currentRoom.id, userId);
+    await pinUser(currentRoom.id, userId);
+    studyRoomContext.addPinnedUser(userId);
     fetchParticipants(currentRoom.id);
   };
 
-  const handleUnpinUser = (userId: string) => {
+  const handleUnpinUser = async (userId: string) => {
     if (!currentRoom) return;
-    unpinUser(currentRoom.id, userId);
+    await unpinUser(currentRoom.id, userId);
+    studyRoomContext.removePinnedUser(userId);
     fetchParticipants(currentRoom.id);
   };
 
@@ -198,11 +200,21 @@ const StudyRooms = () => {
 
   // Handle popout - uses context so it persists across navigation
   const handlePopout = () => {
+    if (!currentRoom) return;
+    
+    // Sync all state to context
     studyRoomContext.setActiveRoom(currentRoom);
     studyRoomContext.setActiveParticipants(participants);
     studyRoomContext.setIsPopout(true);
     studyRoomContext.setIsMicOn(isMicOn);
     studyRoomContext.setMyStudyTitle(myStudyTitle);
+    
+    // Sync pinned users
+    const pinnedUserIds = participants
+      .filter(p => p.is_pinned_by_me)
+      .map(p => p.user_id);
+    studyRoomContext.setPinnedUsers(pinnedUserIds);
+    
     setCurrentRoom(null); // Clear local state so we show room list
   };
 

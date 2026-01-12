@@ -328,24 +328,24 @@ export const useStudyRooms = () => {
 
       if (error) throw error;
 
+      // Get room data for defaults
+      const { data: roomData } = await supabase
+        .from('study_rooms')
+        .select('country, education_level')
+        .eq('id', roomId)
+        .single();
+
       // Get profile info and pin counts for each participant
       const enrichedParticipants = await Promise.all(
         (participantsData || []).map(async (p) => {
-          // Get profile with full data including xp and streak
+          // Get profile with full data including xp and streak - use user_id to match auth.users
           const { data: profileData } = await supabase
             .from('profiles')
             .select('full_name, avatar_url, username, xp_points, current_streak, bio')
-            .eq('id', p.user_id)
+            .eq('user_id', p.user_id)
             .single();
 
-          // Get study room country from room or profile
-          const { data: roomData } = await supabase
-            .from('study_rooms')
-            .select('country, education_level')
-            .eq('id', roomId)
-            .single();
-
-          // Get pin count
+          // Get pin count for this user in this room
           const { count: pinCount } = await supabase
             .from('study_room_pins')
             .select('*', { count: 'exact', head: true })
@@ -359,13 +359,18 @@ export const useStudyRooms = () => {
             .eq('room_id', roomId)
             .eq('pinner_id', profile.id)
             .eq('pinned_user_id', p.user_id)
-            .single();
+            .maybeSingle();
 
           return {
             ...p,
             profile: profileData ? {
-              ...profileData,
-              country: roomData?.country || undefined,
+              full_name: profileData.full_name,
+              avatar_url: profileData.avatar_url,
+              username: profileData.username,
+              xp_points: profileData.xp_points || 0,
+              current_streak: profileData.current_streak || 0,
+              // Use room defaults if no user-specific data
+              country: roomData?.country || 'Unknown',
               education_level: roomData?.education_level || undefined,
             } : undefined,
             pin_count: pinCount || 0,
