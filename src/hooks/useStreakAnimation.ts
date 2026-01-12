@@ -1,10 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const STREAK_SHOWN_KEY = 'liqlearns-streak-shown-date';
 
 export const useStreakAnimation = (streak: number, userId: string | undefined) => {
   const [showAnimation, setShowAnimation] = useState(false);
   const [isAutoClose, setIsAutoClose] = useState(false);
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
+
+  // Cleanup all timers
+  const clearTimers = useCallback(() => {
+    timersRef.current.forEach(timer => clearTimeout(timer));
+    timersRef.current = [];
+  }, []);
 
   useEffect(() => {
     if (!userId || streak <= 0) return;
@@ -16,32 +23,40 @@ export const useStreakAnimation = (streak: number, userId: string | undefined) =
 
     if (lastShown !== today) {
       // Show animation after a short delay to let the page load
-      const timer = setTimeout(() => {
+      const showTimer = setTimeout(() => {
         setShowAnimation(true);
         setIsAutoClose(true);
         localStorage.setItem(lastShownKey, today);
         
         // Auto-close after 2 seconds as a greeting
-        setTimeout(() => {
+        const closeTimer = setTimeout(() => {
           setShowAnimation(false);
           setIsAutoClose(false);
         }, 2000);
+        
+        timersRef.current.push(closeTimer);
       }, 500);
 
-      return () => clearTimeout(timer);
+      timersRef.current.push(showTimer);
     }
-  }, [streak, userId]);
+
+    return () => {
+      clearTimers();
+    };
+  }, [streak, userId, clearTimers]);
 
   const closeAnimation = useCallback(() => {
+    clearTimers();
     setShowAnimation(false);
     setIsAutoClose(false);
-  }, []);
+  }, [clearTimers]);
 
   // Manual trigger (when clicking streak tracker) - doesn't auto-close
   const triggerAnimation = useCallback(() => {
+    clearTimers();
     setShowAnimation(true);
     setIsAutoClose(false);
-  }, []);
+  }, [clearTimers]);
 
   return {
     showAnimation,
