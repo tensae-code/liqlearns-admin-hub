@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -23,13 +24,14 @@ import {
   Users,
   Video,
   Plus,
-  Clock,
   Star,
   Lock,
   Globe,
   Flame,
   GraduationCap,
-  MapPin
+  MapPin,
+  ShieldCheck,
+  Baby
 } from 'lucide-react';
 import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
 
@@ -54,26 +56,31 @@ const StudyRooms = () => {
   const { toast } = useToast();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [roomTypeFilter, setRoomTypeFilter] = useState<'all' | 'public' | 'private' | 'kids'>('all');
+  const [ageCategory, setAgeCategory] = useState<'adult' | 'kids'>('adult');
   const [countryFilter, setCountryFilter] = useState<string>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [joinModalRoom, setJoinModalRoom] = useState<typeof rooms[0] | null>(null);
   const [isMicOn, setIsMicOn] = useState(false);
   const [myStudyTitle, setMyStudyTitle] = useState('');
 
-  // Get unique countries from rooms
-  const countries = [...new Set(rooms.map(r => r.country).filter(Boolean))];
+  // Get unique countries from rooms based on current age category
+  const currentRooms = rooms.filter(r => 
+    ageCategory === 'kids' ? r.room_type === 'kids' : (r.room_type === 'public' || r.room_type === 'private')
+  );
+  const countries = [...new Set(currentRooms.map(r => r.country).filter(Boolean))];
 
-  const filteredRooms = rooms.filter((room) => {
+  const filteredRooms = currentRooms.filter((room) => {
     const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (room.study_topic?.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesType = roomTypeFilter === 'all' || room.room_type === roomTypeFilter;
     const matchesCountry = countryFilter === 'all' || room.country === countryFilter;
-    return matchesSearch && matchesType && matchesCountry;
+    return matchesSearch && matchesCountry;
   });
 
-  const liveCount = rooms.length;
-  const totalParticipants = rooms.reduce((sum, r) => sum + (r.participant_count || 0), 0);
+  // Stats for current category
+  const adultRooms = rooms.filter(r => r.room_type === 'public' || r.room_type === 'private');
+  const kidsRooms = rooms.filter(r => r.room_type === 'kids');
+  const liveCount = filteredRooms.length;
+  const totalParticipants = filteredRooms.reduce((sum, r) => sum + (r.participant_count || 0), 0);
 
   // Handle joining a room
   const handleJoinRoom = async (studyTitle: string) => {
@@ -180,28 +187,78 @@ const StudyRooms = () => {
         </div>
       </motion.div>
 
-      {/* Stats Banner */}
+      {/* Age Category Tabs */}
       <motion.div
-        className="mb-8 p-6 rounded-2xl bg-gradient-hero text-primary-foreground"
+        className="mb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
+        <Tabs value={ageCategory} onValueChange={(v) => setAgeCategory(v as 'adult' | 'kids')} className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2 h-14">
+            <TabsTrigger 
+              value="adult" 
+              className="flex items-center gap-2 text-base data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
+            >
+              <ShieldCheck className="w-5 h-5" />
+              <div className="flex flex-col items-start">
+                <span className="font-semibold">18+ Rooms</span>
+                <span className="text-xs opacity-70">{adultRooms.length} active</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="kids" 
+              className="flex items-center gap-2 text-base data-[state=active]:bg-amber-500 data-[state=active]:text-white"
+            >
+              <Baby className="w-5 h-5" />
+              <div className="flex flex-col items-start">
+                <span className="font-semibold">Under 18</span>
+                <span className="text-xs opacity-70">{kidsRooms.length} active</span>
+              </div>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </motion.div>
+
+      {/* Stats Banner */}
+      <motion.div
+        className={`mb-8 p-6 rounded-2xl text-white ${
+          ageCategory === 'kids' 
+            ? 'bg-gradient-to-r from-amber-500 to-orange-500' 
+            : 'bg-gradient-hero'
+        }`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+      >
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-8">
             <div>
-              <p className="text-3xl font-display font-bold">{liveCount}</p>
-              <p className="text-primary-foreground/70">Active Rooms</p>
+              <p className="text-3xl font-display font-bold">{filteredRooms.length}</p>
+              <p className="text-white/70">
+                {ageCategory === 'kids' ? 'Kids Rooms' : 'Adult Rooms'}
+              </p>
             </div>
-            <div className="w-px h-12 bg-primary-foreground/20" />
+            <div className="w-px h-12 bg-white/20" />
             <div>
-              <p className="text-3xl font-display font-bold">{totalParticipants}</p>
-              <p className="text-primary-foreground/70">Learning Now</p>
+              <p className="text-3xl font-display font-bold">
+                {filteredRooms.reduce((sum, r) => sum + (r.participant_count || 0), 0)}
+              </p>
+              <p className="text-white/70">Learning Now</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 px-4 py-2 bg-primary-foreground/10 rounded-xl">
-            <Video className="w-5 h-5 text-gold" />
-            <span className="font-medium">Earn XP by joining study rooms!</span>
+          <div className="flex items-center gap-3 px-4 py-2 bg-white/10 rounded-xl">
+            {ageCategory === 'kids' ? (
+              <>
+                <ShieldCheck className="w-5 h-5" />
+                <span className="font-medium">Safe & moderated for students under 18</span>
+              </>
+            ) : (
+              <>
+                <Video className="w-5 h-5" />
+                <span className="font-medium">Earn XP by joining study rooms!</span>
+              </>
+            )}
           </div>
         </div>
       </motion.div>
@@ -216,36 +273,12 @@ const StudyRooms = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
-            placeholder="Search rooms by name or topic..."
+            placeholder={`Search ${ageCategory === 'kids' ? 'kids' : '18+'} rooms...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
-        
-        <Select value={roomTypeFilter} onValueChange={(v: typeof roomTypeFilter) => setRoomTypeFilter(v)}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Room type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="public">
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4" /> Public
-              </div>
-            </SelectItem>
-            <SelectItem value="private">
-              <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4" /> Private
-              </div>
-            </SelectItem>
-            <SelectItem value="kids">
-              <div className="flex items-center gap-2">
-                🧒 Kids
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
 
         {countries.length > 0 && (
           <Select value={countryFilter} onValueChange={setCountryFilter}>
