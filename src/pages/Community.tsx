@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { Progress } from '@/components/ui/progress';
 import {
   MessageSquare,
   Heart,
@@ -22,7 +23,14 @@ import {
   ThumbsUp,
   BookOpen,
   HelpCircle,
-  Lightbulb
+  Lightbulb,
+  Vote,
+  ChevronUp,
+  ChevronDown,
+  Sparkles,
+  Clock,
+  Check,
+  X
 } from 'lucide-react';
 
 const posts = [
@@ -87,15 +95,95 @@ const topContributors = [
   { name: 'Tigist B.', points: 1432 },
 ];
 
+// Skill voting data
+const skillSuggestions = [
+  {
+    id: 1,
+    skill: 'Business Amharic',
+    description: 'Professional vocabulary and communication for business settings',
+    proposedBy: 'Daniel K.',
+    votes: 156,
+    status: 'voting' as const,
+    daysLeft: 5,
+    category: 'Professional',
+  },
+  {
+    id: 2,
+    skill: 'Medical Terminology',
+    description: 'Healthcare and medical vocabulary for professionals',
+    proposedBy: 'Dr. Abebe',
+    votes: 98,
+    status: 'voting' as const,
+    daysLeft: 12,
+    category: 'Professional',
+  },
+  {
+    id: 3,
+    skill: 'Ethiopian History',
+    description: 'Learn vocabulary related to Ethiopian history and culture',
+    proposedBy: 'Teacher Hana',
+    votes: 234,
+    status: 'approved' as const,
+    category: 'Culture',
+  },
+  {
+    id: 4,
+    skill: 'Poetry & Literature',
+    description: 'Classical and modern Ethiopian poetry vocabulary',
+    proposedBy: 'Meron A.',
+    votes: 67,
+    status: 'voting' as const,
+    daysLeft: 8,
+    category: 'Culture',
+  },
+  {
+    id: 5,
+    skill: 'Tech & Digital',
+    description: 'Modern technology and digital communication terms',
+    proposedBy: 'Yonas T.',
+    votes: 189,
+    status: 'in_development' as const,
+    category: 'Modern',
+  },
+];
+
 const Community = () => {
-  const [activeTab, setActiveTab] = useState<'wall' | 'brainbank'>('wall');
+  const [activeTab, setActiveTab] = useState<'wall' | 'brainbank' | 'skills'>('wall');
   const [newPost, setNewPost] = useState('');
   const [likedPosts, setLikedPosts] = useState<number[]>([2, 4]);
+  const [votedSkills, setVotedSkills] = useState<number[]>([]);
+  const [newSkillName, setNewSkillName] = useState('');
+  const [newSkillDesc, setNewSkillDesc] = useState('');
+  const [showSuggestForm, setShowSuggestForm] = useState(false);
 
   const toggleLike = (id: number) => {
     setLikedPosts(prev => 
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
+  };
+
+  const handleVote = (skillId: number, direction: 'up' | 'down') => {
+    if (votedSkills.includes(skillId)) {
+      toast.info('Already voted', { description: 'You have already voted on this skill suggestion.' });
+      return;
+    }
+    setVotedSkills(prev => [...prev, skillId]);
+    toast.success(direction === 'up' ? 'Upvoted!' : 'Downvoted!', { 
+      description: 'Your vote has been recorded.' 
+    });
+  };
+
+  const handleSuggestSkill = () => {
+    if (!newSkillName.trim() || !newSkillDesc.trim()) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    toast.success('Skill suggested!', { 
+      description: 'Your skill suggestion has been submitted for community voting.' 
+    });
+    setNewSkillName('');
+    setNewSkillDesc('');
+    setShowSuggestForm(false);
   };
 
   const handlePost = () => {
@@ -104,6 +192,17 @@ const Community = () => {
     }
     toast.success('Post created!', { description: 'Your post has been shared with the community.' });
     setNewPost('');
+  };
+
+  const getStatusBadge = (status: 'voting' | 'approved' | 'in_development') => {
+    switch (status) {
+      case 'voting':
+        return <Badge variant="secondary" className="bg-accent/20 text-accent"><Vote className="w-3 h-3 mr-1" />Voting</Badge>;
+      case 'approved':
+        return <Badge variant="secondary" className="bg-success/20 text-success"><Check className="w-3 h-3 mr-1" />Approved</Badge>;
+      case 'in_development':
+        return <Badge variant="secondary" className="bg-gold/20 text-gold"><Sparkles className="w-3 h-3 mr-1" />In Development</Badge>;
+    }
   };
 
   return (
@@ -124,7 +223,7 @@ const Community = () => {
 
       {/* Tabs */}
       <motion.div
-        className="flex gap-2 mb-6"
+        className="flex gap-2 mb-6 overflow-x-auto pb-2"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -144,6 +243,14 @@ const Community = () => {
         >
           <Lightbulb className="w-4 h-4 mr-2" />
           Brain Bank
+        </Button>
+        <Button
+          variant={activeTab === 'skills' ? 'default' : 'outline'}
+          className={activeTab === 'skills' ? 'bg-gradient-accent text-accent-foreground' : ''}
+          onClick={() => setActiveTab('skills')}
+        >
+          <Vote className="w-4 h-4 mr-2" />
+          Skill Voting
         </Button>
       </motion.div>
 
@@ -311,6 +418,158 @@ const Community = () => {
                             <BookOpen className="w-4 h-4" />
                             {q.views} views
                           </span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {activeTab === 'skills' && (
+            <>
+              {/* Suggest New Skill Button */}
+              <motion.div
+                className="mb-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                {!showSuggestForm ? (
+                  <Button 
+                    className="bg-gradient-accent text-accent-foreground hover:opacity-90 w-full"
+                    onClick={() => setShowSuggestForm(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Suggest New Skill
+                  </Button>
+                ) : (
+                  <div className="p-4 rounded-xl bg-card border border-border">
+                    <h3 className="font-medium text-foreground mb-3">Suggest a New Skill</h3>
+                    <div className="space-y-3">
+                      <Input 
+                        placeholder="Skill name (e.g., Legal Terminology)"
+                        value={newSkillName}
+                        onChange={(e) => setNewSkillName(e.target.value)}
+                      />
+                      <Textarea 
+                        placeholder="Describe what this skill would cover..."
+                        value={newSkillDesc}
+                        onChange={(e) => setNewSkillDesc(e.target.value)}
+                        className="min-h-[80px]"
+                      />
+                      <div className="flex gap-2">
+                        <Button 
+                          className="bg-gradient-accent text-accent-foreground"
+                          onClick={handleSuggestSkill}
+                        >
+                          Submit Suggestion
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => setShowSuggestForm(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+
+              {/* Info Banner */}
+              <motion.div
+                className="p-4 rounded-xl bg-accent/10 border border-accent/20 mb-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+              >
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-foreground mb-1">Community-Driven Learning</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Vote on skill suggestions to shape what we teach next! Skills with 200+ votes get approved for development.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Skill Suggestions */}
+              <div className="space-y-4">
+                {skillSuggestions.map((skill, i) => (
+                  <motion.div
+                    key={skill.id}
+                    className="p-5 rounded-xl bg-card border border-border hover:border-accent/30 transition-all"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 + i * 0.05 }}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Voting Controls */}
+                      <div className="flex flex-col items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleVote(skill.id, 'up')}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            votedSkills.includes(skill.id)
+                              ? 'bg-success/20 text-success'
+                              : 'bg-muted hover:bg-success/20 hover:text-success'
+                          }`}
+                          disabled={votedSkills.includes(skill.id)}
+                        >
+                          <ChevronUp className="w-5 h-5" />
+                        </button>
+                        <span className={`font-bold text-lg ${
+                          skill.votes >= 200 ? 'text-success' : 
+                          skill.votes >= 100 ? 'text-gold' : 'text-foreground'
+                        }`}>
+                          {skill.votes}
+                        </span>
+                        <button
+                          onClick={() => handleVote(skill.id, 'down')}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            votedSkills.includes(skill.id)
+                              ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                              : 'bg-muted hover:bg-destructive/20 hover:text-destructive'
+                          }`}
+                          disabled={votedSkills.includes(skill.id)}
+                        >
+                          <ChevronDown className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="font-display font-semibold text-foreground">
+                            {skill.skill}
+                          </h3>
+                          {getStatusBadge(skill.status)}
+                          <Badge variant="outline" className="text-xs">
+                            {skill.category}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {skill.description}
+                        </p>
+                        
+                        {/* Progress to approval */}
+                        {skill.status === 'voting' && (
+                          <div className="mb-3">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                              <span>{skill.votes} / 200 votes for approval</span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {skill.daysLeft} days left
+                              </span>
+                            </div>
+                            <Progress value={(skill.votes / 200) * 100} className="h-2" />
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <span>Proposed by <span className="font-medium text-foreground">{skill.proposedBy}</span></span>
                         </div>
                       </div>
                     </div>

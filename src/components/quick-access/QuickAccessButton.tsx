@@ -17,12 +17,16 @@ import {
   Gift,
   UserPlus,
   Phone,
-  Megaphone
+  Megaphone,
+  Maximize2,
+  Minimize2,
+  Grid3X3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import BrainBankModal from '@/components/brain-bank/BrainBankModal';
 import DailyBonusModal from './DailyBonusModal';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface QuickAccessItem {
   id: string;
@@ -130,17 +134,21 @@ const iconMap: Record<string, typeof Brain> = {
   'announcements': Megaphone,
 };
 
+type ViewMode = 'full' | 'compact' | 'icon';
+
 const QuickAccessButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [brainBankOpen, setBrainBankOpen] = useState(false);
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (localStorage.getItem('quickAccessViewMode') as ViewMode) || 'full';
+  });
   const [items, setItems] = useState<QuickAccessItem[]>(() => {
     const saved = localStorage.getItem('quickAccessItems');
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Array<{ id: string; enabled: boolean }>;
-        // Reconstruct items from defaults using saved order and enabled state
         return parsed.map(savedItem => {
           const defaultItem = defaultQuickAccessItems.find(d => d.id === savedItem.id);
           if (defaultItem) {
@@ -155,7 +163,12 @@ const QuickAccessButton = () => {
     return defaultQuickAccessItems;
   });
 
-  // Save to localStorage when items change - only save id and enabled state
+  // Save viewMode to localStorage
+  useEffect(() => {
+    localStorage.setItem('quickAccessViewMode', viewMode);
+  }, [viewMode]);
+
+  // Save items to localStorage
   useEffect(() => {
     const toSave = items.map(item => ({ id: item.id, enabled: item.enabled }));
     localStorage.setItem('quickAccessItems', JSON.stringify(toSave));
@@ -163,6 +176,14 @@ const QuickAccessButton = () => {
 
   const enabledItems = items.filter(item => item.enabled);
   const disabledItems = items.filter(item => !item.enabled);
+
+  const cycleViewMode = () => {
+    setViewMode(prev => {
+      if (prev === 'full') return 'compact';
+      if (prev === 'compact') return 'icon';
+      return 'full';
+    });
+  };
 
   const handleItemClick = (id: string) => {
     if (isEditMode) return;
@@ -281,34 +302,54 @@ const QuickAccessButton = () => {
               exit={{ opacity: 0, scale: 0.8, y: 20 }}
               className="fixed bottom-24 right-6 z-50 flex flex-col gap-2 max-h-[70vh] overflow-hidden"
             >
-              {/* Edit Button / Done Button */}
-              <motion.button
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 50 }}
-                onClick={() => setIsEditMode(!isEditMode)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg transition-colors self-end",
-                  isEditMode 
-                    ? "bg-success text-white" 
-                    : "bg-card border border-border hover:border-accent/50"
-                )}
-              >
-                {isEditMode ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span className="text-sm font-medium">Done</span>
-                  </>
-                ) : (
-                  <>
-                    <Pencil className="w-4 h-4" />
-                    <span className="text-sm font-medium">Edit</span>
-                  </>
-                )}
-              </motion.button>
+              {/* Header with Edit & View Mode */}
+              <div className="flex items-center gap-2 justify-end">
+                {/* View Mode Toggle */}
+                <motion.button
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  onClick={cycleViewMode}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg transition-colors bg-card border border-border hover:border-accent/50"
+                  title={`View: ${viewMode}`}
+                >
+                  {viewMode === 'full' && <Maximize2 className="w-4 h-4" />}
+                  {viewMode === 'compact' && <Grid3X3 className="w-4 h-4" />}
+                  {viewMode === 'icon' && <Minimize2 className="w-4 h-4" />}
+                  <span className="text-xs font-medium capitalize">{viewMode}</span>
+                </motion.button>
+                
+                {/* Edit Button / Done Button */}
+                <motion.button
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 50 }}
+                  onClick={() => setIsEditMode(!isEditMode)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg transition-colors",
+                    isEditMode 
+                      ? "bg-success text-white" 
+                      : "bg-card border border-border hover:border-accent/50"
+                  )}
+                >
+                  {isEditMode ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span className="text-sm font-medium">Done</span>
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="w-4 h-4" />
+                      <span className="text-sm font-medium">Edit</span>
+                    </>
+                  )}
+                </motion.button>
+              </div>
 
               {/* Enabled Items */}
-              <div className="overflow-y-auto max-h-[50vh] space-y-2">
+              <div className={cn(
+                "overflow-y-auto max-h-[50vh]",
+                viewMode === 'icon' ? "flex flex-wrap gap-2 justify-end max-w-[200px]" : "space-y-2"
+              )}>
                 {isEditMode ? (
                   <Reorder.Group axis="y" values={enabledItems} onReorder={handleReorder} className="space-y-2">
                     {enabledItems.map((item, index) => (
@@ -354,7 +395,56 @@ const QuickAccessButton = () => {
                       </Reorder.Item>
                     ))}
                   </Reorder.Group>
+                ) : viewMode === 'icon' ? (
+                  // Icon-only view
+                  enabledItems.map((item, index) => (
+                    <motion.button
+                      key={item.id}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ delay: index * 0.03 }}
+                      onClick={() => handleItemClick(item.id)}
+                      className={cn(
+                        'w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg hover:scale-110 transition-transform relative',
+                        item.color
+                      )}
+                      title={item.label}
+                    >
+                      <item.icon className="w-5 h-5 text-white" />
+                      {item.id === 'daily-bonus' && hasUnclaimedBonus && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-destructive animate-pulse" />
+                      )}
+                    </motion.button>
+                  ))
+                ) : viewMode === 'compact' ? (
+                  // Compact view - icon + label
+                  enabledItems.map((item, index) => (
+                    <motion.button
+                      key={item.id}
+                      initial={{ opacity: 0, x: 50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 50 }}
+                      transition={{ delay: index * 0.03 }}
+                      onClick={() => handleItemClick(item.id)}
+                      className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2 shadow-lg hover:border-accent/50 transition-colors group w-full"
+                    >
+                      <div className={cn(
+                        'w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0',
+                        item.color
+                      )}>
+                        <item.icon className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="font-medium text-foreground text-sm group-hover:text-accent transition-colors">
+                        {item.label}
+                      </span>
+                      {item.id === 'daily-bonus' && hasUnclaimedBonus && (
+                        <span className="ml-auto w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                      )}
+                    </motion.button>
+                  ))
                 ) : (
+                  // Full view
                   enabledItems.map((item, index) => (
                     <motion.button
                       key={item.id}

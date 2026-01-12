@@ -260,13 +260,30 @@ const Events = () => {
             </div>
 
             {/* View Toggle */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant={calendarView === 'ethiopian' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCalendarView('ethiopian')}
+                className={calendarView === 'ethiopian' ? 'bg-gradient-accent' : ''}
+              >
+                🇪🇹 Ethiopian
+              </Button>
+              <Button
+                variant={calendarView === 'gregorian' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCalendarView('gregorian')}
+                className={calendarView === 'gregorian' ? 'bg-gradient-accent' : ''}
+              >
+                📅 Gregorian
+              </Button>
+              <div className="w-px h-6 bg-border mx-1" />
               <Button
                 variant={viewMode === 'calendar' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('calendar')}
               >
-                🇪🇹 Calendar
+                📆 Calendar
               </Button>
               <Button
                 variant={viewMode === 'list' ? 'default' : 'outline'}
