@@ -1,34 +1,30 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Mic,
   MicOff,
   Pin,
   UserPlus,
   Search,
-  Settings2,
   Users,
   Zap,
   Flame,
   GraduationCap,
   MapPin,
   BookOpen,
-  ChevronRight,
+  Filter,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { RoomParticipant } from '@/hooks/useStudyRooms';
@@ -40,13 +36,13 @@ interface DisplaySettings {
   showCountry: boolean;
   showStudyTitle: boolean;
   showPinCount: boolean;
+  blurBackground: boolean;
 }
 
 interface ParticipantSidebarProps {
   participants: RoomParticipant[];
   currentUserId: string;
   displaySettings: DisplaySettings;
-  onUpdateDisplaySetting: (key: keyof DisplaySettings, value: boolean) => void;
   onPinUser: (userId: string) => void;
   onUnpinUser: (userId: string) => void;
   onAddFriend: (userId: string) => void;
@@ -56,33 +52,29 @@ const ParticipantSidebar = ({
   participants,
   currentUserId,
   displaySettings,
-  onUpdateDisplaySetting,
   onPinUser,
   onUnpinUser,
   onAddFriend,
 }: ParticipantSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
+  const [countryFilter, setCountryFilter] = useState<string>('all');
 
-  const filteredParticipants = participants.filter(p =>
-    p.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.study_title?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Get unique countries from participants
+  const countries = [...new Set(participants.map(p => p.profile?.country).filter(Boolean))] as string[];
+
+  const filteredParticipants = participants.filter(p => {
+    const matchesSearch = 
+      p.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.study_title?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCountry = countryFilter === 'all' || p.profile?.country === countryFilter;
+    return matchesSearch && matchesCountry;
+  });
 
   const sortedParticipants = [...filteredParticipants].sort((a, b) => {
     if (a.is_pinned_by_me && !b.is_pinned_by_me) return -1;
     if (!a.is_pinned_by_me && b.is_pinned_by_me) return 1;
     return (b.pin_count || 0) - (a.pin_count || 0);
   });
-
-  const displayToggles = [
-    { key: 'showXP' as const, label: 'XP Points', icon: Zap },
-    { key: 'showStreak' as const, label: 'Streak', icon: Flame },
-    { key: 'showEducation' as const, label: 'Education Level', icon: GraduationCap },
-    { key: 'showCountry' as const, label: 'Country', icon: MapPin },
-    { key: 'showStudyTitle' as const, label: 'Study Topic', icon: BookOpen },
-    { key: 'showPinCount' as const, label: 'Pin Count', icon: Pin },
-  ];
 
   return (
     <div className="w-80 border-l border-border bg-card flex flex-col h-full">
@@ -96,38 +88,29 @@ const ParticipantSidebar = ({
               {participants.length}
             </Badge>
           </div>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Settings2 className="w-4 h-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-80">
-              <SheetHeader>
-                <SheetTitle>Display Settings</SheetTitle>
-              </SheetHeader>
-              <div className="mt-6 space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Choose what information to show for each participant
-                </p>
-                {displayToggles.map(({ key, label, icon: Icon }) => (
-                  <div key={key} className="flex items-center justify-between py-2">
-                    <div className="flex items-center gap-3">
-                      <Icon className="w-4 h-4 text-muted-foreground" />
-                      <Label htmlFor={key} className="text-sm font-medium">
-                        {label}
-                      </Label>
-                    </div>
-                    <Switch
-                      id={key}
-                      checked={displaySettings[key]}
-                      onCheckedChange={(checked) => onUpdateDisplaySetting(key, checked)}
-                    />
-                  </div>
-                ))}
+        </div>
+
+        {/* Country Filter */}
+        <div className="mb-3">
+          <Select value={countryFilter} onValueChange={setCountryFilter}>
+            <SelectTrigger className="h-9">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-muted-foreground" />
+                <SelectValue placeholder="Filter by country" />
               </div>
-            </SheetContent>
-          </Sheet>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Countries</SelectItem>
+              {countries.map((country) => (
+                <SelectItem key={country} value={country}>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-3 h-3" />
+                    {country}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Search */}
@@ -163,7 +146,7 @@ const ParticipantSidebar = ({
               >
                 <div className="flex items-start gap-3">
                   {/* Avatar */}
-                  <div className="relative">
+                  <div className="relative shrink-0">
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={participant.profile?.avatar_url || undefined} />
                       <AvatarFallback className="bg-accent text-accent-foreground text-sm">
@@ -196,53 +179,73 @@ const ParticipantSidebar = ({
                         📚 {participant.study_title}
                       </p>
                     )}
-
-                    {/* Stats Row */}
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      {displaySettings.showPinCount && (participant.pin_count || 0) > 0 && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
-                          <Pin className="w-2.5 h-2.5 mr-0.5 text-gold" />
-                          {participant.pin_count}
-                        </Badge>
-                      )}
-                      {displaySettings.showEducation && participant.profile?.education_level && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
-                          <GraduationCap className="w-2.5 h-2.5 mr-0.5" />
-                          {participant.profile.education_level}
-                        </Badge>
-                      )}
-                    </div>
                   </div>
 
-                  {/* Actions */}
-                  {!isMe && (
-                    <div className="flex flex-col gap-1">
-                      <Button
-                        variant={participant.is_pinned_by_me ? "default" : "ghost"}
-                        size="icon"
-                        className={cn(
-                          "h-7 w-7",
-                          participant.is_pinned_by_me && "bg-gold hover:bg-gold/90 text-gold-foreground"
-                        )}
-                        onClick={() =>
-                          participant.is_pinned_by_me
-                            ? onUnpinUser(participant.user_id)
-                            : onPinUser(participant.user_id)
-                        }
-                      >
-                        <Pin className={cn("w-3.5 h-3.5", participant.is_pinned_by_me && "fill-current")} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => onAddFriend(participant.user_id)}
-                      >
-                        <UserPlus className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  )}
+                  {/* Right Side - Enabled Stats */}
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    {displaySettings.showPinCount && (participant.pin_count || 0) > 0 && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                        <Pin className="w-2.5 h-2.5 mr-0.5 text-gold" />
+                        {participant.pin_count}
+                      </Badge>
+                    )}
+                    {displaySettings.showXP && participant.profile?.xp_points && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                        <Zap className="w-2.5 h-2.5 mr-0.5 text-gold" />
+                        {participant.profile.xp_points}
+                      </Badge>
+                    )}
+                    {displaySettings.showStreak && participant.profile?.current_streak && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                        <Flame className="w-2.5 h-2.5 mr-0.5 text-streak" />
+                        {participant.profile.current_streak}
+                      </Badge>
+                    )}
+                    {displaySettings.showEducation && participant.profile?.education_level && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                        <GraduationCap className="w-2.5 h-2.5 mr-0.5" />
+                        {participant.profile.education_level}
+                      </Badge>
+                    )}
+                    {displaySettings.showCountry && participant.profile?.country && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                        <MapPin className="w-2.5 h-2.5 mr-0.5" />
+                        {participant.profile.country}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
+
+                {/* Actions Row */}
+                {!isMe && (
+                  <div className="flex items-center gap-1 mt-2 pl-13">
+                    <Button
+                      variant={participant.is_pinned_by_me ? "default" : "ghost"}
+                      size="sm"
+                      className={cn(
+                        "h-7 text-xs",
+                        participant.is_pinned_by_me && "bg-gold hover:bg-gold/90 text-gold-foreground"
+                      )}
+                      onClick={() =>
+                        participant.is_pinned_by_me
+                          ? onUnpinUser(participant.user_id)
+                          : onPinUser(participant.user_id)
+                      }
+                    >
+                      <Pin className={cn("w-3 h-3 mr-1", participant.is_pinned_by_me && "fill-current")} />
+                      {participant.is_pinned_by_me ? 'Unpin' : 'Pin'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => onAddFriend(participant.user_id)}
+                    >
+                      <UserPlus className="w-3 h-3 mr-1" />
+                      Add Friend
+                    </Button>
+                  </div>
+                )}
               </motion.div>
             );
           })}

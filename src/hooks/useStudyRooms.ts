@@ -40,6 +40,9 @@ export interface RoomParticipant {
     avatar_url: string | null;
     username: string;
     education_level?: string;
+    country?: string;
+    xp_points?: number;
+    current_streak?: number;
   };
   pin_count?: number;
   is_pinned_by_me?: boolean;

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Mic,
   MicOff,
@@ -12,11 +13,11 @@ import {
   Maximize2,
   Minimize2,
   GripVertical,
-  Monitor,
-  MonitorOff,
   Users,
-  X,
   Clock,
+  Pin,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVideoChat } from '@/hooks/useVideoChat';
@@ -28,6 +29,7 @@ interface FloatingStudyRoomProps {
   participants: RoomParticipant[];
   currentUserId: string;
   isMicOn: boolean;
+  pinnedUsers?: string[];
   onToggleMic: () => void;
   onLeaveRoom: () => void;
   onExpand: () => void;
@@ -38,12 +40,14 @@ const FloatingStudyRoom = ({
   participants,
   currentUserId,
   isMicOn,
+  pinnedUsers = [],
   onToggleMic,
   onLeaveRoom,
   onExpand,
 }: FloatingStudyRoomProps) => {
   const [isMinimized, setIsMinimized] = useState(false);
-  const [position, setPosition] = useState({ x: window.innerWidth - 360, y: window.innerHeight - 280 });
+  const [showPinnedList, setShowPinnedList] = useState(true);
+  const [position, setPosition] = useState({ x: window.innerWidth - 360, y: window.innerHeight - 400 });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
   
@@ -51,14 +55,15 @@ const FloatingStudyRoom = ({
   
   const {
     isVideoOn,
-    isScreenSharing,
     localStream,
     toggleVideo,
     toggleMic: toggleLocalMic,
-    toggleScreenShare,
   } = useVideoChat();
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Get pinned participants
+  const pinnedParticipants = participants.filter(p => pinnedUsers.includes(p.user_id));
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -212,8 +217,72 @@ const FloatingStudyRoom = ({
         </div>
       </div>
 
+      {/* Pinned Users Section */}
+      {pinnedParticipants.length > 0 && (
+        <div className="border-t border-border">
+          <button
+            onClick={() => setShowPinnedList(!showPinnedList)}
+            className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Pin className="w-3.5 h-3.5 text-gold" />
+              <span className="text-xs font-medium">Pinned ({pinnedParticipants.length})</span>
+            </div>
+            {showPinnedList ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
+          
+          <AnimatePresence>
+            {showPinnedList && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <ScrollArea className="max-h-32">
+                  <div className="px-3 pb-2 space-y-1">
+                    {pinnedParticipants.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center gap-2 p-1.5 rounded-md bg-gold/10"
+                      >
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={p.profile?.avatar_url || undefined} />
+                          <AvatarFallback className="text-[10px] bg-accent text-accent-foreground">
+                            {p.profile?.full_name?.charAt(0) || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">
+                            {p.profile?.full_name}
+                          </p>
+                          {p.study_title && (
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              📚 {p.study_title}
+                            </p>
+                          )}
+                        </div>
+                        {p.is_mic_on ? (
+                          <Mic className="w-3 h-3 text-success shrink-0" />
+                        ) : (
+                          <MicOff className="w-3 h-3 text-muted-foreground shrink-0" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {/* Controls */}
-      <div className="flex items-center justify-center gap-2 p-3 bg-background">
+      <div className="flex items-center justify-center gap-2 p-3 bg-background border-t border-border">
         <Button
           variant={isMicOn ? "default" : "outline"}
           size="icon"
@@ -231,15 +300,6 @@ const FloatingStudyRoom = ({
           onClick={toggleVideo}
         >
           {isVideoOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-        </Button>
-
-        <Button
-          variant={isScreenSharing ? "default" : "outline"}
-          size="icon"
-          className={cn("rounded-full h-9 w-9", isScreenSharing && "bg-accent")}
-          onClick={toggleScreenShare}
-        >
-          {isScreenSharing ? <MonitorOff className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
         </Button>
 
         <Button
