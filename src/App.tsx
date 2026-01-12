@@ -19,6 +19,7 @@ import ParentDashboard from "./pages/ParentDashboard";
 import Marketplace from "./pages/Marketplace";
 import Quest from "./pages/Quest";
 import StudyRooms from "./pages/StudyRooms";
+import Messages from "./pages/Messages";
 import Events from "./pages/Events";
 import Community from "./pages/Community";
 import Help from "./pages/Help";
@@ -46,6 +47,7 @@ const AppRoutes = () => (
     <Route path="/marketplace" element={<Marketplace />} />
     <Route path="/quest" element={<Quest />} />
     <Route path="/study-rooms" element={<StudyRooms />} />
+    <Route path="/messages" element={<Messages />} />
     <Route path="/events" element={<Events />} />
     <Route path="/community" element={<Community />} />
     <Route path="/help" element={<Help />} />
