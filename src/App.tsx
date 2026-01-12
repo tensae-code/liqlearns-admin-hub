@@ -9,6 +9,7 @@ import ScrollToTop from "@/components/layout/ScrollToTop";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import UnderageDashboard from "./pages/UnderageDashboard";
 import Courses from "./pages/Courses";
 import EnterpriseDashboard from "./pages/EnterpriseDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
@@ -37,6 +38,7 @@ const AppRoutes = () => (
     <Route path="/" element={<Index />} />
     <Route path="/auth" element={<Auth />} />
     <Route path="/dashboard" element={<Dashboard />} />
+    <Route path="/dashboard/kids" element={<UnderageDashboard />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/enterprise" element={<EnterpriseDashboard />} />
     <Route path="/marketplace" element={<Marketplace />} />

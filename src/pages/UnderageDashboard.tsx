@@ -5,17 +5,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useStreakAnimation } from '@/hooks/useStreakAnimation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import Leaderboard from '@/components/dashboard/Leaderboard';
-import AICoach from '@/components/dashboard/AICoach';
 import CircularSkillRing from '@/components/dashboard/CircularSkillRing';
 import AuraPointsPanel from '@/components/dashboard/AuraPointsPanel';
 import StreakTracker from '@/components/dashboard/StreakTracker';
-import LearningResources from '@/components/dashboard/LearningResources';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
 import StreakGiftAnimation from '@/components/streak/StreakGiftAnimation';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { 
   BookOpen, 
   Trophy, 
@@ -30,16 +28,17 @@ import {
   Pen,
   Mic,
   Video,
-  FileText
+  FileText,
+  ShieldCheck,
+  Baby
 } from 'lucide-react';
 
-const Dashboard = () => {
+const UnderageDashboard = () => {
   const { user, loading } = useAuth();
   const { profile, updateStreak } = useProfile();
   const navigate = useNavigate();
   const [completedQuests, setCompletedQuests] = useState<string[]>([]);
   
-  // Streak animation hook
   const { showAnimation, closeAnimation, triggerAnimation } = useStreakAnimation(
     profile?.current_streak || 0,
     user?.id
@@ -51,23 +50,6 @@ const Dashboard = () => {
     }
   }, [user, loading, navigate]);
 
-  // Redirect underage users to kids dashboard
-  useEffect(() => {
-    if (profile && profile.birthday) {
-      const birthDate = new Date(profile.birthday);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      if (age < 16) {
-        navigate('/dashboard/kids');
-      }
-    }
-  }, [profile, navigate]);
-
-  // Update streak on dashboard load
   useEffect(() => {
     if (user && profile) {
       updateStreak();
@@ -94,13 +76,12 @@ const Dashboard = () => {
     { id: '2', title: 'Watch a video lesson', xp: 30 },
     { id: '3', title: 'Practice flashcards', xp: 25 },
     { id: '4', title: 'Read course materials', xp: 20 },
-    { id: '5', title: 'Join a study room', xp: 40 },
   ];
 
   const courses = [
     { title: 'Amharic Basics', progress: 65, lessons: 24, icon: '📚', category: 'Language' },
     { title: 'Ethiopian Culture', progress: 30, lessons: 18, icon: '🏛️', category: 'Culture' },
-    { title: 'Web Development', progress: 80, lessons: 32, icon: '💻', category: 'Technology' },
+    { title: 'Fun Math', progress: 80, lessons: 32, icon: '🔢', category: 'Math' },
   ];
 
   const toggleQuest = (id: string) => {
@@ -114,6 +95,23 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
+      {/* Safe Zone Banner */}
+      <motion.div
+        className="mb-4 p-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center gap-3"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+          <ShieldCheck className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="font-semibold flex items-center gap-2">
+            <Baby className="w-4 h-4" /> Kids Safe Zone
+          </p>
+          <p className="text-sm opacity-90">Protected learning environment for young learners</p>
+        </div>
+      </motion.div>
+
       {/* Welcome Header */}
       <motion.div
         className="mb-4 md:mb-6"
@@ -121,12 +119,12 @@ const Dashboard = () => {
         animate={{ opacity: 1, y: 0 }}
       >
         <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-1">
-          Good morning, {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Learner'}! 👋
+          Hey there, {profile?.full_name?.split(' ')[0] || 'Learner'}! 🎉
         </h1>
-        <p className="text-muted-foreground text-sm md:text-base">Continue your learning journey today</p>
+        <p className="text-muted-foreground text-sm md:text-base">Let's have fun learning today!</p>
       </motion.div>
 
-      {/* Stats Grid - Colorful Gradient Cards */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {stats.map((stat, i) => (
           <motion.div
@@ -252,7 +250,7 @@ const Dashboard = () => {
 
       {/* Daily Goal Banner */}
       <motion.div
-        className="mt-4 md:mt-6 p-4 md:p-6 rounded-2xl bg-gradient-hero text-primary-foreground relative overflow-hidden"
+        className="mt-4 md:mt-6 p-4 md:p-6 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white relative overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
@@ -260,53 +258,22 @@ const Dashboard = () => {
         <div className="flex items-center justify-between relative z-10">
           <div>
             <h3 className="font-display font-semibold text-base md:text-lg mb-1">Daily Goal</h3>
-            <p className="text-primary-foreground/70 text-sm md:text-base">
-              Complete {5 - completedCount} more quests to earn bonus XP!
+            <p className="text-white/80 text-sm md:text-base">
+              Complete {4 - completedCount} more quests to earn bonus XP!
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 md:w-16 md:h-16 rounded-full border-4 border-gold/30 flex items-center justify-center">
+            <div className="w-12 h-12 md:w-16 md:h-16 rounded-full border-4 border-white/30 flex items-center justify-center">
               <div className="text-center">
-                <Target className="w-4 h-4 md:w-6 md:h-6 text-gold mx-auto" />
-                <span className="text-xs md:text-sm font-bold">{completedCount}/5</span>
+                <Target className="w-4 h-4 md:w-6 md:h-6 mx-auto" />
+                <span className="text-xs md:text-sm font-bold">{completedCount}/4</span>
               </div>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Learning Tools */}
-      <motion.div
-        className="mt-4 md:mt-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <h2 className="text-base md:text-lg font-display font-semibold text-foreground mb-3 md:mb-4">Quick Access</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {[
-            { icon: Video, label: 'Video Lessons', count: 45, color: 'text-accent', bg: 'bg-accent/10' },
-            { icon: Headphones, label: 'Audio Guides', count: 23, color: 'text-gold', bg: 'bg-gold/10' },
-            { icon: FileText, label: 'Study Notes', count: 67, color: 'text-success', bg: 'bg-success/10' },
-            { icon: Target, label: 'Practice Quiz', count: 12, color: 'text-streak', bg: 'bg-streak/10' },
-          ].map((tool, i) => (
-            <div
-              key={tool.label}
-              className="bg-card rounded-xl p-3 md:p-4 border border-border hover:border-accent/30 hover:shadow-soft transition-all cursor-pointer flex items-center gap-3 md:gap-4"
-            >
-              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl ${tool.bg} flex items-center justify-center flex-shrink-0`}>
-                <tool.icon className={`w-5 h-5 md:w-6 md:h-6 ${tool.color}`} />
-              </div>
-              <div className="min-w-0">
-                <p className="font-medium text-foreground text-sm md:text-base truncate">{tool.label}</p>
-                <p className="text-xs md:text-sm text-muted-foreground">{tool.count} available</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Skills Progress - Circular Rings */}
+      {/* Skills Progress */}
       <motion.div
         className="mt-4 md:mt-6"
         initial={{ opacity: 0, y: 20 }}
@@ -333,19 +300,12 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Learning Resources - 12 Types */}
+      {/* Recent Activity */}
       <div className="mt-4 md:mt-6">
-        <LearningResources userLevel={5} />
-      </div>
-
-      {/* Leaderboard & Recent Activity */}
-      <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
-        <Leaderboard />
         <RecentActivity />
       </div>
 
-
-      {/* Quick Access Button (includes Daily Bonus) */}
+      {/* Quick Access Button */}
       <QuickAccessButton />
 
       {/* Streak Gift Animation */}
@@ -358,4 +318,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default UnderageDashboard;
