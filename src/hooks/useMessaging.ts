@@ -39,29 +39,29 @@ export const useMessaging = () => {
 
       if (dmError) throw dmError;
 
-      // Get unique conversation partners
-      const partnerIds = new Set<string>();
+      // Get unique conversation partners (use a map to avoid duplicates)
       const dmConversationsMap = new Map<string, any>();
       
       dmData?.forEach(dm => {
         const partnerId = dm.sender_id === user.id ? dm.receiver_id : dm.sender_id;
+        // Only set if not already present (keep the most recent message which comes first)
         if (!dmConversationsMap.has(partnerId)) {
-          partnerIds.add(partnerId);
           dmConversationsMap.set(partnerId, dm);
         }
       });
 
+      const partnerIds = Array.from(dmConversationsMap.keys());
+      
       // Fetch partner profiles
-      const partnerIdsArray = Array.from(partnerIds);
       let dmConversations: Conversation[] = [];
       
-      if (partnerIdsArray.length > 0) {
+      if (partnerIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, user_id, full_name, username, avatar_url')
-          .in('user_id', partnerIdsArray);
+          .in('user_id', partnerIds);
 
-        dmConversations = partnerIdsArray.map(partnerId => {
+        dmConversations = partnerIds.map(partnerId => {
           const profile = profiles?.find(p => p.user_id === partnerId);
           const lastDm = dmConversationsMap.get(partnerId);
           
@@ -78,7 +78,7 @@ export const useMessaging = () => {
             lastMessage: lastDm?.content?.substring(0, 50) || '',
             lastMessageTime: formatTime(lastDm?.created_at),
             unreadCount,
-            isOnline: false, // Would need presence tracking
+            isOnline: false, // Presence handled separately
           };
         });
       }
