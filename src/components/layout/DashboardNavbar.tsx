@@ -272,12 +272,15 @@ const DashboardNavbar = () => {
             </SheetContent>
           </Sheet>
 
-          <Link to="/" className="flex items-center gap-2">
+          <button 
+            onClick={() => window.location.href = '/'}
+            className="flex items-center gap-2"
+          >
             <div className="w-8 h-8 rounded-lg bg-gradient-hero flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-primary-foreground" />
             </div>
             <span className="text-lg font-display font-bold text-foreground">LiqLearns</span>
-          </Link>
+          </button>
         </div>
 
         {/* Search Bar - Desktop */}

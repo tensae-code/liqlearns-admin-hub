@@ -235,7 +235,10 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     >
       {/* Logo */}
       <div className={cn('p-3 border-b border-white/10', collapsed && 'flex justify-center')}>
-        <Link to="/" className="flex items-center gap-3">
+        <button 
+          onClick={() => window.location.href = '/'}
+          className="flex items-center gap-3"
+        >
           <div className={cn(
             'rounded-xl bg-gradient-hero flex items-center justify-center flex-shrink-0',
             collapsed ? 'w-10 h-10' : 'w-10 h-10'
@@ -245,7 +248,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
           {!collapsed && (
             <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
           )}
-        </Link>
+        </button>
       </div>
 
       {/* User Stats - Collapsed shows avatar only */}
