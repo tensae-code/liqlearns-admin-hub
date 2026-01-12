@@ -17,7 +17,9 @@ import {
   Info
 } from 'lucide-react';
 import ChatBubble from './ChatBubble';
+import CallModal from './CallModal';
 import { Conversation } from './ConversationList';
+import { toast } from 'sonner';
 
 export interface Message {
   id: string;
@@ -51,6 +53,8 @@ const ChatWindow = ({
   isMobile
 }: ChatWindowProps) => {
   const [newMessage, setNewMessage] = useState('');
+  const [showCall, setShowCall] = useState(false);
+  const [callType, setCallType] = useState<'voice' | 'video'>('voice');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +80,24 @@ const ChatWindow = ({
     }
   };
 
+  const handleVoiceCall = () => {
+    if (conversation?.type === 'dm') {
+      setCallType('voice');
+      setShowCall(true);
+    } else {
+      toast.info('Voice calls coming soon for groups!');
+    }
+  };
+
+  const handleVideoCall = () => {
+    if (conversation?.type === 'dm') {
+      setCallType('video');
+      setShowCall(true);
+    } else {
+      toast.info('Video calls coming soon for groups!');
+    }
+  };
+
   if (!conversation) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-background/50 text-muted-foreground">
@@ -86,13 +108,13 @@ const ChatWindow = ({
     );
   }
 
-  // Group messages by sender for sequential messages
-  const groupedMessages = messages.reduce<Array<{ messages: Message[], showAvatar: boolean }>>((acc, msg, i) => {
+  // Group messages by sender for sequential messages with better tracking
+  const groupedMessages = messages.reduce<Array<{ messages: Message[], senderId: string }>>((acc, msg, i) => {
     const prevMsg = messages[i - 1];
-    const showAvatar = !prevMsg || prevMsg.sender.id !== msg.sender.id;
+    const isNewGroup = !prevMsg || prevMsg.sender.id !== msg.sender.id;
     
-    if (showAvatar) {
-      acc.push({ messages: [msg], showAvatar: true });
+    if (isNewGroup) {
+      acc.push({ messages: [msg], senderId: msg.sender.id });
     } else {
       acc[acc.length - 1].messages.push(msg);
     }
@@ -131,20 +153,20 @@ const ChatWindow = ({
         </div>
 
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" title="Voice Call" onClick={handleVoiceCall}>
             <Phone className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" title="Video Call" onClick={handleVideoCall}>
             <Video className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={onViewInfo}>
+          <Button variant="ghost" size="icon" onClick={onViewInfo} title="Info">
             <Info className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-1">
+      {/* Messages - iPhone style background */}
+      <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-background to-muted/20">
         {groupedMessages.map((group, groupIndex) => (
           <div key={groupIndex}>
             {group.messages.map((msg, msgIndex) => (
@@ -154,8 +176,10 @@ const ChatWindow = ({
                 sender={msg.sender}
                 timestamp={msg.timestamp}
                 isSender={msg.sender.id === currentUserId}
-                showAvatar={msgIndex === 0}
+                showAvatar={msgIndex === group.messages.length - 1}
                 isRead={msg.isRead}
+                isFirstInGroup={msgIndex === 0}
+                isLastInGroup={msgIndex === group.messages.length - 1}
               />
             ))}
           </div>
@@ -201,6 +225,18 @@ const ChatWindow = ({
           </Button>
         </div>
       </div>
+
+      {/* Call Modal */}
+      <CallModal
+        open={showCall}
+        onOpenChange={setShowCall}
+        callType={callType}
+        callee={{
+          id: conversation.id,
+          name: conversation.name,
+          avatar: conversation.avatar,
+        }}
+      />
     </div>
   );
 };
