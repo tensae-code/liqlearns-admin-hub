@@ -328,8 +328,6 @@ const Dashboard = () => {
         <RecentActivity />
       </div>
 
-      {/* AI Coach */}
-      <AICoach />
 
       {/* Quick Access Button (includes Daily Bonus) */}
       <QuickAccessButton />
