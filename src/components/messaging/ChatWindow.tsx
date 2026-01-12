@@ -1,25 +1,26 @@
-import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Send, 
-  Smile, 
   Image, 
   Paperclip, 
   Phone, 
   Video, 
-  MoreVertical,
   Users,
   ArrowLeft,
   Info
 } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import CallModal from './CallModal';
+import EmojiPicker from './EmojiPicker';
+import TypingIndicator from './TypingIndicator';
 import { Conversation } from './ConversationList';
 import { toast } from 'sonner';
+import usePresence from '@/hooks/usePresence';
 
 export interface Message {
   id: string;
@@ -57,6 +58,9 @@ const ChatWindow = ({
   const [callType, setCallType] = useState<'voice' | 'video'>('voice');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const { isUserOnline, getTypingUsersForConversation, sendTypingIndicator } = usePresence();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -66,8 +70,31 @@ const ChatWindow = ({
     scrollToBottom();
   }, [messages]);
 
+  const handleTyping = useCallback(() => {
+    if (!conversation) return;
+    
+    sendTypingIndicator(conversation.id, true);
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTypingIndicator(conversation.id, false);
+    }, 2000);
+  }, [conversation, sendTypingIndicator]);
+
   const handleSend = () => {
     if (!newMessage.trim()) return;
+    
+    // Stop typing indicator
+    if (conversation) {
+      sendTypingIndicator(conversation.id, false);
+    }
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
     onSendMessage(newMessage);
     setNewMessage('');
     inputRef.current?.focus();
@@ -78,6 +105,16 @@ const ChatWindow = ({
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    handleTyping();
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+    inputRef.current?.focus();
   };
 
   const handleVoiceCall = () => {
@@ -97,6 +134,18 @@ const ChatWindow = ({
       toast.info('Video calls coming soon for groups!');
     }
   };
+
+  // Get partner ID from DM conversation
+  const getPartnerId = () => {
+    if (conversation?.type === 'dm') {
+      return conversation.id.replace('dm_', '');
+    }
+    return null;
+  };
+
+  const partnerId = getPartnerId();
+  const isPartnerOnline = partnerId ? isUserOnline(partnerId) : false;
+  const typingUsers = conversation ? getTypingUsersForConversation(conversation.id) : [];
 
   if (!conversation) {
     return (
@@ -144,10 +193,15 @@ const ChatWindow = ({
         
         <div className="flex-1">
           <h3 className="font-medium text-foreground">{conversation.name}</h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
             {conversation.type === 'group' 
               ? `${conversation.members} members`
-              : conversation.isOnline ? 'Online' : 'Offline'
+              : (
+                <>
+                  <span className={`w-2 h-2 rounded-full ${isPartnerOnline ? 'bg-success' : 'bg-muted-foreground'}`} />
+                  {isPartnerOnline ? 'Online' : 'Offline'}
+                </>
+              )
             }
           </p>
         </div>
@@ -185,6 +239,13 @@ const ChatWindow = ({
           </div>
         ))}
         <div ref={messagesEndRef} />
+        
+        {/* Typing Indicator */}
+        <AnimatePresence>
+          {typingUsers.length > 0 && (
+            <TypingIndicator users={typingUsers} />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Input */}
@@ -202,17 +263,13 @@ const ChatWindow = ({
               ref={inputRef}
               placeholder="Type a message..."
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               className="pr-10 bg-muted/50"
             />
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute right-1 top-1/2 -translate-y-1/2"
-            >
-              <Smile className="w-5 h-5 text-muted-foreground" />
-            </Button>
+            <div className="absolute right-1 top-1/2 -translate-y-1/2">
+              <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+            </div>
           </div>
           
           <Button 

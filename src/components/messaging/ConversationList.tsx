@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import usePresence from '@/hooks/usePresence';
 
 export interface Conversation {
   id: string;
@@ -45,6 +46,7 @@ const ConversationList = ({
   onFilterChange
 }: ConversationListProps) => {
   const { user } = useAuth();
+  const { isUserOnline } = usePresence();
   const [searchQuery, setSearchQuery] = useState('');
   const [requestCount, setRequestCount] = useState(0);
 
@@ -198,7 +200,7 @@ const ConversationList = ({
                     {conv.type === 'group' ? <Users className="w-5 h-5" /> : conv.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                {conv.isOnline && (
+                {conv.type === 'dm' && isUserOnline(conv.id.replace('dm_', '')) && (
                   <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card" />
                 )}
               </div>
