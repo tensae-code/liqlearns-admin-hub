@@ -85,16 +85,16 @@ const Navbar = () => {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                  <DropdownMenuItem onSelect={() => navigate('/dashboard')}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <DropdownMenuItem onSelect={() => navigate('/profile')}>
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                  <DropdownMenuItem onSelect={handleSignOut} className="text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </DropdownMenuItem>
