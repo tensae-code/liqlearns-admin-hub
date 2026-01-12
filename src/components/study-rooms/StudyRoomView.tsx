@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,11 @@ import {
   MessageSquare,
   MoreVertical,
   Flag,
-  UserPlus
+  UserPlus,
+  Monitor,
+  MonitorOff,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -26,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { useVideoChat } from '@/hooks/useVideoChat';
 import type { RoomParticipant, StudyRoom } from '@/hooks/useStudyRooms';
 
 interface StudyRoomViewProps {
@@ -61,6 +66,27 @@ const StudyRoomView = ({
   const [titleInput, setTitleInput] = useState(myStudyTitle);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  const {
+    isVideoOn,
+    isScreenSharing,
+    localStream,
+    screenStream,
+    toggleVideo,
+    toggleMic: toggleLocalMic,
+    toggleScreenShare,
+    videoRef,
+    screenRef,
+  } = useVideoChat();
+
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Update local video element when stream changes
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
   // Sort participants: pinned first, then by pin count
   const sortedParticipants = [...participants].sort((a, b) => {
     if (a.is_pinned_by_me && !b.is_pinned_by_me) return -1;
@@ -73,11 +99,21 @@ const StudyRoomView = ({
     setIsEditingTitle(false);
   };
 
-  const gridCols = participants.length <= 4 
+  const handleMicToggle = () => {
+    onToggleMic();
+    if (localStream) {
+      toggleLocalMic();
+    }
+  };
+
+  const totalGridItems = sortedParticipants.length + (isScreenSharing ? 1 : 0);
+  const gridCols = totalGridItems <= 2 
+    ? 'grid-cols-1 md:grid-cols-2' 
+    : totalGridItems <= 4 
     ? 'grid-cols-2' 
-    : participants.length <= 9 
-    ? 'grid-cols-3' 
-    : 'grid-cols-4';
+    : totalGridItems <= 9 
+    ? 'grid-cols-2 md:grid-cols-3' 
+    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
 
   return (
     <div className="flex flex-col h-[calc(100vh-120px)]">
@@ -122,8 +158,9 @@ const StudyRoomView = ({
             variant="ghost"
             size="sm"
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+            title={viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view'}
           >
-            {viewMode === 'grid' ? <Users className="w-4 h-4" /> : <Video className="w-4 h-4" />}
+            {viewMode === 'grid' ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
           </Button>
         </div>
       </div>
@@ -161,9 +198,31 @@ const StudyRoomView = ({
           'grid gap-4',
           viewMode === 'grid' ? gridCols : 'grid-cols-1'
         )}>
+          {/* Screen Share (if active) */}
+          {isScreenSharing && screenStream && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative rounded-xl border-2 border-accent bg-black overflow-hidden col-span-full aspect-video"
+            >
+              <video
+                ref={screenRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-contain"
+              />
+              <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                <Monitor className="w-4 h-4 text-accent" />
+                <span className="text-sm font-medium">Your Screen</span>
+              </div>
+            </motion.div>
+          )}
+
           {sortedParticipants.map((participant, index) => {
             const isMe = participant.user_id === currentUserId;
             const initials = participant.profile?.full_name?.split(' ').map(n => n[0]).join('') || '?';
+            const showLocalVideo = isMe && isVideoOn && localStream;
 
             return (
               <motion.div
@@ -182,21 +241,31 @@ const StudyRoomView = ({
                 {/* Grid View */}
                 {viewMode === 'grid' ? (
                   <div className="absolute inset-0 flex flex-col">
-                    {/* Video placeholder / Avatar */}
-                    <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                      <Avatar className="w-20 h-20 border-4 border-background shadow-lg">
-                        <AvatarImage src={participant.profile?.avatar_url || undefined} />
-                        <AvatarFallback className="text-2xl font-bold bg-accent text-accent-foreground">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
+                    {/* Video / Avatar */}
+                    <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 relative">
+                      {showLocalVideo ? (
+                        <video
+                          ref={localVideoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Avatar className="w-20 h-20 border-4 border-background shadow-lg">
+                          <AvatarImage src={participant.profile?.avatar_url || undefined} />
+                          <AvatarFallback className="text-2xl font-bold bg-accent text-accent-foreground">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                     </div>
 
                     {/* Bottom info bar */}
                     <div className="p-3 bg-background/80 backdrop-blur-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
-                          {participant.is_mic_on ? (
+                          {participant.is_mic_on || (isMe && isMicOn) ? (
                             <Mic className="w-4 h-4 text-success shrink-0" />
                           ) : (
                             <MicOff className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -266,12 +335,26 @@ const StudyRoomView = ({
                 ) : (
                   /* List View */
                   <div className="flex items-center gap-4">
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={participant.profile?.avatar_url || undefined} />
-                      <AvatarFallback className="bg-accent text-accent-foreground">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      {showLocalVideo ? (
+                        <div className="w-12 h-12 rounded-full overflow-hidden">
+                          <video
+                            ref={localVideoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={participant.profile?.avatar_url || undefined} />
+                          <AvatarFallback className="bg-accent text-accent-foreground">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -279,7 +362,7 @@ const StudyRoomView = ({
                           {participant.profile?.full_name || 'Unknown'}
                         </span>
                         {isMe && <Badge variant="secondary">You</Badge>}
-                        {participant.is_mic_on ? (
+                        {participant.is_mic_on || (isMe && isMicOn) ? (
                           <Mic className="w-4 h-4 text-success" />
                         ) : (
                           <MicOff className="w-4 h-4 text-muted-foreground" />
@@ -319,12 +402,24 @@ const StudyRoomView = ({
               </motion.div>
             );
           })}
+
+          {/* Empty state when alone */}
+          {sortedParticipants.length === 0 && (
+            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+              <Users className="w-16 h-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">You're the first one here!</h3>
+              <p className="text-muted-foreground max-w-md">
+                Wait for others to join or invite your friends to study together.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Bottom Controls */}
       <div className="p-4 border-t border-border bg-card">
         <div className="flex items-center justify-center gap-3">
+          {/* Mic Button */}
           {room.is_always_muted ? (
             <Button
               variant="outline"
@@ -341,45 +436,71 @@ const StudyRoomView = ({
               size="lg"
               className={cn(
                 "rounded-full w-14 h-14",
-                isMicOn && "bg-accent"
+                isMicOn && "bg-accent hover:bg-accent/90"
               )}
-              onClick={onToggleMic}
+              onClick={handleMicToggle}
+              title={isMicOn ? "Turn off microphone" : "Turn on microphone"}
             >
               {isMicOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
             </Button>
           )}
 
+          {/* Video Button */}
           <Button
-            variant="outline"
+            variant={isVideoOn ? "default" : "outline"}
             size="lg"
-            className="rounded-full w-14 h-14"
-            disabled
+            className={cn(
+              "rounded-full w-14 h-14",
+              isVideoOn && "bg-accent hover:bg-accent/90"
+            )}
+            onClick={toggleVideo}
+            title={isVideoOn ? "Turn off camera" : "Turn on camera"}
           >
-            <VideoOff className="w-6 h-6" />
+            {isVideoOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
           </Button>
 
+          {/* Screen Share Button */}
+          <Button
+            variant={isScreenSharing ? "default" : "outline"}
+            size="lg"
+            className={cn(
+              "rounded-full w-14 h-14",
+              isScreenSharing && "bg-accent hover:bg-accent/90"
+            )}
+            onClick={toggleScreenShare}
+            title={isScreenSharing ? "Stop sharing screen" : "Share screen"}
+          >
+            {isScreenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
+          </Button>
+
+          {/* Chat Button (Coming Soon) */}
           <Button
             variant="outline"
             size="lg"
             className="rounded-full w-14 h-14"
             disabled
+            title="Chat coming soon"
           >
             <MessageSquare className="w-6 h-6" />
           </Button>
 
+          {/* Settings Button */}
           <Button
             variant="outline"
             size="lg"
             className="rounded-full w-14 h-14"
+            title="Settings"
           >
             <Settings className="w-6 h-6" />
           </Button>
 
+          {/* Leave Button */}
           <Button
             variant="destructive"
             size="lg"
             className="rounded-full w-14 h-14"
             onClick={onLeaveRoom}
+            title="Leave room"
           >
             <PhoneOff className="w-6 h-6" />
           </Button>

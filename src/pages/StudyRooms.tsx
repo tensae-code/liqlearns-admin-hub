@@ -86,13 +86,19 @@ const StudyRooms = () => {
 
   // Handle joining a room
   const handleJoinRoom = async (studyTitle: string) => {
-    if (!joinModalRoom) return;
+    if (!joinModalRoom || !profile?.id) return;
     
     const success = await joinRoom(joinModalRoom.id, studyTitle);
     if (success) {
-      setCurrentRoom(joinModalRoom);
+      // Set the room first, then fetch participants
+      const roomToJoin = joinModalRoom;
+      setCurrentRoom(roomToJoin);
       setMyStudyTitle(studyTitle);
-      await fetchParticipants(joinModalRoom.id);
+      
+      // Fetch participants after a small delay to ensure DB is updated
+      setTimeout(() => {
+        fetchParticipants(roomToJoin.id);
+      }, 100);
     }
     setJoinModalRoom(null);
   };
