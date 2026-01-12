@@ -33,6 +33,7 @@ export interface RoomParticipant {
   user_id: string;
   study_title: string | null;
   is_mic_on: boolean;
+  is_video_on?: boolean;
   joined_at: string;
   profile?: {
     full_name: string;
@@ -149,12 +150,27 @@ export const useStudyRooms = () => {
     }
 
     try {
+      // First check if already in the room
+      const { data: existing } = await supabase
+        .from('study_room_participants')
+        .select('id')
+        .eq('room_id', roomId)
+        .eq('user_id', profile.id)
+        .single();
+
+      if (existing) {
+        // Already in room, just return success
+        toast({ title: 'Welcome Back!', description: 'You are already in this room' });
+        return true;
+      }
+
       const { error } = await supabase
         .from('study_room_participants')
         .insert({
           room_id: roomId,
           user_id: profile.id,
           study_title: studyTitle || null,
+          is_mic_on: false,
         });
 
       if (error) throw error;
@@ -162,6 +178,7 @@ export const useStudyRooms = () => {
       toast({ title: 'Joined Room!', description: 'You are now in the study room' });
       return true;
     } catch (error: any) {
+      console.error('Join room error:', error);
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       return false;
     }
