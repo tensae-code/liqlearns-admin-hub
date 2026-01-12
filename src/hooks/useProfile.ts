@@ -16,7 +16,21 @@ interface Profile {
   subscription_status: string | null;
   bio: string | null;
   last_login_date: string | null;
+  birthday: string | null;
 }
+
+// Helper to calculate age from birthday
+const calculateAge = (birthday: string | null): number | null => {
+  if (!birthday) return null;
+  const today = new Date();
+  const birthDate = new Date(birthday);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
 
 export const useProfile = () => {
   const { user } = useAuth();
@@ -98,5 +112,8 @@ export const useProfile = () => {
     }
   };
 
-  return { profile, loading, error, updateStreak, refetch };
+  const age = profile ? calculateAge(profile.birthday) : null;
+  const isUnderage = age !== null && age < 16;
+
+  return { profile, loading, error, updateStreak, refetch, age, isUnderage };
 };

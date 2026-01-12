@@ -42,6 +42,7 @@ interface FormData {
   phone: string;
   password: string;
   sponsorUsername: string;
+  birthday: string;
   acceptTerms: boolean;
   acceptPrivacy: boolean;
 }
@@ -69,6 +70,7 @@ const Auth = () => {
     phone: '',
     password: '',
     sponsorUsername: '',
+    birthday: '',
     acceptTerms: false,
     acceptPrivacy: false,
   });
@@ -170,7 +172,7 @@ const Auth = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 0: return formData.role;
-      case 1: return formData.fullName && formData.username && formData.email && formData.password.length >= 6;
+      case 1: return formData.fullName && formData.username && formData.email && formData.password.length >= 6 && formData.birthday;
       case 2: return formData.acceptTerms && formData.acceptPrivacy;
       default: return true;
     }
@@ -384,6 +386,22 @@ const Auth = () => {
           />
         </div>
         <p className="text-xs text-muted-foreground mt-1">Minimum 6 characters</p>
+      </div>
+
+      <div>
+        <Label htmlFor="birthday">Birthday</Label>
+        <div className="relative mt-1">
+          <Input
+            id="birthday"
+            type="date"
+            value={formData.birthday}
+            onChange={(e) => updateFormData('birthday', e.target.value)}
+            className="pl-3"
+            required
+            max={new Date().toISOString().split('T')[0]}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">Used for age-appropriate content</p>
       </div>
 
       <div>
