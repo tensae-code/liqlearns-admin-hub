@@ -150,13 +150,17 @@ export const useStudyRooms = () => {
     }
 
     try {
-      // First check if already in the room
-      const { data: existing } = await supabase
+      // First check if already in the room - use maybeSingle to avoid error when no rows
+      const { data: existing, error: checkError } = await supabase
         .from('study_room_participants')
         .select('id')
         .eq('room_id', roomId)
         .eq('user_id', profile.id)
-        .single();
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Check existing error:', checkError);
+      }
 
       if (existing) {
         // Already in room, just return success
@@ -164,22 +168,29 @@ export const useStudyRooms = () => {
         return true;
       }
 
-      const { error } = await supabase
+      // Insert new participant
+      const { data: insertData, error } = await supabase
         .from('study_room_participants')
         .insert({
           room_id: roomId,
           user_id: profile.id,
           study_title: studyTitle || null,
           is_mic_on: false,
-        });
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
 
+      console.log('Successfully joined room:', insertData);
       toast({ title: 'Joined Room!', description: 'You are now in the study room' });
       return true;
     } catch (error: any) {
       console.error('Join room error:', error);
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'Error joining room', description: error.message || 'Failed to join room', variant: 'destructive' });
       return false;
     }
   };
