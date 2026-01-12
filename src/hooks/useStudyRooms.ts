@@ -18,6 +18,8 @@ export interface StudyRoom {
   current_streak: number;
   longest_streak: number;
   created_at: string;
+  is_system_room?: boolean;
+  is_always_muted?: boolean;
   host?: {
     full_name: string;
     avatar_url: string | null;
@@ -80,13 +82,22 @@ export const useStudyRooms = () => {
           return {
             ...room,
             room_type: room.room_type as 'public' | 'private' | 'kids',
+            is_system_room: (room as any).is_system_room || false,
+            is_always_muted: (room as any).is_always_muted || false,
             participant_count: count || 0,
             host: hostData || { full_name: 'Unknown', avatar_url: null },
           };
         })
       );
 
-      setRooms(roomsWithDetails);
+      // Sort: system rooms first, then by created_at
+      const sortedRooms = roomsWithDetails.sort((a, b) => {
+        if (a.is_system_room && !b.is_system_room) return -1;
+        if (!a.is_system_room && b.is_system_room) return 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      setRooms(sortedRooms);
     } catch (error) {
       console.error('Error fetching rooms:', error);
     } finally {

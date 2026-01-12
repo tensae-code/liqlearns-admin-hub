@@ -82,14 +82,26 @@ const StudyRoomView = ({
   return (
     <div className="flex flex-col h-[calc(100vh-120px)]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+      <div className={`flex items-center justify-between p-4 border-b border-border ${
+        room.is_system_room 
+          ? 'bg-gradient-to-r from-accent/10 to-primary/10' 
+          : 'bg-card'
+      }`}>
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
           <div>
-            <h2 className="font-display font-semibold text-foreground">{room.name}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-display font-semibold text-foreground">{room.name}</h2>
+              {room.is_system_room && (
+                <Badge className="bg-gradient-to-r from-accent to-primary text-white text-xs">
+                  Official
+                </Badge>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">
               {room.study_topic && `📚 ${room.study_topic} • `}
               {participants.length} participant{participants.length !== 1 ? 's' : ''}
+              {room.is_always_muted && ' • 🔇 Muted Room'}
             </p>
           </div>
         </div>
@@ -313,17 +325,29 @@ const StudyRoomView = ({
       {/* Bottom Controls */}
       <div className="p-4 border-t border-border bg-card">
         <div className="flex items-center justify-center gap-3">
-          <Button
-            variant={isMicOn ? "default" : "outline"}
-            size="lg"
-            className={cn(
-              "rounded-full w-14 h-14",
-              isMicOn && "bg-accent"
-            )}
-            onClick={onToggleMic}
-          >
-            {isMicOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
-          </Button>
+          {room.is_always_muted ? (
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-full w-14 h-14 opacity-50 cursor-not-allowed"
+              disabled
+              title="Microphones are disabled in this room"
+            >
+              <MicOff className="w-6 h-6" />
+            </Button>
+          ) : (
+            <Button
+              variant={isMicOn ? "default" : "outline"}
+              size="lg"
+              className={cn(
+                "rounded-full w-14 h-14",
+                isMicOn && "bg-accent"
+              )}
+              onClick={onToggleMic}
+            >
+              {isMicOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+            </Button>
+          )}
 
           <Button
             variant="outline"

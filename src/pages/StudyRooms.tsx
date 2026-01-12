@@ -31,7 +31,9 @@ import {
   GraduationCap,
   MapPin,
   ShieldCheck,
-  Baby
+  Baby,
+  Crown,
+  MicOff
 } from 'lucide-react';
 import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
 
@@ -312,7 +314,11 @@ const StudyRooms = () => {
             {filteredRooms.map((room, i) => (
               <motion.div
                 key={room.id}
-                className="p-5 rounded-xl bg-card border border-border hover:border-accent/30 hover:shadow-lg transition-all group"
+                className={`p-5 rounded-xl border transition-all group ${
+                  room.is_system_room 
+                    ? 'bg-gradient-to-br from-accent/10 to-primary/10 border-accent/50 hover:border-accent hover:shadow-xl' 
+                    : 'bg-card border-border hover:border-accent/30 hover:shadow-lg'
+                }`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.05 }}
@@ -320,10 +326,23 @@ const StudyRooms = () => {
                 {/* Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge className="bg-destructive text-destructive-foreground animate-pulse">
-                        🔴 Live
-                      </Badge>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      {room.is_system_room ? (
+                        <Badge className="bg-gradient-to-r from-accent to-primary text-white border-0">
+                          <Crown className="w-3 h-3 mr-1" />
+                          Official
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-destructive text-destructive-foreground animate-pulse">
+                          🔴 Live
+                        </Badge>
+                      )}
+                      {room.is_always_muted && (
+                        <Badge variant="secondary" className="text-muted-foreground">
+                          <MicOff className="w-3 h-3 mr-1" />
+                          Muted
+                        </Badge>
+                      )}
                       {room.room_type === 'private' ? (
                         <Lock className="w-4 h-4 text-muted-foreground" />
                       ) : room.room_type === 'kids' ? (

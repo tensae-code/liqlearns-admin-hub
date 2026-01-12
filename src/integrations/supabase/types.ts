@@ -1027,6 +1027,8 @@ export type Database = {
           host_id: string
           id: string
           is_active: boolean | null
+          is_always_muted: boolean | null
+          is_system_room: boolean | null
           last_active_date: string | null
           longest_streak: number | null
           max_participants: number | null
@@ -1044,6 +1046,8 @@ export type Database = {
           host_id: string
           id?: string
           is_active?: boolean | null
+          is_always_muted?: boolean | null
+          is_system_room?: boolean | null
           last_active_date?: string | null
           longest_streak?: number | null
           max_participants?: number | null
@@ -1061,6 +1065,8 @@ export type Database = {
           host_id?: string
           id?: string
           is_active?: boolean | null
+          is_always_muted?: boolean | null
+          is_system_room?: boolean | null
           last_active_date?: string | null
           longest_streak?: number | null
           max_participants?: number | null
