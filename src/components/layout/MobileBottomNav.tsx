@@ -16,7 +16,8 @@ import {
   HelpCircle,
   LogOut,
   ChevronRight,
-  FileText
+  FileText,
+  Mail
 } from 'lucide-react';
 import {
   Drawer,
@@ -74,7 +75,7 @@ const MobileBottomNav = () => {
         return [
           { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
           { icon: BookOpen, label: 'Courses', path: '/courses' },
-          { icon: GraduationCap, label: 'Quest', path: '/quest' },
+          { icon: Mail, label: 'Messages', path: '/messages' },
           { icon: Users, label: 'Community', path: '/community' },
         ];
     }

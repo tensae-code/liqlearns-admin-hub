@@ -31,7 +31,8 @@ import {
   Baby,
   BarChart3,
   FileText,
-  UserCheck
+  UserCheck,
+  Mail
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -102,6 +103,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Library, label: 'Courses', path: '/courses' },
         { icon: GraduationCap, label: 'Quest', path: '/quest' },
         { icon: Users, label: 'Study Rooms', path: '/study-rooms' },
+        { icon: Mail, label: 'Messages', path: '/messages' },
         { icon: Calendar, label: 'Events', path: '/events' },
         { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
         { icon: MessageSquare, label: 'Community', path: '/community' },
