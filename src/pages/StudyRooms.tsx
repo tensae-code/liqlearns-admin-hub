@@ -86,21 +86,40 @@ const StudyRooms = () => {
 
   // Handle joining a room
   const handleJoinRoom = async (studyTitle: string) => {
-    if (!joinModalRoom || !profile?.id) return;
+    console.log('handleJoinRoom called', { joinModalRoom, profileId: profile?.id, studyTitle });
     
-    const success = await joinRoom(joinModalRoom.id, studyTitle);
+    if (!joinModalRoom) {
+      console.error('No room selected to join');
+      toast({ title: 'Error', description: 'No room selected', variant: 'destructive' });
+      return;
+    }
+    
+    if (!profile?.id) {
+      console.error('No profile ID - user may not be logged in');
+      toast({ title: 'Error', description: 'Please log in to join a room', variant: 'destructive' });
+      return;
+    }
+    
+    const roomToJoin = joinModalRoom;
+    console.log('Attempting to join room:', roomToJoin.id);
+    
+    const success = await joinRoom(roomToJoin.id, studyTitle);
+    console.log('joinRoom result:', success);
+    
     if (success) {
       // Set the room first, then fetch participants
-      const roomToJoin = joinModalRoom;
       setCurrentRoom(roomToJoin);
       setMyStudyTitle(studyTitle);
+      setJoinModalRoom(null);
       
       // Fetch participants after a small delay to ensure DB is updated
       setTimeout(() => {
         fetchParticipants(roomToJoin.id);
-      }, 100);
+      }, 200);
+    } else {
+      // Close modal even on failure so user can retry
+      setJoinModalRoom(null);
     }
-    setJoinModalRoom(null);
   };
 
   // Handle leaving room
