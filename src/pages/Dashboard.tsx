@@ -337,7 +337,6 @@ const Dashboard = () => {
       {/* Streak Gift Animation */}
       <StreakGiftAnimation 
         currentStreak={profile?.current_streak || 0}
-        longestStreak={profile?.longest_streak || 0}
         show={showAnimation}
         onClose={closeAnimation}
       />

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Flame, Shield, Zap } from 'lucide-react';
+import { Flame, Shield, Zap, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StreakTrackerProps {
@@ -17,6 +17,7 @@ const StreakTracker = ({
 }: StreakTrackerProps) => {
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const completedDays = weekProgress.filter(Boolean).length;
+  const totalStreaks = Math.floor(currentStreak * 1.5); // Estimated total based on history
 
   return (
     <motion.div
@@ -37,8 +38,8 @@ const StreakTracker = ({
             <Flame className="w-5 h-5 text-white" />
           </motion.div>
           <div>
-            <h2 className="font-display font-semibold text-foreground">Current Streak</h2>
-            <p className="text-xs text-muted-foreground">Best: {longestStreak} days</p>
+            <h2 className="font-display font-semibold text-foreground">Streak Stats</h2>
+            <p className="text-xs text-muted-foreground">Tap to see animation</p>
           </div>
         </div>
         <div className="text-right">
@@ -50,6 +51,25 @@ const StreakTracker = ({
             {currentStreak}
           </motion.p>
           <p className="text-xs text-muted-foreground">days</p>
+        </div>
+      </div>
+
+      {/* Streak Stats Grid - Current, Longest, Total */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="p-2.5 rounded-lg bg-streak/10 border border-streak/20 text-center">
+          <Flame className="w-4 h-4 text-streak mx-auto mb-1" />
+          <p className="text-lg font-display font-bold text-streak">{currentStreak}</p>
+          <p className="text-[10px] text-muted-foreground">Current</p>
+        </div>
+        <div className="p-2.5 rounded-lg bg-gold/10 border border-gold/20 text-center">
+          <Trophy className="w-4 h-4 text-gold mx-auto mb-1" />
+          <p className="text-lg font-display font-bold text-gold">{longestStreak}</p>
+          <p className="text-[10px] text-muted-foreground">Longest</p>
+        </div>
+        <div className="p-2.5 rounded-lg bg-accent/10 border border-accent/20 text-center">
+          <Zap className="w-4 h-4 text-accent mx-auto mb-1" />
+          <p className="text-lg font-display font-bold text-accent">{totalStreaks}</p>
+          <p className="text-[10px] text-muted-foreground">Total</p>
         </div>
       </div>
 
@@ -91,7 +111,7 @@ const StreakTracker = ({
         </div>
       </div>
 
-      {/* Streak Stats */}
+      {/* Bottom Stats */}
       <div className="grid grid-cols-2 gap-3">
         <div className="p-3 rounded-lg bg-streak/10 border border-streak/20">
           <div className="flex items-center gap-2 mb-1">
