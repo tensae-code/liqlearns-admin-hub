@@ -21,37 +21,61 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVideoChat } from '@/hooks/useVideoChat';
-import { useStudyTime } from '@/hooks/useStudyTime';
-import type { StudyRoom, RoomParticipant } from '@/hooks/useStudyRooms';
+import { useOptionalStudyRoomContext } from '@/contexts/StudyRoomContext';
 
-interface FloatingStudyRoomProps {
-  room: StudyRoom;
-  participants: RoomParticipant[];
-  currentUserId: string;
-  isMicOn: boolean;
-  pinnedUsers?: string[];
-  onToggleMic: () => void;
-  onLeaveRoom: () => void;
-  onExpand: () => void;
-}
+const FloatingStudyRoom = () => {
+  const context = useOptionalStudyRoomContext();
+  
+  // If no context or no active room, don't render
+  if (!context || !context.activeRoom || !context.isPopout) {
+    return null;
+  }
 
-const FloatingStudyRoom = ({
-  room,
-  participants,
-  currentUserId,
-  isMicOn,
-  pinnedUsers = [],
-  onToggleMic,
-  onLeaveRoom,
-  onExpand,
-}: FloatingStudyRoomProps) => {
-  const [isMinimized, setIsMinimized] = useState(false);
+  const {
+    activeRoom: room,
+    activeParticipants: participants,
+    pinnedUsers,
+    isMicOn,
+    setIsMicOn,
+    isMinimized,
+    setIsMinimized,
+    leaveActiveRoom,
+    setIsPopout,
+    sessionStartTime,
+  } = context;
+
   const [showPinnedList, setShowPinnedList] = useState(true);
-  const [position, setPosition] = useState({ x: window.innerWidth - 360, y: window.innerHeight - 400 });
+  const [position, setPosition] = useState({ x: window.innerWidth - 360, y: window.innerHeight - 500 });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
   
-  const { elapsedSeconds, formatTime, isStreakEligible } = useStudyTime();
+  // Calculate elapsed time
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  
+  useEffect(() => {
+    if (!sessionStartTime) {
+      setElapsedSeconds(0);
+      return;
+    }
+    
+    const interval = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - sessionStartTime.getTime()) / 1000));
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [sessionStartTime]);
+
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const isStreakEligible = elapsedSeconds >= 1800; // 30 minutes
   
   const {
     isVideoOn,
@@ -111,24 +135,34 @@ const FloatingStudyRoom = ({
   }, [isDragging]);
 
   const handleMicToggle = () => {
-    onToggleMic();
+    setIsMicOn(!isMicOn);
     if (localStream) {
       toggleLocalMic();
     }
   };
 
-  const currentParticipant = participants.find(p => p.user_id === currentUserId);
+  const handleLeave = async () => {
+    await leaveActiveRoom();
+  };
 
+  const handleExpand = () => {
+    setIsPopout(false);
+    setIsMinimized(false);
+  };
+
+  const currentParticipant = participants.find(p => p.user_id === context.activeRoom?.host_id);
+
+  // Minimized state - position above quick access button (bottom-right, but higher)
   if (isMinimized) {
     return (
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="fixed z-50 bottom-4 right-4"
+        className="fixed z-[60] bottom-24 right-6"
       >
         <Button
           onClick={() => setIsMinimized(false)}
-          className="rounded-full h-14 w-14 bg-accent hover:bg-accent/90 shadow-xl"
+          className="rounded-full h-14 w-14 bg-gradient-to-br from-accent to-primary shadow-xl relative"
         >
           <div className="relative">
             <Users className="w-6 h-6" />
@@ -137,6 +171,14 @@ const FloatingStudyRoom = ({
             </span>
           </div>
         </Button>
+        
+        {/* Timer badge */}
+        <div className={cn(
+          "absolute -top-2 -left-2 px-2 py-0.5 rounded-full text-[10px] font-medium text-white",
+          isStreakEligible ? "bg-success" : "bg-accent"
+        )}>
+          {formatTime(elapsedSeconds)}
+        </div>
       </motion.div>
     );
   }
@@ -146,7 +188,7 @@ const FloatingStudyRoom = ({
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       style={{ left: position.x, top: position.y }}
-      className="fixed z-50 w-80 bg-card border border-border rounded-xl shadow-2xl overflow-hidden"
+      className="fixed z-[60] w-80 bg-card border border-border rounded-xl shadow-2xl overflow-hidden"
     >
       {/* Header - Draggable */}
       <div
@@ -162,7 +204,7 @@ const FloatingStudyRoom = ({
           </Badge>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onExpand}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleExpand}>
             <Maximize2 className="w-3.5 h-3.5" />
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsMinimized(true)}>
@@ -199,7 +241,6 @@ const FloatingStudyRoom = ({
           ) : (
             <MicOff className="w-3 h-3 text-muted-foreground" />
           )}
-          <span className="text-xs">{currentParticipant?.study_title || 'Studying...'}</span>
         </div>
 
         {/* Study Timer */}
@@ -306,7 +347,7 @@ const FloatingStudyRoom = ({
           variant="destructive"
           size="icon"
           className="rounded-full h-9 w-9"
-          onClick={onLeaveRoom}
+          onClick={handleLeave}
         >
           <PhoneOff className="w-4 h-4" />
         </Button>

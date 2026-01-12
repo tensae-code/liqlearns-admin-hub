@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { StudyRoomProvider } from "@/contexts/StudyRoomContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/layout/ScrollToTop";
+import GlobalFloatingElements from "@/components/layout/GlobalFloatingElements";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -116,6 +117,7 @@ const App = () => (
           <StudyRoomProvider>
             <ScrollToTop />
             <AppRoutes />
+            <GlobalFloatingElements />
           </StudyRoomProvider>
         </AuthProvider>
       </BrowserRouter>

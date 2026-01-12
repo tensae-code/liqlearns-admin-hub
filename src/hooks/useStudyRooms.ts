@@ -331,11 +331,18 @@ export const useStudyRooms = () => {
       // Get profile info and pin counts for each participant
       const enrichedParticipants = await Promise.all(
         (participantsData || []).map(async (p) => {
-          // Get profile
+          // Get profile with full data including xp and streak
           const { data: profileData } = await supabase
-            .from('public_profiles')
-            .select('full_name, avatar_url, username')
+            .from('profiles')
+            .select('full_name, avatar_url, username, xp_points, current_streak, bio')
             .eq('id', p.user_id)
+            .single();
+
+          // Get study room country from room or profile
+          const { data: roomData } = await supabase
+            .from('study_rooms')
+            .select('country, education_level')
+            .eq('id', roomId)
             .single();
 
           // Get pin count
@@ -356,7 +363,11 @@ export const useStudyRooms = () => {
 
           return {
             ...p,
-            profile: profileData,
+            profile: profileData ? {
+              ...profileData,
+              country: roomData?.country || undefined,
+              education_level: roomData?.education_level || undefined,
+            } : undefined,
             pin_count: pinCount || 0,
             is_pinned_by_me: !!myPin,
           };

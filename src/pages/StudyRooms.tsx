@@ -4,10 +4,10 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useStudyRooms } from '@/hooks/useStudyRooms';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { useStudyRoomContext } from '@/contexts/StudyRoomContext';
 import CreateRoomModal from '@/components/study-rooms/CreateRoomModal';
 import JoinRoomModal from '@/components/study-rooms/JoinRoomModal';
 import StudyRoomView from '@/components/study-rooms/StudyRoomView';
-import FloatingStudyRoom from '@/components/study-rooms/FloatingStudyRoom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -36,8 +36,8 @@ import {
   Crown,
   MicOff
 } from 'lucide-react';
-import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
 import { supabase } from '@/integrations/supabase/client';
+
 
 const StudyRooms = () => {
   const {
@@ -58,6 +58,7 @@ const StudyRooms = () => {
   
   const { profile } = useProfile();
   const { toast } = useToast();
+  const studyRoomContext = useStudyRoomContext();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [ageCategory, setAgeCategory] = useState<'adult' | 'kids'>('adult');
@@ -66,7 +67,6 @@ const StudyRooms = () => {
   const [joinModalRoom, setJoinModalRoom] = useState<typeof rooms[0] | null>(null);
   const [isMicOn, setIsMicOn] = useState(false);
   const [myStudyTitle, setMyStudyTitle] = useState('');
-  const [isPopout, setIsPopout] = useState(false);
 
   // Get unique countries from rooms based on current age category
   const currentRooms = rooms.filter(r => 
@@ -132,7 +132,8 @@ const StudyRooms = () => {
     setCurrentRoom(null);
     setMyStudyTitle('');
     setIsMicOn(false);
-    setIsPopout(false);
+    studyRoomContext.setIsPopout(false);
+    studyRoomContext.setActiveRoom(null);
   };
 
   // Handle mic toggle
@@ -195,14 +196,26 @@ const StudyRooms = () => {
     toast({ title: 'Report Submitted', description: 'Thank you for reporting. Our team will review this.' });
   };
 
-  // Handle popout
+  // Handle popout - uses context so it persists across navigation
   const handlePopout = () => {
-    setIsPopout(true);
+    studyRoomContext.setActiveRoom(currentRoom);
+    studyRoomContext.setActiveParticipants(participants);
+    studyRoomContext.setIsPopout(true);
+    studyRoomContext.setIsMicOn(isMicOn);
+    studyRoomContext.setMyStudyTitle(myStudyTitle);
+    setCurrentRoom(null); // Clear local state so we show room list
   };
 
   const handleExpandFromPopout = () => {
-    setIsPopout(false);
+    // Restore from context
+    if (studyRoomContext.activeRoom) {
+      setCurrentRoom(studyRoomContext.activeRoom as any);
+    }
+    studyRoomContext.setIsPopout(false);
   };
+  
+  // Check if in popout mode via context
+  const isPopout = studyRoomContext.isPopout && studyRoomContext.activeRoom;
 
   // If in a room but NOT in popout mode, show the full room view
   if (currentRoom && !isPopout) {
@@ -526,23 +539,7 @@ const StudyRooms = () => {
         />
       )}
 
-      {/* Quick Access Button */}
-      <QuickAccessButton />
-
-      {/* Floating Study Room (when in popout mode) */}
-      <AnimatePresence>
-        {isPopout && currentRoom && (
-          <FloatingStudyRoom
-            room={currentRoom}
-            participants={participants}
-            currentUserId={profile?.id || ''}
-            isMicOn={isMicOn}
-            onToggleMic={handleToggleMic}
-            onLeaveRoom={handleLeaveRoom}
-            onExpand={handleExpandFromPopout}
-          />
-        )}
-      </AnimatePresence>
+      {/* Note: QuickAccessButton and FloatingStudyRoom are now rendered globally in App.tsx */}
     </DashboardLayout>
   );
 };
