@@ -57,11 +57,24 @@ interface ParticipantSidebarProps {
   onReport?: (userId: string) => void;
 }
 
-// Sample countries list
+// Comprehensive countries list
 const COUNTRIES = [
-  'Ethiopia', 'USA', 'UK', 'Canada', 'Germany', 'France', 'Japan', 'India', 
-  'China', 'Brazil', 'Australia', 'South Korea', 'Nigeria', 'Kenya', 'Egypt',
-  'South Africa', 'Mexico', 'Spain', 'Italy', 'Russia'
+  'Afghanistan', 'Albania', 'Algeria', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan',
+  'Bahrain', 'Bangladesh', 'Belarus', 'Belgium', 'Benin', 'Bolivia', 'Bosnia', 'Botswana', 'Brazil', 'Bulgaria', 'Burkina Faso',
+  'Cambodia', 'Cameroon', 'Canada', 'Chile', 'China', 'Colombia', 'Congo', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic',
+  'Denmark', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Eritrea', 'Estonia', 'Ethiopia',
+  'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Guatemala', 'Guinea',
+  'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Ivory Coast',
+  'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kuwait', 'Kyrgyzstan',
+  'Latvia', 'Lebanon', 'Liberia', 'Libya', 'Lithuania', 'Luxembourg',
+  'Madagascar', 'Malawi', 'Malaysia', 'Mali', 'Malta', 'Mexico', 'Moldova', 'Mongolia', 'Morocco', 'Mozambique', 'Myanmar',
+  'Namibia', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'Norway',
+  'Oman', 'Pakistan', 'Palestine', 'Panama', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal',
+  'Qatar', 'Romania', 'Russia', 'Rwanda',
+  'Saudi Arabia', 'Senegal', 'Serbia', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Somalia', 'South Africa', 'South Korea', 'Spain', 'Sri Lanka', 'Sudan', 'Sweden', 'Switzerland', 'Syria',
+  'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Togo', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan',
+  'UAE', 'Uganda', 'UK', 'Ukraine', 'Uruguay', 'USA', 'Uzbekistan',
+  'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'
 ];
 
 // Sample study fields
@@ -271,18 +284,18 @@ const ParticipantSidebar = ({
                     </div>
                   </div>
 
-                  {/* Stats Row - Enabled ones */}
+                  {/* Stats Row - Always show enabled stats (even if 0) */}
                   <div className="flex flex-wrap gap-1 mt-2 pl-13">
-                    {displaySettings.showXP && (participant.profile?.xp_points ?? 0) > 0 && (
+                    {displaySettings.showXP && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
                         <Zap className="w-2.5 h-2.5 mr-0.5 text-gold" />
-                        {participant.profile?.xp_points} XP
+                        {participant.profile?.xp_points ?? 0} XP
                       </Badge>
                     )}
-                    {displaySettings.showStreak && (participant.profile?.current_streak ?? 0) > 0 && (
+                    {displaySettings.showStreak && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
                         <Flame className="w-2.5 h-2.5 mr-0.5 text-streak" />
-                        {participant.profile?.current_streak}
+                        {participant.profile?.current_streak ?? 0} 🔥
                       </Badge>
                     )}
                     {displaySettings.showEducation && participant.profile?.education_level && (
