@@ -16,9 +16,11 @@ import {
   MonitorOff,
   Users,
   X,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVideoChat } from '@/hooks/useVideoChat';
+import { useStudyTime } from '@/hooks/useStudyTime';
 import type { StudyRoom, RoomParticipant } from '@/hooks/useStudyRooms';
 
 interface FloatingStudyRoomProps {
@@ -44,6 +46,8 @@ const FloatingStudyRoom = ({
   const [position, setPosition] = useState({ x: window.innerWidth - 360, y: window.innerHeight - 280 });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
+  
+  const { elapsedSeconds, formatTime, isStreakEligible } = useStudyTime();
   
   const {
     isVideoOn,
@@ -191,6 +195,15 @@ const FloatingStudyRoom = ({
             <MicOff className="w-3 h-3 text-muted-foreground" />
           )}
           <span className="text-xs">{currentParticipant?.study_title || 'Studying...'}</span>
+        </div>
+
+        {/* Study Timer */}
+        <div className={cn(
+          "absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full",
+          isStreakEligible ? "bg-success/90" : "bg-accent/90"
+        )}>
+          <Clock className="w-3 h-3 text-white" />
+          <span className="text-xs font-medium text-white">{formatTime(elapsedSeconds)}</span>
         </div>
 
         {/* Participant count */}

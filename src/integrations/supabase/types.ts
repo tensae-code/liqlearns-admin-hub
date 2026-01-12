@@ -190,6 +190,39 @@ export type Database = {
           },
         ]
       }
+      daily_study_stats: {
+        Row: {
+          created_at: string
+          id: string
+          sessions_count: number
+          streak_eligible: boolean | null
+          study_date: string
+          total_seconds: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sessions_count?: number
+          streak_eligible?: boolean | null
+          study_date?: string
+          total_seconds?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sessions_count?: number
+          streak_eligible?: boolean | null
+          study_date?: string
+          total_seconds?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       direct_messages: {
         Row: {
           content: string
@@ -1142,6 +1175,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      study_sessions: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          room_id: string | null
+          session_date: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          room_id?: string | null
+          session_date?: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          room_id?: string | null
+          session_date?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "study_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_badges: {
         Row: {
