@@ -37,7 +37,6 @@ import {
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import NotificationBell from '@/components/notifications/NotificationBell';
-import BrainBankButton from '@/components/brain-bank/BrainBankButton';
 
 interface NavItem {
   icon: typeof LayoutDashboard;
@@ -231,7 +230,6 @@ const TeacherNavbar = () => {
             New Course
           </Button>
 
-          <BrainBankButton />
           <NotificationBell />
 
           <DropdownMenu>

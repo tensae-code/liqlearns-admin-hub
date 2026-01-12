@@ -164,9 +164,10 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     const isSpecialRole = userRole && userRole !== 'student';
     if (isActive) {
       if (isSpecialRole) {
-        return 'bg-white/20 text-white font-medium';
+        // For special roles with dark backgrounds, use a more visible active state
+        return 'bg-white/25 text-white font-semibold shadow-sm';
       }
-      // For student role, use accent colors that work in both light and dark
+      // For student role, use accent with proper contrast
       return 'bg-accent text-accent-foreground font-medium';
     }
     if (isSpecialRole) {

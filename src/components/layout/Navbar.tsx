@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,12 +19,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import NotificationBell from '@/components/notifications/NotificationBell';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, getDashboardPath } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if we're on the landing page
+  const isLandingPage = location.pathname === '/';
 
   const handleSignOut = async () => {
     await signOut();
@@ -59,9 +62,8 @@ const Navbar = () => {
 
           {/* Auth Buttons / User Menu */}
           <div className="hidden md:flex items-center gap-3">
-            {user ? (
+            {user && !isLandingPage ? (
               <>
-                <NotificationBell />
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
@@ -100,6 +102,17 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </>
+            ) : user && isLandingPage ? (
+              <>
+                <Button variant="ghost" onClick={() => navigate(getDashboardPath())}>
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Button>
+                <Button variant="outline" onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
               </>
             ) : (
               <>
@@ -142,7 +155,17 @@ const Navbar = () => {
               <Link to="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
                 About
               </Link>
-              {user ? (
+              {user && isLandingPage ? (
+                <>
+                  <Button variant="outline" onClick={() => navigate(getDashboardPath())} className="w-full">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </Button>
+                  <Button variant="ghost" onClick={handleSignOut} className="w-full text-destructive">
+                    Sign Out
+                  </Button>
+                </>
+              ) : user ? (
                 <>
                   <Button variant="outline" onClick={() => navigate('/dashboard')} className="w-full">
                     Dashboard
