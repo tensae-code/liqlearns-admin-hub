@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useStreakAnimation } from '@/hooks/useStreakAnimation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Leaderboard from '@/components/dashboard/Leaderboard';
 import AICoach from '@/components/dashboard/AICoach';
@@ -12,6 +13,7 @@ import StreakTracker from '@/components/dashboard/StreakTracker';
 import LearningResources from '@/components/dashboard/LearningResources';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
+import StreakFireAnimation from '@/components/streak/StreakFireAnimation';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
@@ -36,6 +38,12 @@ const Dashboard = () => {
   const { profile, updateStreak } = useProfile();
   const navigate = useNavigate();
   const [completedQuests, setCompletedQuests] = useState<string[]>([]);
+  
+  // Streak animation hook
+  const { showAnimation, closeAnimation, triggerAnimation } = useStreakAnimation(
+    profile?.current_streak || 0,
+    user?.id
+  );
 
   useEffect(() => {
     if (!loading && !user) {
@@ -301,7 +309,12 @@ const Dashboard = () => {
       {/* Aura Points & Streak */}
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
         <AuraPointsPanel auraPoints={profile?.xp_points || 2450} level={5} nextLevelPoints={3000} />
-        <StreakTracker currentStreak={profile?.current_streak || 7} longestStreak={profile?.longest_streak || 45} weekProgress={[true, true, true, true, true, true, false]} />
+        <StreakTracker 
+          currentStreak={profile?.current_streak || 7} 
+          longestStreak={profile?.longest_streak || 45} 
+          weekProgress={[true, true, true, true, true, true, false]} 
+          onStreakClick={triggerAnimation}
+        />
       </div>
 
       {/* Learning Resources - 12 Types */}
@@ -320,6 +333,13 @@ const Dashboard = () => {
 
       {/* Quick Access Button (includes Daily Bonus) */}
       <QuickAccessButton />
+
+      {/* Streak Fire Animation */}
+      <StreakFireAnimation 
+        streak={profile?.current_streak || 0}
+        show={showAnimation}
+        onComplete={closeAnimation}
+      />
     </DashboardLayout>
   );
 };
