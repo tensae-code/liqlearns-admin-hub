@@ -13,7 +13,7 @@ import StreakTracker from '@/components/dashboard/StreakTracker';
 import LearningResources from '@/components/dashboard/LearningResources';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
-import StreakFireAnimation from '@/components/streak/StreakFireAnimation';
+import StreakGiftAnimation from '@/components/streak/StreakGiftAnimation';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
@@ -334,11 +334,12 @@ const Dashboard = () => {
       {/* Quick Access Button (includes Daily Bonus) */}
       <QuickAccessButton />
 
-      {/* Streak Fire Animation */}
-      <StreakFireAnimation 
-        streak={profile?.current_streak || 0}
+      {/* Streak Gift Animation */}
+      <StreakGiftAnimation 
+        currentStreak={profile?.current_streak || 0}
+        longestStreak={profile?.longest_streak || 0}
         show={showAnimation}
-        onComplete={closeAnimation}
+        onClose={closeAnimation}
       />
     </DashboardLayout>
   );
