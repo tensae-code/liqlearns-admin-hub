@@ -6,21 +6,26 @@ interface StreakTrackerProps {
   currentStreak: number;
   longestStreak: number;
   weekProgress: boolean[];
+  onStreakClick?: () => void;
 }
 
 const StreakTracker = ({ 
   currentStreak = 7, 
   longestStreak = 45,
-  weekProgress = [true, true, true, true, true, true, false]
+  weekProgress = [true, true, true, true, true, true, false],
+  onStreakClick
 }: StreakTrackerProps) => {
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const completedDays = weekProgress.filter(Boolean).length;
 
   return (
     <motion.div
-      className="bg-card rounded-xl border border-border p-5"
+      className="bg-card rounded-xl border border-border p-5 cursor-pointer hover:border-streak/50 transition-colors"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      onClick={onStreakClick}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
