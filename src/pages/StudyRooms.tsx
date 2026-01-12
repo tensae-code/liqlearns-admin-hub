@@ -88,7 +88,7 @@ const StudyRooms = () => {
   const totalParticipants = filteredRooms.reduce((sum, r) => sum + (r.participant_count || 0), 0);
 
   // Handle joining a room
-  const handleJoinRoom = async (studyTitle: string) => {
+  const handleJoinRoom = async (studyTitle: string, studyField?: string) => {
     console.log('handleJoinRoom called', { joinModalRoom, profileId: profile?.id, studyTitle });
     
     if (!joinModalRoom) {

@@ -1,18 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { 
   Mic, 
   MicOff, 
-  Pin, 
-  PinOff,
+  Pin,
   Video,
   VideoOff,
   PhoneOff,
-  Settings,
   Users,
   MessageSquare,
   MoreVertical,
@@ -23,6 +20,8 @@ import {
   ExternalLink,
   PanelRightClose,
   PanelRightOpen,
+  Zap,
+  Flame,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -33,6 +32,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useVideoChat } from '@/hooks/useVideoChat';
 import ParticipantSidebar from './ParticipantSidebar';
+import RoomSettingsSheet from './RoomSettingsSheet';
 import type { RoomParticipant, StudyRoom } from '@/hooks/useStudyRooms';
 
 interface DisplaySettings {
@@ -42,6 +42,7 @@ interface DisplaySettings {
   showCountry: boolean;
   showStudyTitle: boolean;
   showPinCount: boolean;
+  blurBackground: boolean;
 }
 
 interface StudyRoomViewProps {
@@ -67,6 +68,7 @@ const defaultDisplaySettings: DisplaySettings = {
   showCountry: true,
   showStudyTitle: true,
   showPinCount: true,
+  blurBackground: false,
 };
 
 const StudyRoomView = ({
@@ -84,12 +86,10 @@ const StudyRoomView = ({
   onReport,
   onPopout,
 }: StudyRoomViewProps) => {
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleInput, setTitleInput] = useState(myStudyTitle);
   const [showSidebar, setShowSidebar] = useState(true);
   const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(() => {
     const saved = localStorage.getItem('studyRoomDisplaySettings');
-    return saved ? JSON.parse(saved) : defaultDisplaySettings;
+    return saved ? { ...defaultDisplaySettings, ...JSON.parse(saved) } : defaultDisplaySettings;
   });
 
   const {
@@ -104,6 +104,9 @@ const StudyRoomView = ({
   } = useVideoChat();
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Check if screen share is allowed (not in public rooms)
+  const isScreenShareAllowed = room.room_type !== 'public';
 
   // Update local video element when stream changes
   useEffect(() => {
@@ -126,11 +129,6 @@ const StudyRoomView = ({
     if (!a.is_pinned_by_me && b.is_pinned_by_me) return 1;
     return (b.pin_count || 0) - (a.pin_count || 0);
   });
-
-  const handleTitleSave = () => {
-    onUpdateStudyTitle(titleInput);
-    setIsEditingTitle(false);
-  };
 
   const handleMicToggle = () => {
     onToggleMic();
@@ -211,33 +209,6 @@ const StudyRoomView = ({
           </div>
         </div>
 
-        {/* My Study Title */}
-        <div className="p-3 bg-muted/50 border-b border-border">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">I'm studying:</span>
-            {isEditingTitle ? (
-              <div className="flex items-center gap-2 flex-1">
-                <Input
-                  value={titleInput}
-                  onChange={(e) => setTitleInput(e.target.value)}
-                  placeholder="What are you studying?"
-                  className="h-8 text-sm"
-                  autoFocus
-                  onKeyDown={(e) => e.key === 'Enter' && handleTitleSave()}
-                />
-                <Button size="sm" onClick={handleTitleSave}>Save</Button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsEditingTitle(true)}
-                className="text-sm font-medium text-accent hover:underline"
-              >
-                {myStudyTitle || 'Click to set your study topic'}
-              </button>
-            )}
-          </div>
-        </div>
-
         {/* Participants Grid */}
         <div className="flex-1 overflow-auto p-4">
           <div className={cn('grid gap-4', gridCols)}>
@@ -282,14 +253,20 @@ const StudyRoomView = ({
                 >
                   <div className="absolute inset-0 flex flex-col">
                     {/* Video / Avatar */}
-                    <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 relative">
+                    <div className={cn(
+                      "flex-1 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 relative",
+                      displaySettings.blurBackground && showLocalVideo && "backdrop-blur-md"
+                    )}>
                       {showLocalVideo ? (
                         <video
                           ref={localVideoRef}
                           autoPlay
                           playsInline
                           muted
-                          className="absolute inset-0 w-full h-full object-cover"
+                          className={cn(
+                            "absolute inset-0 w-full h-full object-cover",
+                            displaySettings.blurBackground && "filter blur-sm"
+                          )}
                         />
                       ) : (
                         <Avatar className="w-20 h-20 border-4 border-background shadow-lg">
@@ -316,11 +293,25 @@ const StudyRoomView = ({
                           </span>
                         </div>
 
+                        {/* Right Side - Stats & Actions */}
                         <div className="flex items-center gap-1">
+                          {/* Enabled Stats on right side */}
                           {displaySettings.showPinCount && (participant.pin_count || 0) > 0 && (
                             <Badge variant="secondary" className="text-xs">
                               <Pin className="w-3 h-3 mr-1" />
                               {participant.pin_count}
+                            </Badge>
+                          )}
+                          {displaySettings.showXP && participant.profile?.xp_points && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Zap className="w-3 h-3 mr-1 text-gold" />
+                              {participant.profile.xp_points}
+                            </Badge>
+                          )}
+                          {displaySettings.showStreak && participant.profile?.current_streak && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Flame className="w-3 h-3 mr-1 text-streak" />
+                              {participant.profile.current_streak}
                             </Badge>
                           )}
 
@@ -448,16 +439,18 @@ const StudyRoomView = ({
               {isVideoOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
             </Button>
 
-            {/* Screen Share Button */}
+            {/* Screen Share Button - Disabled in public rooms */}
             <Button
               variant={isScreenSharing ? "default" : "outline"}
               size="lg"
               className={cn(
                 "rounded-full w-14 h-14",
-                isScreenSharing && "bg-accent hover:bg-accent/90"
+                isScreenSharing && "bg-accent hover:bg-accent/90",
+                !isScreenShareAllowed && "opacity-50 cursor-not-allowed"
               )}
-              onClick={toggleScreenShare}
-              title={isScreenSharing ? "Stop sharing screen" : "Share screen"}
+              onClick={isScreenShareAllowed ? toggleScreenShare : undefined}
+              disabled={!isScreenShareAllowed}
+              title={!isScreenShareAllowed ? "Screen sharing not allowed in public rooms" : isScreenSharing ? "Stop sharing screen" : "Share screen"}
             >
               {isScreenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
             </Button>
@@ -473,15 +466,11 @@ const StudyRoomView = ({
               <MessageSquare className="w-6 h-6" />
             </Button>
 
-            {/* Settings Button */}
-            <Button
-              variant="outline"
-              size="lg"
-              className="rounded-full w-14 h-14"
-              title="Settings"
-            >
-              <Settings className="w-6 h-6" />
-            </Button>
+            {/* Settings Button - Now opens sheet */}
+            <RoomSettingsSheet
+              displaySettings={displaySettings}
+              onUpdateDisplaySetting={updateDisplaySetting}
+            />
 
             {/* Leave Button */}
             <Button
@@ -504,7 +493,6 @@ const StudyRoomView = ({
             participants={participants}
             currentUserId={currentUserId}
             displaySettings={displaySettings}
-            onUpdateDisplaySetting={updateDisplaySetting}
             onPinUser={onPinUser}
             onUnpinUser={onUnpinUser}
             onAddFriend={onAddFriend}
