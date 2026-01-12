@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface NavItem {
   icon: typeof LayoutDashboard;
@@ -215,6 +216,9 @@ const ParentNavbar = () => {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2 md:gap-3">
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           <NotificationBell />
 
           <DropdownMenu>
