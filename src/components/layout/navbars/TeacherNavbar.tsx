@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface NavItem {
   icon: typeof LayoutDashboard;
@@ -229,6 +230,9 @@ const TeacherNavbar = () => {
             <Plus className="w-4 h-4 mr-2" />
             New Course
           </Button>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
           <NotificationBell />
 

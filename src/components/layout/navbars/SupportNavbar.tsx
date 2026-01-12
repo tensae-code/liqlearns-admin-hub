@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface NavItem {
   icon: typeof LayoutDashboard;
@@ -226,6 +227,9 @@ const SupportNavbar = () => {
           >
             <MessageSquare className="h-5 w-5" />
           </Button>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
           <NotificationBell />
 
