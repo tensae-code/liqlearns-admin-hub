@@ -176,6 +176,33 @@ export type Database = {
           },
         ]
       }
+      direct_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       enrollments: {
         Row: {
           completed_at: string | null
@@ -227,6 +254,202 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          parent_approved: boolean | null
+          requester_id: string
+          status: Database["public"]["Enums"]["friendship_status"]
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          parent_approved?: boolean | null
+          requester_id: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          parent_approved?: boolean | null
+          requester_id?: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      group_channels: {
+        Row: {
+          channel_type: Database["public"]["Enums"]["channel_type"]
+          created_at: string
+          description: string | null
+          group_id: string
+          id: string
+          is_default: boolean | null
+          name: string
+          order_index: number | null
+        }
+        Insert: {
+          channel_type?: Database["public"]["Enums"]["channel_type"]
+          created_at?: string
+          description?: string | null
+          group_id: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          order_index?: number | null
+        }
+        Update: {
+          channel_type?: Database["public"]["Enums"]["channel_type"]
+          created_at?: string
+          description?: string | null
+          group_id?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          order_index?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_channels_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          admin_title: string | null
+          group_id: string
+          id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["group_role"]
+          user_id: string
+        }
+        Insert: {
+          admin_title?: string | null
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["group_role"]
+          user_id: string
+        }
+        Update: {
+          admin_title?: string | null
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["group_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_messages: {
+        Row: {
+          channel_id: string
+          content: string
+          created_at: string
+          id: string
+          is_edited: boolean | null
+          reply_to_id: string | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_edited?: boolean | null
+          reply_to_id?: string | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_edited?: boolean | null
+          reply_to_id?: string | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "group_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "group_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          invite_link: string | null
+          is_public: boolean | null
+          member_count: number | null
+          name: string
+          owner_id: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          invite_link?: string | null
+          is_public?: boolean | null
+          member_count?: number | null
+          name: string
+          owner_id: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          invite_link?: string | null
+          is_public?: boolean | null
+          member_count?: number | null
+          name?: string
+          owner_id?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
       }
       lesson_progress: {
         Row: {
@@ -670,6 +893,184 @@ export type Database = {
           },
         ]
       }
+      reports: {
+        Row: {
+          created_at: string
+          description: string | null
+          group_id: string | null
+          id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_user_id: string
+          reporter_id: string
+          resolved_at: string | null
+          reviewed_by: string | null
+          room_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          group_id?: string | null
+          id?: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_user_id: string
+          reporter_id: string
+          resolved_at?: string | null
+          reviewed_by?: string | null
+          room_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          group_id?: string | null
+          id?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reported_user_id?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          reviewed_by?: string | null
+          room_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "study_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_room_participants: {
+        Row: {
+          id: string
+          is_mic_on: boolean | null
+          joined_at: string
+          room_id: string
+          study_title: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_mic_on?: boolean | null
+          joined_at?: string
+          room_id: string
+          study_title?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_mic_on?: boolean | null
+          joined_at?: string
+          room_id?: string
+          study_title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_room_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "study_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_room_pins: {
+        Row: {
+          created_at: string
+          id: string
+          pinned_user_id: string
+          pinner_id: string
+          room_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pinned_user_id: string
+          pinner_id: string
+          room_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pinned_user_id?: string
+          pinner_id?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_room_pins_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "study_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_rooms: {
+        Row: {
+          country: string | null
+          created_at: string
+          current_streak: number | null
+          description: string | null
+          education_level: string | null
+          host_id: string
+          id: string
+          is_active: boolean | null
+          last_active_date: string | null
+          longest_streak: number | null
+          max_participants: number | null
+          name: string
+          room_type: Database["public"]["Enums"]["study_room_type"]
+          study_topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          current_streak?: number | null
+          description?: string | null
+          education_level?: string | null
+          host_id: string
+          id?: string
+          is_active?: boolean | null
+          last_active_date?: string | null
+          longest_streak?: number | null
+          max_participants?: number | null
+          name: string
+          room_type?: Database["public"]["Enums"]["study_room_type"]
+          study_topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          current_streak?: number | null
+          description?: string | null
+          education_level?: string | null
+          host_id?: string
+          id?: string
+          is_active?: boolean | null
+          last_active_date?: string | null
+          longest_streak?: number | null
+          max_participants?: number | null
+          name?: string
+          room_type?: Database["public"]["Enums"]["study_room_type"]
+          study_topic?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_badges: {
         Row: {
           badge_id: string
@@ -712,6 +1113,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_bans: {
+        Row: {
+          ban_end: string | null
+          ban_start: string
+          banned_by: string
+          banned_from_id: string | null
+          banned_from_type: string
+          created_at: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          ban_end?: string | null
+          ban_start?: string
+          banned_by: string
+          banned_from_id?: string | null
+          banned_from_type: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          ban_end?: string | null
+          ban_start?: string
+          banned_by?: string
+          banned_from_id?: string | null
+          banned_from_type?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -781,6 +1218,16 @@ export type Database = {
     }
     Enums: {
       app_role: "student" | "teacher" | "support" | "admin" | "ceo"
+      channel_type: "text" | "announcement" | "voice"
+      friendship_status: "pending" | "accepted" | "blocked"
+      group_role: "owner" | "admin" | "member"
+      report_reason:
+        | "inappropriate_content"
+        | "harassment"
+        | "spam"
+        | "underage_violation"
+        | "other"
+      study_room_type: "public" | "private" | "kids"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -909,6 +1356,17 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["student", "teacher", "support", "admin", "ceo"],
+      channel_type: ["text", "announcement", "voice"],
+      friendship_status: ["pending", "accepted", "blocked"],
+      group_role: ["owner", "admin", "member"],
+      report_reason: [
+        "inappropriate_content",
+        "harassment",
+        "spam",
+        "underage_violation",
+        "other",
+      ],
+      study_room_type: ["public", "private", "kids"],
     },
   },
 } as const
