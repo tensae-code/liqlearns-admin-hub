@@ -11,7 +11,6 @@ import AuraPointsPanel from '@/components/dashboard/AuraPointsPanel';
 import StreakTracker from '@/components/dashboard/StreakTracker';
 import LearningResources from '@/components/dashboard/LearningResources';
 import RecentActivity from '@/components/dashboard/RecentActivity';
-import DailyBonusSpinner from '@/components/dashboard/DailyBonusSpinner';
 import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -318,11 +317,8 @@ const Dashboard = () => {
 
       {/* AI Coach */}
       <AICoach />
-      
-      {/* Daily Bonus Spinner */}
-      <DailyBonusSpinner />
 
-      {/* Quick Access Button */}
+      {/* Quick Access Button (includes Daily Bonus) */}
       <QuickAccessButton />
     </DashboardLayout>
   );

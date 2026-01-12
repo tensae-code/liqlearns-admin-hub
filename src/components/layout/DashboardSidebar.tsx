@@ -163,7 +163,11 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
   const getNavItemColors = (isActive: boolean) => {
     const isSpecialRole = userRole && userRole !== 'student';
     if (isActive) {
-      return 'bg-white/20 text-white font-medium';
+      if (isSpecialRole) {
+        return 'bg-white/20 text-white font-medium';
+      }
+      // For student role, use accent colors that work in both light and dark
+      return 'bg-accent text-accent-foreground font-medium';
     }
     if (isSpecialRole) {
       return 'text-white/70 hover:bg-white/10 hover:text-white';
