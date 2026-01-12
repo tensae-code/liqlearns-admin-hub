@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -8,13 +7,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
 
 interface JoinRoomModalProps {
   isOpen: boolean;
   onClose: () => void;
   roomName: string;
-  onJoin: (studyTitle: string) => void;
+  onJoin: (studyTitle: string) => Promise<void>;
 }
 
 const JoinRoomModal = ({ isOpen, onClose, roomName, onJoin }: JoinRoomModalProps) => {
@@ -22,14 +21,31 @@ const JoinRoomModal = ({ isOpen, onClose, roomName, onJoin }: JoinRoomModalProps
   const [loading, setLoading] = useState(false);
 
   const handleJoin = async () => {
+    if (loading) return;
+    
+    console.log('JoinRoomModal: handleJoin clicked, studyTitle:', studyTitle);
     setLoading(true);
-    await onJoin(studyTitle);
-    setStudyTitle('');
-    setLoading(false);
+    
+    try {
+      await onJoin(studyTitle);
+      console.log('JoinRoomModal: onJoin completed successfully');
+      setStudyTitle('');
+    } catch (error) {
+      console.error('JoinRoomModal: Error in onJoin:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!loading) {
+      setStudyTitle('');
+      onClose();
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -47,12 +63,22 @@ const JoinRoomModal = ({ isOpen, onClose, roomName, onJoin }: JoinRoomModalProps
               placeholder="e.g., Practicing Fidel, Learning verbs..."
               value={studyTitle}
               onChange={(e) => setStudyTitle(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !loading) {
+                  handleJoin();
+                }
+              }}
+              disabled={loading}
             />
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" onClick={onClose} className="flex-1">
+            <Button 
+              variant="outline" 
+              onClick={handleClose} 
+              className="flex-1"
+              disabled={loading}
+            >
               Cancel
             </Button>
             <Button 
@@ -60,7 +86,14 @@ const JoinRoomModal = ({ isOpen, onClose, roomName, onJoin }: JoinRoomModalProps
               disabled={loading}
               className="flex-1 bg-gradient-accent"
             >
-              {loading ? 'Joining...' : 'Join Room'}
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Joining...
+                </>
+              ) : (
+                'Join Room'
+              )}
             </Button>
           </div>
         </div>

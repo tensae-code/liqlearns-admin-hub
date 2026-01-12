@@ -144,13 +144,17 @@ export const useStudyRooms = () => {
 
   // Join a room
   const joinRoom = async (roomId: string, studyTitle?: string) => {
+    console.log('joinRoom called with:', { roomId, studyTitle, profileId: profile?.id });
+    
     if (!profile?.id) {
+      console.error('joinRoom: No profile ID');
       toast({ title: 'Error', description: 'Please log in to join a room', variant: 'destructive' });
       return false;
     }
 
     try {
       // First check if already in the room - use maybeSingle to avoid error when no rows
+      console.log('Checking for existing participant...');
       const { data: existing, error: checkError } = await supabase
         .from('study_room_participants')
         .select('id')
@@ -160,15 +164,20 @@ export const useStudyRooms = () => {
 
       if (checkError) {
         console.error('Check existing error:', checkError);
+        // Don't throw, just continue to try inserting
       }
+
+      console.log('Existing participant check result:', existing);
 
       if (existing) {
         // Already in room, just return success
+        console.log('User already in room, returning success');
         toast({ title: 'Welcome Back!', description: 'You are already in this room' });
         return true;
       }
 
       // Insert new participant
+      console.log('Inserting new participant...');
       const { data: insertData, error } = await supabase
         .from('study_room_participants')
         .insert({
