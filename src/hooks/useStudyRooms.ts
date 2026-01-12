@@ -142,7 +142,7 @@ export const useStudyRooms = () => {
     }
   };
 
-  // Join a room
+  // Join a room - also starts a study session
   const joinRoom = async (roomId: string, studyTitle?: string) => {
     console.log('joinRoom called with:', { roomId, studyTitle, profileId: profile?.id });
     
@@ -164,13 +164,11 @@ export const useStudyRooms = () => {
 
       if (checkError) {
         console.error('Check existing error:', checkError);
-        // Don't throw, just continue to try inserting
       }
 
       console.log('Existing participant check result:', existing);
 
       if (existing) {
-        // Already in room, just return success
         console.log('User already in room, returning success');
         toast({ title: 'Welcome Back!', description: 'You are already in this room' });
         return true;
@@ -194,8 +192,17 @@ export const useStudyRooms = () => {
         throw error;
       }
 
+      // Start a study session when joining room
+      console.log('Starting study session...');
+      await supabase
+        .from('study_sessions')
+        .insert({
+          user_id: profile.id,
+          room_id: roomId,
+        });
+
       console.log('Successfully joined room:', insertData);
-      toast({ title: 'Joined Room!', description: 'You are now in the study room' });
+      toast({ title: 'Joined Room!', description: 'You are now in the study room. Timer started!' });
       return true;
     } catch (error: any) {
       console.error('Join room error:', error);
@@ -204,11 +211,26 @@ export const useStudyRooms = () => {
     }
   };
 
-  // Leave a room
+  // Leave a room - also ends the study session
   const leaveRoom = async (roomId: string) => {
     if (!profile?.id) return false;
 
     try {
+      // End any active study sessions for this room
+      const { data: activeSessions } = await supabase
+        .from('study_sessions')
+        .select('id')
+        .eq('user_id', profile.id)
+        .eq('room_id', roomId)
+        .is('ended_at', null);
+
+      if (activeSessions && activeSessions.length > 0) {
+        await supabase
+          .from('study_sessions')
+          .update({ ended_at: new Date().toISOString() })
+          .in('id', activeSessions.map(s => s.id));
+      }
+
       const { error } = await supabase
         .from('study_room_participants')
         .delete()
@@ -218,7 +240,7 @@ export const useStudyRooms = () => {
       if (error) throw error;
 
       setCurrentRoom(null);
-      toast({ title: 'Left Room', description: 'You have left the study room' });
+      toast({ title: 'Left Room', description: 'Study session recorded!' });
       return true;
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });

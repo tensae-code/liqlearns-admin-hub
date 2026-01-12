@@ -1,21 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useStreakAnimation } from '@/hooks/useStreakAnimation';
+import { useStudyTime } from '@/hooks/useStudyTime';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Leaderboard from '@/components/dashboard/Leaderboard';
 import AICoach from '@/components/dashboard/AICoach';
 import CircularSkillRing from '@/components/dashboard/CircularSkillRing';
 import AuraPointsPanel from '@/components/dashboard/AuraPointsPanel';
 import StreakTracker from '@/components/dashboard/StreakTracker';
+import StudyTimeTracker from '@/components/dashboard/StudyTimeTracker';
 import LearningResources from '@/components/dashboard/LearningResources';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
 import StreakGiftAnimation from '@/components/streak/StreakGiftAnimation';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { 
   BookOpen, 
   Trophy, 
@@ -30,14 +32,22 @@ import {
   Pen,
   Mic,
   Video,
-  FileText
+  FileText,
+  CheckCircle2,
+  Circle
 } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const { profile, updateStreak } = useProfile();
   const navigate = useNavigate();
-  const [completedQuests, setCompletedQuests] = useState<string[]>([]);
+  const {
+    totalTodaySeconds,
+    isStreakEligible,
+    formatTime,
+    STREAK_REQUIREMENT_SECONDS,
+    streakProgress,
+  } = useStudyTime();
   
   // Streak animation hook
   const { showAnimation, closeAnimation, triggerAnimation } = useStreakAnimation(
@@ -74,6 +84,60 @@ const Dashboard = () => {
     }
   }, [user, profile?.id]);
 
+  // Dynamic quests based on actual activity
+  const quests = useMemo(() => {
+    const studyMinutes = Math.floor(totalTodaySeconds / 60);
+    const studyGoalMet = studyMinutes >= 30;
+    
+    return [
+      { 
+        id: 'study-room', 
+        title: 'Study for 30 minutes', 
+        xp: 100, 
+        completed: studyGoalMet,
+        progress: Math.min(studyMinutes, 30),
+        target: 30,
+        unit: 'min'
+      },
+      { 
+        id: 'daily-quiz', 
+        title: 'Complete daily quiz', 
+        xp: 50, 
+        completed: false,
+        progress: 0,
+        target: 1,
+        unit: 'quiz'
+      },
+      { 
+        id: 'video-lesson', 
+        title: 'Watch a video lesson', 
+        xp: 30, 
+        completed: false,
+        progress: 0,
+        target: 1,
+        unit: 'video'
+      },
+      { 
+        id: 'flashcards', 
+        title: 'Practice flashcards (15 cards)', 
+        xp: 25, 
+        completed: false,
+        progress: 0,
+        target: 15,
+        unit: 'cards'
+      },
+      { 
+        id: 'streak', 
+        title: 'Maintain your streak', 
+        xp: 75, 
+        completed: isStreakEligible,
+        progress: isStreakEligible ? 1 : 0,
+        target: 1,
+        unit: 'day'
+      },
+    ];
+  }, [totalTodaySeconds, isStreakEligible]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -89,28 +153,14 @@ const Dashboard = () => {
     { icon: Flame, label: 'Streak', value: profile?.current_streak?.toString() || '0', gradient: 'from-red-500 to-orange-400' },
   ];
 
-  const quests = [
-    { id: '1', title: 'Complete daily quiz', xp: 50 },
-    { id: '2', title: 'Watch a video lesson', xp: 30 },
-    { id: '3', title: 'Practice flashcards', xp: 25 },
-    { id: '4', title: 'Read course materials', xp: 20 },
-    { id: '5', title: 'Join a study room', xp: 40 },
-  ];
-
   const courses = [
     { title: 'Amharic Basics', progress: 65, lessons: 24, icon: '📚', category: 'Language' },
     { title: 'Ethiopian Culture', progress: 30, lessons: 18, icon: '🏛️', category: 'Culture' },
     { title: 'Web Development', progress: 80, lessons: 32, icon: '💻', category: 'Technology' },
   ];
 
-  const toggleQuest = (id: string) => {
-    setCompletedQuests(prev => 
-      prev.includes(id) ? prev.filter(q => q !== id) : [...prev, id]
-    );
-  };
-
-  const completedCount = completedQuests.length;
-  const totalXP = quests.filter(q => completedQuests.includes(q.id)).reduce((sum, q) => sum + q.xp, 0);
+  const completedCount = quests.filter(q => q.completed).length;
+  const totalXP = quests.filter(q => q.completed).reduce((sum, q) => sum + q.xp, 0);
 
   return (
     <DashboardLayout>
@@ -145,7 +195,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
-        {/* Today's Quest */}
+        {/* Today's Quest - Now with real tracking */}
         <motion.div
           className="lg:col-span-1 bg-card rounded-xl border border-border p-4 md:p-5"
           initial={{ opacity: 0, y: 20 }}
@@ -160,31 +210,45 @@ const Dashboard = () => {
           </div>
 
           <div className="space-y-2 md:space-y-3 mb-3 md:mb-4">
-            {quests.map((quest) => {
-              const isCompleted = completedQuests.includes(quest.id);
-              return (
-                <label
-                  key={quest.id}
-                  className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-lg border cursor-pointer transition-all ${
-                    isCompleted 
-                      ? 'border-success/30 bg-success/5' 
-                      : 'border-border hover:border-accent/30'
-                  }`}
-                >
-                  <Checkbox
-                    checked={isCompleted}
-                    onCheckedChange={() => toggleQuest(quest.id)}
-                    className={isCompleted ? 'border-success text-success' : ''}
-                  />
-                  <span className={`flex-1 text-xs md:text-sm ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                    {quest.title}
-                  </span>
-                  <span className={`text-xs font-medium ${isCompleted ? 'text-success' : 'text-gold'}`}>
+            {quests.map((quest) => (
+              <motion.div
+                key={quest.id}
+                className={`p-2.5 md:p-3 rounded-lg border transition-all ${
+                  quest.completed 
+                    ? 'border-success/30 bg-success/5' 
+                    : 'border-border'
+                }`}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <div className="flex items-center gap-2 md:gap-3">
+                  {quest.completed ? (
+                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-xs md:text-sm block ${quest.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                      {quest.title}
+                    </span>
+                    {!quest.completed && quest.target > 1 && (
+                      <div className="mt-1">
+                        <Progress 
+                          value={(quest.progress / quest.target) * 100} 
+                          className="h-1.5"
+                        />
+                        <span className="text-[10px] text-muted-foreground">
+                          {quest.progress}/{quest.target} {quest.unit}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <span className={`text-xs font-medium flex-shrink-0 ${quest.completed ? 'text-success' : 'text-gold'}`}>
                     +{quest.xp} XP
                   </span>
-                </label>
-              );
-            })}
+                </div>
+              </motion.div>
+            ))}
           </div>
 
           {totalXP > 0 && (
@@ -259,16 +323,19 @@ const Dashboard = () => {
       >
         <div className="flex items-center justify-between relative z-10">
           <div>
-            <h3 className="font-display font-semibold text-base md:text-lg mb-1">Daily Goal</h3>
+            <h3 className="font-display font-semibold text-base md:text-lg mb-1">Daily Study Goal</h3>
             <p className="text-primary-foreground/70 text-sm md:text-base">
-              Complete {5 - completedCount} more quests to earn bonus XP!
+              {isStreakEligible 
+                ? '🔥 Goal complete! Your streak is secured!' 
+                : `Study ${formatTime(STREAK_REQUIREMENT_SECONDS - totalTodaySeconds)} more to keep your streak!`
+              }
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 md:w-16 md:h-16 rounded-full border-4 border-gold/30 flex items-center justify-center">
               <div className="text-center">
-                <Target className="w-4 h-4 md:w-6 md:h-6 text-gold mx-auto" />
-                <span className="text-xs md:text-sm font-bold">{completedCount}/5</span>
+                <Flame className={`w-4 h-4 md:w-6 md:h-6 mx-auto ${isStreakEligible ? 'text-gold' : 'text-primary-foreground/50'}`} />
+                <span className="text-xs md:text-sm font-bold">{Math.round(streakProgress)}%</span>
               </div>
             </div>
           </div>
@@ -322,15 +389,20 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      {/* Aura Points & Streak */}
+      {/* Study Time & Streak */}
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
-        <AuraPointsPanel auraPoints={profile?.xp_points || 2450} level={5} nextLevelPoints={3000} />
+        <StudyTimeTracker />
         <StreakTracker 
           currentStreak={profile?.current_streak || 7} 
           longestStreak={profile?.longest_streak || 45} 
           weekProgress={[true, true, true, true, true, true, false]} 
           onStreakClick={triggerAnimation}
         />
+      </div>
+
+      {/* Aura Points */}
+      <div className="mt-4 md:mt-6">
+        <AuraPointsPanel auraPoints={profile?.xp_points || 2450} level={5} nextLevelPoints={3000} />
       </div>
 
       {/* Learning Resources - 12 Types */}
