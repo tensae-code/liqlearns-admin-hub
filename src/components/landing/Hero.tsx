@@ -1,11 +1,13 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Trophy, Users, Sparkles, Play, Star } from 'lucide-react';
+import { BookOpen, Trophy, Users, Sparkles, Play, Star, LayoutDashboard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import heroBg from '@/assets/hero-bg.jpg';
 
 const Hero = () => {
   const navigate = useNavigate();
+  const { user, getDashboardPath } = useAuth();
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
@@ -87,22 +89,35 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.6 }}
           >
-            <Button 
-              variant="gold" 
-              size="xl"
-              onClick={() => navigate('/auth')}
-            >
-              <BookOpen className="w-5 h-5" />
-              Get Started Free
-            </Button>
-            <Button 
-              variant="glass" 
-              size="xl"
-              onClick={() => navigate('/auth')}
-            >
-              <Play className="w-5 h-5" />
-              Watch Demo
-            </Button>
+            {user ? (
+              <Button 
+                variant="gold" 
+                size="xl"
+                onClick={() => navigate(getDashboardPath())}
+              >
+                <LayoutDashboard className="w-5 h-5" />
+                Go to Dashboard
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  variant="gold" 
+                  size="xl"
+                  onClick={() => navigate('/auth')}
+                >
+                  <BookOpen className="w-5 h-5" />
+                  Get Started Free
+                </Button>
+                <Button 
+                  variant="glass" 
+                  size="xl"
+                  onClick={() => navigate('/auth')}
+                >
+                  <Play className="w-5 h-5" />
+                  Watch Demo
+                </Button>
+              </>
+            )}
           </motion.div>
 
           {/* Stats */}

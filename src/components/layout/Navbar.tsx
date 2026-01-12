@@ -28,7 +28,8 @@ const Navbar = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    // Force a hard refresh to clear all state
+    window.location.href = '/';
   };
 
   return (
