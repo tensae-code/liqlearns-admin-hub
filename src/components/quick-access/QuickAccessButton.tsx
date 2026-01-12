@@ -116,6 +116,20 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
   },
 ];
 
+// Helper to get icon map for restoring from localStorage
+const iconMap: Record<string, typeof Brain> = {
+  'daily-bonus': Gift,
+  'brain-bank': Brain,
+  'ai-chat': Bot,
+  'talk-agent': MessageCircle,
+  'dm': Users,
+  'group-chat': Hash,
+  'video-call': Video,
+  'add-friend': UserPlus,
+  'group-call': Phone,
+  'announcements': Megaphone,
+};
+
 const QuickAccessButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -125,7 +139,15 @@ const QuickAccessButton = () => {
     const saved = localStorage.getItem('quickAccessItems');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved) as Array<{ id: string; enabled: boolean }>;
+        // Reconstruct items from defaults using saved order and enabled state
+        return parsed.map(savedItem => {
+          const defaultItem = defaultQuickAccessItems.find(d => d.id === savedItem.id);
+          if (defaultItem) {
+            return { ...defaultItem, enabled: savedItem.enabled };
+          }
+          return null;
+        }).filter(Boolean) as QuickAccessItem[];
       } catch {
         return defaultQuickAccessItems;
       }
@@ -133,9 +155,10 @@ const QuickAccessButton = () => {
     return defaultQuickAccessItems;
   });
 
-  // Save to localStorage when items change
+  // Save to localStorage when items change - only save id and enabled state
   useEffect(() => {
-    localStorage.setItem('quickAccessItems', JSON.stringify(items));
+    const toSave = items.map(item => ({ id: item.id, enabled: item.enabled }));
+    localStorage.setItem('quickAccessItems', JSON.stringify(toSave));
   }, [items]);
 
   const enabledItems = items.filter(item => item.enabled);
