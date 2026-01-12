@@ -1,10 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useStudyRooms } from '@/hooks/useStudyRooms';
+import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
+import CreateRoomModal from '@/components/study-rooms/CreateRoomModal';
+import JoinRoomModal from '@/components/study-rooms/JoinRoomModal';
+import StudyRoomView from '@/components/study-rooms/StudyRoomView';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Search,
   Users,
@@ -13,109 +26,136 @@ import {
   Clock,
   Star,
   Lock,
-  Unlock,
-  Mic,
-  MicOff,
-  MessageSquare
+  Globe,
+  Flame,
+  GraduationCap,
+  MapPin
 } from 'lucide-react';
 import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
 
-const studyRooms = [
-  {
-    id: 1,
-    name: 'Amharic Beginners Circle',
-    host: 'Sara M.',
-    participants: 8,
-    maxParticipants: 12,
-    topic: 'Fidel Practice',
-    isLive: true,
-    isPrivate: false,
-    level: 'Beginner',
-    xpBonus: 40,
-  },
-  {
-    id: 2,
-    name: 'Advanced Grammar Workshop',
-    host: 'Daniel K.',
-    participants: 5,
-    maxParticipants: 8,
-    topic: 'Sentence Structure',
-    isLive: true,
-    isPrivate: false,
-    level: 'Advanced',
-    xpBonus: 60,
-  },
-  {
-    id: 3,
-    name: 'Cultural Exchange Hub',
-    host: 'Meron A.',
-    participants: 15,
-    maxParticipants: 20,
-    topic: 'Ethiopian Holidays',
-    isLive: true,
-    isPrivate: false,
-    level: 'All Levels',
-    xpBonus: 35,
-  },
-  {
-    id: 4,
-    name: 'Kids Learning Room',
-    host: 'Teacher Hana',
-    participants: 6,
-    maxParticipants: 10,
-    topic: 'Fun with Fidel',
-    isLive: true,
-    isPrivate: true,
-    level: 'Beginner',
-    xpBonus: 30,
-  },
-  {
-    id: 5,
-    name: 'Pronunciation Practice',
-    host: 'Yonas T.',
-    participants: 4,
-    maxParticipants: 6,
-    topic: 'Speaking Exercises',
-    isLive: false,
-    scheduledFor: '3:00 PM',
-    isPrivate: false,
-    level: 'Intermediate',
-    xpBonus: 50,
-  },
-  {
-    id: 6,
-    name: 'Business Amharic',
-    host: 'Tigist B.',
-    participants: 0,
-    maxParticipants: 8,
-    topic: 'Professional Vocabulary',
-    isLive: false,
-    scheduledFor: '5:30 PM',
-    isPrivate: false,
-    level: 'Advanced',
-    xpBonus: 55,
-  },
-];
-
-const myRooms = [
-  { id: 101, name: 'My Study Group', participants: 3, lastActive: '2 hours ago' },
-];
-
 const StudyRooms = () => {
+  const {
+    rooms,
+    loading,
+    currentRoom,
+    setCurrentRoom,
+    participants,
+    createRoom,
+    joinRoom,
+    leaveRoom,
+    toggleMic,
+    updateStudyTitle,
+    pinUser,
+    unpinUser,
+    fetchParticipants,
+  } = useStudyRooms();
+  
+  const { profile } = useProfile();
+  const { toast } = useToast();
+  
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'live' | 'scheduled'>('all');
+  const [roomTypeFilter, setRoomTypeFilter] = useState<'all' | 'public' | 'private' | 'kids'>('all');
+  const [countryFilter, setCountryFilter] = useState<string>('all');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [joinModalRoom, setJoinModalRoom] = useState<typeof rooms[0] | null>(null);
+  const [isMicOn, setIsMicOn] = useState(false);
+  const [myStudyTitle, setMyStudyTitle] = useState('');
 
-  const filteredRooms = studyRooms.filter((room) => {
+  // Get unique countries from rooms
+  const countries = [...new Set(rooms.map(r => r.country).filter(Boolean))];
+
+  const filteredRooms = rooms.filter((room) => {
     const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         room.topic.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === 'all' || 
-                         (filter === 'live' && room.isLive) ||
-                         (filter === 'scheduled' && !room.isLive);
-    return matchesSearch && matchesFilter;
+                         (room.study_topic?.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesType = roomTypeFilter === 'all' || room.room_type === roomTypeFilter;
+    const matchesCountry = countryFilter === 'all' || room.country === countryFilter;
+    return matchesSearch && matchesType && matchesCountry;
   });
 
-  const liveCount = studyRooms.filter(r => r.isLive).length;
-  const totalParticipants = studyRooms.filter(r => r.isLive).reduce((sum, r) => sum + r.participants, 0);
+  const liveCount = rooms.length;
+  const totalParticipants = rooms.reduce((sum, r) => sum + (r.participant_count || 0), 0);
+
+  // Handle joining a room
+  const handleJoinRoom = async (studyTitle: string) => {
+    if (!joinModalRoom) return;
+    
+    const success = await joinRoom(joinModalRoom.id, studyTitle);
+    if (success) {
+      setCurrentRoom(joinModalRoom);
+      setMyStudyTitle(studyTitle);
+      await fetchParticipants(joinModalRoom.id);
+    }
+    setJoinModalRoom(null);
+  };
+
+  // Handle leaving room
+  const handleLeaveRoom = async () => {
+    if (!currentRoom) return;
+    await leaveRoom(currentRoom.id);
+    setCurrentRoom(null);
+    setMyStudyTitle('');
+    setIsMicOn(false);
+  };
+
+  // Handle mic toggle
+  const handleToggleMic = () => {
+    if (!currentRoom) return;
+    const newMicState = !isMicOn;
+    setIsMicOn(newMicState);
+    toggleMic(currentRoom.id, newMicState);
+  };
+
+  // Handle study title update
+  const handleUpdateStudyTitle = (title: string) => {
+    if (!currentRoom) return;
+    setMyStudyTitle(title);
+    updateStudyTitle(currentRoom.id, title);
+  };
+
+  // Handle pin/unpin
+  const handlePinUser = (userId: string) => {
+    if (!currentRoom) return;
+    pinUser(currentRoom.id, userId);
+    fetchParticipants(currentRoom.id);
+  };
+
+  const handleUnpinUser = (userId: string) => {
+    if (!currentRoom) return;
+    unpinUser(currentRoom.id, userId);
+    fetchParticipants(currentRoom.id);
+  };
+
+  // Handle add friend
+  const handleAddFriend = (userId: string) => {
+    toast({ title: 'Friend Request', description: 'Friend request sent!' });
+  };
+
+  // Handle report
+  const handleReport = (userId: string) => {
+    toast({ title: 'Report Submitted', description: 'Thank you for reporting. Our team will review this.' });
+  };
+
+  // If in a room, show the room view
+  if (currentRoom) {
+    return (
+      <DashboardLayout>
+        <StudyRoomView
+          room={currentRoom}
+          participants={participants}
+          currentUserId={profile?.id || ''}
+          isMicOn={isMicOn}
+          myStudyTitle={myStudyTitle}
+          onToggleMic={handleToggleMic}
+          onUpdateStudyTitle={handleUpdateStudyTitle}
+          onPinUser={handlePinUser}
+          onUnpinUser={handleUnpinUser}
+          onLeaveRoom={handleLeaveRoom}
+          onAddFriend={handleAddFriend}
+          onReport={handleReport}
+        />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -130,7 +170,10 @@ const StudyRooms = () => {
             <h1 className="text-3xl font-display font-bold text-foreground mb-1">Study Rooms</h1>
             <p className="text-muted-foreground">Join or create rooms to learn together</p>
           </div>
-          <Button className="bg-gradient-accent text-accent-foreground hover:opacity-90">
+          <Button 
+            className="bg-gradient-accent text-accent-foreground hover:opacity-90"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Create Room
           </Button>
@@ -148,7 +191,7 @@ const StudyRooms = () => {
           <div className="flex items-center gap-8">
             <div>
               <p className="text-3xl font-display font-bold">{liveCount}</p>
-              <p className="text-primary-foreground/70">Live Rooms</p>
+              <p className="text-primary-foreground/70">Active Rooms</p>
             </div>
             <div className="w-px h-12 bg-primary-foreground/20" />
             <div>
@@ -179,53 +222,47 @@ const StudyRooms = () => {
             className="pl-10"
           />
         </div>
-        <div className="flex gap-2">
-          {[
-            { id: 'all', label: 'All Rooms' },
-            { id: 'live', label: 'Live Now' },
-            { id: 'scheduled', label: 'Scheduled' },
-          ].map((f) => (
-            <Button
-              key={f.id}
-              variant={filter === f.id ? 'default' : 'outline'}
-              className={filter === f.id ? 'bg-gradient-accent text-accent-foreground' : ''}
-              onClick={() => setFilter(f.id as typeof filter)}
-            >
-              {f.label}
-            </Button>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* My Rooms */}
-      {myRooms.length > 0 && (
-        <motion.div
-          className="mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-        >
-          <h2 className="text-lg font-display font-semibold text-foreground mb-4">My Rooms</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {myRooms.map((room) => (
-              <div
-                key={room.id}
-                className="p-4 rounded-xl bg-card border border-border hover:border-accent/30 transition-all cursor-pointer"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-foreground">{room.name}</h3>
-                  <Badge variant="outline">{room.participants} members</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">Last active: {room.lastActive}</p>
-                <Button size="sm" className="w-full mt-3">
-                  <Video className="w-4 h-4 mr-2" />
-                  Resume
-                </Button>
+        
+        <Select value={roomTypeFilter} onValueChange={(v: typeof roomTypeFilter) => setRoomTypeFilter(v)}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Room type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="public">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4" /> Public
               </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+            </SelectItem>
+            <SelectItem value="private">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4" /> Private
+              </div>
+            </SelectItem>
+            <SelectItem value="kids">
+              <div className="flex items-center gap-2">
+                🧒 Kids
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        {countries.length > 0 && (
+          <Select value={countryFilter} onValueChange={setCountryFilter}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Country" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Countries</SelectItem>
+              {countries.map((c) => (
+                <SelectItem key={c} value={c!}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </motion.div>
 
       {/* Study Rooms Grid */}
       <motion.div
@@ -233,106 +270,147 @@ const StudyRooms = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <h2 className="text-lg font-display font-semibold text-foreground mb-4">Available Rooms</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredRooms.map((room, i) => (
-            <motion.div
-              key={room.id}
-              className="p-5 rounded-xl bg-card border border-border hover:border-accent/30 hover:shadow-lg transition-all group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 + i * 0.05 }}
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    {room.isLive ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full" />
+          </div>
+        ) : filteredRooms.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredRooms.map((room, i) => (
+              <motion.div
+                key={room.id}
+                className="p-5 rounded-xl bg-card border border-border hover:border-accent/30 hover:shadow-lg transition-all group"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + i * 0.05 }}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
                       <Badge className="bg-destructive text-destructive-foreground animate-pulse">
                         🔴 Live
                       </Badge>
-                    ) : (
-                      <Badge variant="secondary">
-                        <Clock className="w-3 h-3 mr-1" />
-                        {room.scheduledFor}
-                      </Badge>
-                    )}
-                    {room.isPrivate ? (
-                      <Lock className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <Unlock className="w-4 h-4 text-success" />
-                    )}
+                      {room.room_type === 'private' ? (
+                        <Lock className="w-4 h-4 text-muted-foreground" />
+                      ) : room.room_type === 'kids' ? (
+                        <Badge variant="outline" className="text-amber-600 border-amber-500">
+                          🧒 Kids
+                        </Badge>
+                      ) : (
+                        <Globe className="w-4 h-4 text-success" />
+                      )}
+                    </div>
+                    <h3 className="font-display font-semibold text-foreground group-hover:text-accent transition-colors">
+                      {room.name}
+                    </h3>
                   </div>
-                  <h3 className="font-display font-semibold text-foreground group-hover:text-accent transition-colors">
-                    {room.name}
-                  </h3>
+                  {room.current_streak > 0 && (
+                    <Badge variant="secondary" className="shrink-0">
+                      <Flame className="w-3 h-3 mr-1 text-streak" />
+                      {room.current_streak}
+                    </Badge>
+                  )}
                 </div>
-                <Badge variant="outline" className="shrink-0">
-                  {room.level}
-                </Badge>
-              </div>
 
-              {/* Topic */}
-              <p className="text-sm text-muted-foreground mb-3">
-                📝 {room.topic}
-              </p>
+                {/* Topic */}
+                {room.study_topic && (
+                  <p className="text-sm text-muted-foreground mb-3">
+                    📝 {room.study_topic}
+                  </p>
+                )}
 
-              {/* Host & Participants */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-xs bg-accent text-accent-foreground">
-                      {room.host.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm text-muted-foreground">{room.host}</span>
+                {/* Tags */}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {room.education_level && (
+                    <Badge variant="outline" className="text-xs">
+                      <GraduationCap className="w-3 h-3 mr-1" />
+                      {room.education_level}
+                    </Badge>
+                  )}
+                  {room.country && (
+                    <Badge variant="outline" className="text-xs">
+                      <MapPin className="w-3 h-3 mr-1" />
+                      {room.country}
+                    </Badge>
+                  )}
                 </div>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Users className="w-4 h-4" />
-                  <span>{room.participants}/{room.maxParticipants}</span>
+
+                {/* Host & Participants */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={room.host?.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs bg-accent text-accent-foreground">
+                        {room.host?.full_name?.charAt(0) || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-muted-foreground">{room.host?.full_name || 'Unknown'}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Users className="w-4 h-4" />
+                    <span>{room.participant_count}/{room.max_participants}</span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Participants Bar */}
-              <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-3">
-                <div 
-                  className="h-full bg-gradient-to-r from-accent to-success rounded-full transition-all"
-                  style={{ width: `${(room.participants / room.maxParticipants) * 100}%` }}
-                />
-              </div>
+                {/* Participants Bar */}
+                <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-3">
+                  <div 
+                    className="h-full bg-gradient-to-r from-accent to-success rounded-full transition-all"
+                    style={{ width: `${((room.participant_count || 0) / room.max_participants) * 100}%` }}
+                  />
+                </div>
 
-              {/* Action */}
-              <div className="flex items-center justify-between">
-                <Badge variant="secondary" className="text-gold">
-                  <Star className="w-3 h-3 mr-1 fill-current" />
-                  +{room.xpBonus} XP
-                </Badge>
-                <Button 
-                  size="sm" 
-                  className="bg-gradient-accent text-accent-foreground hover:opacity-90"
-                  disabled={room.participants >= room.maxParticipants}
-                >
-                  {room.isLive ? 'Join Now' : 'Notify Me'}
-                </Button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                {/* Action */}
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary" className="text-gold">
+                    <Star className="w-3 h-3 mr-1 fill-current" />
+                    +40 XP
+                  </Badge>
+                  <Button 
+                    size="sm" 
+                    className="bg-gradient-accent text-accent-foreground hover:opacity-90"
+                    disabled={(room.participant_count || 0) >= room.max_participants}
+                    onClick={() => setJoinModalRoom(room)}
+                  >
+                    Join Now
+                  </Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+              <Users className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-display font-semibold text-foreground mb-2">No rooms found</h3>
+            <p className="text-muted-foreground mb-4">Try adjusting your search or create your own room</p>
+            <Button 
+              className="bg-gradient-accent text-accent-foreground hover:opacity-90"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Room
+            </Button>
+          </div>
+        )}
       </motion.div>
 
-      {/* Empty State */}
-      {filteredRooms.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-            <Users className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-display font-semibold text-foreground mb-2">No rooms found</h3>
-          <p className="text-muted-foreground mb-4">Try adjusting your search or create your own room</p>
-          <Button className="bg-gradient-accent text-accent-foreground hover:opacity-90">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Room
-          </Button>
-        </div>
+      {/* Modals */}
+      <CreateRoomModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreateRoom={createRoom}
+      />
+
+      {joinModalRoom && (
+        <JoinRoomModal
+          isOpen={!!joinModalRoom}
+          onClose={() => setJoinModalRoom(null)}
+          roomName={joinModalRoom.name}
+          onJoin={handleJoinRoom}
+        />
       )}
 
       {/* Quick Access Button */}
