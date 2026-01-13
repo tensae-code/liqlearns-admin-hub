@@ -13,7 +13,6 @@ import {
   LogOut,
   Settings,
   Menu,
-  X,
   LayoutDashboard,
   GraduationCap,
   Users,
@@ -181,37 +180,37 @@ const DashboardNavbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
+    <nav className="sticky top-0 z-40 bg-gradient-to-r from-orange-600/95 via-amber-500/95 to-orange-600/95 backdrop-blur-lg border-b border-orange-400/20">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
         {/* Mobile Menu Button + Logo */}
         <div className="flex items-center gap-3 md:hidden">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-white hover:bg-orange-500/20">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <SheetHeader className="p-4 border-b border-border">
+            <SheetContent side="left" className="w-72 p-0 bg-gradient-to-b from-orange-600 to-orange-700 border-orange-400/20">
+              <SheetHeader className="p-4 border-b border-orange-400/20">
                 <SheetTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-hero flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-primary-foreground" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-xl font-display font-bold text-foreground">LiqLearns</span>
+                  <span className="text-xl font-display font-bold text-white">LiqLearns</span>
                 </SheetTitle>
               </SheetHeader>
 
               {/* User Info */}
-              <div className="p-4 border-b border-border">
+              <div className="p-4 border-b border-orange-400/20">
                 <div className="flex items-center gap-3 mb-3">
                   <Avatar className="h-10 w-10">
                     {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                    <AvatarFallback className="bg-gradient-accent text-accent-foreground font-semibold">
+                    <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold">
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="overflow-hidden">
-                    <p className="font-medium text-foreground truncate">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
+                    <p className="font-medium text-white truncate">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
                     <span className={cn('text-xs px-2 py-0.5 rounded-full', getRoleBadgeColor())}>
                       {getRoleBadge()}
                     </span>
@@ -219,11 +218,11 @@ const DashboardNavbar = () => {
                 </div>
                 {(userRole === 'student' || !userRole) && (
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-1 text-gold">
+                    <div className="flex items-center gap-1 text-amber-200">
                       <Star className="w-4 h-4" />
                       <span className="font-medium">1,250 XP</span>
                     </div>
-                    <div className="flex items-center gap-1 text-streak">
+                    <div className="flex items-center gap-1 text-orange-200">
                       <Flame className="w-4 h-4" />
                       <span className="font-medium">7 day</span>
                     </div>
@@ -244,8 +243,8 @@ const DashboardNavbar = () => {
                           className={cn(
                             'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all',
                             isActive
-                              ? 'bg-accent text-accent-foreground font-medium'
-                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                              ? 'bg-orange-500 text-white font-medium'
+                              : 'text-orange-200 hover:bg-orange-500/20 hover:text-white'
                           )}
                         >
                           <item.icon className="w-5 h-5 flex-shrink-0" />
@@ -258,10 +257,10 @@ const DashboardNavbar = () => {
               </div>
 
               {/* Sign Out */}
-              <div className="p-3 border-t border-border">
+              <div className="p-3 border-t border-orange-400/20">
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="w-full justify-start text-red-300 hover:text-red-200 hover:bg-red-500/10"
                   onClick={() => {
                     handleSignOut();
                     setMobileMenuOpen(false);
@@ -274,27 +273,32 @@ const DashboardNavbar = () => {
             </SheetContent>
           </Sheet>
 
-          <button 
-            onClick={() => window.location.href = '/'}
-            className="flex items-center gap-2"
-          >
-            <div className="w-8 h-8 rounded-lg bg-gradient-hero flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-primary-foreground" />
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
+              <BookOpen className="w-4 h-4 text-white" />
             </div>
-            <span className="text-lg font-display font-bold text-foreground">LiqLearns</span>
-          </button>
+            <span className="text-lg font-display font-bold text-white">LiqLearns</span>
+          </Link>
         </div>
 
+        {/* Desktop Title */}
+        <Link to="/dashboard" className="hidden md:flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-xl font-display font-bold text-white">LiqLearns</span>
+        </Link>
+
         {/* Search Bar - Desktop */}
-        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md">
+        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-300" />
             <Input
               type="search"
               placeholder="Search courses, lessons..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-muted/50 border-border focus:bg-background"
+              className="pl-10 bg-orange-500/20 border-orange-400/20 text-white placeholder:text-orange-300 focus:bg-orange-500/30 focus:border-orange-400/40"
             />
           </div>
         </form>
@@ -305,7 +309,7 @@ const DashboardNavbar = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden h-9 w-9"
+            className="md:hidden h-9 w-9 text-white hover:bg-orange-500/20"
             onClick={() => navigate('/courses')}
           >
             <Search className="h-5 w-5" />
@@ -320,41 +324,41 @@ const DashboardNavbar = () => {
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full p-0">
+              <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full p-0 ring-2 ring-orange-400/30">
                 <Avatar className="h-9 w-9 md:h-10 md:w-10">
                   {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                  <AvatarFallback className="bg-gradient-hero text-primary-foreground font-semibold text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold text-sm">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 bg-orange-600 border-orange-400/20">
               <div className="flex items-center gap-3 p-3">
                 <Avatar className="h-10 w-10">
                   {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                  <AvatarFallback className="bg-gradient-hero text-primary-foreground text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white text-sm">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium truncate max-w-[140px]">
+                  <span className="text-sm font-medium truncate max-w-[140px] text-white">
                     {profile?.full_name || 'User'}
                   </span>
-                  <span className="text-xs text-muted-foreground">{getRoleBadge()}</span>
+                  <span className="text-xs text-orange-200">{getRoleBadge()}</span>
                 </div>
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/profile')}>
+              <DropdownMenuSeparator className="bg-orange-400/20" />
+              <DropdownMenuItem onClick={() => navigate('/profile')} className="text-orange-200 focus:bg-orange-500/20 focus:text-white">
                 <User className="mr-2 h-4 w-4" />
                 My Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="text-orange-200 focus:bg-orange-500/20 focus:text-white">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+              <DropdownMenuSeparator className="bg-orange-400/20" />
+              <DropdownMenuItem onClick={handleSignOut} className="text-red-300 focus:text-red-200 focus:bg-red-500/10">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>

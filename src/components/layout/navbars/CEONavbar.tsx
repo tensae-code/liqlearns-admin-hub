@@ -17,9 +17,6 @@ import {
   BarChart3,
   FileText,
   Bot,
-  Crown,
-  Bell,
-  Building2,
   Shield,
   Wallet
 } from 'lucide-react';
@@ -92,53 +89,53 @@ const CEONavbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-gradient-to-r from-amber-900/95 via-amber-800/95 to-yellow-900/95 backdrop-blur-lg border-b border-gold/20">
+    <nav className="sticky top-0 z-40 bg-gradient-to-r from-orange-600/95 via-amber-500/95 to-orange-600/95 backdrop-blur-lg border-b border-orange-400/20">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
         {/* Mobile Menu Button + Logo */}
         <div className="flex items-center gap-3 md:hidden">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-gold hover:bg-gold/10">
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-white hover:bg-orange-500/20">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-gradient-to-b from-amber-900 to-amber-950 border-gold/20">
-              <SheetHeader className="p-4 border-b border-gold/20">
+            <SheetContent side="left" className="w-72 p-0 bg-gradient-to-b from-orange-600 to-orange-700 border-orange-400/20">
+              <SheetHeader className="p-4 border-b border-orange-400/20">
                 <SheetTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-amber-600 flex items-center justify-center">
-                    <Crown className="w-5 h-5 text-amber-950" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <span className="text-xl font-display font-bold text-gold">CEO Portal</span>
-                    <p className="text-xs text-gold/60">Executive Dashboard</p>
+                    <span className="text-xl font-display font-bold text-white">LiqLearns</span>
+                    <p className="text-xs text-orange-200">CEO Portal</p>
                   </div>
                 </SheetTitle>
               </SheetHeader>
 
               {/* User Info */}
-              <div className="p-4 border-b border-gold/20">
+              <div className="p-4 border-b border-orange-400/20">
                 <div className="flex items-center gap-3 mb-3">
-                  <Avatar className="h-12 w-12 ring-2 ring-gold/30">
+                  <Avatar className="h-12 w-12 ring-2 ring-orange-400/30">
                     {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                    <AvatarFallback className="bg-gradient-to-br from-gold to-amber-600 text-amber-950 font-semibold">
+                    <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold">
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="overflow-hidden">
-                    <p className="font-medium text-gold truncate">{profile?.full_name || user?.email?.split('@')[0] || 'CEO'}</p>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-gold/20 text-gold">
+                    <p className="font-medium text-white truncate">{profile?.full_name || user?.email?.split('@')[0] || 'CEO'}</p>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-200">
                       Chief Executive Officer
                     </span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-3">
-                  <div className="bg-gold/10 rounded-lg p-2 text-center">
-                    <p className="text-lg font-bold text-gold">$1.2M</p>
-                    <p className="text-[10px] text-gold/60">Revenue</p>
+                  <div className="bg-orange-500/10 rounded-lg p-2 text-center">
+                    <p className="text-lg font-bold text-white">$1.2M</p>
+                    <p className="text-[10px] text-orange-200">Revenue</p>
                   </div>
-                  <div className="bg-gold/10 rounded-lg p-2 text-center">
-                    <p className="text-lg font-bold text-gold">12.4K</p>
-                    <p className="text-[10px] text-gold/60">Users</p>
+                  <div className="bg-orange-500/10 rounded-lg p-2 text-center">
+                    <p className="text-lg font-bold text-white">12.4K</p>
+                    <p className="text-[10px] text-orange-200">Users</p>
                   </div>
                 </div>
               </div>
@@ -156,8 +153,8 @@ const CEONavbar = () => {
                           className={cn(
                             'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all',
                             isActive
-                              ? 'bg-gold text-amber-950 font-medium'
-                              : 'text-gold/70 hover:bg-gold/10 hover:text-gold'
+                              ? 'bg-orange-500 text-white font-medium'
+                              : 'text-orange-200 hover:bg-orange-500/20 hover:text-white'
                           )}
                         >
                           <item.icon className="w-5 h-5 flex-shrink-0" />
@@ -170,10 +167,10 @@ const CEONavbar = () => {
               </div>
 
               {/* Sign Out */}
-              <div className="p-3 border-t border-gold/20">
+              <div className="p-3 border-t border-orange-400/20">
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                  className="w-full justify-start text-red-300 hover:text-red-200 hover:bg-red-500/10"
                   onClick={() => {
                     handleSignOut();
                     setMobileMenuOpen(false);
@@ -186,35 +183,35 @@ const CEONavbar = () => {
             </SheetContent>
           </Sheet>
 
-          <Link to="/ceo" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gold to-amber-600 flex items-center justify-center">
-              <Crown className="w-4 h-4 text-amber-950" />
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
+              <BookOpen className="w-4 h-4 text-white" />
             </div>
-            <span className="text-lg font-display font-bold text-gold">CEO Portal</span>
+            <span className="text-lg font-display font-bold text-white">LiqLearns</span>
           </Link>
         </div>
 
         {/* Desktop Title */}
-        <div className="hidden md:flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-amber-600 flex items-center justify-center">
-            <Crown className="w-5 h-5 text-amber-950" />
+        <Link to="/dashboard" className="hidden md:flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="text-xl font-display font-bold text-gold">CEO Portal</span>
-            <p className="text-xs text-gold/60">Executive Command Center</p>
+            <span className="text-xl font-display font-bold text-white">LiqLearns</span>
+            <p className="text-xs text-orange-200">CEO Portal</p>
           </div>
-        </div>
+        </Link>
 
         {/* Search Bar - Desktop */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gold/50" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-300" />
             <Input
               type="search"
               placeholder="Search team, reports..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-gold/10 border-gold/20 text-gold placeholder:text-gold/50 focus:bg-gold/20 focus:border-gold/40"
+              className="pl-10 bg-orange-500/20 border-orange-400/20 text-white placeholder:text-orange-300 focus:bg-orange-500/30 focus:border-orange-400/40"
             />
           </div>
         </form>
@@ -225,7 +222,7 @@ const CEONavbar = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="hidden md:flex h-9 w-9 text-gold hover:bg-gold/10"
+            className="hidden md:flex h-9 w-9 text-white hover:bg-orange-500/20"
             onClick={() => navigate('/ceo/ai')}
           >
             <Bot className="h-5 w-5" />
@@ -240,45 +237,45 @@ const CEONavbar = () => {
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full p-0 ring-2 ring-gold/30">
+              <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full p-0 ring-2 ring-orange-400/30">
                 <Avatar className="h-9 w-9 md:h-10 md:w-10">
                   {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                  <AvatarFallback className="bg-gradient-to-br from-gold to-amber-600 text-amber-950 font-semibold text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold text-sm">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-amber-900 border-gold/20">
+            <DropdownMenuContent align="end" className="w-56 bg-orange-600 border-orange-400/20">
               <div className="flex items-center gap-3 p-3">
                 <Avatar className="h-10 w-10">
                   {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                  <AvatarFallback className="bg-gradient-to-br from-gold to-amber-600 text-amber-950 text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white text-sm">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium truncate max-w-[140px] text-gold">
+                  <span className="text-sm font-medium truncate max-w-[140px] text-white">
                     {profile?.full_name || 'CEO'}
                   </span>
-                  <span className="text-xs text-gold/60">Chief Executive Officer</span>
+                  <span className="text-xs text-orange-200">Chief Executive Officer</span>
                 </div>
               </div>
-              <DropdownMenuSeparator className="bg-gold/20" />
-              <DropdownMenuItem onClick={() => navigate('/profile')} className="text-gold/80 focus:bg-gold/10 focus:text-gold">
+              <DropdownMenuSeparator className="bg-orange-400/20" />
+              <DropdownMenuItem onClick={() => navigate('/profile')} className="text-orange-200 focus:bg-orange-500/20 focus:text-white">
                 <User className="mr-2 h-4 w-4" />
                 My Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/ceo/ai')} className="text-gold/80 focus:bg-gold/10 focus:text-gold">
+              <DropdownMenuItem onClick={() => navigate('/ceo/ai')} className="text-orange-200 focus:bg-orange-500/20 focus:text-white">
                 <Bot className="mr-2 h-4 w-4" />
                 AI Management
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')} className="text-gold/80 focus:bg-gold/10 focus:text-gold">
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="text-orange-200 focus:bg-orange-500/20 focus:text-white">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-gold/20" />
-              <DropdownMenuItem onClick={handleSignOut} className="text-red-400 focus:text-red-300 focus:bg-red-500/10">
+              <DropdownMenuSeparator className="bg-orange-400/20" />
+              <DropdownMenuItem onClick={handleSignOut} className="text-red-300 focus:text-red-200 focus:bg-red-500/10">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>
