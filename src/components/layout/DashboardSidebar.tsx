@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, forwardRef } from 'react';
+import { Link, useLocation, useNavigate, LinkProps } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppearance } from '@/hooks/useAppearance';
 import { cn } from '@/lib/utils';
@@ -36,6 +36,11 @@ import {
   Flame
 } from 'lucide-react';
 import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
+
+// ForwardRef wrapper for Link to work with Radix asChild
+const ForwardedLink = forwardRef<HTMLAnchorElement, LinkProps>((props, ref) => (
+  <Link ref={ref} {...props} />
+));
 
 interface SidebarProps {
   className?: string;
@@ -197,14 +202,9 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
   const NavItemComponent = ({ item, index }: { item: NavItem; index: number }) => {
     const isActive = isItemActive(item.path);
     
-    const handleNavClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-    };
-    
     const linkContent = (
-      <Link
+      <ForwardedLink
         to={item.path}
-        onClick={handleNavClick}
         className={cn(
           'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 w-full',
           getNavItemColors(isActive),
@@ -218,7 +218,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
             <span className="text-[10px] text-orange-600/70 leading-tight truncate">{item.description}</span>
           </div>
         )}
-      </Link>
+      </ForwardedLink>
     );
 
     if (sidebarCollapsed) {
