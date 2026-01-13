@@ -6,15 +6,11 @@ import { useProfile } from '@/hooks/useProfile';
 import { useStreakAnimation } from '@/hooks/useStreakAnimation';
 import { useStudyTime } from '@/hooks/useStudyTime';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import Leaderboard from '@/components/dashboard/Leaderboard';
 import AICoach from '@/components/dashboard/AICoach';
-import CircularSkillRing from '@/components/dashboard/CircularSkillRing';
 import AuraPointsPanel from '@/components/dashboard/AuraPointsPanel';
 import StreakTracker from '@/components/dashboard/StreakTracker';
 import StudyTimeTracker from '@/components/dashboard/StudyTimeTracker';
-import LearningResources from '@/components/dashboard/LearningResources';
-import RecentActivity from '@/components/dashboard/RecentActivity';
-import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
+import AcquiredSkillsList from '@/components/dashboard/AcquiredSkillsList';
 import StreakGiftAnimation from '@/components/streak/StreakGiftAnimation';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -28,11 +24,6 @@ import {
   Star,
   Award,
   Play,
-  Headphones,
-  Pen,
-  Mic,
-  Video,
-  FileText,
   CheckCircle2,
   Circle
 } from 'lucide-react';
@@ -269,7 +260,7 @@ const Dashboard = () => {
         >
           <div className="flex items-center justify-between mb-3 md:mb-4">
             <h2 className="text-base md:text-lg font-display font-semibold text-foreground">Continue Learning</h2>
-            <Button variant="ghost" size="sm" className="text-xs md:text-sm">
+            <Button variant="ghost" size="sm" className="text-xs md:text-sm" onClick={() => navigate('/courses')}>
               View All <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
@@ -282,6 +273,7 @@ const Dashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.1 }}
+                onClick={() => navigate('/courses')}
               >
                 <div className="flex items-start justify-between mb-2 md:mb-3">
                   <span className="text-2xl md:text-3xl">{course.icon}</span>
@@ -342,52 +334,10 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      {/* Learning Tools */}
-      <motion.div
-        className="mt-4 md:mt-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <h2 className="text-base md:text-lg font-display font-semibold text-foreground mb-3 md:mb-4">Quick Access</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {[
-            { icon: Video, label: 'Video Lessons', count: 45, color: 'text-accent', bg: 'bg-accent/10' },
-            { icon: Headphones, label: 'Audio Guides', count: 23, color: 'text-gold', bg: 'bg-gold/10' },
-            { icon: FileText, label: 'Study Notes', count: 67, color: 'text-success', bg: 'bg-success/10' },
-            { icon: Target, label: 'Practice Quiz', count: 12, color: 'text-streak', bg: 'bg-streak/10' },
-          ].map((tool, i) => (
-            <div
-              key={tool.label}
-              className="bg-card rounded-xl p-3 md:p-4 border border-border hover:border-accent/30 hover:shadow-soft transition-all cursor-pointer flex items-center gap-3 md:gap-4"
-            >
-              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl ${tool.bg} flex items-center justify-center flex-shrink-0`}>
-                <tool.icon className={`w-5 h-5 md:w-6 md:h-6 ${tool.color}`} />
-              </div>
-              <div className="min-w-0">
-                <p className="font-medium text-foreground text-sm md:text-base truncate">{tool.label}</p>
-                <p className="text-xs md:text-sm text-muted-foreground">{tool.count} available</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Skills Progress - Circular Rings */}
-      <motion.div
-        className="mt-4 md:mt-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.65 }}
-      >
-        <h2 className="text-base md:text-lg font-display font-semibold text-foreground mb-3 md:mb-4">Skills Progress</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <CircularSkillRing name="Listening" icon={<Headphones className="w-full h-full" />} progress={65} color="text-accent" bgColor="bg-accent/10" label="Great" />
-          <CircularSkillRing name="Reading" icon={<BookOpen className="w-full h-full" />} progress={80} color="text-gold" bgColor="bg-gold/10" label="Bravo" />
-          <CircularSkillRing name="Writing" icon={<Pen className="w-full h-full" />} progress={45} color="text-success" bgColor="bg-success/10" label="Fair" />
-          <CircularSkillRing name="Speaking" icon={<Mic className="w-full h-full" />} progress={35} color="text-streak" bgColor="bg-streak/10" label="Keep Going" />
-        </div>
-      </motion.div>
+      {/* Acquired Skills List */}
+      <div className="mt-4 md:mt-6">
+        <AcquiredSkillsList onViewAll={() => navigate('/quest')} />
+      </div>
 
       {/* Study Time & Streak */}
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
@@ -404,21 +354,6 @@ const Dashboard = () => {
       <div className="mt-4 md:mt-6">
         <AuraPointsPanel auraPoints={profile?.xp_points || 2450} level={5} nextLevelPoints={3000} />
       </div>
-
-      {/* Learning Resources - 12 Types */}
-      <div className="mt-4 md:mt-6">
-        <LearningResources userLevel={5} />
-      </div>
-
-      {/* Leaderboard & Recent Activity */}
-      <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
-        <Leaderboard />
-        <RecentActivity />
-      </div>
-
-
-      {/* Quick Access Button (includes Daily Bonus) */}
-      <QuickAccessButton />
 
       {/* Streak Gift Animation */}
       <StreakGiftAnimation 
