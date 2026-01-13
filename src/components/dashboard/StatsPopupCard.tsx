@@ -195,16 +195,21 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
             onClick={onClose}
           />
 
-          {/* Card */}
+          {/* Card - Centered in viewport */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90%] max-w-sm"
+            className="fixed z-[100] w-[90%] max-w-sm"
+            style={{
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
           >
             <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden">
               {/* Header */}
@@ -221,7 +226,7 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
               </div>
 
               {/* Content */}
-              <div className="p-4">
+              <div className="p-4 max-h-[70vh] overflow-y-auto">
                 {type === 'streak' && renderStreakContent()}
                 {type === 'xp' && renderXPContent()}
                 {type === 'badges' && renderBadgesContent()}
