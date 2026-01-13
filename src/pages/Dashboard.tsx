@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useStreakAnimation } from '@/hooks/useStreakAnimation';
@@ -24,7 +25,9 @@ import {
   Award,
   Play,
   CheckCircle2,
-  Circle
+  Circle,
+  Sparkles,
+  Calendar
 } from 'lucide-react';
 
 import { STAT_GRADIENTS } from '@/lib/theme';
@@ -141,11 +144,15 @@ const Dashboard = () => {
     );
   }
 
+  const today = new Date();
+  const formattedDate = format(today, 'EEEE, MMMM d, yyyy');
+
   const stats = [
     { icon: BookOpen, label: 'Lessons', value: '24', gradient: STAT_GRADIENTS[0], clickable: false },
     { icon: Award, label: 'Badges', value: '5', gradient: STAT_GRADIENTS[1], clickable: true, popupType: 'badges' as const },
     { icon: Star, label: 'XP', value: profile?.xp_points?.toLocaleString() || '0', gradient: STAT_GRADIENTS[2], clickable: true, popupType: 'xp' as const },
     { icon: Flame, label: 'Streak', value: profile?.current_streak?.toString() || '0', gradient: STAT_GRADIENTS[3], clickable: true, popupType: 'streak' as const },
+    { icon: Sparkles, label: 'Aura', value: '1,250', gradient: 'from-violet-500 to-purple-600', clickable: true, popupType: 'xp' as const },
   ];
 
   const courses = [
@@ -165,14 +172,22 @@ const Dashboard = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-1">
-          Good morning, {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Learner'}! 👋
-        </h1>
-        <p className="text-muted-foreground text-sm md:text-base">Continue your learning journey today</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-1">
+              Good morning, {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Learner'}! 👋
+            </h1>
+            <p className="text-muted-foreground text-sm md:text-base">Continue your learning journey — {formattedDate}</p>
+          </div>
+          <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 border border-border">
+            <Calendar className="w-4 h-4 text-accent" />
+            <span className="text-sm font-medium text-foreground">{format(today, 'MMM d')}</span>
+          </div>
+        </div>
       </motion.div>
 
       {/* Stats Grid - Colorful Gradient Cards - Clickable */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
