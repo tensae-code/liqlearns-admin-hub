@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, Crown, Star, Flame, ChevronRight, X, Users } from 'lucide-react';
+import { Trophy, Medal, Crown, Star, Flame, ChevronRight, X, Users, UserPlus } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type TimeRange = 'daily' | 'weekly' | 'monthly' | 'alltime';
 
@@ -16,17 +18,18 @@ interface LeaderboardEntry {
   streak: number;
   avatar: string;
   badge?: 'gold' | 'silver' | 'bronze';
+  id: string;
 }
 
 const mockLeaderboard: LeaderboardEntry[] = [
-  { rank: 1, name: 'Alemayehu M.', username: 'alemayehu_m', xp: 15420, aura: 3200, streak: 45, avatar: 'A', badge: 'gold' },
-  { rank: 2, name: 'Sara T.', username: 'sara_t', xp: 14380, aura: 2850, streak: 38, avatar: 'S', badge: 'silver' },
-  { rank: 3, name: 'Dawit B.', username: 'dawit_b', xp: 13750, aura: 2600, streak: 32, avatar: 'D', badge: 'bronze' },
-  { rank: 4, name: 'Tigist K.', username: 'tigist_k', xp: 12890, aura: 2400, streak: 28, avatar: 'T' },
-  { rank: 5, name: 'Yonas G.', username: 'yonas_g', xp: 12340, aura: 2100, streak: 25, avatar: 'Y' },
-  { rank: 6, name: 'Hanna A.', username: 'hanna_a', xp: 11890, aura: 1950, streak: 22, avatar: 'H' },
-  { rank: 7, name: 'Bereket F.', username: 'bereket_f', xp: 11450, aura: 1800, streak: 20, avatar: 'B' },
-  { rank: 8, name: 'Meron L.', username: 'meron_l', xp: 10980, aura: 1650, streak: 18, avatar: 'M' },
+  { rank: 1, id: 'u1', name: 'Alemayehu M.', username: 'alemayehu_m', xp: 15420, aura: 3200, streak: 45, avatar: 'A', badge: 'gold' },
+  { rank: 2, id: 'u2', name: 'Sara T.', username: 'sara_t', xp: 14380, aura: 2850, streak: 38, avatar: 'S', badge: 'silver' },
+  { rank: 3, id: 'u3', name: 'Dawit B.', username: 'dawit_b', xp: 13750, aura: 2600, streak: 32, avatar: 'D', badge: 'bronze' },
+  { rank: 4, id: 'u4', name: 'Tigist K.', username: 'tigist_k', xp: 12890, aura: 2400, streak: 28, avatar: 'T' },
+  { rank: 5, id: 'u5', name: 'Yonas G.', username: 'yonas_g', xp: 12340, aura: 2100, streak: 25, avatar: 'Y' },
+  { rank: 6, id: 'u6', name: 'Hanna A.', username: 'hanna_a', xp: 11890, aura: 1950, streak: 22, avatar: 'H' },
+  { rank: 7, id: 'u7', name: 'Bereket F.', username: 'bereket_f', xp: 11450, aura: 1800, streak: 20, avatar: 'B' },
+  { rank: 8, id: 'u8', name: 'Meron L.', username: 'meron_l', xp: 10980, aura: 1650, streak: 18, avatar: 'M' },
 ];
 
 interface SidebarRankCardProps {
@@ -42,8 +45,10 @@ const SidebarRankCard = ({
   collapsed = false,
   onProfileClick 
 }: SidebarRankCardProps) => {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('daily');
+  const [selectedUser, setSelectedUser] = useState<LeaderboardEntry | null>(null);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -63,8 +68,26 @@ const SidebarRankCard = ({
     }
   };
 
-  const handleUserClick = (username: string) => {
-    onProfileClick?.(username);
+  const handleUserClick = (entry: LeaderboardEntry) => {
+    setSelectedUser(entry);
+  };
+
+  const handleViewProfile = () => {
+    if (selectedUser) {
+      setIsModalOpen(false);
+      setSelectedUser(null);
+      navigate(`/profile/${selectedUser.username}`);
+    }
+  };
+
+  const handleFollow = () => {
+    toast.success(`Following ${selectedUser?.name}!`);
+    setSelectedUser(null);
+  };
+
+  const handleAddFriend = () => {
+    toast.success(`Friend request sent to ${selectedUser?.name}!`);
+    setSelectedUser(null);
   };
 
   if (collapsed) {
@@ -160,7 +183,7 @@ const SidebarRankCard = ({
                       'w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left',
                       getBadgeStyle(entry.badge)
                     )}
-                    onClick={() => handleUserClick(entry.username)}
+                    onClick={() => handleUserClick(entry)}
                   >
                     {/* Rank */}
                     <div className="w-6 flex items-center justify-center">
@@ -221,6 +244,65 @@ const SidebarRankCard = ({
                     <span className="font-medium text-xs">{userXP.toLocaleString()}</span>
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* User Action Modal */}
+      <AnimatePresence>
+        {selectedUser && (
+          <motion.div
+            className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedUser(null)}
+          >
+            <motion.div
+              className="bg-card rounded-2xl p-5 max-w-xs w-full border border-border shadow-xl"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <Avatar className="h-14 w-14">
+                  <AvatarFallback className={cn(
+                    'text-xl font-semibold',
+                    selectedUser.badge === 'gold' ? 'bg-gold/20 text-gold' :
+                    selectedUser.badge === 'silver' ? 'bg-muted text-foreground' :
+                    selectedUser.badge === 'bronze' ? 'bg-streak/20 text-streak' :
+                    'bg-accent/10 text-accent'
+                  )}>
+                    {selectedUser.avatar}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold text-foreground">{selectedUser.name}</p>
+                  <p className="text-sm text-muted-foreground">@{selectedUser.username}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gold flex items-center gap-1">
+                      <Star className="w-3 h-3" /> {selectedUser.xp.toLocaleString()} XP
+                    </span>
+                    <span className="text-xs text-streak flex items-center gap-1">
+                      <Flame className="w-3 h-3" /> {selectedUser.streak} day streak
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Button onClick={handleViewProfile} className="w-full">
+                  View Profile
+                </Button>
+                <Button onClick={handleFollow} variant="outline" className="w-full">
+                  <Users className="w-4 h-4 mr-2" /> Follow
+                </Button>
+                <Button onClick={handleAddFriend} variant="outline" className="w-full">
+                  <UserPlus className="w-4 h-4 mr-2" /> Add Friend
+                </Button>
               </div>
             </motion.div>
           </motion.div>

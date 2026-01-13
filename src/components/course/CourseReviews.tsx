@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, ThumbsUp, MessageSquare, Image as ImageIcon, ChevronDown, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Star, ThumbsUp, MessageSquare, Image as ImageIcon, ChevronDown, CheckCircle2, ExternalLink, UserPlus, Users } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface ReviewAuthor {
   id: string;
@@ -102,9 +104,31 @@ const CourseReviews = ({
   totalReviews = 342,
   onAuthorClick 
 }: CourseReviewsProps) => {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | number>('all');
   const [expandedReview, setExpandedReview] = useState<string | null>(null);
   const [authorModalOpen, setAuthorModalOpen] = useState<ReviewAuthor | null>(null);
+
+  const handleAuthorClick = (author: ReviewAuthor) => {
+    setAuthorModalOpen(author);
+  };
+
+  const handleViewProfile = () => {
+    if (authorModalOpen) {
+      navigate(`/profile/${authorModalOpen.username}`);
+      setAuthorModalOpen(null);
+    }
+  };
+
+  const handleFollow = () => {
+    toast.success(`Following ${authorModalOpen?.name}!`);
+    setAuthorModalOpen(null);
+  };
+
+  const handleAddFriend = () => {
+    toast.success(`Friend request sent to ${authorModalOpen?.name}!`);
+    setAuthorModalOpen(null);
+  };
 
   const filteredReviews = filter === 'all' 
     ? mockReviews 
@@ -197,7 +221,7 @@ const CourseReviews = ({
             {/* Author Header */}
             <div className="flex items-start gap-3 mb-3">
               <button
-                onClick={() => onAuthorClick?.(review.author)}
+                onClick={() => handleAuthorClick(review.author)}
                 className="flex-shrink-0 group"
               >
                 <Avatar className="h-10 w-10 ring-2 ring-transparent group-hover:ring-accent/50 transition-all">
@@ -209,7 +233,7 @@ const CourseReviews = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
-                    onClick={() => onAuthorClick?.(review.author)}
+                    onClick={() => handleAuthorClick(review.author)}
                     className="font-medium text-foreground hover:text-accent transition-colors"
                   >
                     {review.author.name}
@@ -317,11 +341,16 @@ const CourseReviews = ({
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                <Button className="flex-1" variant="outline">
+              <div className="flex flex-col gap-2">
+                <Button onClick={handleViewProfile} className="w-full">
                   View Profile <ExternalLink className="w-4 h-4 ml-1" />
                 </Button>
-                <Button className="flex-1">Follow</Button>
+                <Button onClick={handleFollow} variant="outline" className="w-full">
+                  <Users className="w-4 h-4 mr-2" /> Follow
+                </Button>
+                <Button onClick={handleAddFriend} variant="outline" className="w-full">
+                  <UserPlus className="w-4 h-4 mr-2" /> Add Friend
+                </Button>
               </div>
             </motion.div>
           </motion.div>
