@@ -1,7 +1,6 @@
-import { useEffect, forwardRef } from 'react';
-import { Link, useLocation, useNavigate, LinkProps } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppearance } from '@/hooks/useAppearance';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -36,12 +35,6 @@ import {
   Flame
 } from 'lucide-react';
 import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
-
-// ForwardRef wrapper for Link to work with Radix asChild
-const ForwardedLink = forwardRef<HTMLAnchorElement, LinkProps>((props, ref) => (
-  <Link ref={ref} {...props} />
-));
-ForwardedLink.displayName = 'ForwardedLink';
 
 interface SidebarProps {
   className?: string;
@@ -140,18 +133,12 @@ const getRoleHubName = (role: string | null): string => {
 };
 
 const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
-  const { sidebarCollapsed, toggleSidebarCollapsed } = useAppearance();
-  
-  // Sync with parent on mount and changes
-  useEffect(() => {
-    onCollapseChange?.(sidebarCollapsed);
-  }, [sidebarCollapsed, onCollapseChange]);
+  const [collapsed, setCollapsedState] = useState(false);
   
   const setCollapsed = (value: boolean) => {
-    toggleSidebarCollapsed(value);
+    setCollapsedState(value);
     onCollapseChange?.(value);
   };
-  
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut, userRole } = useAuth();
@@ -203,35 +190,35 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
   const NavItemComponent = ({ item, index }: { item: NavItem; index: number }) => {
     const isActive = isItemActive(item.path);
     
-    const handleClick = () => {
-      navigate(item.path);
+    const handleNavClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
     };
     
-    const buttonContent = (
-      <button
-        type="button"
-        onClick={handleClick}
+    const linkContent = (
+      <Link
+        to={item.path}
+        onClick={handleNavClick}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 w-full text-left cursor-pointer',
+          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 w-full',
           getNavItemColors(isActive),
-          sidebarCollapsed && 'justify-center px-2'
+          collapsed && 'justify-center px-2'
         )}
       >
         <item.icon className="w-5 h-5 flex-shrink-0" />
-        {!sidebarCollapsed && (
+        {!collapsed && (
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-medium leading-tight">{item.label}</span>
             <span className="text-[10px] text-orange-600/70 leading-tight truncate">{item.description}</span>
           </div>
         )}
-      </button>
+      </Link>
     );
 
-    if (sidebarCollapsed) {
+    if (collapsed) {
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
-            {buttonContent}
+            {linkContent}
           </TooltipTrigger>
           <TooltipContent side="right" className="font-medium">
             <div>
@@ -243,7 +230,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
       );
     }
 
-    return buttonContent;
+    return linkContent;
   };
 
   // Lighter orange gradient with darker text
@@ -263,14 +250,14 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     <aside
       className={cn(
         'fixed left-0 top-0 z-40 h-screen border-r border-orange-300/50 transition-all duration-300 flex flex-col',
-        sidebarCollapsed ? 'w-16' : 'w-56',
+        collapsed ? 'w-16' : 'w-56',
         getSidebarGradient(),
         className
       )}
     >
       {/* Logo with Collapse Button */}
       <div className="px-3 py-3 border-b border-orange-400/30">
-        <div className={cn('flex items-center', sidebarCollapsed ? 'justify-center' : 'justify-between')}>
+        <div className={cn('flex items-center', collapsed ? 'justify-center' : 'justify-between')}>
           <Link 
             to="/dashboard"
             className="flex items-center gap-3"
@@ -278,20 +265,20 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
             <div className="rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center flex-shrink-0 w-10 h-10">
               <BookOpen className="w-5 h-5 text-white" />
             </div>
-            {!sidebarCollapsed && (
+            {!collapsed && (
               <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
             )}
           </Link>
           
           {/* Collapse Button next to logo text */}
-          {!sidebarCollapsed && (
+          {!collapsed && (
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="w-8 h-8 text-orange-700 hover:text-orange-900 hover:bg-white/40 backdrop-blur-sm rounded-lg"
-                  onClick={() => setCollapsed(!sidebarCollapsed)}
+                  onClick={() => setCollapsed(!collapsed)}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
@@ -302,7 +289,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
         </div>
         
         {/* Expand button when collapsed - below logo */}
-        {sidebarCollapsed && (
+        {collapsed && (
           <div className="mt-2 flex justify-center">
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
@@ -310,7 +297,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
                   variant="ghost"
                   size="icon"
                   className="w-8 h-8 text-orange-700 hover:text-orange-900 hover:bg-white/40 backdrop-blur-sm rounded-lg"
-                  onClick={() => setCollapsed(!sidebarCollapsed)}
+                  onClick={() => setCollapsed(!collapsed)}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -322,7 +309,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
       </div>
 
       {/* Navigation */}
-      <nav className={cn('flex-1 overflow-y-auto', sidebarCollapsed ? 'p-2' : 'p-3')}>
+      <nav className={cn('flex-1 overflow-y-auto', collapsed ? 'p-2' : 'p-3')}>
         <ul className="space-y-2">
           {navItems.map((item, index) => (
             <li key={`${item.path}-${index}`}>
@@ -333,8 +320,8 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
       </nav>
 
       {/* Footer - Sign Out Only */}
-      <div className={cn('border-t border-orange-400/30', sidebarCollapsed ? 'p-2' : 'p-3')}>
-        {sidebarCollapsed ? (
+      <div className={cn('border-t border-orange-400/30', collapsed ? 'p-2' : 'p-3')}>
+        {collapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Button

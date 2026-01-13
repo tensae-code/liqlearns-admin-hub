@@ -4,7 +4,6 @@ interface AppearanceSettings {
   darkMode: boolean;
   reduceAnimations: boolean;
   compactView: boolean;
-  sidebarCollapsed: boolean;
 }
 
 const APPEARANCE_KEY = 'liqlearns-appearance';
@@ -12,17 +11,17 @@ const APPEARANCE_KEY = 'liqlearns-appearance';
 export const useAppearance = () => {
   const [settings, setSettings] = useState<AppearanceSettings>(() => {
     if (typeof window === 'undefined') {
-      return { darkMode: false, reduceAnimations: false, compactView: false, sidebarCollapsed: false };
+      return { darkMode: false, reduceAnimations: false, compactView: false };
     }
     const saved = localStorage.getItem(APPEARANCE_KEY);
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch {
-        return { darkMode: false, reduceAnimations: false, compactView: false, sidebarCollapsed: false };
+        return { darkMode: false, reduceAnimations: false, compactView: false };
       }
     }
-    return { darkMode: false, reduceAnimations: false, compactView: false, sidebarCollapsed: false };
+    return { darkMode: false, reduceAnimations: false, compactView: false };
   });
 
   useEffect(() => {
@@ -62,15 +61,10 @@ export const useAppearance = () => {
     setSettings(prev => ({ ...prev, compactView: value }));
   };
 
-  const toggleSidebarCollapsed = (value: boolean) => {
-    setSettings(prev => ({ ...prev, sidebarCollapsed: value }));
-  };
-
   return {
     ...settings,
     toggleDarkMode,
     toggleReduceAnimations,
     toggleCompactView,
-    toggleSidebarCollapsed,
   };
 };

@@ -1,6 +1,5 @@
-import { ReactNode, createContext, useContext } from 'react';
+import { ReactNode, useState, createContext, useContext } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppearance } from '@/hooks/useAppearance';
 import DashboardSidebar from './DashboardSidebar';
 import MobileBottomNav from './MobileBottomNav';
 import CEONavbar from './navbars/CEONavbar';
@@ -29,7 +28,7 @@ export const useSidebarContext = () => useContext(SidebarContext);
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { userRole } = useAuth();
-  const { sidebarCollapsed, toggleSidebarCollapsed } = useAppearance();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const renderNavbar = () => {
     switch (userRole) {
@@ -49,11 +48,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   return (
-    <SidebarContext.Provider value={{ collapsed: sidebarCollapsed, setCollapsed: toggleSidebarCollapsed }}>
+    <SidebarContext.Provider value={{ collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed }}>
       <div className="min-h-screen bg-background">
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
-          <DashboardSidebar onCollapseChange={toggleSidebarCollapsed} />
+          <DashboardSidebar onCollapseChange={setSidebarCollapsed} />
         </div>
         
         {/* Main content area - adjusts based on sidebar state */}
