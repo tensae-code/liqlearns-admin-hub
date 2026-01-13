@@ -103,7 +103,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
       ];
-    default: // student
+    default: // student - max 10 items
       return [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
         { icon: Library, label: 'Courses', path: '/courses' },
@@ -113,9 +113,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Calendar, label: 'Events', path: '/events' },
         { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
         { icon: MessageSquare, label: 'Community', path: '/community' },
-        { icon: Briefcase, label: 'Business', path: '/business' },
         { icon: Trophy, label: 'Profile', path: '/profile' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
       ];
   }
@@ -242,47 +240,39 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
         className
       )}
     >
-      {/* Logo */}
-      <div className={cn('px-3 pt-3 pb-2', collapsed && 'flex justify-center')}>
-        <Link 
-          to="/dashboard"
-          className="flex items-center gap-3"
-        >
-          <div className={cn(
-            'rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center flex-shrink-0',
-            collapsed ? 'w-10 h-10' : 'w-10 h-10'
-          )}>
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          {!collapsed && (
-            <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
-          )}
-        </Link>
-      </div>
-
-      {/* Collapse Button under Logo */}
-      <div className={cn('px-3 pb-3 border-b border-orange-400/30', collapsed ? 'flex justify-center' : '')}>
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "text-orange-700 hover:text-orange-900 hover:bg-orange-400/30",
-                collapsed ? "w-10 h-8 p-0" : "w-full justify-start gap-2"
-              )}
-              onClick={() => setCollapsed(!collapsed)}
-            >
-              {collapsed ? <ChevronRight className="w-4 h-4" /> : (
-                <>
-                  <ChevronLeft className="w-4 h-4" />
-                  <span className="text-sm">Collapse</span>
-                </>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">{collapsed ? 'Expand' : 'Collapse'}</TooltipContent>
-        </Tooltip>
+      {/* Logo with Collapse Button */}
+      <div className={cn('px-3 py-3 border-b border-orange-400/30', collapsed && 'flex justify-center')}>
+        <div className="flex items-center justify-between">
+          <Link 
+            to="/dashboard"
+            className="flex items-center gap-3"
+          >
+            <div className={cn(
+              'rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center flex-shrink-0',
+              'w-10 h-10'
+            )}>
+              <BookOpen className="w-5 h-5 text-white" />
+            </div>
+            {!collapsed && (
+              <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
+            )}
+          </Link>
+          
+          {/* Collapse Button next to logo */}
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-8 h-8 text-orange-700 hover:text-orange-900 hover:bg-orange-400/30"
+                onClick={() => setCollapsed(!collapsed)}
+              >
+                {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">{collapsed ? 'Expand' : 'Collapse'}</TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
       {/* Navigation */}
