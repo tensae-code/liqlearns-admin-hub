@@ -15,31 +15,31 @@ import {
   Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getGradient } from '@/lib/theme';
 
 interface LearningResource {
   id: string;
   name: string;
   icon: React.ElementType;
-  color: string;
-  bgColor: string;
+  gradientIndex: number;
   count: number;
   unlocked: boolean;
   requiredLevel: number;
 }
 
 const resources: LearningResource[] = [
-  { id: 'books', name: 'Books', icon: BookOpen, color: 'text-accent', bgColor: 'bg-accent/10', count: 24, unlocked: true, requiredLevel: 1 },
-  { id: 'vocabulary', name: 'Vocabulary', icon: Languages, color: 'text-gold', bgColor: 'bg-gold/10', count: 156, unlocked: true, requiredLevel: 1 },
-  { id: 'notes', name: 'Notes', icon: FileText, color: 'text-success', bgColor: 'bg-success/10', count: 42, unlocked: true, requiredLevel: 1 },
-  { id: 'exercise', name: 'Exercises', icon: PenTool, color: 'text-streak', bgColor: 'bg-streak/10', count: 89, unlocked: true, requiredLevel: 2 },
-  { id: 'stories', name: 'Stories', icon: BookMarked, color: 'text-primary', bgColor: 'bg-primary/10', count: 18, unlocked: true, requiredLevel: 2 },
-  { id: 'games', name: 'Games', icon: Gamepad2, color: 'text-destructive', bgColor: 'bg-destructive/10', count: 32, unlocked: true, requiredLevel: 1 },
-  { id: 'videos', name: 'Videos', icon: Video, color: 'text-accent', bgColor: 'bg-accent/10', count: 67, unlocked: true, requiredLevel: 3 },
-  { id: 'music', name: 'Music', icon: Music, color: 'text-gold', bgColor: 'bg-gold/10', count: 45, unlocked: true, requiredLevel: 3 },
-  { id: 'live', name: 'Live Sessions', icon: Radio, color: 'text-destructive', bgColor: 'bg-destructive/10', count: 5, unlocked: true, requiredLevel: 4 },
-  { id: 'audiobooks', name: 'Audiobooks', icon: Headphones, color: 'text-success', bgColor: 'bg-success/10', count: 28, unlocked: true, requiredLevel: 3 },
-  { id: 'translator', name: 'Translator', icon: Globe, color: 'text-primary', bgColor: 'bg-primary/10', count: 1, unlocked: true, requiredLevel: 2 },
-  { id: 'movies', name: 'Movies', icon: Film, color: 'text-streak', bgColor: 'bg-streak/10', count: 12, unlocked: false, requiredLevel: 5 },
+  { id: 'books', name: 'Books', icon: BookOpen, gradientIndex: 0, count: 24, unlocked: true, requiredLevel: 1 },
+  { id: 'vocabulary', name: 'Vocabulary', icon: Languages, gradientIndex: 1, count: 156, unlocked: true, requiredLevel: 1 },
+  { id: 'notes', name: 'Notes', icon: FileText, gradientIndex: 2, count: 42, unlocked: true, requiredLevel: 1 },
+  { id: 'exercise', name: 'Exercises', icon: PenTool, gradientIndex: 3, count: 89, unlocked: true, requiredLevel: 2 },
+  { id: 'stories', name: 'Stories', icon: BookMarked, gradientIndex: 0, count: 18, unlocked: true, requiredLevel: 2 },
+  { id: 'games', name: 'Games', icon: Gamepad2, gradientIndex: 1, count: 32, unlocked: true, requiredLevel: 1 },
+  { id: 'videos', name: 'Videos', icon: Video, gradientIndex: 2, count: 67, unlocked: true, requiredLevel: 3 },
+  { id: 'music', name: 'Music', icon: Music, gradientIndex: 3, count: 45, unlocked: true, requiredLevel: 3 },
+  { id: 'live', name: 'Live Sessions', icon: Radio, gradientIndex: 0, count: 5, unlocked: true, requiredLevel: 4 },
+  { id: 'audiobooks', name: 'Audiobooks', icon: Headphones, gradientIndex: 1, count: 28, unlocked: true, requiredLevel: 3 },
+  { id: 'translator', name: 'Translator', icon: Globe, gradientIndex: 2, count: 1, unlocked: true, requiredLevel: 2 },
+  { id: 'movies', name: 'Movies', icon: Film, gradientIndex: 3, count: 12, unlocked: false, requiredLevel: 5 },
 ];
 
 interface LearningResourcesProps {
@@ -81,15 +81,15 @@ const LearningResources = ({ userLevel = 4, onResourceClick }: LearningResources
               onClick={() => !isLocked && onResourceClick?.(resource)}
               disabled={isLocked}
             >
-              <div className={cn(
+            <div className={cn(
                 'w-10 h-10 rounded-lg flex items-center justify-center mb-2 transition-all',
-                isLocked ? 'bg-muted' : resource.bgColor,
+                isLocked ? 'bg-muted' : `bg-gradient-to-br ${getGradient(resource.gradientIndex)}`,
                 !isLocked && 'group-hover:scale-110'
               )}>
                 {isLocked ? (
                   <Lock className="w-5 h-5 text-muted-foreground" />
                 ) : (
-                  <ResourceIcon className={cn('w-5 h-5', resource.color)} />
+                  <ResourceIcon className="w-5 h-5 text-white" />
                 )}
               </div>
               <span className={cn(

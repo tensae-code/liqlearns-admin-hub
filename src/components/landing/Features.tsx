@@ -9,43 +9,44 @@ import {
   Video,
   Award
 } from 'lucide-react';
+import { STAT_GRADIENTS } from '@/lib/theme';
 
 const features = [
   {
     icon: BookOpen,
     title: 'Comprehensive Courses',
     description: 'Access hundreds of expertly crafted courses across multiple subjects and skill levels.',
-    gradient: 'from-accent to-accent/70',
+    gradient: STAT_GRADIENTS[0],
   },
   {
     icon: Trophy,
     title: 'Gamified Learning',
     description: 'Earn XP, collect badges, and maintain streaks as you progress through your learning journey.',
-    gradient: 'from-gold to-gold/70',
+    gradient: STAT_GRADIENTS[1],
   },
   {
     icon: Users,
     title: 'Study Rooms',
     description: 'Join virtual classrooms and collaborate with fellow students in real-time video sessions.',
-    gradient: 'from-success to-success/70',
+    gradient: STAT_GRADIENTS[2],
   },
   {
     icon: Zap,
     title: 'Learn Anywhere',
     description: 'Access your courses on any device, anytime. Your progress syncs seamlessly.',
-    gradient: 'from-streak to-streak/70',
+    gradient: STAT_GRADIENTS[3],
   },
   {
     icon: Target,
     title: 'Progress Tracking',
     description: 'Visualize your growth with detailed analytics and the unique Life Progress Wheel.',
-    gradient: 'from-primary to-primary/70',
+    gradient: STAT_GRADIENTS[0],
   },
   {
     icon: Gift,
     title: 'Referral Rewards',
     description: 'Earn commissions by sharing LiqLearns with friends through our sponsor program.',
-    gradient: 'from-accent to-gold',
+    gradient: STAT_GRADIENTS[1],
   },
 ];
 

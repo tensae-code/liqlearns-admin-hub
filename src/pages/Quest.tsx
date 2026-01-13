@@ -4,6 +4,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import { STAT_GRADIENTS } from '@/lib/theme';
 import {
   Target,
   Star,
@@ -62,13 +64,13 @@ const Quest = () => {
             <p className="text-muted-foreground">Complete quests to earn XP and Aura points</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-gold/10 rounded-xl">
-              <Star className="w-5 h-5 text-gold" />
-              <span className="font-bold text-gold">1,250 XP</span>
+            <div className={cn('flex items-center gap-2 px-4 py-2 rounded-xl text-white bg-gradient-to-r', STAT_GRADIENTS[3])}>
+              <Star className="w-5 h-5" />
+              <span className="font-bold">1,250 XP</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 rounded-xl">
-              <Zap className="w-5 h-5 text-accent" />
-              <span className="font-bold text-accent">85 Aura</span>
+            <div className={cn('flex items-center gap-2 px-4 py-2 rounded-xl text-white bg-gradient-to-r', STAT_GRADIENTS[1])}>
+              <Zap className="w-5 h-5" />
+              <span className="font-bold">85 Aura</span>
             </div>
           </div>
         </div>
@@ -76,7 +78,7 @@ const Quest = () => {
 
       {/* Daily Progress Banner */}
       <motion.div
-        className="mb-8 p-6 rounded-2xl bg-gradient-hero text-primary-foreground relative overflow-hidden"
+        className={cn('mb-8 p-6 rounded-2xl text-white relative overflow-hidden bg-gradient-to-r', STAT_GRADIENTS[0])}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -86,16 +88,16 @@ const Quest = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-display font-bold mb-1">Today's Progress</h2>
-              <p className="text-primary-foreground/70">{completedDaily}/{dailyMissions.length} missions complete</p>
+              <p className="text-white/80">{completedDaily}/{dailyMissions.length} missions complete</p>
             </div>
-            <div className="flex items-center gap-3">
-              <Flame className="w-8 h-8 text-streak" />
+            <div className={cn('flex items-center gap-3 px-3 py-2 rounded-lg bg-gradient-to-r text-white', STAT_GRADIENTS[3])}>
+              <Flame className="w-8 h-8" />
               <div>
                 <p className="text-2xl font-bold">7</p>
-                <p className="text-xs text-primary-foreground/70">day streak</p>
+                <p className="text-xs opacity-80">day streak</p>
               </div>
             </div>
-          </div>
+            </div>
           <Progress value={(completedDaily / dailyMissions.length) * 100} className="h-3 bg-primary-foreground/20" />
           <div className="flex items-center justify-between mt-2 text-sm">
             <span>{earnedDailyXP} XP earned</span>

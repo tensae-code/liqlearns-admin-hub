@@ -1,21 +1,21 @@
 import { motion } from 'framer-motion';
 import { Headphones, BookOpen, Pen, Mic, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { STAT_GRADIENTS } from '@/lib/theme';
 
 interface Skill {
   name: string;
   icon: React.ElementType;
   level: number;
   progress: number;
-  color: string;
-  bgColor: string;
+  gradient: string;
 }
 
 const skills: Skill[] = [
-  { name: 'Listening', icon: Headphones, level: 3, progress: 65, color: 'text-accent', bgColor: 'bg-accent' },
-  { name: 'Reading', icon: BookOpen, level: 4, progress: 80, color: 'text-gold', bgColor: 'bg-gold' },
-  { name: 'Writing', icon: Pen, level: 2, progress: 45, color: 'text-success', bgColor: 'bg-success' },
-  { name: 'Speaking', icon: Mic, level: 2, progress: 35, color: 'text-streak', bgColor: 'bg-streak' },
+  { name: 'Listening', icon: Headphones, level: 3, progress: 65, gradient: STAT_GRADIENTS[0] },
+  { name: 'Reading', icon: BookOpen, level: 4, progress: 80, gradient: STAT_GRADIENTS[1] },
+  { name: 'Writing', icon: Pen, level: 2, progress: 45, gradient: STAT_GRADIENTS[2] },
+  { name: 'Speaking', icon: Mic, level: 2, progress: 35, gradient: STAT_GRADIENTS[3] },
 ];
 
 const SkillsTracker = () => {
@@ -46,22 +46,22 @@ const SkillsTracker = () => {
           >
             <div className="flex items-center gap-3 mb-2">
               <div className={cn(
-                'w-8 h-8 rounded-lg flex items-center justify-center',
-                `${skill.bgColor}/10`
+                'w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br text-white',
+                skill.gradient
               )}>
-                <skill.icon className={cn('w-4 h-4', skill.color)} />
+                <skill.icon className="w-4 h-4" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">{skill.name}</p>
                 <p className="text-xs text-muted-foreground">Level {skill.level}</p>
               </div>
-              <span className={cn('text-sm font-bold', skill.color)}>
+              <span className="text-sm font-bold text-foreground">
                 {skill.progress}%
               </span>
             </div>
             <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
               <motion.div
-                className={cn('h-full rounded-full', skill.bgColor)}
+                className={cn('h-full rounded-full bg-gradient-to-r', skill.gradient)}
                 initial={{ width: 0 }}
                 animate={{ width: `${skill.progress}%` }}
                 transition={{ delay: i * 0.1 + 0.3, duration: 0.5 }}

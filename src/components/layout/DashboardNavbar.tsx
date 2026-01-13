@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
+import { STAT_GRADIENTS } from '@/lib/theme';
 import { 
   BookOpen, 
   Search, 
@@ -164,11 +165,11 @@ const DashboardNavbar = () => {
 
   const getRoleBadgeColor = () => {
     switch (userRole) {
-      case 'teacher': return 'bg-accent/10 text-accent';
-      case 'parent': return 'bg-success/10 text-success';
-      case 'admin': return 'bg-destructive/10 text-destructive';
-      case 'ceo': return 'bg-gold/10 text-gold';
-      case 'support': return 'bg-primary/10 text-primary';
+      case 'teacher': return `bg-gradient-to-r ${STAT_GRADIENTS[1]} text-white`;
+      case 'parent': return `bg-gradient-to-r ${STAT_GRADIENTS[2]} text-white`;
+      case 'admin': return `bg-gradient-to-r ${STAT_GRADIENTS[1]} text-white`;
+      case 'ceo': return `bg-gradient-to-r ${STAT_GRADIENTS[3]} text-white`;
+      case 'support': return `bg-gradient-to-r ${STAT_GRADIENTS[0]} text-white`;
       default: return 'bg-muted text-muted-foreground';
     }
   };

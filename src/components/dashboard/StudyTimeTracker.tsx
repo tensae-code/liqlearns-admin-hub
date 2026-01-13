@@ -3,6 +3,7 @@ import { Clock, Play, Pause, Target, Flame, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStudyTime } from '@/hooks/useStudyTime';
 import { cn } from '@/lib/utils';
+import { STAT_GRADIENTS } from '@/lib/theme';
 
 interface StudyTimeTrackerProps {
   roomId?: string;
@@ -62,10 +63,10 @@ const StudyTimeTracker = ({ roomId, compact = false }: StudyTimeTrackerProps) =>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center",
+            "w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br text-white",
             currentSession 
-              ? "bg-gradient-to-br from-success to-emerald-600" 
-              : "bg-gradient-to-br from-accent to-primary"
+              ? STAT_GRADIENTS[2]
+              : STAT_GRADIENTS[0]
           )}>
             <Clock className="w-5 h-5 text-white" />
           </div>
@@ -134,10 +135,10 @@ const StudyTimeTracker = ({ roomId, compact = false }: StudyTimeTrackerProps) =>
         <div className="relative h-3 bg-muted rounded-full overflow-hidden">
           <motion.div
             className={cn(
-              "h-full rounded-full",
+              "h-full rounded-full bg-gradient-to-r",
               isStreakEligible 
-                ? "bg-gradient-to-r from-success to-emerald-400" 
-                : "bg-gradient-to-r from-accent to-primary"
+                ? STAT_GRADIENTS[2]
+                : STAT_GRADIENTS[0]
             )}
             initial={{ width: 0 }}
             animate={{ width: `${streakProgress}%` }}
@@ -178,17 +179,17 @@ const StudyTimeTracker = ({ roomId, compact = false }: StudyTimeTrackerProps) =>
 
       {/* Today's Stats */}
       <div className="grid grid-cols-2 gap-3 mt-4">
-        <div className="p-3 rounded-lg bg-accent/10 border border-accent/20 text-center">
-          <p className="text-lg font-display font-bold text-accent">
+        <div className={cn('p-3 rounded-lg text-center text-white bg-gradient-to-br', STAT_GRADIENTS[0])}>
+          <p className="text-lg font-display font-bold">
             {formatTime(totalTodaySeconds)}
           </p>
-          <p className="text-[10px] text-muted-foreground">Total Today</p>
+          <p className="text-[10px] opacity-80">Total Today</p>
         </div>
-        <div className="p-3 rounded-lg bg-gold/10 border border-gold/20 text-center">
-          <p className="text-lg font-display font-bold text-gold">
+        <div className={cn('p-3 rounded-lg text-center text-white bg-gradient-to-br', STAT_GRADIENTS[1])}>
+          <p className="text-lg font-display font-bold">
             {Math.round(streakProgress)}%
           </p>
-          <p className="text-[10px] text-muted-foreground">Goal Progress</p>
+          <p className="text-[10px] opacity-80">Goal Progress</p>
         </div>
       </div>
     </motion.div>
