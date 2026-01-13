@@ -37,13 +37,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Define the four gradients used across the app
-const STAT_GRADIENTS = [
-  'from-blue-500 to-cyan-400',
-  'from-purple-500 to-pink-400',
-  'from-emerald-500 to-teal-400',
-  'from-orange-500 to-amber-400'
-];
+import { STAT_GRADIENTS } from '@/lib/theme';
 
 interface Student {
   id: string;

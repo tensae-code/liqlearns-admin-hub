@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { STAT_GRADIENTS } from '@/lib/theme';
 import {
   Users,
   ArrowLeft,
@@ -25,10 +26,10 @@ const CEOTeam = () => {
   const navigate = useNavigate();
 
   const teamStats = [
-    { label: 'Total Employees', value: '86', icon: Users, color: 'text-primary' },
-    { label: 'Active Today', value: '72', icon: UserCheck, color: 'text-success' },
-    { label: 'New This Month', value: '5', icon: UserPlus, color: 'text-accent' },
-    { label: 'Avg. Tenure', value: '2.3 yrs', icon: Clock, color: 'text-gold' },
+    { label: 'Total Employees', value: '86', icon: Users, gradient: STAT_GRADIENTS[0] },
+    { label: 'Active Today', value: '72', icon: UserCheck, gradient: STAT_GRADIENTS[2] },
+    { label: 'New This Month', value: '5', icon: UserPlus, gradient: STAT_GRADIENTS[1] },
+    { label: 'Avg. Tenure', value: '2.3 yrs', icon: Clock, gradient: STAT_GRADIENTS[3] },
   ];
 
   const departments = [
@@ -140,14 +141,15 @@ const CEOTeam = () => {
           {teamStats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              className="bg-card border border-border rounded-xl p-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
             >
-              <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
-              <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
+              <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
+              <stat.icon className="w-5 h-5 md:w-6 md:h-6 mb-2 opacity-90" />
+              <p className="text-xl md:text-2xl font-display font-bold">{stat.value}</p>
+              <p className="text-xs opacity-80">{stat.label}</p>
             </motion.div>
           ))}
         </div>
