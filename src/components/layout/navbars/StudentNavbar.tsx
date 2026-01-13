@@ -198,16 +198,8 @@ const StudentNavbar = () => {
           </Link>
         </div>
 
-        {/* Desktop Title */}
-        <Link to="/dashboard" className="hidden md:flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="text-xl font-display font-bold text-white">LiqLearns</span>
-            <p className="text-xs text-orange-200">Student Portal</p>
-          </div>
-        </Link>
+        {/* Desktop - No logo, sidebar has it */}
+        <div className="hidden md:block" />
 
         {/* Search Bar - Desktop with Blue Gradient */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
