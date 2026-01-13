@@ -50,11 +50,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <SidebarContext.Provider value={{ collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed }}>
       <div className="min-h-screen bg-background">
-        {/* Floating Sidebar - works on all screen sizes now */}
-        <DashboardSidebar />
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block">
+          <DashboardSidebar onCollapseChange={setSidebarCollapsed} />
+        </div>
         
-        {/* Main content area - no margin needed since sidebar is floating */}
-        <div>
+        {/* Main content area - adjusts based on sidebar state */}
+        <div 
+          className={`transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}`}
+        >
           {/* Role-specific Navbar */}
           {renderNavbar()}
           
