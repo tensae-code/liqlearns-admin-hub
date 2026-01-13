@@ -45,7 +45,8 @@ const Dashboard = () => {
   } = useStudyTime();
   
   // Stats popup state
-  const [activePopup, setActivePopup] = useState<'streak' | 'xp' | 'badges' | null>(null);
+  const [activePopup, setActivePopup] = useState<'streak' | 'xp' | 'badges' | 'aura' | null>(null);
+  const [showClanPopup, setShowClanPopup] = useState(false);
   
   // Streak animation hook
   const { showAnimation, closeAnimation, triggerAnimation } = useStreakAnimation(
@@ -152,7 +153,7 @@ const Dashboard = () => {
     { icon: Award, label: 'Badges', value: '5', gradient: STAT_GRADIENTS[1], clickable: true, popupType: 'badges' as const },
     { icon: Star, label: 'XP', value: profile?.xp_points?.toLocaleString() || '0', gradient: STAT_GRADIENTS[2], clickable: true, popupType: 'xp' as const },
     { icon: Flame, label: 'Streak', value: profile?.current_streak?.toString() || '0', gradient: STAT_GRADIENTS[3], clickable: true, popupType: 'streak' as const },
-    { icon: Sparkles, label: 'Aura', value: '1,250', gradient: 'from-violet-500 to-purple-600', clickable: true, popupType: 'xp' as const },
+    { icon: Sparkles, label: 'Aura', value: '1,250', gradient: 'from-violet-500 to-purple-600', clickable: true, popupType: 'aura' as const },
   ];
 
   const courses = [
@@ -175,13 +176,16 @@ const Dashboard = () => {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-1">
-              Good morning, {profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Learner'}! 👋
+              Good morning! 👋
             </h1>
             <p className="text-muted-foreground text-sm md:text-base">Continue your learning journey — {formattedDate}</p>
           </div>
-          <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 border border-border">
-            <Calendar className="w-4 h-4 text-accent" />
-            <span className="text-sm font-medium text-foreground">{format(today, 'MMM d')}</span>
+          <div 
+            className="hidden md:flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-600/10 border border-violet-500/20 cursor-pointer hover:border-violet-500/40 transition-all"
+            onClick={() => setShowClanPopup(true)}
+          >
+            <span className="text-sm font-bold text-foreground">Eliteforce</span>
+            <span className="text-[10px] text-violet-600 font-medium">Leader • Clan</span>
           </div>
         </div>
       </motion.div>
@@ -393,6 +397,79 @@ const Dashboard = () => {
         onClose={() => setActivePopup(null)}
         data={{}}
       />
+      <StatsPopupCard
+        type="aura"
+        isOpen={activePopup === 'aura'}
+        onClose={() => setActivePopup(null)}
+        data={{
+          xpPoints: 1250,
+        }}
+      />
+
+      {/* Clan Popup */}
+      {showClanPopup && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+          onClick={() => setShowClanPopup(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed z-[100] w-[90%] max-w-sm bg-card rounded-2xl border border-border shadow-2xl overflow-hidden"
+            style={{ top: '15%', left: '30%' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 bg-gradient-to-r from-violet-500 to-purple-600 text-white flex items-center justify-between">
+              <h3 className="text-lg font-display font-semibold">Your Clan</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white hover:bg-white/20"
+                onClick={() => setShowClanPopup(false)}
+              >
+                ✕
+              </Button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-2">
+                  <span className="text-2xl">⚔️</span>
+                </div>
+                <h4 className="text-xl font-bold text-foreground">Eliteforce</h4>
+                <p className="text-sm text-muted-foreground">You are the Leader</p>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <p className="text-lg font-bold text-foreground">12</p>
+                  <p className="text-[10px] text-muted-foreground">Members</p>
+                </div>
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <p className="text-lg font-bold text-gold">5,400</p>
+                  <p className="text-[10px] text-muted-foreground">Clan XP</p>
+                </div>
+                <div className="p-2 rounded-lg bg-muted/50">
+                  <p className="text-lg font-bold text-accent">#3</p>
+                  <p className="text-[10px] text-muted-foreground">Rank</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Button className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white">
+                  View Clan
+                </Button>
+                <p className="text-[10px] text-center text-muted-foreground">
+                  Manage your clan in Profile → Clan Settings
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
 
       {/* Streak Gift Animation */}
       <StreakGiftAnimation 
