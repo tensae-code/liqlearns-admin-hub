@@ -49,7 +49,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <SidebarContext.Provider value={{ collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed }}>
-      <div className="min-h-screen bg-gradient-to-br from-amber-200 via-orange-100 to-yellow-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="min-h-screen bg-gradient-to-br from-orange-300 via-orange-200 to-amber-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
           <DashboardSidebar onCollapseChange={setSidebarCollapsed} />
