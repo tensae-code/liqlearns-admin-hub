@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Flame, Star, Award, Trophy, Target, TrendingUp, Gift, Shield } from 'lucide-react';
+import { X, Flame, Star, Award, Trophy, Target, TrendingUp, Gift, Shield, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 interface StatsPopupCardProps {
-  type: 'streak' | 'xp' | 'badges';
+  type: 'streak' | 'xp' | 'badges' | 'aura';
   isOpen: boolean;
   onClose: () => void;
   data: {
@@ -170,11 +170,55 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
     </div>
   );
 
+  const renderAuraContent = () => (
+    <div className="space-y-4">
+      {/* Aura Display */}
+      <div className="text-center">
+        <motion.div
+          className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-3"
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <Sparkles className="w-12 h-12 text-white" />
+        </motion.div>
+        <p className="text-4xl font-display font-bold text-violet-600">{(data.xpPoints || 0).toLocaleString()}</p>
+        <p className="text-muted-foreground">Aura Points</p>
+      </div>
+
+      {/* Aura Breakdown */}
+      <div className="p-4 rounded-xl bg-muted/50">
+        <p className="text-sm font-medium text-foreground mb-3">How to earn Aura</p>
+        <div className="space-y-2">
+          {[
+            { action: 'Complete a lesson', aura: 10, icon: '📚' },
+            { action: 'Daily streak bonus', aura: 25, icon: '🔥' },
+            { action: 'Help a friend', aura: 50, icon: '🤝' },
+            { action: 'Win a challenge', aura: 100, icon: '🏆' },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-background/50">
+              <div className="flex items-center gap-2">
+                <span>{item.icon}</span>
+                <span className="text-sm text-foreground">{item.action}</span>
+              </div>
+              <span className="text-sm font-medium text-violet-600">+{item.aura}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Aura Perks */}
+      <div className="p-3 rounded-xl bg-gradient-to-r from-violet-500/10 to-purple-600/10 border border-violet-500/20">
+        <p className="text-xs text-foreground">✨ High aura unlocks exclusive badges and clan perks!</p>
+      </div>
+    </div>
+  );
+
   const getTitle = () => {
     switch (type) {
       case 'streak': return 'Your Streak';
       case 'xp': return 'Your XP';
       case 'badges': return 'Your Badges';
+      case 'aura': return 'Your Aura';
     }
   };
 
@@ -183,6 +227,7 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
       case 'streak': return 'from-streak to-orange-500';
       case 'xp': return 'from-gold to-amber-500';
       case 'badges': return 'from-purple-500 to-pink-500';
+      case 'aura': return 'from-violet-500 to-purple-600';
     }
   };
 
@@ -224,11 +269,11 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
                 </Button>
               </div>
 
-              {/* Content */}
               <div className="p-4">
                 {type === 'streak' && renderStreakContent()}
                 {type === 'xp' && renderXPContent()}
                 {type === 'badges' && renderBadgesContent()}
+                {type === 'aura' && renderAuraContent()}
               </div>
             </div>
           </motion.div>
