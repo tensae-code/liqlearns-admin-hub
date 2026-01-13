@@ -65,10 +65,10 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     case 'admin':
       return [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-        { icon: Users, label: 'Users', path: '/admin' },
+        { icon: Users, label: 'Users', path: '/admin/users' },
         { icon: Library, label: 'Courses', path: '/courses' },
-        { icon: Shield, label: 'Moderation', path: '/admin' },
-        { icon: BarChart3, label: 'Reports', path: '/admin' },
+        { icon: Shield, label: 'Moderation', path: '/admin/moderation' },
+        { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
         { icon: Mail, label: 'Messages', path: '/messages' },
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
@@ -76,8 +76,8 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     case 'support':
       return [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/support' },
-        { icon: MessageSquare, label: 'Tickets', path: '/support' },
-        { icon: Users, label: 'Users', path: '/support' },
+        { icon: MessageSquare, label: 'Tickets', path: '/support/tickets' },
+        { icon: Users, label: 'Users', path: '/support/users' },
         { icon: Mail, label: 'Messages', path: '/messages' },
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
@@ -85,9 +85,9 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     case 'teacher':
       return [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/teacher' },
-        { icon: Library, label: 'My Courses', path: '/teacher' },
-        { icon: Users, label: 'Students', path: '/teacher' },
-        { icon: BarChart3, label: 'Earnings', path: '/teacher' },
+        { icon: Library, label: 'My Courses', path: '/teacher/courses' },
+        { icon: Users, label: 'Students', path: '/teacher/students' },
+        { icon: BarChart3, label: 'Earnings', path: '/teacher/earnings' },
         { icon: Calendar, label: 'Events', path: '/events' },
         { icon: Mail, label: 'Messages', path: '/messages' },
         { icon: MessageSquare, label: 'Community', path: '/community' },
@@ -97,8 +97,8 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     case 'parent':
       return [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/parent' },
-        { icon: Baby, label: 'My Children', path: '/parent' },
-        { icon: BarChart3, label: 'Progress', path: '/parent' },
+        { icon: Baby, label: 'My Children', path: '/parent/children' },
+        { icon: BarChart3, label: 'Progress', path: '/parent/progress' },
         { icon: Mail, label: 'Messages', path: '/messages' },
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
@@ -118,6 +118,18 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
       ];
+  }
+};
+
+// Role hub names
+const getRoleHubName = (role: string | null): string => {
+  switch (role) {
+    case 'ceo': return 'CEO Hub';
+    case 'admin': return 'Admin Hub';
+    case 'support': return 'Support Hub';
+    case 'teacher': return 'Teacher Hub';
+    case 'parent': return 'Parent Hub';
+    default: return 'Learning Hub';
   }
 };
 
@@ -170,9 +182,9 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
 
   const getNavItemColors = (isActive: boolean) => {
     if (isActive) {
-      return 'bg-white/25 text-white font-semibold shadow-sm';
+      return 'bg-orange-500 text-white font-semibold shadow-sm';
     }
-    return 'text-white/80 hover:bg-white/15 hover:text-white';
+    return 'text-orange-800 hover:bg-orange-400/30 hover:text-orange-900';
   };
 
   const NavItemComponent = ({ item, index }: { item: NavItem; index: number }) => {
@@ -208,54 +220,74 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     return linkContent;
   };
 
-  // Get sidebar gradient based on role using theme gradients - Orange for all
+  // Lighter orange gradient with darker text
   const getSidebarGradient = () => {
-    return 'bg-gradient-to-b from-orange-600 via-amber-500 to-orange-600';
+    return 'bg-gradient-to-b from-orange-300 via-amber-200 to-orange-300';
   };
 
   const getSidebarTextColor = () => {
-    return 'text-white';
+    return 'text-orange-900';
   };
 
   const getSidebarMutedColor = () => {
-    return 'text-white/70';
+    return 'text-orange-700';
   };
 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r border-border transition-all duration-300 flex flex-col',
+        'fixed left-0 top-0 z-40 h-screen border-r border-orange-300/50 transition-all duration-300 flex flex-col',
         collapsed ? 'w-16' : 'w-64',
         getSidebarGradient(),
         className
       )}
     >
-      {/* Logo */}
-      <div className={cn('p-3 border-b border-white/10', collapsed && 'flex justify-center')}>
-        <button 
-          onClick={() => window.location.href = '/'}
+      {/* Collapse Button at Top */}
+      <div className={cn('p-2 flex', collapsed ? 'justify-center' : 'justify-end')}>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-orange-700 hover:text-orange-900 hover:bg-orange-400/30"
+              onClick={() => setCollapsed(!collapsed)}
+            >
+              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">{collapsed ? 'Expand' : 'Collapse'}</TooltipContent>
+        </Tooltip>
+      </div>
+
+      {/* Logo with Hub Name */}
+      <div className={cn('px-3 pb-3 border-b border-orange-400/30', collapsed && 'flex justify-center')}>
+        <Link 
+          to="/dashboard"
           className="flex items-center gap-3"
         >
           <div className={cn(
-            'rounded-xl bg-gradient-hero flex items-center justify-center flex-shrink-0',
+            'rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center flex-shrink-0',
             collapsed ? 'w-10 h-10' : 'w-10 h-10'
           )}>
-            <BookOpen className="w-5 h-5 text-primary-foreground" />
+            <BookOpen className="w-5 h-5 text-white" />
           </div>
           {!collapsed && (
-            <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
+            <div>
+              <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
+              <p className="text-xs text-orange-600">{getRoleHubName(userRole)}</p>
+            </div>
           )}
-        </button>
+        </Link>
       </div>
 
       {/* User Stats - Collapsed shows avatar only */}
-      <div className={cn('border-b border-white/10', collapsed ? 'p-2' : 'p-4')}>
+      <div className={cn('border-b border-orange-400/30', collapsed ? 'p-2' : 'p-4')}>
         {collapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <div className="flex justify-center">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-gradient-accent text-accent-foreground font-semibold text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold text-sm">
                     {user?.email?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -272,13 +304,13 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
           <>
             <div className="flex items-center gap-3 mb-3">
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-gradient-accent text-accent-foreground font-semibold">
+                <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold">
                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="overflow-hidden">
                 <p className={cn('font-medium truncate', getSidebarTextColor())}>{user?.email?.split('@')[0] || 'User'}</p>
-                <span className={cn('text-xs px-2 py-0.5 rounded-full', getRoleBadgeColor())}>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-700">
                   {getRoleLabel()}
                 </span>
               </div>
@@ -301,57 +333,31 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
         </ul>
       </nav>
 
-      {/* Footer */}
-      <div className={cn('border-t border-white/10', collapsed ? 'p-2' : 'p-3')}>
+      {/* Footer - Sign Out Only */}
+      <div className={cn('border-t border-orange-400/30', collapsed ? 'p-2' : 'p-3')}>
         {collapsed ? (
-          <div className="flex flex-col gap-2">
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Sign Out</TooltipContent>
-            </Tooltip>
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-full text-white/80 hover:text-white hover:bg-white/15"
-                  onClick={() => setCollapsed(!collapsed)}
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Expand</TooltipContent>
-            </Tooltip>
-          </div>
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-full text-red-600 hover:text-red-700 hover:bg-red-500/20"
+                onClick={handleSignOut}
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Sign Out</TooltipContent>
+          </Tooltip>
         ) : (
-          <>
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-red-300 hover:text-red-200 hover:bg-red-500/20"
-              onClick={handleSignOut}
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="ml-3">Sign Out</span>
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-full mt-2 text-white/80 hover:text-white hover:bg-white/15"
-              onClick={() => setCollapsed(!collapsed)}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
-          </>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-500/20"
+            onClick={handleSignOut}
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="ml-3">Sign Out</span>
+          </Button>
         )}
       </div>
     </aside>
