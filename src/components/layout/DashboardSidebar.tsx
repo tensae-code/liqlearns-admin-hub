@@ -41,6 +41,7 @@ import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
 const ForwardedLink = forwardRef<HTMLAnchorElement, LinkProps>((props, ref) => (
   <Link ref={ref} {...props} />
 ));
+ForwardedLink.displayName = 'ForwardedLink';
 
 interface SidebarProps {
   className?: string;
@@ -202,11 +203,16 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
   const NavItemComponent = ({ item, index }: { item: NavItem; index: number }) => {
     const isActive = isItemActive(item.path);
     
-    const linkContent = (
-      <ForwardedLink
-        to={item.path}
+    const handleClick = () => {
+      navigate(item.path);
+    };
+    
+    const buttonContent = (
+      <button
+        type="button"
+        onClick={handleClick}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 w-full',
+          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 w-full text-left cursor-pointer',
           getNavItemColors(isActive),
           sidebarCollapsed && 'justify-center px-2'
         )}
@@ -218,14 +224,14 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
             <span className="text-[10px] text-orange-600/70 leading-tight truncate">{item.description}</span>
           </div>
         )}
-      </ForwardedLink>
+      </button>
     );
 
     if (sidebarCollapsed) {
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
-            {linkContent}
+            {buttonContent}
           </TooltipTrigger>
           <TooltipContent side="right" className="font-medium">
             <div>
@@ -237,7 +243,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
       );
     }
 
-    return linkContent;
+    return buttonContent;
   };
 
   // Lighter orange gradient with darker text
