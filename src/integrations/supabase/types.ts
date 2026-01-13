@@ -1527,6 +1527,14 @@ export type Database = {
         Args: { follower: string; following: string }
         Returns: boolean
       }
+      is_group_admin: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_parent_of_profile: { Args: { profile_id: string }; Returns: boolean }
     }
     Enums: {
