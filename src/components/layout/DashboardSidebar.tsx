@@ -22,8 +22,6 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Trophy,
-  Flame,
   Star,
   Briefcase,
   Library,
@@ -32,8 +30,11 @@ import {
   BarChart3,
   FileText,
   UserCheck,
-  Mail
+  Mail,
+  Trophy,
+  Flame
 } from 'lucide-react';
+import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
 
 interface SidebarProps {
   className?: string;
