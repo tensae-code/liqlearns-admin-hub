@@ -7,12 +7,10 @@ import { useStreakAnimation } from '@/hooks/useStreakAnimation';
 import { useStudyTime } from '@/hooks/useStudyTime';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import AICoach from '@/components/dashboard/AICoach';
-import AuraPointsPanel from '@/components/dashboard/AuraPointsPanel';
-import StreakTracker from '@/components/dashboard/StreakTracker';
 import StudyTimeTracker from '@/components/dashboard/StudyTimeTracker';
-import LearningResources from '@/components/dashboard/LearningResources';
 import AcquiredSkillsList from '@/components/dashboard/AcquiredSkillsList';
 import StreakGiftAnimation from '@/components/streak/StreakGiftAnimation';
+import StatsPopupCard from '@/components/dashboard/StatsPopupCard';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -42,6 +40,9 @@ const Dashboard = () => {
     STREAK_REQUIREMENT_SECONDS,
     streakProgress,
   } = useStudyTime();
+  
+  // Stats popup state
+  const [activePopup, setActivePopup] = useState<'streak' | 'xp' | 'badges' | null>(null);
   
   // Streak animation hook
   const { showAnimation, closeAnimation, triggerAnimation } = useStreakAnimation(
@@ -141,10 +142,10 @@ const Dashboard = () => {
   }
 
   const stats = [
-    { icon: BookOpen, label: 'Lessons', value: '24', gradient: STAT_GRADIENTS[0] },
-    { icon: Award, label: 'Badges', value: '5', gradient: STAT_GRADIENTS[1] },
-    { icon: Star, label: 'XP', value: profile?.xp_points?.toLocaleString() || '0', gradient: STAT_GRADIENTS[2] },
-    { icon: Flame, label: 'Streak', value: profile?.current_streak?.toString() || '0', gradient: STAT_GRADIENTS[3] },
+    { icon: BookOpen, label: 'Lessons', value: '24', gradient: STAT_GRADIENTS[0], clickable: false },
+    { icon: Award, label: 'Badges', value: '5', gradient: STAT_GRADIENTS[1], clickable: true, popupType: 'badges' as const },
+    { icon: Star, label: 'XP', value: profile?.xp_points?.toLocaleString() || '0', gradient: STAT_GRADIENTS[2], clickable: true, popupType: 'xp' as const },
+    { icon: Flame, label: 'Streak', value: profile?.current_streak?.toString() || '0', gradient: STAT_GRADIENTS[3], clickable: true, popupType: 'streak' as const },
   ];
 
   const courses = [
@@ -170,20 +171,25 @@ const Dashboard = () => {
         <p className="text-muted-foreground text-sm md:text-base">Continue your learning journey today</p>
       </motion.div>
 
-      {/* Stats Grid - Colorful Gradient Cards */}
+      {/* Stats Grid - Colorful Gradient Cards - Clickable */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
-            className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
+            className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg ${stat.clickable ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : ''}`}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.05 }}
+            onClick={() => stat.clickable && stat.popupType && setActivePopup(stat.popupType)}
+            whileHover={stat.clickable ? { y: -2 } : {}}
           >
             <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
             <stat.icon className="w-6 h-6 mb-2 opacity-90" />
             <p className="text-2xl font-display font-bold">{stat.value}</p>
             <p className="text-xs opacity-80">{stat.label}</p>
+            {stat.clickable && (
+              <p className="text-[10px] opacity-60 mt-1">Tap for details</p>
+            )}
           </motion.div>
         ))}
       </div>
@@ -342,26 +348,36 @@ const Dashboard = () => {
         <AcquiredSkillsList onViewAll={() => navigate('/quest')} />
       </div>
 
-      {/* Study Time & Streak */}
-      <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
+      {/* Study Time Tracker */}
+      <div className="mt-4 md:mt-6">
         <StudyTimeTracker />
-        <StreakTracker 
-          currentStreak={profile?.current_streak || 7} 
-          longestStreak={profile?.longest_streak || 45} 
-          weekProgress={[true, true, true, true, true, true, false]} 
-          onStreakClick={triggerAnimation}
-        />
       </div>
 
-      {/* Learning Resources */}
-      <div className="mt-4 md:mt-6">
-        <LearningResources userLevel={5} onResourceClick={(r) => console.log('Resource clicked:', r)} />
-      </div>
-
-      {/* Aura Points */}
-      <div className="mt-4 md:mt-6">
-        <AuraPointsPanel auraPoints={profile?.xp_points || 2450} level={5} nextLevelPoints={3000} />
-      </div>
+      {/* Stats Popup Cards */}
+      <StatsPopupCard
+        type="streak"
+        isOpen={activePopup === 'streak'}
+        onClose={() => setActivePopup(null)}
+        data={{
+          currentStreak: profile?.current_streak || 0,
+          longestStreak: profile?.longest_streak || 0,
+        }}
+      />
+      <StatsPopupCard
+        type="xp"
+        isOpen={activePopup === 'xp'}
+        onClose={() => setActivePopup(null)}
+        data={{
+          xpPoints: profile?.xp_points || 0,
+          level: 5,
+        }}
+      />
+      <StatsPopupCard
+        type="badges"
+        isOpen={activePopup === 'badges'}
+        onClose={() => setActivePopup(null)}
+        data={{}}
+      />
 
       {/* Streak Gift Animation */}
       <StreakGiftAnimation 
