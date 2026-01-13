@@ -4,6 +4,7 @@ import { Trophy, Medal, Crown, Star, Flame, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { STAT_GRADIENTS } from '@/lib/theme';
 
 type TimeRange = 'weekly' | 'monthly' | 'alltime';
 
@@ -43,9 +44,9 @@ const Leaderboard = () => {
 
   const getBadgeStyle = (badge?: 'gold' | 'silver' | 'bronze') => {
     switch (badge) {
-      case 'gold': return 'ring-2 ring-gold bg-gold/10';
-      case 'silver': return 'ring-2 ring-muted-foreground bg-muted';
-      case 'bronze': return 'ring-2 ring-streak bg-streak/10';
+      case 'gold': return `bg-gradient-to-r ${STAT_GRADIENTS[3]} text-white`;
+      case 'silver': return `bg-gradient-to-r ${STAT_GRADIENTS[0]} text-white`;
+      case 'bronze': return `bg-gradient-to-r ${STAT_GRADIENTS[2]} text-white`;
       default: return '';
     }
   };

@@ -3,6 +3,7 @@ import { Sparkles, Lock, Unlock, ChevronRight, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { STAT_GRADIENTS } from '@/lib/theme';
 
 interface AuraPointsPanelProps {
   auraPoints: number;
@@ -32,7 +33,7 @@ const AuraPointsPanel = ({ auraPoints = 2450, level = 5, nextLevelPoints = 3000 
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center">
+          <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center', STAT_GRADIENTS[1])}>
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -52,8 +53,8 @@ const AuraPointsPanel = ({ auraPoints = 2450, level = 5, nextLevelPoints = 3000 
           animate={{ rotate: [0, 5, -5, 0] }}
           transition={{ duration: 4, repeat: Infinity }}
         >
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gold/20 to-amber-500/20 flex items-center justify-center">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center shadow-gold">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-400/20 flex items-center justify-center">
+            <div className={cn('w-20 h-20 rounded-full bg-gradient-to-br flex items-center justify-center shadow-lg', STAT_GRADIENTS[1])}>
               <div className="text-center">
                 <Star className="w-5 h-5 text-white mx-auto mb-0.5" />
                 <span className="text-xl font-display font-bold text-white">{auraPoints.toLocaleString()}</span>
@@ -61,7 +62,7 @@ const AuraPointsPanel = ({ auraPoints = 2450, level = 5, nextLevelPoints = 3000 
             </div>
           </div>
           <motion.div
-            className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-accent flex items-center justify-center"
+            className={cn('absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center bg-gradient-to-br', STAT_GRADIENTS[0])}
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >

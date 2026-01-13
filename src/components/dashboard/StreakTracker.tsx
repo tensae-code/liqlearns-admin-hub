@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Flame, Shield, Zap, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { STAT_GRADIENTS } from '@/lib/theme';
 
 interface StreakTrackerProps {
   currentStreak: number;
@@ -56,20 +57,20 @@ const StreakTracker = ({
 
       {/* Streak Stats Grid - Current, Longest, Total */}
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="p-2.5 rounded-lg bg-streak/10 border border-streak/20 text-center">
-          <Flame className="w-4 h-4 text-streak mx-auto mb-1" />
-          <p className="text-lg font-display font-bold text-streak">{currentStreak}</p>
-          <p className="text-[10px] text-muted-foreground">Current</p>
+        <div className={cn('p-2.5 rounded-lg text-center bg-gradient-to-br text-white', STAT_GRADIENTS[3])}>
+          <Flame className="w-4 h-4 mx-auto mb-1" />
+          <p className="text-lg font-display font-bold">{currentStreak}</p>
+          <p className="text-[10px] opacity-80">Current</p>
         </div>
-        <div className="p-2.5 rounded-lg bg-gold/10 border border-gold/20 text-center">
-          <Trophy className="w-4 h-4 text-gold mx-auto mb-1" />
-          <p className="text-lg font-display font-bold text-gold">{longestStreak}</p>
-          <p className="text-[10px] text-muted-foreground">Longest</p>
+        <div className={cn('p-2.5 rounded-lg text-center bg-gradient-to-br text-white', STAT_GRADIENTS[1])}>
+          <Trophy className="w-4 h-4 mx-auto mb-1" />
+          <p className="text-lg font-display font-bold">{longestStreak}</p>
+          <p className="text-[10px] opacity-80">Longest</p>
         </div>
-        <div className="p-2.5 rounded-lg bg-accent/10 border border-accent/20 text-center">
-          <Zap className="w-4 h-4 text-accent mx-auto mb-1" />
-          <p className="text-lg font-display font-bold text-accent">{totalStreaks}</p>
-          <p className="text-[10px] text-muted-foreground">Total</p>
+        <div className={cn('p-2.5 rounded-lg text-center bg-gradient-to-br text-white', STAT_GRADIENTS[0])}>
+          <Zap className="w-4 h-4 mx-auto mb-1" />
+          <p className="text-lg font-display font-bold">{totalStreaks}</p>
+          <p className="text-[10px] opacity-80">Total</p>
         </div>
       </div>
 
@@ -113,21 +114,21 @@ const StreakTracker = ({
 
       {/* Bottom Stats */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="p-3 rounded-lg bg-streak/10 border border-streak/20">
+        <div className={cn('p-3 rounded-lg bg-gradient-to-br text-white', STAT_GRADIENTS[2])}>
           <div className="flex items-center gap-2 mb-1">
-            <Zap className="w-4 h-4 text-streak" />
-            <span className="text-sm font-medium text-foreground">Weekly Goal</span>
+            <Zap className="w-4 h-4" />
+            <span className="text-sm font-medium">Weekly Goal</span>
           </div>
-          <p className="text-lg font-display font-bold text-streak">{completedDays}/7</p>
-          <p className="text-xs text-muted-foreground">days completed</p>
+          <p className="text-lg font-display font-bold">{completedDays}/7</p>
+          <p className="text-xs opacity-80">days completed</p>
         </div>
-        <div className="p-3 rounded-lg bg-gold/10 border border-gold/20">
+        <div className={cn('p-3 rounded-lg bg-gradient-to-br text-white', STAT_GRADIENTS[1])}>
           <div className="flex items-center gap-2 mb-1">
-            <Shield className="w-4 h-4 text-gold" />
-            <span className="text-sm font-medium text-foreground">Freeze</span>
+            <Shield className="w-4 h-4" />
+            <span className="text-sm font-medium">Freeze</span>
           </div>
-          <p className="text-lg font-display font-bold text-gold">2</p>
-          <p className="text-xs text-muted-foreground">streak shields</p>
+          <p className="text-lg font-display font-bold">2</p>
+          <p className="text-xs opacity-80">streak shields</p>
         </div>
       </div>
     </motion.div>

@@ -217,14 +217,14 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     return linkContent;
   };
 
-  // Get sidebar gradient based on role
+  // Get sidebar gradient based on role using theme gradients
   const getSidebarGradient = () => {
     switch (userRole) {
-      case 'ceo': return 'bg-gradient-to-b from-amber-950/90 via-amber-900/80 to-amber-950/90';
-      case 'admin': return 'bg-gradient-to-b from-red-950/90 via-red-900/80 to-red-950/90';
-      case 'support': return 'bg-gradient-to-b from-blue-950/90 via-blue-900/80 to-blue-950/90';
-      case 'teacher': return 'bg-gradient-to-b from-purple-950/90 via-purple-900/80 to-purple-950/90';
-      case 'parent': return 'bg-gradient-to-b from-green-950/90 via-green-900/80 to-green-950/90';
+      case 'ceo': return `bg-gradient-to-b from-orange-500/90 via-amber-400/80 to-orange-500/90`; // Orange → Amber
+      case 'admin': return `bg-gradient-to-b from-purple-500/90 via-pink-400/80 to-purple-500/90`; // Purple → Pink
+      case 'support': return `bg-gradient-to-b from-blue-500/90 via-cyan-400/80 to-blue-500/90`; // Blue → Cyan
+      case 'teacher': return `bg-gradient-to-b from-purple-500/90 via-pink-400/80 to-purple-500/90`; // Purple → Pink
+      case 'parent': return `bg-gradient-to-b from-emerald-500/90 via-teal-400/80 to-emerald-500/90`; // Emerald → Teal
       default: return 'bg-card';
     }
   };

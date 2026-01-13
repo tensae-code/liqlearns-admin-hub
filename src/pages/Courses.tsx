@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useCourses, useCategories, useEnrollInCourse } from '@/hooks/useCourses';
 import { useAuth } from '@/contexts/AuthContext';
+import { getGradient } from '@/lib/theme';
 
 const CourseCardSkeleton = () => (
   <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -165,7 +166,7 @@ const Courses = () => {
               featuredCourses.map((course, i) => (
                 <motion.div
                   key={course.id}
-                  className="bg-gradient-hero text-primary-foreground rounded-xl p-5 cursor-pointer hover:scale-[1.02] transition-transform relative"
+                  className={`bg-gradient-to-br ${getGradient(i)} text-white rounded-xl p-5 cursor-pointer hover:scale-[1.02] transition-transform relative`}
                   onClick={() => navigate(`/course/${course.id}`)}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -178,9 +179,9 @@ const Courses = () => {
                   )}
                   <span className="text-3xl mb-3 block">{course.thumbnail_emoji}</span>
                   <h3 className="font-display font-semibold mb-1">{course.title}</h3>
-                  <p className="text-sm text-primary-foreground/70 mb-3 line-clamp-2">{course.description}</p>
+                  <p className="text-sm text-white/80 mb-3 line-clamp-2">{course.description}</p>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-sm">
+                    <div className="flex items-center gap-1 text-sm text-white/80">
                       <Users className="w-4 h-4" />
                       <span>{course.enrollment_count}</span>
                     </div>
