@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppearance } from '@/hooks/useAppearance';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -133,12 +134,18 @@ const getRoleHubName = (role: string | null): string => {
 };
 
 const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
-  const [collapsed, setCollapsedState] = useState(false);
+  const { sidebarCollapsed, toggleSidebarCollapsed } = useAppearance();
+  
+  // Sync with parent on mount and when setting changes
+  useEffect(() => {
+    onCollapseChange?.(sidebarCollapsed);
+  }, [sidebarCollapsed, onCollapseChange]);
   
   const setCollapsed = (value: boolean) => {
-    setCollapsedState(value);
-    onCollapseChange?.(value);
+    toggleSidebarCollapsed(value);
   };
+  
+  const collapsed = sidebarCollapsed;
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut, userRole } = useAuth();
