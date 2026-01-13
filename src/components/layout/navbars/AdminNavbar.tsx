@@ -85,13 +85,13 @@ const AdminNavbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-white/70 dark:bg-black/40 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/30 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
+    <nav className="sticky top-0 z-40 bg-gradient-to-r from-orange-300/95 via-amber-200/95 to-orange-300/95 backdrop-blur-lg border-b border-orange-400/30">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
         {/* Mobile Menu Button + Logo */}
         <div className="flex items-center gap-3 md:hidden">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-foreground hover:bg-white/50 dark:hover:bg-white/10">
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-orange-800 hover:bg-orange-400/30">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -193,19 +193,19 @@ const AdminNavbar = () => {
 
         {/* Desktop - Hub Name */}
         <div className="hidden md:flex items-center">
-          <span className="text-lg font-display font-bold text-foreground">Admin Hub</span>
+          <span className="text-lg font-display font-bold text-orange-800">Admin Hub</span>
         </div>
 
         {/* Search Bar - Desktop */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-600" />
             <Input
               type="search"
               placeholder="Search users, courses..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white/80 dark:bg-white/10 border-white/40 dark:border-white/20 text-foreground placeholder:text-muted-foreground focus:bg-white dark:focus:bg-white/15 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 backdrop-blur-sm"
+              className="pl-10 bg-white/90 border-orange-400 text-orange-900 placeholder:text-orange-500 focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-400/50"
             />
           </div>
         </form>
@@ -216,7 +216,7 @@ const AdminNavbar = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="hidden md:flex h-9 w-9 text-foreground hover:bg-white/50 dark:hover:bg-white/10"
+            className="hidden md:flex h-9 w-9 text-orange-800 hover:bg-orange-400/30"
             onClick={() => navigate('/admin')}
           >
             <AlertTriangle className="h-5 w-5" />
@@ -231,41 +231,41 @@ const AdminNavbar = () => {
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full p-0 ring-2 ring-white/30 dark:ring-white/20">
+              <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full p-0 ring-2 ring-orange-400/30">
                 <Avatar className="h-9 w-9 md:h-10 md:w-10">
                   {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground font-semibold text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold text-sm">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-white/90 dark:bg-black/80 backdrop-blur-xl border-white/30 dark:border-white/10">
+            <DropdownMenuContent align="end" className="w-56 bg-orange-600 border-orange-400/20">
               <div className="flex items-center gap-3 p-3">
                 <Avatar className="h-10 w-10">
                   {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-sm">
+                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white text-sm">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium truncate max-w-[140px] text-foreground">
+                  <span className="text-sm font-medium truncate max-w-[140px] text-white">
                     {profile?.full_name || 'Admin'}
                   </span>
-                  <span className="text-xs text-muted-foreground">Administrator</span>
+                  <span className="text-xs text-orange-200">Administrator</span>
                 </div>
               </div>
-              <DropdownMenuSeparator className="bg-border/50" />
-              <DropdownMenuItem onClick={() => navigate('/profile')} className="text-foreground focus:bg-white/50 dark:focus:bg-white/10">
+              <DropdownMenuSeparator className="bg-orange-400/20" />
+              <DropdownMenuItem onClick={() => navigate('/profile')} className="text-orange-200 focus:bg-orange-500/20 focus:text-white">
                 <User className="mr-2 h-4 w-4" />
                 My Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')} className="text-foreground focus:bg-white/50 dark:focus:bg-white/10">
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="text-orange-200 focus:bg-orange-500/20 focus:text-white">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-border/50" />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+              <DropdownMenuSeparator className="bg-orange-400/20" />
+              <DropdownMenuItem onClick={handleSignOut} className="text-red-300 focus:text-red-200 focus:bg-red-500/10">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>
