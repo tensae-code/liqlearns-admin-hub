@@ -42,6 +42,14 @@ interface Ticket {
   description?: string;
 }
 
+// Define the four gradients used across the app
+const STAT_GRADIENTS = [
+  'from-blue-500 to-cyan-400',
+  'from-purple-500 to-pink-400',
+  'from-emerald-500 to-teal-400',
+  'from-orange-500 to-amber-400'
+];
+
 const SupportDashboard = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
@@ -50,10 +58,10 @@ const SupportDashboard = () => {
   const [reply, setReply] = useState('');
 
   const stats = [
-    { label: 'Open Tickets', value: '23', icon: MessageSquare, gradient: 'from-orange-500 to-amber-400' },
-    { label: 'Pending', value: '8', icon: Clock, gradient: 'from-yellow-500 to-amber-400' },
-    { label: 'Resolved Today', value: '45', icon: CheckCircle2, gradient: 'from-emerald-500 to-green-400' },
-    { label: 'Avg. Response', value: '2.5h', icon: HeadphonesIcon, gradient: 'from-blue-500 to-cyan-400' },
+    { label: 'Open Tickets', value: '23', icon: MessageSquare, gradient: STAT_GRADIENTS[3] },
+    { label: 'Pending', value: '8', icon: Clock, gradient: STAT_GRADIENTS[1] },
+    { label: 'Resolved Today', value: '45', icon: CheckCircle2, gradient: STAT_GRADIENTS[2] },
+    { label: 'Avg. Response', value: '2.5h', icon: HeadphonesIcon, gradient: STAT_GRADIENTS[0] },
   ];
 
   const tickets: Ticket[] = [

@@ -21,14 +21,22 @@ import {
   Settings
 } from 'lucide-react';
 
+// Define the four gradients used across the app
+const STAT_GRADIENTS = [
+  'from-blue-500 to-cyan-400',
+  'from-purple-500 to-pink-400',
+  'from-emerald-500 to-teal-400',
+  'from-orange-500 to-amber-400'
+];
+
 const CEODashboard = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const stats = [
-    { label: 'Total Revenue', value: '$2.4M', change: '+28%', isUp: true, icon: DollarSign, gradient: 'from-emerald-500 to-green-400' },
-    { label: 'Active Users', value: '45,280', change: '+15%', isUp: true, icon: Users, gradient: 'from-blue-500 to-cyan-400' },
-    { label: 'Course Catalog', value: '320', change: '+12', isUp: true, icon: BookOpen, gradient: 'from-purple-500 to-violet-400' },
-    { label: 'Global Reach', value: '45 Countries', change: '+3', isUp: true, icon: Globe, gradient: 'from-orange-500 to-amber-400' },
+    { label: 'Total Revenue', value: '$2.4M', change: '+28%', isUp: true, icon: DollarSign, gradient: STAT_GRADIENTS[2] },
+    { label: 'Active Users', value: '45,280', change: '+15%', isUp: true, icon: Users, gradient: STAT_GRADIENTS[0] },
+    { label: 'Course Catalog', value: '320', change: '+12', isUp: true, icon: BookOpen, gradient: STAT_GRADIENTS[1] },
+    { label: 'Global Reach', value: '45 Countries', change: '+3', isUp: true, icon: Globe, gradient: STAT_GRADIENTS[3] },
   ];
 
   const departments = [

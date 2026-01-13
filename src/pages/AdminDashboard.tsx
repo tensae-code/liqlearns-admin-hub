@@ -28,16 +28,24 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
+// Define the four gradients used across the app
+const STAT_GRADIENTS = [
+  'from-blue-500 to-cyan-400',
+  'from-purple-500 to-pink-400',
+  'from-emerald-500 to-teal-400',
+  'from-orange-500 to-amber-400'
+];
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'courses' | 'approvals'>('overview');
 
   const stats = [
-    { label: 'Total Users', value: '12,458', change: '+12%', icon: Users, gradient: 'from-violet-500 to-purple-400' },
-    { label: 'Active Courses', value: '156', change: '+8%', icon: BookOpen, gradient: 'from-amber-500 to-orange-400' },
-    { label: 'Monthly Revenue', value: '$45.2K', change: '+23%', icon: DollarSign, gradient: 'from-emerald-500 to-green-400' },
-    { label: 'Engagement', value: '78%', change: '+5%', icon: TrendingUp, gradient: 'from-blue-500 to-cyan-400' },
+    { label: 'Total Users', value: '12,458', change: '+12%', icon: Users, gradient: STAT_GRADIENTS[0] },
+    { label: 'Active Courses', value: '156', change: '+8%', icon: BookOpen, gradient: STAT_GRADIENTS[1] },
+    { label: 'Monthly Revenue', value: '$45.2K', change: '+23%', icon: DollarSign, gradient: STAT_GRADIENTS[2] },
+    { label: 'Engagement', value: '78%', change: '+5%', icon: TrendingUp, gradient: STAT_GRADIENTS[3] },
   ];
 
   const recentUsers = [
