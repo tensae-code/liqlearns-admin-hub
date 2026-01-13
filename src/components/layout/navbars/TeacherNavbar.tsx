@@ -87,13 +87,13 @@ const TeacherNavbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-gradient-to-r from-orange-600/95 via-amber-500/95 to-orange-600/95 backdrop-blur-lg border-b border-orange-400/20">
+    <nav className="sticky top-0 z-40 bg-gradient-to-r from-orange-300/95 via-amber-200/95 to-orange-300/95 backdrop-blur-lg border-b border-orange-400/30">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
         {/* Mobile Menu Button + Logo */}
         <div className="flex items-center gap-3 md:hidden">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-white hover:bg-orange-500/20">
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-orange-800 hover:bg-orange-400/30">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -193,8 +193,10 @@ const TeacherNavbar = () => {
           </Link>
         </div>
 
-        {/* Desktop - No logo, just spacer since sidebar has it */}
-        <div className="hidden md:block" />
+        {/* Desktop - Hub Name */}
+        <div className="hidden md:flex items-center">
+          <span className="text-lg font-display font-bold text-orange-800">Teacher Hub</span>
+        </div>
 
         {/* Search Bar - Desktop */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
@@ -215,7 +217,7 @@ const TeacherNavbar = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="hidden md:flex text-white hover:bg-orange-500/20"
+            className="hidden md:flex text-orange-800 hover:bg-orange-400/30"
             onClick={() => navigate('/teacher')}
           >
             <Plus className="w-4 h-4 mr-2" />

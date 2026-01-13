@@ -242,25 +242,8 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
         className
       )}
     >
-      {/* Collapse Button at Top */}
-      <div className={cn('p-2 flex', collapsed ? 'justify-center' : 'justify-end')}>
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-orange-700 hover:text-orange-900 hover:bg-orange-400/30"
-              onClick={() => setCollapsed(!collapsed)}
-            >
-              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">{collapsed ? 'Expand' : 'Collapse'}</TooltipContent>
-        </Tooltip>
-      </div>
-
-      {/* Logo with Hub Name */}
-      <div className={cn('px-3 pb-3 border-b border-orange-400/30', collapsed && 'flex justify-center')}>
+      {/* Logo */}
+      <div className={cn('px-3 pt-3 pb-2', collapsed && 'flex justify-center')}>
         <Link 
           to="/dashboard"
           className="flex items-center gap-3"
@@ -272,54 +255,34 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
             <BookOpen className="w-5 h-5 text-white" />
           </div>
           {!collapsed && (
-            <div>
-              <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
-              <p className="text-xs text-orange-600">{getRoleHubName(userRole)}</p>
-            </div>
+            <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
           )}
         </Link>
       </div>
 
-      {/* User Stats - Collapsed shows avatar only */}
-      <div className={cn('border-b border-orange-400/30', collapsed ? 'p-2' : 'p-4')}>
-        {collapsed ? (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <div className="flex justify-center">
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold text-sm">
-                    {user?.email?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <div>
-                <p className="font-medium">{user?.email?.split('@')[0] || 'User'}</p>
-                <p className="text-xs text-muted-foreground">{getRoleLabel()}</p>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <>
-            <div className="flex items-center gap-3 mb-3">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="overflow-hidden">
-                <p className={cn('font-medium truncate', getSidebarTextColor())}>{user?.email?.split('@')[0] || 'User'}</p>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-700">
-                  {getRoleLabel()}
-                </span>
-              </div>
-            </div>
-            {(userRole === 'student' || !userRole) && (
-              <SidebarRankCard />
-            )}
-          </>
-        )}
+      {/* Collapse Button under Logo */}
+      <div className={cn('px-3 pb-3 border-b border-orange-400/30', collapsed ? 'flex justify-center' : '')}>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "text-orange-700 hover:text-orange-900 hover:bg-orange-400/30",
+                collapsed ? "w-10 h-8 p-0" : "w-full justify-start gap-2"
+              )}
+              onClick={() => setCollapsed(!collapsed)}
+            >
+              {collapsed ? <ChevronRight className="w-4 h-4" /> : (
+                <>
+                  <ChevronLeft className="w-4 h-4" />
+                  <span className="text-sm">Collapse</span>
+                </>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">{collapsed ? 'Expand' : 'Collapse'}</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Navigation */}
