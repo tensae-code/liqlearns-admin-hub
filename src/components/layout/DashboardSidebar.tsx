@@ -44,6 +44,7 @@ interface SidebarProps {
 interface NavItem {
   icon: typeof LayoutDashboard;
   label: string;
+  description: string;
   path: string;
   roles?: string[];
 }
@@ -53,68 +54,68 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
   switch (role) {
     case 'ceo':
       return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/ceo' },
-        { icon: BarChart3, label: 'Analytics', path: '/ceo/analytics' },
-        { icon: Users, label: 'Team', path: '/ceo/team' },
-        { icon: Library, label: 'Courses', path: '/courses' },
-        { icon: FileText, label: 'Reports', path: '/ceo/reports' },
-        { icon: Mail, label: 'Messages', path: '/messages' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+        { icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & insights', path: '/ceo' },
+        { icon: BarChart3, label: 'Analytics', description: 'Platform metrics', path: '/ceo/analytics' },
+        { icon: Users, label: 'Team', description: 'Manage staff', path: '/ceo/team' },
+        { icon: Library, label: 'Courses', description: 'Browse content', path: '/courses' },
+        { icon: FileText, label: 'Reports', description: 'Business reports', path: '/ceo/reports' },
+        { icon: Mail, label: 'Messages', description: 'Team chat', path: '/messages' },
+        { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
+        { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
     case 'admin':
       return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-        { icon: Users, label: 'Users', path: '/admin/users' },
-        { icon: Library, label: 'Courses', path: '/courses' },
-        { icon: Shield, label: 'Moderation', path: '/admin/moderation' },
-        { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
-        { icon: Mail, label: 'Messages', path: '/messages' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+        { icon: LayoutDashboard, label: 'Dashboard', description: 'Admin overview', path: '/admin' },
+        { icon: Users, label: 'Users', description: 'Manage accounts', path: '/admin/users' },
+        { icon: Library, label: 'Courses', description: 'Browse content', path: '/courses' },
+        { icon: Shield, label: 'Moderation', description: 'Review reports', path: '/admin/moderation' },
+        { icon: BarChart3, label: 'Reports', description: 'System reports', path: '/admin/reports' },
+        { icon: Mail, label: 'Messages', description: 'Communications', path: '/messages' },
+        { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
+        { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
     case 'support':
       return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/support' },
-        { icon: MessageSquare, label: 'Tickets', path: '/support/tickets' },
-        { icon: Users, label: 'Users', path: '/support/users' },
-        { icon: Mail, label: 'Messages', path: '/messages' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+        { icon: LayoutDashboard, label: 'Dashboard', description: 'Support overview', path: '/support' },
+        { icon: MessageSquare, label: 'Tickets', description: 'Open requests', path: '/support/tickets' },
+        { icon: Users, label: 'Users', description: 'User lookup', path: '/support/users' },
+        { icon: Mail, label: 'Messages', description: 'Communications', path: '/messages' },
+        { icon: HelpCircle, label: 'Help', description: 'Resources', path: '/help' },
+        { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
     case 'teacher':
       return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/teacher' },
-        { icon: Library, label: 'My Courses', path: '/teacher/courses' },
-        { icon: Users, label: 'Students', path: '/teacher/students' },
-        { icon: BarChart3, label: 'Earnings', path: '/teacher/earnings' },
-        { icon: Calendar, label: 'Events', path: '/events' },
-        { icon: Mail, label: 'Messages', path: '/messages' },
-        { icon: MessageSquare, label: 'Community', path: '/community' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+        { icon: LayoutDashboard, label: 'Dashboard', description: 'Teaching overview', path: '/teacher' },
+        { icon: Library, label: 'My Courses', description: 'Manage content', path: '/teacher/courses' },
+        { icon: Users, label: 'Students', description: 'View learners', path: '/teacher/students' },
+        { icon: BarChart3, label: 'Earnings', description: 'Revenue stats', path: '/teacher/earnings' },
+        { icon: Calendar, label: 'Events', description: 'Scheduled events', path: '/events' },
+        { icon: Mail, label: 'Messages', description: 'Student chat', path: '/messages' },
+        { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
+        { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
+        { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
     case 'parent':
       return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/parent' },
-        { icon: Baby, label: 'My Children', path: '/parent/children' },
-        { icon: BarChart3, label: 'Progress', path: '/parent/progress' },
-        { icon: Mail, label: 'Messages', path: '/messages' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+        { icon: LayoutDashboard, label: 'Dashboard', description: 'Family overview', path: '/parent' },
+        { icon: Baby, label: 'My Children', description: 'Manage kids', path: '/parent/children' },
+        { icon: BarChart3, label: 'Progress', description: 'Learning stats', path: '/parent/progress' },
+        { icon: Mail, label: 'Messages', description: 'Communications', path: '/messages' },
+        { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
+        { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
     default: // student - max 10 items
       return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-        { icon: Library, label: 'Courses', path: '/courses' },
-        { icon: GraduationCap, label: 'Quest', path: '/quest' },
-        { icon: Users, label: 'Study Rooms', path: '/study-rooms' },
-        { icon: Mail, label: 'Messages', path: '/messages' },
-        { icon: Calendar, label: 'Events', path: '/events' },
-        { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
-        { icon: MessageSquare, label: 'Community', path: '/community' },
-        { icon: Trophy, label: 'Profile', path: '/profile' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
+        { icon: LayoutDashboard, label: 'Dashboard', description: 'Your overview', path: '/dashboard' },
+        { icon: Library, label: 'Courses', description: 'Browse & learn', path: '/courses' },
+        { icon: GraduationCap, label: 'Quest', description: 'Daily challenges', path: '/quest' },
+        { icon: Users, label: 'Study Rooms', description: 'Learn together', path: '/study-rooms' },
+        { icon: Mail, label: 'Messages', description: 'Chat with friends', path: '/messages' },
+        { icon: Calendar, label: 'Events', description: 'Upcoming events', path: '/events' },
+        { icon: ShoppingBag, label: 'Marketplace', description: 'Spend rewards', path: '/marketplace' },
+        { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
+        { icon: Trophy, label: 'Profile', description: 'Your achievements', path: '/profile' },
+        { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
   }
 };
@@ -190,7 +191,6 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     const isActive = isItemActive(item.path);
     
     const handleNavClick = (e: React.MouseEvent) => {
-      // Prevent any state changes that might affect collapse
       e.stopPropagation();
     };
     
@@ -199,13 +199,18 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
         to={item.path}
         onClick={handleNavClick}
         className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 text-sm',
+          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 w-full',
           getNavItemColors(isActive),
           collapsed && 'justify-center px-2'
         )}
       >
-        <item.icon className="w-4 h-4 flex-shrink-0" />
-        {!collapsed && <span>{item.label}</span>}
+        <item.icon className="w-5 h-5 flex-shrink-0" />
+        {!collapsed && (
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-medium leading-tight">{item.label}</span>
+            <span className="text-[10px] text-orange-600/70 leading-tight truncate">{item.description}</span>
+          </div>
+        )}
       </Link>
     );
 
@@ -216,7 +221,10 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
             {linkContent}
           </TooltipTrigger>
           <TooltipContent side="right" className="font-medium">
-            {item.label}
+            <div>
+              <div>{item.label}</div>
+              <div className="text-xs text-muted-foreground">{item.description}</div>
+            </div>
           </TooltipContent>
         </Tooltip>
       );
@@ -242,7 +250,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     <aside
       className={cn(
         'fixed left-0 top-0 z-40 h-screen border-r border-orange-300/50 transition-all duration-300 flex flex-col',
-        collapsed ? 'w-16' : 'w-48',
+        collapsed ? 'w-16' : 'w-56',
         getSidebarGradient(),
         className
       )}

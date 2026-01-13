@@ -57,7 +57,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         
         {/* Main content area - adjusts based on sidebar state */}
         <div 
-          className={`transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}`}
+          className={`transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-56'}`}
         >
           {/* Role-specific Navbar */}
           {renderNavbar()}
