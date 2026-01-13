@@ -133,35 +133,38 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
         <p className="text-muted-foreground">Earned</p>
       </div>
 
-      {/* Badges Grid */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Badges Grid with Levels */}
+      <div className="grid grid-cols-3 gap-2">
         {[
-          { name: 'Early Bird', icon: '🌅', earned: true },
-          { name: 'Streak Master', icon: '🔥', earned: true },
-          { name: 'Quiz Ace', icon: '🎯', earned: true },
-          { name: 'Bookworm', icon: '📚', earned: true },
-          { name: 'Social Star', icon: '⭐', earned: true },
-          { name: 'Night Owl', icon: '🦉', earned: false },
-          { name: 'Speed Reader', icon: '⚡', earned: false },
-          { name: 'Chef', icon: '👨‍🍳', earned: false },
-          { name: 'Coder', icon: '💻', earned: false },
+          { name: 'Early Bird', icon: '🌅', earned: true, level: 3 },
+          { name: 'Streak Master', icon: '🔥', earned: true, level: 5 },
+          { name: 'Quiz Ace', icon: '🎯', earned: true, level: 2 },
+          { name: 'Bookworm', icon: '📚', earned: true, level: 4 },
+          { name: 'Social Star', icon: '⭐', earned: true, level: 1 },
+          { name: 'Night Owl', icon: '🦉', earned: false, level: 0 },
         ].map((badge, i) => (
           <motion.div
             key={i}
-            className={`p-3 rounded-xl text-center transition-all ${
+            className={`relative p-3 rounded-xl text-center transition-all ${
               badge.earned 
                 ? 'bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20' 
                 : 'bg-muted/30 opacity-50'
             }`}
             whileHover={badge.earned ? { scale: 1.05 } : {}}
           >
-            <span className="text-2xl">{badge.icon}</span>
-            <p className="text-xs font-medium text-foreground mt-1 truncate">{badge.name}</p>
+            {/* Level Badge on top */}
+            {badge.earned && (
+              <div className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-gold text-[10px] font-bold text-white shadow-sm">
+                Lv.{badge.level}
+              </div>
+            )}
+            <span className="text-2xl block">{badge.icon}</span>
+            <p className="text-[11px] font-medium text-foreground mt-1 truncate">{badge.name}</p>
           </motion.div>
         ))}
       </div>
 
-      <Button variant="outline" className="w-full">
+      <Button variant="outline" className="w-full" size="sm">
         View All Badges
       </Button>
     </div>
