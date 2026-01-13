@@ -182,9 +182,9 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
 
   const getNavItemColors = (isActive: boolean) => {
     if (isActive) {
-      return 'bg-orange-500 text-white font-semibold shadow-sm';
+      return 'bg-primary/90 text-primary-foreground font-semibold shadow-sm backdrop-blur-sm';
     }
-    return 'text-orange-800 hover:bg-orange-400/30 hover:text-orange-900';
+    return 'text-foreground/80 hover:bg-white/50 dark:hover:bg-white/10 hover:text-foreground';
   };
 
   const NavItemComponent = ({ item, index }: { item: NavItem; index: number }) => {
@@ -220,25 +220,14 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     return linkContent;
   };
 
-  // Lighter orange gradient with darker text
-  const getSidebarGradient = () => {
-    return 'bg-gradient-to-b from-orange-300 via-amber-200 to-orange-300';
-  };
-
-  const getSidebarTextColor = () => {
-    return 'text-orange-900';
-  };
-
-  const getSidebarMutedColor = () => {
-    return 'text-orange-700';
-  };
-
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r border-orange-300/50 transition-all duration-300 flex flex-col',
+        'fixed left-0 top-0 z-40 h-screen transition-all duration-300 flex flex-col',
+        'bg-white/70 dark:bg-black/40 backdrop-blur-2xl backdrop-saturate-150',
+        'border-r border-white/30 dark:border-white/10',
+        'shadow-[0_8px_32px_rgba(0,0,0,0.08)]',
         collapsed ? 'w-16' : 'w-64',
-        getSidebarGradient(),
         className
       )}
     >
@@ -249,26 +238,26 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
           className="flex items-center gap-3"
         >
           <div className={cn(
-            'rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center flex-shrink-0',
+            'rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0 shadow-lg',
             collapsed ? 'w-10 h-10' : 'w-10 h-10'
           )}>
-            <BookOpen className="w-5 h-5 text-white" />
+            <BookOpen className="w-5 h-5 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
+            <span className="text-xl font-display font-bold text-foreground">LiqLearns</span>
           )}
         </Link>
       </div>
 
       {/* Collapse Button under Logo */}
-      <div className={cn('px-3 pb-3 border-b border-orange-400/30', collapsed ? 'flex justify-center' : '')}>
+      <div className={cn('px-3 pb-3 border-b border-white/20 dark:border-white/10', collapsed ? 'flex justify-center' : '')}>
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
               className={cn(
-                "text-orange-700 hover:text-orange-900 hover:bg-orange-400/30",
+                "text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-white/10",
                 collapsed ? "w-10 h-8 p-0" : "w-full justify-start gap-2"
               )}
               onClick={() => setCollapsed(!collapsed)}
@@ -297,14 +286,14 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
       </nav>
 
       {/* Footer - Sign Out Only */}
-      <div className={cn('border-t border-orange-400/30', collapsed ? 'p-2' : 'p-3')}>
+      <div className={cn('border-t border-white/20 dark:border-white/10', collapsed ? 'p-2' : 'p-3')}>
         {collapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="w-full text-red-600 hover:text-red-700 hover:bg-red-500/20"
+                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={handleSignOut}
               >
                 <LogOut className="w-5 h-5" />
@@ -315,7 +304,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
         ) : (
           <Button
             variant="ghost"
-            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-500/20"
+            className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={handleSignOut}
           >
             <LogOut className="w-5 h-5" />
