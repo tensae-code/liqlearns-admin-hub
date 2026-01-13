@@ -214,50 +214,98 @@ export const useMessaging = () => {
 
   // Send a message
   const sendMessage = useCallback(async (content: string) => {
-    if (!user || !currentConversation) return;
+    if (!user || !currentConversation) {
+      console.error('Cannot send message: no user or conversation', { user: !!user, conv: !!currentConversation });
+      toast.error('Unable to send message');
+      return;
+    }
 
     try {
       const [type, id] = currentConversation.id.split('_');
+      console.log('Sending message:', { type, id, userId: user.id, content: content.substring(0, 20) });
 
       if (type === 'dm') {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('direct_messages')
           .insert({
             sender_id: user.id,
             receiver_id: id,
             content,
-          });
+          })
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('DM insert error:', error);
+          throw error;
+        }
+        
+        console.log('DM sent successfully:', data?.id);
+        
+        // Optimistically add message to UI
+        const newMessage: Message = {
+          id: data.id,
+          content: data.content,
+          sender: {
+            id: user.id,
+            name: 'You',
+          },
+          timestamp: 'Just now',
+          isRead: false,
+        };
+        setMessages(prev => [...prev, newMessage]);
+        
       } else if (type === 'group') {
         // Get default channel
-        const { data: channel } = await supabase
+        const { data: channel, error: channelError } = await supabase
           .from('group_channels')
           .select('id')
           .eq('group_id', id)
           .eq('is_default', true)
           .single();
 
+        if (channelError) {
+          console.error('Channel fetch error:', channelError);
+          throw new Error('Could not find group channel');
+        }
+
         if (channel) {
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('group_messages')
             .insert({
               channel_id: channel.id,
               sender_id: user.id,
               content,
-            });
+            })
+            .select()
+            .single();
 
-          if (error) throw error;
+          if (error) {
+            console.error('Group message insert error:', error);
+            throw error;
+          }
+          
+          console.log('Group message sent:', data?.id);
+          
+          // Optimistically add message to UI
+          const newMessage: Message = {
+            id: data.id,
+            content: data.content,
+            sender: {
+              id: user.id,
+              name: 'You',
+            },
+            timestamp: 'Just now',
+          };
+          setMessages(prev => [...prev, newMessage]);
         }
       }
-
-      // Refresh messages
-      await fetchMessages(currentConversation.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      const errorMessage = error?.message || 'Failed to send message';
+      toast.error(errorMessage);
     }
-  }, [user, currentConversation, fetchMessages]);
+  }, [user, currentConversation]);
 
   // Create a new group
   const createGroup = useCallback(async (data: {

@@ -57,6 +57,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Users, label: 'Team', path: '/ceo/team' },
         { icon: Library, label: 'Courses', path: '/courses' },
         { icon: FileText, label: 'Reports', path: '/ceo/reports' },
+        { icon: Mail, label: 'Messages', path: '/messages' },
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
       ];
@@ -67,6 +68,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Library, label: 'Courses', path: '/courses' },
         { icon: Shield, label: 'Moderation', path: '/admin' },
         { icon: BarChart3, label: 'Reports', path: '/admin' },
+        { icon: Mail, label: 'Messages', path: '/messages' },
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
       ];
@@ -75,6 +77,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: LayoutDashboard, label: 'Dashboard', path: '/support' },
         { icon: MessageSquare, label: 'Tickets', path: '/support' },
         { icon: Users, label: 'Users', path: '/support' },
+        { icon: Mail, label: 'Messages', path: '/messages' },
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
       ];
@@ -85,6 +88,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Users, label: 'Students', path: '/teacher' },
         { icon: BarChart3, label: 'Earnings', path: '/teacher' },
         { icon: Calendar, label: 'Events', path: '/events' },
+        { icon: Mail, label: 'Messages', path: '/messages' },
         { icon: MessageSquare, label: 'Community', path: '/community' },
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
@@ -94,6 +98,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: LayoutDashboard, label: 'Dashboard', path: '/parent' },
         { icon: Baby, label: 'My Children', path: '/parent' },
         { icon: BarChart3, label: 'Progress', path: '/parent' },
+        { icon: Mail, label: 'Messages', path: '/messages' },
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
       ];
