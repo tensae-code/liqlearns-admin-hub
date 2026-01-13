@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -45,15 +45,32 @@ const NewDMModal = ({
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [previewProfile, setPreviewProfile] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const onSearchRef = useRef(onSearch);
 
+  // Keep ref updated
   useEffect(() => {
-    if (onSearch) {
-      const debounce = setTimeout(() => {
-        onSearch(searchQuery);
-      }, 300);
-      return () => clearTimeout(debounce);
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  // Debounced search - only depend on searchQuery
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
-  }, [searchQuery, onSearch]);
+    
+    debounceTimerRef.current = setTimeout(() => {
+      if (onSearchRef.current) {
+        onSearchRef.current(searchQuery);
+      }
+    }, 500); // 500ms debounce
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchQuery]);
 
   const handleSelect = (user: UserSearchResult) => {
     setSelectedUser(user.id);
