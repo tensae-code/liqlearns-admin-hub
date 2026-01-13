@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
+import { STAT_GRADIENTS } from '@/lib/theme';
 import {
   FileText,
   ArrowLeft,
@@ -23,10 +24,10 @@ const CEOReports = () => {
   const navigate = useNavigate();
 
   const reportCategories = [
-    { label: 'Financial', count: 12, icon: DollarSign, color: 'bg-emerald-500' },
-    { label: 'User Growth', count: 8, icon: Users, color: 'bg-blue-500' },
-    { label: 'Course Analytics', count: 15, icon: BookOpen, color: 'bg-purple-500' },
-    { label: 'Performance', count: 6, icon: TrendingUp, color: 'bg-orange-500' },
+    { label: 'Financial', count: 12, icon: DollarSign, gradient: STAT_GRADIENTS[2] },
+    { label: 'User Growth', count: 8, icon: Users, gradient: STAT_GRADIENTS[0] },
+    { label: 'Course Analytics', count: 15, icon: BookOpen, gradient: STAT_GRADIENTS[1] },
+    { label: 'Performance', count: 6, icon: TrendingUp, gradient: STAT_GRADIENTS[3] },
   ];
 
   const recentReports = [
@@ -129,16 +130,15 @@ const CEOReports = () => {
           {reportCategories.map((category, i) => (
             <motion.div
               key={category.label}
-              className="bg-card border border-border rounded-xl p-4 cursor-pointer hover:border-primary/50 transition-colors"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${category.gradient} text-white shadow-lg cursor-pointer hover:scale-[1.02] transition-transform`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
             >
-              <div className={`w-10 h-10 ${category.color} rounded-lg flex items-center justify-center mb-3`}>
-                <category.icon className="w-5 h-5 text-white" />
-              </div>
-              <p className="font-semibold text-foreground">{category.label}</p>
-              <p className="text-sm text-muted-foreground">{category.count} reports</p>
+              <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
+              <category.icon className="w-5 h-5 md:w-6 md:h-6 mb-2 opacity-90" />
+              <p className="text-xl md:text-2xl font-display font-bold">{category.count}</p>
+              <p className="text-xs opacity-80">{category.label} reports</p>
             </motion.div>
           ))}
         </div>

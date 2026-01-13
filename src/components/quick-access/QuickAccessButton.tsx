@@ -23,6 +23,7 @@ import {
   Grid3X3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { STAT_GRADIENTS } from '@/lib/theme';
 import BrainBankModal from '@/components/brain-bank/BrainBankModal';
 import DailyBonusModal from './DailyBonusModal';
 import { toast } from 'sonner';
@@ -43,7 +44,7 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
     icon: Gift,
     label: 'Daily Bonus',
     description: 'Spin for rewards',
-    color: 'from-gold to-amber-500',
+    color: STAT_GRADIENTS[3], // Orange
     enabled: true,
   },
   {
@@ -51,7 +52,7 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
     icon: Brain,
     label: 'Brain Bank',
     description: 'Store & review vocabulary',
-    color: 'from-purple-500 to-pink-500',
+    color: STAT_GRADIENTS[1], // Purple
     enabled: true,
   },
   {
@@ -59,7 +60,7 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
     icon: Bot,
     label: 'AI Assistant',
     description: 'Get help with learning',
-    color: 'from-blue-500 to-cyan-400',
+    color: STAT_GRADIENTS[0], // Blue
     enabled: true,
   },
   {
@@ -67,7 +68,7 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
     icon: MessageCircle,
     label: 'Talk to Agent',
     description: 'Live support chat',
-    color: 'from-emerald-500 to-green-400',
+    color: STAT_GRADIENTS[2], // Green
     enabled: true,
   },
   {
@@ -75,7 +76,7 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
     icon: Users,
     label: 'Direct Message',
     description: 'Chat with friends',
-    color: 'from-orange-500 to-amber-400',
+    color: STAT_GRADIENTS[3], // Orange
     enabled: true,
   },
   {
@@ -83,7 +84,7 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
     icon: Hash,
     label: 'Group Chat',
     description: 'Study groups & channels',
-    color: 'from-indigo-500 to-purple-400',
+    color: STAT_GRADIENTS[1], // Purple
     enabled: true,
   },
   {
@@ -91,7 +92,7 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
     icon: Video,
     label: 'Video Call',
     description: 'Start or join a call',
-    color: 'from-rose-500 to-pink-400',
+    color: STAT_GRADIENTS[0], // Blue
     enabled: true,
   },
   {
@@ -99,7 +100,7 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
     icon: UserPlus,
     label: 'Add Friend',
     description: 'Find and add friends',
-    color: 'from-teal-500 to-emerald-400',
+    color: STAT_GRADIENTS[2], // Green
     enabled: false,
   },
   {
@@ -107,7 +108,7 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
     icon: Phone,
     label: 'Group Call',
     description: 'Voice call with group',
-    color: 'from-violet-500 to-purple-400',
+    color: STAT_GRADIENTS[1], // Purple
     enabled: false,
   },
   {
@@ -115,7 +116,7 @@ const defaultQuickAccessItems: QuickAccessItem[] = [
     icon: Megaphone,
     label: 'Announcements',
     description: 'View latest updates',
-    color: 'from-yellow-500 to-orange-400',
+    color: STAT_GRADIENTS[3], // Orange
     enabled: false,
   },
 ];

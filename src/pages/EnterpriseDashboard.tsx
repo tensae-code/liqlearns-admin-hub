@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { STAT_GRADIENTS } from '@/lib/theme';
 import { 
   Users, 
   TrendingUp, 
@@ -131,26 +132,25 @@ const EnterpriseDashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Total Members', value: network.totalTeam, icon: Users, color: 'text-accent', bg: 'bg-accent/10' },
-          { label: 'Active Courses', value: enterprise.activeCourses, icon: BookOpen, color: 'text-primary', bg: 'bg-primary/10' },
-          { label: 'This Month', value: `${earnings.thisMonth.toLocaleString()} ETB`, icon: Wallet, color: 'text-success', bg: 'bg-success/10', change: `+${earnings.growth}%` },
-          { label: 'Completion', value: `${enterprise.completionRate}%`, icon: TrendingUp, color: 'text-gold', bg: 'bg-gold/10' },
+          { label: 'Total Members', value: network.totalTeam, icon: Users, gradient: STAT_GRADIENTS[0] },
+          { label: 'Active Courses', value: enterprise.activeCourses, icon: BookOpen, gradient: STAT_GRADIENTS[1] },
+          { label: 'This Month', value: `${earnings.thisMonth.toLocaleString()} ETB`, icon: Wallet, gradient: STAT_GRADIENTS[2], change: `+${earnings.growth}%` },
+          { label: 'Completion', value: `${enterprise.completionRate}%`, icon: TrendingUp, gradient: STAT_GRADIENTS[3] },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
-            className="bg-card rounded-xl p-4 border border-border"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.15 + i * 0.05 }}
           >
-            <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
-              <stat.icon className={`w-5 h-5 ${stat.color}`} />
-            </div>
-            <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
+            <stat.icon className="w-5 h-5 md:w-6 md:h-6 mb-2 opacity-90" />
+            <p className="text-xl md:text-2xl font-display font-bold">{stat.value}</p>
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
+              <p className="text-xs opacity-80">{stat.label}</p>
               {stat.change && (
-                <span className="text-xs text-success flex items-center">
+                <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                   <ArrowUpRight className="w-3 h-3" />
                   {stat.change}
                 </span>

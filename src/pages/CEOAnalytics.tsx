@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
+import { STAT_GRADIENTS } from '@/lib/theme';
 import {
   BarChart3,
   TrendingUp,
@@ -101,20 +102,21 @@ const CEOAnalytics = () => {
           {metrics.map((metric, i) => (
             <motion.div
               key={metric.label}
-              className="bg-card border border-border rounded-xl p-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${STAT_GRADIENTS[i]} text-white shadow-lg`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
             >
+              <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
               <div className="flex items-center justify-between mb-2">
-                <metric.icon className="w-5 h-5 text-muted-foreground" />
-                <span className={`text-xs font-medium flex items-center gap-1 ${metric.isUp ? 'text-success' : 'text-destructive'}`}>
+                <metric.icon className="w-5 h-5 md:w-6 md:h-6 opacity-90" />
+                <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                   {metric.isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                   {metric.change}
                 </span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{metric.value}</p>
-              <p className="text-xs text-muted-foreground">{metric.label}</p>
+              <p className="text-xl md:text-2xl font-display font-bold">{metric.value}</p>
+              <p className="text-xs opacity-80">{metric.label}</p>
             </motion.div>
           ))}
         </div>
