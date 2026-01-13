@@ -31,6 +31,14 @@ import {
   UserPlus
 } from 'lucide-react';
 
+// Define the four gradients used across the app
+const STAT_GRADIENTS = [
+  'from-blue-500 to-cyan-400',
+  'from-purple-500 to-pink-400',
+  'from-emerald-500 to-teal-400',
+  'from-orange-500 to-amber-400'
+];
+
 const ParentDashboard = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
@@ -54,10 +62,10 @@ const ParentDashboard = () => {
   const selectedChild = children.find(c => c.id === selectedChildId);
 
   const childStats = selectedChild ? [
-    { label: 'Total XP', value: selectedChild.xp_points.toLocaleString(), icon: Star, color: 'text-gold', bg: 'bg-gold/10' },
-    { label: 'Current Streak', value: `${selectedChild.current_streak} days`, icon: Flame, color: 'text-streak', bg: 'bg-streak/10' },
-    { label: 'Courses', value: '3', icon: BookOpen, color: 'text-accent', bg: 'bg-accent/10' },
-    { label: 'Badges Earned', value: '8', icon: Award, color: 'text-success', bg: 'bg-success/10' },
+    { label: 'Total XP', value: selectedChild.xp_points.toLocaleString(), icon: Star, gradient: STAT_GRADIENTS[0] },
+    { label: 'Current Streak', value: `${selectedChild.current_streak} days`, icon: Flame, gradient: STAT_GRADIENTS[3] },
+    { label: 'Courses', value: '3', icon: BookOpen, gradient: STAT_GRADIENTS[1] },
+    { label: 'Badges Earned', value: '8', icon: Award, gradient: STAT_GRADIENTS[2] },
   ] : [];
 
   const recentActivity = [
@@ -218,16 +226,15 @@ const ParentDashboard = () => {
             {childStats.map((stat, i) => (
               <motion.div
                 key={stat.label}
-                className="bg-card rounded-xl p-4 border border-border"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.15 + i * 0.05 }}
               >
-                <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                </div>
-                <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
+                <stat.icon className="w-5 h-5 md:w-6 md:h-6 mb-2 opacity-90" />
+                <p className="text-xl md:text-2xl font-display font-bold">{stat.value}</p>
+                <p className="text-xs opacity-80">{stat.label}</p>
               </motion.div>
             ))}
           </div>

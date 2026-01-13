@@ -29,6 +29,14 @@ import {
   Circle
 } from 'lucide-react';
 
+// Define the four gradients used across the app
+const STAT_GRADIENTS = [
+  'from-blue-500 to-cyan-400',
+  'from-purple-500 to-pink-400',
+  'from-emerald-500 to-teal-400',
+  'from-orange-500 to-amber-400'
+];
+
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const { profile, updateStreak } = useProfile();
@@ -139,10 +147,10 @@ const Dashboard = () => {
   }
 
   const stats = [
-    { icon: BookOpen, label: 'Lessons', value: '24', gradient: 'from-orange-500 to-amber-400' },
-    { icon: Award, label: 'Badges', value: '5', gradient: 'from-purple-500 to-pink-400' },
-    { icon: Star, label: 'XP', value: profile?.xp_points?.toLocaleString() || '0', gradient: 'from-emerald-500 to-teal-400' },
-    { icon: Flame, label: 'Streak', value: profile?.current_streak?.toString() || '0', gradient: 'from-red-500 to-orange-400' },
+    { icon: BookOpen, label: 'Lessons', value: '24', gradient: STAT_GRADIENTS[0] },
+    { icon: Award, label: 'Badges', value: '5', gradient: STAT_GRADIENTS[1] },
+    { icon: Star, label: 'XP', value: profile?.xp_points?.toLocaleString() || '0', gradient: STAT_GRADIENTS[2] },
+    { icon: Flame, label: 'Streak', value: profile?.current_streak?.toString() || '0', gradient: STAT_GRADIENTS[3] },
   ];
 
   const courses = [
