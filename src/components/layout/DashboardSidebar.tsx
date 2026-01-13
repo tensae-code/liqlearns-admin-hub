@@ -189,16 +189,22 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
   const NavItemComponent = ({ item, index }: { item: NavItem; index: number }) => {
     const isActive = isItemActive(item.path);
     
+    const handleNavClick = (e: React.MouseEvent) => {
+      // Prevent any state changes that might affect collapse
+      e.stopPropagation();
+    };
+    
     const linkContent = (
       <Link
         to={item.path}
+        onClick={handleNavClick}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+          'flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 text-sm',
           getNavItemColors(isActive),
           collapsed && 'justify-center px-2'
         )}
       >
-        <item.icon className="w-5 h-5 flex-shrink-0" />
+        <item.icon className="w-4 h-4 flex-shrink-0" />
         {!collapsed && <span>{item.label}</span>}
       </Link>
     );
@@ -236,7 +242,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     <aside
       className={cn(
         'fixed left-0 top-0 z-40 h-screen border-r border-orange-300/50 transition-all duration-300 flex flex-col',
-        collapsed ? 'w-16' : 'w-64',
+        collapsed ? 'w-16' : 'w-48',
         getSidebarGradient(),
         className
       )}
