@@ -209,16 +209,16 @@ const StudentNavbar = () => {
           </div>
         </Link>
 
-        {/* Search Bar - Desktop */}
+        {/* Search Bar - Desktop with Blue Gradient */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-300" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-300" />
             <Input
               type="search"
               placeholder="Search courses, lessons..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-orange-500/20 border-orange-400/20 text-white placeholder:text-orange-300 focus:bg-orange-500/30 focus:border-orange-400/40"
+              className="pl-10 bg-gradient-to-r from-blue-500/30 to-cyan-400/30 border-blue-400/40 text-white placeholder:text-cyan-200 focus:bg-gradient-to-r focus:from-blue-500/40 focus:to-cyan-400/40 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/30"
             />
           </div>
         </form>
