@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { 
   Zap, 
   Brain, 
@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 import BrainBankModal from '@/components/brain-bank/BrainBankModal';
 import DailyBonusModal from './DailyBonusModal';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface QuickAccessItem {
   id: string;
@@ -136,7 +136,13 @@ const iconMap: Record<string, typeof Brain> = {
 
 type ViewMode = 'full' | 'compact' | 'icon';
 
+interface Position {
+  x: number;
+  y: number;
+}
+
 const QuickAccessButton = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [brainBankOpen, setBrainBankOpen] = useState(false);
@@ -162,6 +168,10 @@ const QuickAccessButton = () => {
     }
     return defaultQuickAccessItems;
   });
+
+  // Icon positions for edit mode (iPhone-like grid)
+  const [iconPositions, setIconPositions] = useState<Record<string, Position>>({});
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Save viewMode to localStorage
   useEffect(() => {
@@ -204,19 +214,19 @@ const QuickAccessButton = () => {
         toast.info('Support', { description: 'Connecting to support agent...' });
         break;
       case 'dm':
-        toast.info('Messages', { description: 'Opening direct messages...' });
+        navigate('/messages');
         break;
       case 'group-chat':
-        toast.info('Groups', { description: 'Opening group chats...' });
+        navigate('/messages');
         break;
       case 'video-call':
-        toast.info('Video Call', { description: 'Starting video call...' });
+        navigate('/study-rooms');
         break;
       case 'add-friend':
-        toast.info('Add Friend', { description: 'Opening friend search...' });
+        navigate('/community');
         break;
       case 'group-call':
-        toast.info('Group Call', { description: 'Starting group voice call...' });
+        navigate('/study-rooms');
         break;
       case 'announcements':
         toast.info('Announcements', { description: 'Loading announcements...' });
@@ -239,6 +249,16 @@ const QuickAccessButton = () => {
   };
 
   const hasUnclaimedBonus = !localStorage.getItem('dailyBonusClaimed');
+
+  // Wobble animation for edit mode (like iOS)
+  const wobbleAnimation = {
+    rotate: [0, -2, 2, -2, 0],
+    transition: {
+      duration: 0.3,
+      repeat: Infinity,
+      repeatType: "loop" as const,
+    }
+  };
 
   return (
     <>
@@ -297,6 +317,7 @@ const QuickAccessButton = () => {
 
             {/* Menu Container */}
             <motion.div
+              ref={containerRef}
               initial={{ opacity: 0, scale: 0.8, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -304,12 +325,12 @@ const QuickAccessButton = () => {
             >
               {/* Header with Edit & View Mode */}
               <div className="flex items-center gap-2 justify-end">
-                {/* View Mode Toggle */}
+                {/* View Mode Toggle - Glassy Style */}
                 <motion.button
                   initial={{ opacity: 0, x: 50 }}
                   animate={{ opacity: 1, x: 0 }}
                   onClick={cycleViewMode}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg transition-colors bg-card border border-border hover:border-accent/50"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg transition-colors backdrop-blur-xl bg-white/10 dark:bg-white/5 border border-white/20 hover:bg-white/20 text-foreground"
                   title={`View: ${viewMode}`}
                 >
                   {viewMode === 'full' && <Maximize2 className="w-4 h-4" />}
@@ -318,17 +339,17 @@ const QuickAccessButton = () => {
                   <span className="text-xs font-medium capitalize">{viewMode}</span>
                 </motion.button>
                 
-                {/* Edit Button / Done Button */}
+                {/* Edit Button / Done Button - Glassy Style */}
                 <motion.button
                   initial={{ opacity: 0, x: 50 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 50 }}
                   onClick={() => setIsEditMode(!isEditMode)}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg transition-colors",
+                    "flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg transition-colors backdrop-blur-xl",
                     isEditMode 
                       ? "bg-success text-white" 
-                      : "bg-card border border-border hover:border-accent/50"
+                      : "bg-white/10 dark:bg-white/5 border border-white/20 hover:bg-white/20 text-foreground"
                   )}
                 >
                   {isEditMode ? (
@@ -348,55 +369,99 @@ const QuickAccessButton = () => {
               {/* Enabled Items */}
               <div className={cn(
                 "overflow-y-auto max-h-[50vh]",
-                viewMode === 'icon' ? "flex flex-wrap gap-2 justify-end max-w-[200px]" : "space-y-2"
+                viewMode === 'icon' ? "flex flex-wrap gap-3 justify-end max-w-[220px]" : "space-y-2"
               )}>
                 {isEditMode ? (
-                  <Reorder.Group axis="y" values={enabledItems} onReorder={handleReorder} className="space-y-2">
-                    {enabledItems.map((item, index) => (
-                      <Reorder.Item key={item.id} value={item}>
+                  viewMode === 'icon' ? (
+                    // iPhone-like grid edit mode for icons
+                    <div className="flex flex-wrap gap-3 justify-end max-w-[220px]">
+                      {enabledItems.map((item, index) => (
                         <motion.div
-                          initial={{ opacity: 0, x: 50 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 50 }}
-                          transition={{ delay: index * 0.03 }}
-                          className="flex items-center gap-2 bg-card border border-border rounded-xl p-3 pr-4 shadow-lg group"
+                          key={item.id}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ 
+                            opacity: 1, 
+                            scale: 1,
+                            ...wobbleAnimation
+                          }}
+                          className="relative"
+                          drag
+                          dragConstraints={containerRef}
+                          dragElastic={0.1}
+                          whileDrag={{ scale: 1.15, zIndex: 100 }}
                         >
-                          {/* Drag Handle */}
-                          <div className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
-                            <GripVertical className="w-4 h-4" />
+                          <div
+                            className={cn(
+                              'w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg',
+                              item.color
+                            )}
+                          >
+                            <item.icon className="w-6 h-6 text-white" />
                           </div>
-                          
-                          {/* Icon */}
-                          <div className={cn(
-                            'w-10 h-10 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0',
-                            item.color
-                          )}>
-                            <item.icon className="w-5 h-5 text-white" />
-                          </div>
-                          
-                          {/* Content */}
-                          <div className="text-left flex-1 min-w-0">
-                            <p className="font-medium text-foreground text-sm truncate">
-                              {item.label}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {item.description}
-                            </p>
-                          </div>
-                          
-                          {/* Remove Button */}
+                          {/* Remove button */}
                           <button
                             onClick={() => toggleItem(item.id)}
-                            className="w-6 h-6 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive hover:text-white transition-colors"
+                            className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-destructive text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
+                          <p className="text-[10px] text-center text-foreground mt-1 max-w-[56px] truncate">
+                            {item.label}
+                          </p>
                         </motion.div>
-                      </Reorder.Item>
-                    ))}
-                  </Reorder.Group>
+                      ))}
+                    </div>
+                  ) : (
+                    // List-based reorder for full/compact views
+                    <Reorder.Group axis="y" values={enabledItems} onReorder={handleReorder} className="space-y-2">
+                      {enabledItems.map((item, index) => (
+                        <Reorder.Item key={item.id} value={item}>
+                          <motion.div
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 50 }}
+                            transition={{ delay: index * 0.03 }}
+                            className="flex items-center gap-2 backdrop-blur-xl bg-white/10 dark:bg-white/5 border border-white/20 rounded-xl p-3 pr-4 shadow-lg group"
+                          >
+                            {/* Drag Handle */}
+                            <div className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
+                              <GripVertical className="w-4 h-4" />
+                            </div>
+                            
+                            {/* Icon */}
+                            <div className={cn(
+                              'w-10 h-10 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0',
+                              item.color
+                            )}>
+                              <item.icon className="w-5 h-5 text-white" />
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="text-left flex-1 min-w-0">
+                              <p className="font-medium text-foreground text-sm truncate">
+                                {item.label}
+                              </p>
+                              {viewMode === 'full' && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+                            
+                            {/* Remove Button */}
+                            <button
+                              onClick={() => toggleItem(item.id)}
+                              className="w-6 h-6 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive hover:text-white transition-colors"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                          </motion.div>
+                        </Reorder.Item>
+                      ))}
+                    </Reorder.Group>
+                  )
                 ) : viewMode === 'icon' ? (
-                  // Icon-only view
+                  // Icon-only view - Glassy style
                   enabledItems.map((item, index) => (
                     <motion.button
                       key={item.id}
@@ -418,7 +483,7 @@ const QuickAccessButton = () => {
                     </motion.button>
                   ))
                 ) : viewMode === 'compact' ? (
-                  // Compact view - icon + label
+                  // Compact view - icon + label with glassy style
                   enabledItems.map((item, index) => (
                     <motion.button
                       key={item.id}
@@ -427,7 +492,7 @@ const QuickAccessButton = () => {
                       exit={{ opacity: 0, x: 50 }}
                       transition={{ delay: index * 0.03 }}
                       onClick={() => handleItemClick(item.id)}
-                      className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2 shadow-lg hover:border-accent/50 transition-colors group w-full"
+                      className="flex items-center gap-2 backdrop-blur-xl bg-white/10 dark:bg-white/5 border border-white/20 rounded-xl px-3 py-2 shadow-lg hover:bg-white/20 transition-colors group w-full"
                     >
                       <div className={cn(
                         'w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0',
@@ -444,7 +509,7 @@ const QuickAccessButton = () => {
                     </motion.button>
                   ))
                 ) : (
-                  // Full view
+                  // Full view - Glassy style
                   enabledItems.map((item, index) => (
                     <motion.button
                       key={item.id}
@@ -453,7 +518,7 @@ const QuickAccessButton = () => {
                       exit={{ opacity: 0, x: 50 }}
                       transition={{ delay: index * 0.05 }}
                       onClick={() => handleItemClick(item.id)}
-                      className="flex items-center gap-3 bg-card border border-border rounded-xl p-3 pr-6 shadow-lg hover:border-accent/50 transition-colors group w-full"
+                      className="flex items-center gap-3 backdrop-blur-xl bg-white/10 dark:bg-white/5 border border-white/20 rounded-xl p-3 pr-6 shadow-lg hover:bg-white/20 transition-colors group w-full"
                     >
                       <div className={cn(
                         'w-10 h-10 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0',
@@ -477,50 +542,89 @@ const QuickAccessButton = () => {
                 )}
               </div>
 
-              {/* Disabled Items (Only in Edit Mode) */}
+              {/* Disabled Items (Only in Edit Mode) - Glassy Style */}
               {isEditMode && disabledItems.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="border-t border-border pt-2 mt-2"
+                  className="border-t border-white/10 pt-3 mt-2"
                 >
-                  <p className="text-xs text-muted-foreground px-2 mb-2">Available to add:</p>
-                  <div className="space-y-2">
-                    {disabledItems.map((item, index) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 + index * 0.03 }}
-                        className="flex items-center gap-2 bg-muted/50 border border-border rounded-xl p-3 pr-4 shadow-sm opacity-60"
-                      >
-                        {/* Icon */}
-                        <div className={cn(
-                          'w-10 h-10 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0',
-                          item.color
-                        )}>
-                          <item.icon className="w-5 h-5 text-white" />
-                        </div>
-                        
-                        {/* Content */}
-                        <div className="text-left flex-1 min-w-0">
-                          <p className="font-medium text-foreground text-sm truncate">
+                  <p className="text-xs text-muted-foreground px-2 mb-2 flex items-center gap-2">
+                    <Plus className="w-3 h-3" /> Available to add
+                  </p>
+                  <div className={cn(
+                    viewMode === 'icon' ? "flex flex-wrap gap-3 justify-end max-w-[220px]" : "space-y-2"
+                  )}>
+                    {viewMode === 'icon' ? (
+                      // Icon grid for disabled items
+                      disabledItems.map((item, index) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.1 + index * 0.03 }}
+                          className="relative"
+                        >
+                          <button
+                            onClick={() => toggleItem(item.id)}
+                            className={cn(
+                              'w-14 h-14 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 flex items-center justify-center shadow-lg opacity-60 hover:opacity-100 hover:border-success/50 transition-all'
+                            )}
+                          >
+                            <item.icon className={cn('w-6 h-6', item.color.includes('gold') ? 'text-gold' : 'text-foreground/60')} />
+                          </button>
+                          {/* Add button */}
+                          <button
+                            onClick={() => toggleItem(item.id)}
+                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-success text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                          <p className="text-[10px] text-center text-muted-foreground mt-1 max-w-[56px] truncate">
                             {item.label}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {item.description}
-                          </p>
-                        </div>
-                        
-                        {/* Add Button */}
-                        <button
-                          onClick={() => toggleItem(item.id)}
-                          className="w-6 h-6 rounded-full bg-success/10 text-success flex items-center justify-center hover:bg-success hover:text-white transition-colors"
+                        </motion.div>
+                      ))
+                    ) : (
+                      // List view for disabled items
+                      disabledItems.map((item, index) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, x: 50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.1 + index * 0.03 }}
+                          className="flex items-center gap-2 backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-3 pr-4 shadow-sm opacity-60 hover:opacity-100 hover:border-success/30 transition-all"
                         >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </motion.div>
-                    ))}
+                          {/* Icon */}
+                          <div className={cn(
+                            'w-10 h-10 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0',
+                            item.color
+                          )}>
+                            <item.icon className="w-5 h-5 text-white" />
+                          </div>
+                          
+                          {/* Content */}
+                          <div className="text-left flex-1 min-w-0">
+                            <p className="font-medium text-foreground text-sm truncate">
+                              {item.label}
+                            </p>
+                            {viewMode === 'full' && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* Add Button */}
+                          <button
+                            onClick={() => toggleItem(item.id)}
+                            className="w-6 h-6 rounded-full bg-success/10 text-success flex items-center justify-center hover:bg-success hover:text-white transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </motion.div>
+                      ))
+                    )}
                   </div>
                 </motion.div>
               )}
