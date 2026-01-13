@@ -169,19 +169,10 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
   };
 
   const getNavItemColors = (isActive: boolean) => {
-    const isSpecialRole = userRole && userRole !== 'student';
     if (isActive) {
-      if (isSpecialRole) {
-        // For special roles with dark backgrounds, use a more visible active state
-        return 'bg-white/25 text-white font-semibold shadow-sm';
-      }
-      // For student role, use accent with proper contrast
-      return 'bg-accent text-accent-foreground font-medium';
+      return 'bg-white/25 text-white font-semibold shadow-sm';
     }
-    if (isSpecialRole) {
-      return 'text-white/70 hover:bg-white/10 hover:text-white';
-    }
-    return 'text-muted-foreground hover:bg-muted hover:text-foreground';
+    return 'text-white/80 hover:bg-white/15 hover:text-white';
   };
 
   const NavItemComponent = ({ item, index }: { item: NavItem; index: number }) => {
@@ -217,24 +208,17 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     return linkContent;
   };
 
-  // Get sidebar gradient based on role using theme gradients
+  // Get sidebar gradient based on role using theme gradients - Orange for all
   const getSidebarGradient = () => {
-    switch (userRole) {
-      case 'ceo': return `bg-gradient-to-b from-orange-500/90 via-amber-400/80 to-orange-500/90`; // Orange → Amber
-      case 'admin': return `bg-gradient-to-b from-purple-500/90 via-pink-400/80 to-purple-500/90`; // Purple → Pink
-      case 'support': return `bg-gradient-to-b from-blue-500/90 via-cyan-400/80 to-blue-500/90`; // Blue → Cyan
-      case 'teacher': return `bg-gradient-to-b from-purple-500/90 via-pink-400/80 to-purple-500/90`; // Purple → Pink
-      case 'parent': return `bg-gradient-to-b from-emerald-500/90 via-teal-400/80 to-emerald-500/90`; // Emerald → Teal
-      default: return 'bg-card';
-    }
+    return 'bg-gradient-to-b from-orange-600 via-amber-500 to-orange-600';
   };
 
   const getSidebarTextColor = () => {
-    return userRole && userRole !== 'student' ? 'text-white/90' : 'text-foreground';
+    return 'text-white';
   };
 
   const getSidebarMutedColor = () => {
-    return userRole && userRole !== 'student' ? 'text-white/60' : 'text-muted-foreground';
+    return 'text-white/70';
   };
 
   return (
@@ -339,7 +323,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={cn('w-full', userRole && userRole !== 'student' ? 'text-white/70 hover:text-white hover:bg-white/10' : '')}
+                  className="w-full text-white/80 hover:text-white hover:bg-white/15"
                   onClick={() => setCollapsed(!collapsed)}
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -352,12 +336,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
           <>
             <Button
               variant="ghost"
-              className={cn(
-                'w-full justify-start',
-                userRole && userRole !== 'student' 
-                  ? 'text-red-400 hover:text-red-300 hover:bg-red-500/20' 
-                  : 'text-destructive hover:text-destructive hover:bg-destructive/10'
-              )}
+              className="w-full justify-start text-red-300 hover:text-red-200 hover:bg-red-500/20"
               onClick={handleSignOut}
             >
               <LogOut className="w-5 h-5" />
@@ -367,7 +346,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
             <Button
               variant="ghost"
               size="icon"
-              className={cn('w-full mt-2', userRole && userRole !== 'student' ? 'text-white/70 hover:text-white hover:bg-white/10' : '')}
+              className="w-full mt-2 text-white/80 hover:text-white hover:bg-white/15"
               onClick={() => setCollapsed(!collapsed)}
             >
               <ChevronLeft className="w-5 h-5" />
