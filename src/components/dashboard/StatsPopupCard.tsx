@@ -199,15 +199,15 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
             onClick={onClose}
           />
 
-          {/* Card - Centered in viewport */}
+          {/* Card - Positioned left and up */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed z-[100] w-[90%] max-w-sm"
             style={{
-              top: '50%',
-              left: '50%',
+              top: '30%',
+              left: '45%',
               transform: 'translate(-50%, -50%)',
             }}
           >
@@ -225,8 +225,8 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
                 </Button>
               </div>
 
-              {/* Content */}
-              <div className="p-4 max-h-[70vh] overflow-y-auto">
+              {/* Content - Scrollable */}
+              <div className="p-4 max-h-[60vh] overflow-y-auto overscroll-contain">
                 {type === 'streak' && renderStreakContent()}
                 {type === 'xp' && renderXPContent()}
                 {type === 'badges' && renderBadgesContent()}
