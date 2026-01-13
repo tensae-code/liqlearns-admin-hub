@@ -201,13 +201,13 @@ const TeacherNavbar = () => {
         {/* Search Bar - Desktop */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-300" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-600" />
             <Input
               type="search"
               placeholder="Search courses, students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-orange-500/20 border-orange-400/20 text-white placeholder:text-orange-300 focus:bg-orange-500/30 focus:border-orange-400/40"
+              className="pl-10 bg-white/90 border-orange-400 text-orange-900 placeholder:text-orange-500 focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-400/50"
             />
           </div>
         </form>
