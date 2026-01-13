@@ -2,42 +2,54 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, BookOpen, Users, Star, Award, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+interface Instructor {
+  id: string;
+  name: string;
+  avatar: string | null;
+  bio: string;
+  verified: boolean;
+  socialLinks?: Record<string, string>;
+}
+
 interface CourseInfoModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   course: {
     title: string;
     description: string;
-    instructor: string;
+    instructor: Instructor;
     category: string;
     level: string;
     duration: string;
-    lessons: number;
+    totalModules: number;
     students: number;
     rating: number;
-    reviews: number;
-    requirements?: string[];
-    learningOutcomes?: string[];
+    reviewCount: number;
+    prerequisites?: string[];
+    whatYouWillLearn?: string[];
+    completionThreshold?: number;
   };
 }
 
-const CourseInfoModal = ({ isOpen, onClose, course }: CourseInfoModalProps) => {
-  const requirements = course.requirements || [
+const CourseInfoModal = ({ open, onOpenChange, course }: CourseInfoModalProps) => {
+  const requirements = course.prerequisites || [
     'Basic understanding of the subject',
     'Willingness to practice daily',
     'Access to a computer or mobile device',
   ];
 
-  const outcomes = course.learningOutcomes || [
+  const outcomes = course.whatYouWillLearn || [
     'Master fundamental concepts',
     'Apply knowledge in real-world scenarios',
     'Earn a verified certificate upon completion',
     'Join a community of learners',
   ];
 
+  const onClose = () => onOpenChange(false);
+
   return (
     <AnimatePresence>
-      {isOpen && (
+      {open && (
         <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           initial={{ opacity: 0 }}
@@ -65,7 +77,7 @@ const CourseInfoModal = ({ isOpen, onClose, course }: CourseInfoModalProps) => {
                     </span>
                   </div>
                   <h2 className="text-xl font-display font-bold text-foreground">{course.title}</h2>
-                  <p className="text-sm text-muted-foreground mt-1">by {course.instructor}</p>
+                  <p className="text-sm text-muted-foreground mt-1">by {course.instructor.name}</p>
                 </div>
                 <Button variant="ghost" size="icon" onClick={onClose}>
                   <X className="w-4 h-4" />
@@ -93,9 +105,9 @@ const CourseInfoModal = ({ isOpen, onClose, course }: CourseInfoModalProps) => {
                 <div className="p-3 rounded-lg bg-muted/30 border border-border">
                   <div className="flex items-center gap-2 text-muted-foreground mb-1">
                     <BookOpen className="w-4 h-4" />
-                    <span className="text-xs">Lessons</span>
+                    <span className="text-xs">Modules</span>
                   </div>
-                  <p className="font-semibold text-foreground">{course.lessons} lessons</p>
+                  <p className="font-semibold text-foreground">{course.totalModules} modules</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/30 border border-border">
                   <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -109,7 +121,7 @@ const CourseInfoModal = ({ isOpen, onClose, course }: CourseInfoModalProps) => {
                     <Star className="w-4 h-4 text-gold" />
                     <span className="text-xs">Rating</span>
                   </div>
-                  <p className="font-semibold text-foreground">{course.rating} ({course.reviews})</p>
+                  <p className="font-semibold text-foreground">{course.rating} ({course.reviewCount})</p>
                 </div>
               </div>
 
@@ -146,7 +158,7 @@ const CourseInfoModal = ({ isOpen, onClose, course }: CourseInfoModalProps) => {
                   <span className="font-semibold text-foreground">Certification</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Complete <strong className="text-foreground">80% of the modules</strong> to earn your official certificate and course badge.
+                  Complete <strong className="text-foreground">{course.completionThreshold || 80}% of the modules</strong> to earn your official certificate and course badge.
                 </p>
               </div>
             </div>

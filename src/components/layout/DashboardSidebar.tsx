@@ -300,16 +300,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
               </div>
             </div>
             {(userRole === 'student' || !userRole) && (
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-1 text-gold">
-                  <Star className="w-4 h-4" />
-                  <span className="font-medium">1,250 XP</span>
-                </div>
-                <div className="flex items-center gap-1 text-streak">
-                  <Flame className="w-4 h-4" />
-                  <span className="font-medium">7 day</span>
-                </div>
-              </div>
+              <SidebarRankCard />
             )}
           </>
         )}

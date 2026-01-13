@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Bell, X, Trophy, BookOpen, Flame, Gift, Check } from 'lucide-react';
+import { Bell, Trophy, BookOpen, Flame, Gift, Check, Gamepad2, Video, CheckCircle2, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import {
   Popover,
   PopoverContent,
@@ -19,7 +21,19 @@ interface Notification {
   data: Record<string, unknown> | null;
   read: boolean;
   created_at: string;
+  // Activity-specific fields
+  xp?: number;
+  aura?: number;
 }
+
+// Mock activity data that will be merged with notifications
+const recentActivities: Notification[] = [
+  { id: 'act-1', type: 'lesson', title: 'Completed Amharic Lesson 5', message: 'Basic Greetings', xp: 50, aura: 10, read: false, created_at: new Date(Date.now() - 10 * 60000).toISOString(), data: null },
+  { id: 'act-2', type: 'game', title: 'Won Memory Match', message: 'Vocabulary Challenge', xp: 30, read: false, created_at: new Date(Date.now() - 25 * 60000).toISOString(), data: null },
+  { id: 'act-3', type: 'achievement', title: 'Earned Badge', message: 'First Week Champion', xp: 100, aura: 25, read: true, created_at: new Date(Date.now() - 60 * 60000).toISOString(), data: null },
+  { id: 'act-4', type: 'video', title: 'Watched Tutorial', message: 'Ethiopian Culture', xp: 20, read: true, created_at: new Date(Date.now() - 2 * 60 * 60000).toISOString(), data: null },
+  { id: 'act-5', type: 'streak', title: 'Streak Extended!', message: '7 days in a row', xp: 75, aura: 15, read: true, created_at: new Date(Date.now() - 3 * 60 * 60000).toISOString(), data: null },
+];
 
 const NotificationBell = () => {
   const { user } = useAuth();
@@ -109,13 +123,43 @@ const NotificationBell = () => {
       case 'badge':
         return <Gift className="w-4 h-4 text-accent" />;
       case 'streak':
-        return <Flame className="w-4 h-4 text-destructive" />;
+        return <Flame className="w-4 h-4 text-streak" />;
       case 'course':
         return <BookOpen className="w-4 h-4 text-success" />;
+      case 'lesson':
+        return <BookOpen className="w-4 h-4 text-accent" />;
+      case 'game':
+        return <Gamepad2 className="w-4 h-4 text-destructive" />;
+      case 'video':
+        return <Video className="w-4 h-4 text-primary" />;
+      case 'achievement':
+        return <Trophy className="w-4 h-4 text-gold" />;
+      case 'quiz':
+        return <CheckCircle2 className="w-4 h-4 text-success" />;
       default:
         return <Bell className="w-4 h-4 text-muted-foreground" />;
     }
   };
+
+  const getIconBgColor = (type: string) => {
+    switch (type) {
+      case 'xp': return 'bg-gold/10';
+      case 'badge': return 'bg-accent/10';
+      case 'streak': return 'bg-streak/10';
+      case 'course': return 'bg-success/10';
+      case 'lesson': return 'bg-accent/10';
+      case 'game': return 'bg-destructive/10';
+      case 'video': return 'bg-primary/10';
+      case 'achievement': return 'bg-gold/10';
+      case 'quiz': return 'bg-success/10';
+      default: return 'bg-muted';
+    }
+  };
+
+  // Merge DB notifications with activity notifications
+  const allNotifications = [...notifications, ...recentActivities]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 20);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -164,38 +208,54 @@ const NotificationBell = () => {
             </Button>
           )}
         </div>
-        <ScrollArea className="max-h-80">
-          {notifications.length === 0 ? (
+        <ScrollArea className="max-h-96">
+          {allNotifications.length === 0 ? (
             <div className="p-6 text-center text-muted-foreground">
               <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No notifications yet</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {notifications.map((notification) => (
+              {allNotifications.map((notification) => (
                 <motion.div
                   key={notification.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className={`p-3 hover:bg-muted/50 transition-colors cursor-pointer ${
-                    !notification.read ? 'bg-accent/5' : ''
-                  }`}
+                  className={cn(
+                    'p-3 hover:bg-muted/50 transition-colors cursor-pointer',
+                    !notification.read && 'bg-accent/5'
+                  )}
                   onClick={() => !notification.read && markAsRead(notification.id)}
                 >
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                    <div className={cn(
+                      'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+                      getIconBgColor(notification.type)
+                    )}>
                       {getIcon(notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">
                         {notification.title}
                       </p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
+                      <p className="text-xs text-muted-foreground line-clamp-1">
                         {notification.message}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatTime(notification.created_at)}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-muted-foreground">
+                          {formatTime(notification.created_at)}
+                        </p>
+                        {notification.xp && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 text-success border-success/30">
+                            +{notification.xp} XP
+                          </Badge>
+                        )}
+                        {notification.aura && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 text-gold border-gold/30">
+                            +{notification.aura} Aura
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     {!notification.read && (
                       <div className="w-2 h-2 bg-accent rounded-full flex-shrink-0 mt-2" />
