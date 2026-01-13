@@ -10,6 +10,7 @@ import AICoach from '@/components/dashboard/AICoach';
 import AuraPointsPanel from '@/components/dashboard/AuraPointsPanel';
 import StreakTracker from '@/components/dashboard/StreakTracker';
 import StudyTimeTracker from '@/components/dashboard/StudyTimeTracker';
+import LearningResources from '@/components/dashboard/LearningResources';
 import AcquiredSkillsList from '@/components/dashboard/AcquiredSkillsList';
 import StreakGiftAnimation from '@/components/streak/StreakGiftAnimation';
 import { Button } from '@/components/ui/button';
@@ -348,6 +349,11 @@ const Dashboard = () => {
           weekProgress={[true, true, true, true, true, true, false]} 
           onStreakClick={triggerAnimation}
         />
+      </div>
+
+      {/* Learning Resources */}
+      <div className="mt-4 md:mt-6">
+        <LearningResources userLevel={5} onResourceClick={(r) => console.log('Resource clicked:', r)} />
       </div>
 
       {/* Aura Points */}

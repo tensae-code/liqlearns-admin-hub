@@ -9,7 +9,7 @@ import CircularSkillRing from '@/components/dashboard/CircularSkillRing';
 import AuraPointsPanel from '@/components/dashboard/AuraPointsPanel';
 import StreakTracker from '@/components/dashboard/StreakTracker';
 import RecentActivity from '@/components/dashboard/RecentActivity';
-import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
+
 import StreakGiftAnimation from '@/components/streak/StreakGiftAnimation';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -305,8 +305,6 @@ const UnderageDashboard = () => {
         <RecentActivity />
       </div>
 
-      {/* Quick Access Button */}
-      <QuickAccessButton />
 
       {/* Streak Gift Animation */}
       <StreakGiftAnimation 
