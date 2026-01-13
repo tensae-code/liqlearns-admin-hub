@@ -40,7 +40,7 @@ const settingSections = [
 const Settings = () => {
   const { user, signOut } = useAuth();
   const { profile, refetch } = useProfile();
-  const { darkMode, reduceAnimations, compactView, toggleDarkMode, toggleReduceAnimations, toggleCompactView } = useAppearance();
+  const { darkMode, reduceAnimations, compactView, sidebarCollapsed, toggleDarkMode, toggleReduceAnimations, toggleCompactView, toggleSidebarCollapsed } = useAppearance();
   const [activeSection, setActiveSection] = useState('profile');
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -499,6 +499,17 @@ const Settings = () => {
                   <Switch 
                     checked={darkMode}
                     onCheckedChange={toggleDarkMode}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium text-foreground">Sidebar Collapsed by Default</h3>
+                    <p className="text-sm text-muted-foreground">Start with sidebar in icon-only mode</p>
+                  </div>
+                  <Switch 
+                    checked={sidebarCollapsed}
+                    onCheckedChange={toggleSidebarCollapsed}
                   />
                 </div>
                 
