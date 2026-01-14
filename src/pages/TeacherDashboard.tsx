@@ -175,32 +175,6 @@ const TeacherDashboard = () => {
           </div>
         </motion.div>
 
-        {/* Stats Grid - Colorful Gradient Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {stats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg cursor-pointer hover:scale-[1.02] transition-transform`}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 + i * 0.05 }}
-              onClick={() => setActiveTab(tabs[i] || 'overview')}
-            >
-              <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
-              <stat.icon className="w-5 h-5 md:w-6 md:h-6 mb-2 opacity-90" />
-              <p className="text-xl md:text-2xl font-display font-bold">{stat.value}</p>
-              <div className="flex items-center justify-between">
-                <p className="text-xs opacity-80">{stat.label}</p>
-                {stat.change && (
-                  <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{stat.change}</span>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Tabs removed - now in navbar */}
-
         {/* Tab Content */}
         <AnimatePresence mode="wait">
           {activeTab === 'overview' && (
@@ -209,8 +183,34 @@ const TeacherDashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="grid lg:grid-cols-3 gap-6"
+              className="space-y-6"
             >
+              {/* Stats Grid - Colorful Gradient Cards - Only on Overview */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {stats.map((stat, i) => (
+                  <motion.div
+                    key={stat.label}
+                    className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg cursor-pointer hover:scale-[1.02] transition-transform`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 + i * 0.05 }}
+                    onClick={() => setActiveTab(tabs[i] || 'overview')}
+                  >
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
+                    <stat.icon className="w-5 h-5 md:w-6 md:h-6 mb-2 opacity-90" />
+                    <p className="text-xl md:text-2xl font-display font-bold">{stat.value}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs opacity-80">{stat.label}</p>
+                      {stat.change && (
+                        <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{stat.change}</span>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Overview Content Grid */}
+              <div className="grid lg:grid-cols-3 gap-6">
               {/* My Courses */}
               <motion.div
                 className="lg:col-span-2 bg-card rounded-xl border border-border"
@@ -343,6 +343,7 @@ const TeacherDashboard = () => {
                   </div>
                 </div>
               </motion.div>
+              </div>
             </motion.div>
           )}
 
