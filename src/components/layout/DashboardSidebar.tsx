@@ -33,7 +33,9 @@ import {
   UserCheck,
   Mail,
   Trophy,
-  Flame
+  Flame,
+  Lightbulb,
+  ClipboardCheck
 } from 'lucide-react';
 import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
 
@@ -67,8 +69,10 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     case 'admin':
       return [
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Admin overview', path: '/admin' },
-        { icon: Users, label: 'Users', description: 'Manage accounts', path: '/admin/users' },
-        { icon: Library, label: 'Courses', description: 'Browse content', path: '/courses' },
+        { icon: Users, label: 'Users', description: 'Manage accounts', path: '/admin?tab=users' },
+        { icon: Library, label: 'Courses', description: 'Browse content', path: '/admin?tab=courses' },
+        { icon: ClipboardCheck, label: 'Approvals', description: 'Pending content', path: '/admin?tab=approvals' },
+        { icon: Lightbulb, label: 'Skills', description: 'Skill suggestions', path: '/admin?tab=skills' },
         { icon: Shield, label: 'Moderation', description: 'Review reports', path: '/admin/moderation' },
         { icon: BarChart3, label: 'Reports', description: 'System reports', path: '/admin/reports' },
         { icon: Mail, label: 'Messages', description: 'Communications', path: '/messages' },
@@ -180,9 +184,24 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
     }
   };
 
-  // Check if current path matches exactly (prevent multiple highlights)
+  // Check if current path matches (including query params for admin tabs)
   const isItemActive = (itemPath: string) => {
-    // Exact match only to prevent multiple highlights
+    // Check for query param based routes (e.g., /admin?tab=users)
+    if (itemPath.includes('?')) {
+      const [basePath, query] = itemPath.split('?');
+      const params = new URLSearchParams(query);
+      const tabValue = params.get('tab');
+      const currentParams = new URLSearchParams(location.search);
+      const currentTab = currentParams.get('tab');
+      
+      if (basePath === location.pathname) {
+        // If no tab in URL and itemPath has no tab, it's the default/overview
+        if (!tabValue && !currentTab) return true;
+        return tabValue === currentTab;
+      }
+      return false;
+    }
+    // Exact match for non-query routes
     return location.pathname === itemPath;
   };
 
