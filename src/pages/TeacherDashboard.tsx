@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
@@ -66,8 +66,16 @@ interface Review {
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { profile } = useProfile();
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'earnings'>('overview');
+  
+  // Get active tab from URL query param, default to 'overview'
+  const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'earnings') || 'overview';
+  
+  const setActiveTab = (tab: 'overview' | 'courses' | 'students' | 'earnings') => {
+    setSearchParams({ tab });
+  };
+  
   const [createCourseOpen, setCreateCourseOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -191,25 +199,7 @@ const TeacherDashboard = () => {
           ))}
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {tabs.map((tab, i) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
-                activeTab === tab
-                  ? `bg-gradient-to-r ${STAT_GRADIENTS[i]} text-white shadow-md`
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {tab === 'overview' && 'Dashboard'}
-              {tab === 'courses' && 'My Courses'}
-              {tab === 'students' && 'Students'}
-              {tab === 'earnings' && 'Earnings'}
-            </button>
-          ))}
-        </div>
+        {/* Tabs removed - now in navbar */}
 
         {/* Tab Content */}
         <AnimatePresence mode="wait">
