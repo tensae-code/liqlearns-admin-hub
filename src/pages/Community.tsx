@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+import { useCommunityPosts } from '@/hooks/useCommunityPosts';
+import { formatDistanceToNow } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   MessageSquare,
   Heart,
@@ -30,75 +33,9 @@ import {
   Sparkles,
   Clock,
   Check,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
-
-interface Comment {
-  id: number;
-  author: string;
-  avatar: string;
-  content: string;
-  time: string;
-}
-
-const posts = [
-  {
-    id: 1,
-    author: 'Sara M.',
-    avatar: 'S',
-    role: 'Top Contributor',
-    content: 'Just completed my 30-day streak! 🔥 The daily consistency really pays off. My reading comprehension has improved so much!',
-    likes: 45,
-    comments: [
-      { id: 1, author: 'Daniel K.', avatar: 'D', content: 'Amazing progress! Keep it up! 🎉', time: '1 hour ago' },
-      { id: 2, author: 'Meron A.', avatar: 'M', content: 'Inspiring! I\'m on day 15 now.', time: '45 min ago' },
-    ] as Comment[],
-    time: '2 hours ago',
-    isLiked: false,
-  },
-  {
-    id: 2,
-    author: 'Daniel K.',
-    avatar: 'D',
-    role: 'Language Expert',
-    content: 'Quick tip for everyone learning Fidel: Try associating each character with a word you already know. It makes memorization so much easier! 📚',
-    likes: 89,
-    comments: [
-      { id: 1, author: 'Sara M.', avatar: 'S', content: 'This helped me so much!', time: '3 hours ago' },
-      { id: 2, author: 'Teacher Hana', avatar: 'H', content: 'Great advice Daniel!', time: '2 hours ago' },
-    ] as Comment[],
-    time: '4 hours ago',
-    isLiked: true,
-    image: '💡',
-  },
-  {
-    id: 3,
-    author: 'Meron A.',
-    avatar: 'M',
-    content: 'Can anyone help me understand the difference between ገ and ጌ? I keep mixing them up 😅',
-    likes: 15,
-    comments: [
-      { id: 1, author: 'Daniel K.', avatar: 'D', content: 'ገ is "ge" and ጌ is "gé" - the second has a longer vowel sound!', time: '5 hours ago' },
-    ] as Comment[],
-    time: '6 hours ago',
-    isLiked: false,
-    isQuestion: true,
-  },
-  {
-    id: 4,
-    author: 'Teacher Hana',
-    avatar: 'H',
-    role: 'Certified Instructor',
-    content: 'New lesson alert! 🎉 I just uploaded a comprehensive guide on Ethiopian greetings for different times of the day. Check it out in the courses section!',
-    likes: 127,
-    comments: [
-      { id: 1, author: 'Sara M.', avatar: 'S', content: 'Can\'t wait to check it out!', time: '7 hours ago' },
-      { id: 2, author: 'Meron A.', avatar: 'M', content: 'This is exactly what I needed!', time: '6 hours ago' },
-    ] as Comment[],
-    time: '8 hours ago',
-    isLiked: true,
-  },
-];
 
 const brainBankQuestions = [
   { id: 1, question: 'How do you conjugate verbs in the past tense?', answers: 15, views: 234 },
@@ -166,65 +103,30 @@ const skillSuggestions = [
   },
 ];
 
-interface Post {
-  id: number;
-  author: string;
-  avatar: string;
-  role?: string;
-  content: string;
-  likes: number;
-  comments: Comment[];
-  time: string;
-  isLiked: boolean;
-  image?: string;
-  isQuestion?: boolean;
-}
-
 const Community = () => {
   const [activeTab, setActiveTab] = useState<'wall' | 'brainbank' | 'skills'>('wall');
   const [newPost, setNewPost] = useState('');
-  const [communityPosts, setCommunityPosts] = useState<Post[]>(posts);
-  const [likedPosts, setLikedPosts] = useState<number[]>([2, 4]);
+  const [isPosting, setIsPosting] = useState(false);
   const [votedSkills, setVotedSkills] = useState<number[]>([]);
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillDesc, setNewSkillDesc] = useState('');
   const [showSuggestForm, setShowSuggestForm] = useState(false);
-  const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
-  const [expandedComments, setExpandedComments] = useState<number[]>([]);
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  const [expandedComments, setExpandedComments] = useState<string[]>([]);
 
-  const toggleLike = (id: number) => {
-    setLikedPosts(prev => 
-      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
-    );
-    // Update post likes count
-    setCommunityPosts(prev => prev.map(post => 
-      post.id === id 
-        ? { ...post, likes: likedPosts.includes(id) ? post.likes - 1 : post.likes + 1 }
-        : post
-    ));
-    toast.success(likedPosts.includes(id) ? 'Unliked' : 'Liked!');
-  };
+  const { posts, loading, createPost, toggleLike, addComment, isAuthenticated } = useCommunityPosts();
 
-  const handleComment = (postId: number) => {
+  const handleComment = async (postId: string) => {
     const comment = commentInputs[postId];
     if (!comment?.trim()) return;
     
-    const newComment: Comment = {
-      id: Date.now(),
-      author: 'You',
-      avatar: 'Y',
-      content: comment,
-      time: 'Just now',
-    };
-    
-    setCommunityPosts(prev => prev.map(post =>
-      post.id === postId ? { ...post, comments: [...post.comments, newComment] } : post
-    ));
-    setCommentInputs(prev => ({ ...prev, [postId]: '' }));
-    toast.success('Comment added!');
+    const success = await addComment(postId, comment);
+    if (success) {
+      setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+    }
   };
 
-  const toggleComments = (postId: number) => {
+  const toggleCommentsSection = (postId: string) => {
     setExpandedComments(prev => 
       prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
     );
@@ -254,23 +156,27 @@ const Community = () => {
     setShowSuggestForm(false);
   };
 
-  const handlePost = () => {
-    if (!newPost.trim()) {
+  const handlePost = async () => {
+    if (!newPost.trim()) return;
+    if (!isAuthenticated) {
+      toast.error('Please sign in to post');
       return;
     }
-    const newPostObj: Post = {
-      id: Date.now(),
-      author: 'You',
-      avatar: 'Y',
-      content: newPost,
-      likes: 0,
-      comments: [],
-      time: 'Just now',
-      isLiked: false,
-    };
-    setCommunityPosts(prev => [newPostObj, ...prev]);
-    toast.success('Post created!', { description: 'Your post has been shared with the community.' });
-    setNewPost('');
+    
+    setIsPosting(true);
+    const success = await createPost(newPost);
+    if (success) {
+      setNewPost('');
+    }
+    setIsPosting(false);
+  };
+
+  const formatTime = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch {
+      return 'Just now';
+    }
   };
 
   const getStatusBadge = (status: 'voting' | 'approved' | 'in_development') => {
@@ -399,128 +305,160 @@ const Community = () => {
 
               {/* Posts Feed */}
               <div className="space-y-4">
-                {communityPosts.map((post, i) => (
-                  <motion.div
-                    key={post.id}
-                    className="p-5 rounded-xl bg-card border border-border hover:border-accent/30 transition-all"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 + i * 0.05 }}
-                  >
-                    {/* Author */}
-                    <div className="flex items-start gap-3 mb-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-gradient-accent text-accent-foreground">
-                          {post.avatar}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground">{post.author}</span>
-                          {post.role && (
-                            <Badge variant="secondary" className="text-xs">
-                              {post.role}
-                            </Badge>
-                          )}
-                          {post.isQuestion && (
-                            <Badge variant="outline" className="text-xs">
-                              <HelpCircle className="w-3 h-3 mr-1" />
-                              Question
-                            </Badge>
-                          )}
+                {loading ? (
+                  // Loading skeletons
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="p-5 rounded-xl bg-card border border-border">
+                      <div className="flex gap-3 mb-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-3 w-16" />
                         </div>
-                        <span className="text-xs text-muted-foreground">{post.time}</span>
                       </div>
+                      <Skeleton className="h-16 w-full" />
                     </div>
-
-                    {/* Content */}
-                    <p className="text-foreground mb-4">{post.content}</p>
-
-                    {post.image && (
-                      <div className="text-6xl text-center py-4 bg-muted rounded-lg mb-4">
-                        {post.image}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-4 pt-3 border-t border-border">
-                      <button
-                        className={`flex items-center gap-2 text-sm transition-colors ${
-                          likedPosts.includes(post.id) ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'
-                        }`}
-                        onClick={() => toggleLike(post.id)}
-                      >
-                        <Heart className={`w-5 h-5 ${likedPosts.includes(post.id) ? 'fill-current' : ''}`} />
-                        <span>{post.likes}</span>
-                      </button>
-                      <button 
-                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors"
-                        onClick={() => toggleComments(post.id)}
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                        <span>{post.comments.length}</span>
-                      </button>
-                      <button 
-                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors ml-auto"
-                        onClick={() => {
-                          navigator.clipboard.writeText(`Check out this post on LiqLearns!`);
-                          toast.success('Link copied!');
-                        }}
-                      >
-                        <Share2 className="w-5 h-5" />
-                        <span>Share</span>
-                      </button>
-                    </div>
-
-                    {/* Comment Section */}
-                    {expandedComments.includes(post.id) && (
-                      <div className="mt-4 pt-3 border-t border-border">
-                        {/* Existing Comments */}
-                        {post.comments.length > 0 && (
-                          <div className="space-y-3 mb-4">
-                            {post.comments.map((comment) => (
-                              <div key={comment.id} className="flex gap-2">
-                                <Avatar className="h-7 w-7 shrink-0">
-                                  <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                                    {comment.avatar}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-foreground">{comment.author}</span>
-                                    <span className="text-xs text-muted-foreground">{comment.time}</span>
-                                  </div>
-                                  <p className="text-sm text-foreground mt-0.5">{comment.content}</p>
-                                </div>
-                              </div>
-                            ))}
+                  ))
+                ) : posts.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No posts yet. Be the first to share something!</p>
+                  </div>
+                ) : (
+                  posts.map((post, i) => (
+                    <motion.div
+                      key={post.id}
+                      className="p-5 rounded-xl bg-card border border-border hover:border-accent/30 transition-all"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 + i * 0.05 }}
+                    >
+                      {/* Author */}
+                      <div className="flex items-start gap-3 mb-3">
+                        <Avatar className="h-10 w-10">
+                          {post.author?.avatar_url ? (
+                            <AvatarImage src={post.author.avatar_url} alt={post.author.full_name} />
+                          ) : null}
+                          <AvatarFallback className="bg-gradient-accent text-accent-foreground">
+                            {post.author?.full_name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground">
+                              {post.author?.full_name || 'Unknown User'}
+                            </span>
+                            {post.is_question && (
+                              <Badge variant="outline" className="text-xs">
+                                <HelpCircle className="w-3 h-3 mr-1" />
+                                Question
+                              </Badge>
+                            )}
                           </div>
-                        )}
-                        
-                        {/* Add Comment Input */}
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Write a comment..."
-                            value={commentInputs[post.id] || ''}
-                            onChange={(e) => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
-                            onKeyPress={(e) => e.key === 'Enter' && handleComment(post.id)}
-                            className="flex-1"
-                          />
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleComment(post.id)}
-                            disabled={!commentInputs[post.id]?.trim()}
-                          >
-                            <Send className="w-4 h-4" />
-                          </Button>
+                          <span className="text-xs text-muted-foreground">{formatTime(post.created_at)}</span>
                         </div>
-                        {post.comments.length === 0 && (
-                          <p className="text-xs text-muted-foreground mt-2">Be the first to comment!</p>
-                        )}
                       </div>
-                    )}
-                  </motion.div>
-                ))}
+
+                      {/* Content */}
+                      <p className="text-foreground mb-4">{post.content}</p>
+
+                      {post.image_url && (
+                        <div className="mb-4">
+                          <img 
+                            src={post.image_url} 
+                            alt="Post image" 
+                            className="rounded-lg max-h-80 w-full object-cover"
+                          />
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-4 pt-3 border-t border-border">
+                        <button
+                          className={`flex items-center gap-2 text-sm transition-colors ${
+                            post.isLikedByMe ? 'text-destructive' : 'text-muted-foreground hover:text-destructive'
+                          }`}
+                          onClick={() => toggleLike(post.id)}
+                        >
+                          <Heart className={`w-5 h-5 ${post.isLikedByMe ? 'fill-current' : ''}`} />
+                          <span>{post.likes_count}</span>
+                        </button>
+                        <button 
+                          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors"
+                          onClick={() => toggleCommentsSection(post.id)}
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                          <span>{post.comments?.length || 0}</span>
+                        </button>
+                        <button 
+                          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors ml-auto"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`Check out this post on LiqLearns!`);
+                            toast.success('Link copied!');
+                          }}
+                        >
+                          <Share2 className="w-5 h-5" />
+                          <span>Share</span>
+                        </button>
+                      </div>
+
+                      {/* Comment Section */}
+                      {expandedComments.includes(post.id) && (
+                        <div className="mt-4 pt-3 border-t border-border">
+                          {/* Existing Comments */}
+                          {post.comments && post.comments.length > 0 && (
+                            <div className="space-y-3 mb-4">
+                              {post.comments.map((comment) => (
+                                <div key={comment.id} className="flex gap-2">
+                                  <Avatar className="h-7 w-7 shrink-0">
+                                    {comment.author?.avatar_url ? (
+                                      <AvatarImage src={comment.author.avatar_url} alt={comment.author.full_name} />
+                                    ) : null}
+                                    <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                                      {comment.author?.full_name?.charAt(0) || 'U'}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-medium text-foreground">
+                                        {comment.author?.full_name || 'Unknown'}
+                                      </span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {formatTime(comment.created_at)}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-foreground mt-0.5">{comment.content}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Add Comment Input */}
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Write a comment..."
+                              value={commentInputs[post.id] || ''}
+                              onChange={(e) => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
+                              onKeyPress={(e) => e.key === 'Enter' && handleComment(post.id)}
+                              className="flex-1"
+                            />
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleComment(post.id)}
+                              disabled={!commentInputs[post.id]?.trim()}
+                            >
+                              <Send className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          {(!post.comments || post.comments.length === 0) && (
+                            <p className="text-xs text-muted-foreground mt-2">Be the first to comment!</p>
+                          )}
+                        </div>
+                      )}
+                    </motion.div>
+                  ))
+                )}
               </div>
             </>
           )}
