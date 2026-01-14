@@ -12,7 +12,11 @@ import {
   Video, 
   Users,
   ArrowLeft,
-  Info
+  Info,
+  PhoneIncoming,
+  PhoneOutgoing,
+  PhoneMissed,
+  VideoIcon
 } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import CallModal from './CallModal';
@@ -21,6 +25,7 @@ import TypingIndicator from './TypingIndicator';
 import { Conversation } from './ConversationList';
 import { toast } from 'sonner';
 import usePresence from '@/hooks/usePresence';
+import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 
 export interface Message {
   id: string;
@@ -32,6 +37,10 @@ export interface Message {
   };
   timestamp: string;
   isRead?: boolean;
+  type?: 'message' | 'call';
+  callType?: 'voice' | 'video';
+  callStatus?: 'missed' | 'answered' | 'rejected' | 'ended';
+  callDuration?: number;
 }
 
 interface ChatWindowProps {
@@ -43,7 +52,22 @@ interface ChatWindowProps {
   onViewInfo?: () => void;
   isMobile?: boolean;
   onDeleteMessage?: (messageId: string) => void;
+  currentChannelName?: string;
 }
+
+// Format date for date separator
+const formatDateSeparator = (date: Date): string => {
+  if (isToday(date)) return 'Today';
+  if (isYesterday(date)) return 'Yesterday';
+  return format(date, 'MMMM d, yyyy');
+};
+
+// Format call duration
+const formatCallDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+};
 
 const ChatWindow = ({
   conversation,
@@ -54,6 +78,7 @@ const ChatWindow = ({
   onViewInfo,
   isMobile,
   onDeleteMessage,
+  currentChannelName,
 }: ChatWindowProps) => {
   const [newMessage, setNewMessage] = useState('');
   const [showCall, setShowCall] = useState(false);
@@ -89,7 +114,6 @@ const ChatWindow = ({
   const handleSend = () => {
     if (!newMessage.trim()) return;
     
-    // Stop typing indicator
     if (conversation) {
       sendTypingIndicator(conversation.id, false);
     }
@@ -137,7 +161,6 @@ const ChatWindow = ({
     }
   };
 
-  // Get partner ID from DM conversation
   const getPartnerId = () => {
     if (conversation?.type === 'dm') {
       return conversation.id.replace('dm_', '');
@@ -159,18 +182,67 @@ const ChatWindow = ({
     );
   }
 
-  // Group messages by sender for sequential messages with better tracking
-  const groupedMessages = messages.reduce<Array<{ messages: Message[], senderId: string }>>((acc, msg, i) => {
+  // Group messages by date and sender
+  const groupedMessages: Array<{ 
+    date: Date; 
+    groups: Array<{ messages: Message[], senderId: string }> 
+  }> = [];
+
+  messages.forEach((msg, i) => {
+    const msgDate = new Date(msg.timestamp);
     const prevMsg = messages[i - 1];
-    const isNewGroup = !prevMsg || prevMsg.sender.id !== msg.sender.id;
+    const prevMsgDate = prevMsg ? new Date(prevMsg.timestamp) : null;
     
-    if (isNewGroup) {
-      acc.push({ messages: [msg], senderId: msg.sender.id });
-    } else {
-      acc[acc.length - 1].messages.push(msg);
+    // Check if we need a new date group
+    if (!prevMsgDate || !isSameDay(msgDate, prevMsgDate)) {
+      groupedMessages.push({ date: msgDate, groups: [] });
     }
-    return acc;
-  }, []);
+
+    const currentDateGroup = groupedMessages[groupedMessages.length - 1];
+    const isNewSenderGroup = !prevMsg || 
+      prevMsg.sender.id !== msg.sender.id || 
+      !isSameDay(msgDate, new Date(prevMsg.timestamp));
+    
+    if (isNewSenderGroup) {
+      currentDateGroup.groups.push({ messages: [msg], senderId: msg.sender.id });
+    } else {
+      currentDateGroup.groups[currentDateGroup.groups.length - 1].messages.push(msg);
+    }
+  });
+
+  // Render call message
+  const renderCallMessage = (msg: Message) => {
+    const isSender = msg.sender.id === currentUserId;
+    const Icon = msg.callType === 'video' ? VideoIcon : (
+      msg.callStatus === 'missed' ? PhoneMissed :
+      isSender ? PhoneOutgoing : PhoneIncoming
+    );
+    const statusColor = msg.callStatus === 'missed' ? 'text-destructive' : 
+      msg.callStatus === 'answered' ? 'text-success' : 'text-muted-foreground';
+
+    return (
+      <motion.div
+        key={msg.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex justify-center my-3"
+      >
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 text-sm">
+          <Icon className={`w-4 h-4 ${statusColor}`} />
+          <span className="text-muted-foreground">
+            {msg.callType === 'video' ? 'Video call' : 'Voice call'} • {' '}
+            {msg.callStatus === 'missed' ? 'Missed' :
+             msg.callStatus === 'answered' && msg.callDuration 
+               ? formatCallDuration(msg.callDuration) 
+               : msg.callStatus}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {format(new Date(msg.timestamp), 'h:mm a')}
+          </span>
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-background h-full">
@@ -194,7 +266,14 @@ const ChatWindow = ({
         </Avatar>
         
         <div className="flex-1">
-          <h3 className="font-medium text-foreground">{conversation.name}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-foreground">{conversation.name}</h3>
+            {currentChannelName && (
+              <Badge variant="secondary" className="text-[10px]">
+                #{currentChannelName}
+              </Badge>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             {conversation.type === 'group' 
               ? `${conversation.members} members`
@@ -221,24 +300,39 @@ const ChatWindow = ({
         </div>
       </div>
 
-      {/* Messages - iPhone style background */}
+      {/* Messages with date separators */}
       <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-background to-muted/20">
-        {groupedMessages.map((group, groupIndex) => (
-          <div key={groupIndex}>
-            {group.messages.map((msg, msgIndex) => (
-              <ChatBubble
-                key={msg.id}
-                messageId={msg.id}
-                message={msg.content}
-                sender={msg.sender}
-                timestamp={msg.timestamp}
-                isSender={msg.sender.id === currentUserId}
-                showAvatar={msgIndex === group.messages.length - 1}
-                isRead={msg.isRead}
-                isFirstInGroup={msgIndex === 0}
-                isLastInGroup={msgIndex === group.messages.length - 1}
-                onDelete={onDeleteMessage ? () => onDeleteMessage(msg.id) : undefined}
-              />
+        {groupedMessages.map((dateGroup, dateIndex) => (
+          <div key={dateIndex}>
+            {/* Date Separator */}
+            <div className="flex justify-center my-4">
+              <div className="px-3 py-1 rounded-full bg-muted/70 text-xs text-muted-foreground font-medium">
+                {formatDateSeparator(dateGroup.date)}
+              </div>
+            </div>
+
+            {dateGroup.groups.map((group, groupIndex) => (
+              <div key={groupIndex}>
+                {group.messages.map((msg, msgIndex) => (
+                  msg.type === 'call' ? (
+                    renderCallMessage(msg)
+                  ) : (
+                    <ChatBubble
+                      key={msg.id}
+                      messageId={msg.id}
+                      message={msg.content}
+                      sender={msg.sender}
+                      timestamp={msg.timestamp}
+                      isSender={msg.sender.id === currentUserId}
+                      showAvatar={msgIndex === group.messages.length - 1}
+                      isRead={msg.isRead}
+                      isFirstInGroup={msgIndex === 0}
+                      isLastInGroup={msgIndex === group.messages.length - 1}
+                      onDelete={onDeleteMessage ? () => onDeleteMessage(msg.id) : undefined}
+                    />
+                  )
+                ))}
+              </div>
             ))}
           </div>
         ))}

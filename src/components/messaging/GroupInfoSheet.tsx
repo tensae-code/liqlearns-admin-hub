@@ -227,26 +227,37 @@ const GroupInfoSheet = ({
                     key={channel.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group",
+                      channel.isDefault && "bg-accent/10 border border-accent/20"
+                    )}
                     onClick={() => onSelectChannel?.(channel)}
                   >
                     <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center",
+                      "w-8 h-8 rounded-lg flex items-center justify-center relative",
                       channel.type === 'announcement' && "bg-gold/20 text-gold",
                       channel.type === 'text' && "bg-muted text-muted-foreground",
                       channel.type === 'voice' && "bg-success/20 text-success"
                     )}>
                       {getChannelIcon(channel.type)}
+                      {channel.isDefault && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full" />
+                      )}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">{channel.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground">#{channel.name}</p>
+                        {channel.isDefault && (
+                          <Badge className="bg-accent/20 text-accent text-[10px]">Current</Badge>
+                        )}
+                      </div>
                       {channel.description && (
                         <p className="text-xs text-muted-foreground truncate">{channel.description}</p>
                       )}
+                      {channel.type === 'voice' && (
+                        <p className="text-[10px] text-success mt-0.5">🎙️ Club Room</p>
+                      )}
                     </div>
-                    {channel.isDefault && (
-                      <Badge variant="secondary" className="text-[10px]">Default</Badge>
-                    )}
                   </motion.div>
                 ))}
               </div>

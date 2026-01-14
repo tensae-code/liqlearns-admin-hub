@@ -120,6 +120,200 @@ export type Database = {
           },
         ]
       }
+      call_logs: {
+        Row: {
+          call_type: string
+          caller_id: string
+          duration_seconds: number | null
+          ended_at: string | null
+          group_id: string | null
+          id: string
+          receiver_id: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          call_type: string
+          caller_id: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          group_id?: string | null
+          id?: string
+          receiver_id?: string | null
+          started_at?: string
+          status: string
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          group_id?: string | null
+          id?: string
+          receiver_id?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clan_members: {
+        Row: {
+          clan_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          clan_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          clan_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_members_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clans: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          owner_type: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          owner_type: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          owner_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clans_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clans_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clans_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_post_comments: {
         Row: {
           content: string
@@ -648,6 +842,7 @@ export type Database = {
       groups: {
         Row: {
           avatar_url: string | null
+          clan_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -661,6 +856,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          clan_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -674,6 +870,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          clan_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -685,7 +882,15 @@ export type Database = {
           updated_at?: string
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "groups_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lesson_progress: {
         Row: {
@@ -986,6 +1191,9 @@ export type Database = {
           created_at: string
           current_streak: number
           email: string
+          enterprise_docs_url: string | null
+          enterprise_org_name: string | null
+          enterprise_status: string | null
           full_name: string
           id: string
           last_login_date: string | null
@@ -995,6 +1203,7 @@ export type Database = {
           subscription_ends_at: string | null
           subscription_plan: string | null
           subscription_status: string | null
+          teacher_type: string | null
           trial_ends_at: string | null
           updated_at: string
           user_id: string
@@ -1008,6 +1217,9 @@ export type Database = {
           created_at?: string
           current_streak?: number
           email: string
+          enterprise_docs_url?: string | null
+          enterprise_org_name?: string | null
+          enterprise_status?: string | null
           full_name: string
           id?: string
           last_login_date?: string | null
@@ -1017,6 +1229,7 @@ export type Database = {
           subscription_ends_at?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
+          teacher_type?: string | null
           trial_ends_at?: string | null
           updated_at?: string
           user_id: string
@@ -1030,6 +1243,9 @@ export type Database = {
           created_at?: string
           current_streak?: number
           email?: string
+          enterprise_docs_url?: string | null
+          enterprise_org_name?: string | null
+          enterprise_status?: string | null
           full_name?: string
           id?: string
           last_login_date?: string | null
@@ -1039,6 +1255,7 @@ export type Database = {
           subscription_ends_at?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
+          teacher_type?: string | null
           trial_ends_at?: string | null
           updated_at?: string
           user_id?: string
