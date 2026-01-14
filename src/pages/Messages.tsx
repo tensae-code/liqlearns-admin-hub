@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ConversationList, { Conversation } from '@/components/messaging/ConversationList';
@@ -8,13 +8,12 @@ import NewDMModal, { UserSearchResult } from '@/components/messaging/NewDMModal'
 import GroupInfoSheet from '@/components/messaging/GroupInfoSheet';
 import FindGroupsModal from '@/components/messaging/FindGroupsModal';
 import MessageRequestsModal from '@/components/messaging/MessageRequestsModal';
+import CreateChannelModal from '@/components/messaging/CreateChannelModal';
 import useMessaging from '@/hooks/useMessaging';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
-
 import { toast } from 'sonner';
-import { useEffect } from 'react';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -41,6 +40,7 @@ const Messages = () => {
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showFindGroups, setShowFindGroups] = useState(false);
   const [showMessageRequests, setShowMessageRequests] = useState(false);
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [searchUsers, setSearchUsers] = useState<UserSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -217,10 +217,11 @@ const Messages = () => {
             // TODO: Implement add member
           }}
           onCreateChannel={() => {
-            // TODO: Implement create channel
+            setShowCreateChannel(true);
           }}
-          onSelectChannel={() => {
-            // TODO: Implement channel selection
+          onSelectChannel={(channel) => {
+            // TODO: Implement channel selection - switch to that channel's messages
+            toast.info(`Switched to #${channel.name}`);
           }}
         />
       )}
@@ -242,6 +243,19 @@ const Messages = () => {
           fetchConversations();
         }}
       />
+
+      {/* Create Channel Modal */}
+      {currentConversation?.type === 'group' && (
+        <CreateChannelModal
+          open={showCreateChannel}
+          onOpenChange={setShowCreateChannel}
+          groupId={currentConversation.id.replace('group_', '')}
+          onChannelCreated={() => {
+            const groupId = currentConversation.id.replace('group_', '');
+            fetchGroupDetails(groupId);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 };
