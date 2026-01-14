@@ -102,18 +102,22 @@ const ChatBubble = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
+                  type="button"
                   variant="ghost" 
                   size="icon" 
                   className="h-6 w-6 opacity-60 hover:opacity-100"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                 >
                   <MoreVertical className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="z-50 bg-popover border border-border shadow-lg">
                 <DropdownMenuItem 
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onSelect={(e) => {
+                    e.preventDefault();
                     handleDelete();
                   }} 
                   className="text-destructive cursor-pointer"
@@ -157,18 +161,22 @@ const ChatBubble = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
+                  type="button"
                   variant="ghost" 
                   size="icon" 
                   className="h-6 w-6 opacity-60 hover:opacity-100"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                 >
                   <MoreVertical className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="z-50 bg-popover border border-border shadow-lg">
                 <DropdownMenuItem 
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onSelect={(e) => {
+                    e.preventDefault();
                     handleDelete();
                   }} 
                   className="text-destructive cursor-pointer"

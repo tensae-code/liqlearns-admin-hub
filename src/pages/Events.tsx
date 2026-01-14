@@ -47,7 +47,7 @@ const calendarEvents = [
     description: 'Enkutatash celebration with traditional music and dance',
     day: 1,
     month: 0, // Meskerem
-    year: 2018,
+    year: 2017,
     type: 'holiday' as const,
     xpBonus: 100,
     attendees: 156,
