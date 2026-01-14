@@ -92,6 +92,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
       return [
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Teaching overview', path: '/teacher' },
         { icon: Library, label: 'My Courses', description: 'Manage content', path: '/teacher?tab=courses' },
+        { icon: FileText, label: 'Assignments', description: 'Grade & review', path: '/teacher?tab=assignments' },
         { icon: Users, label: 'Students', description: 'View learners', path: '/teacher?tab=students' },
         { icon: BarChart3, label: 'Earnings', description: 'Revenue stats', path: '/teacher?tab=earnings' },
         { icon: Calendar, label: 'Events', description: 'Scheduled events', path: '/events' },
