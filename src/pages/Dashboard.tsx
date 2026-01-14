@@ -14,6 +14,7 @@ import StreakGiftAnimation from '@/components/streak/StreakGiftAnimation';
 import StatsPopupCard from '@/components/dashboard/StatsPopupCard';
 import GradingSystem from '@/components/dashboard/GradingSystem';
 import ClanPopup from '@/components/dashboard/ClanPopup';
+import { useClans } from '@/hooks/useClans';
 import AchievementsSection from '@/components/dashboard/AchievementsSection';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -38,6 +39,7 @@ import { STAT_GRADIENTS } from '@/lib/theme';
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const { profile, updateStreak } = useProfile();
+  const { myClans } = useClans();
   const navigate = useNavigate();
   const {
     totalTodaySeconds,
@@ -183,16 +185,27 @@ const Dashboard = () => {
             </h1>
             <p className="text-muted-foreground text-sm md:text-base">Continue your learning journey — {formattedDate}</p>
           </div>
-          <div 
-            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-600/10 border border-violet-500/20 cursor-pointer hover:border-violet-500/40 transition-all"
-            onClick={() => setShowClanPopup(true)}
-          >
-            <Shield className="w-5 h-5 text-violet-500" />
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-foreground">Eliteforce</span>
-              <span className="text-[10px] text-violet-600 dark:text-violet-400 font-medium">Leader • Clan</span>
+          {myClans.length > 0 && (
+            <div 
+              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-600/10 border border-violet-500/20 cursor-pointer hover:border-violet-500/40 transition-all"
+              onClick={() => setShowClanPopup(true)}
+            >
+              <Shield className="w-5 h-5 text-violet-500" />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-foreground">{myClans[0].name}</span>
+                <span className="text-[10px] text-violet-600 dark:text-violet-400 font-medium">Clan • {myClans.length} joined</span>
+              </div>
             </div>
-          </div>
+          )}
+          {myClans.length === 0 && (
+            <div 
+              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/50 border border-border cursor-pointer hover:border-violet-500/40 transition-all"
+              onClick={() => setShowClanPopup(true)}
+            >
+              <Shield className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Join a Clan</span>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -426,8 +439,6 @@ const Dashboard = () => {
       <ClanPopup 
         isOpen={showClanPopup}
         onClose={() => setShowClanPopup(false)}
-        clanName="Eliteforce"
-        userRole="Leader"
       />
 
       {/* Streak Gift Animation */}

@@ -328,6 +328,8 @@ export const useMessaging = () => {
     username: string;
     description: string;
     isPublic: boolean;
+    avatarUrl?: string;
+    clanId?: string;
   }) => {
     if (!user || !profile) {
       toast.error('Please sign in to create a group');
@@ -345,6 +347,8 @@ export const useMessaging = () => {
           is_public: data.isPublic,
           owner_id: profile.id,
           invite_link: `https://liqlearns.com/join/${data.username}`,
+          avatar_url: data.avatarUrl || null,
+          clan_id: data.clanId || null,
         })
         .select()
         .single();
