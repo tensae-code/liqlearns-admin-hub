@@ -9,6 +9,8 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import CreateCourseModal from '@/components/teacher/CreateCourseModal';
+import CreateAssignmentModal from '@/components/teacher/CreateAssignmentModal';
+import SubmissionReviewModal from '@/components/teacher/SubmissionReviewModal';
 import { 
   BookOpen, 
   Users, 
@@ -80,10 +82,13 @@ interface Submission {
   studentAvatar?: string;
   assignmentTitle: string;
   submittedAt: string;
-  grade?: number;
+  grade?: string;
   feedback?: string;
   status: 'pending' | 'graded' | 'late';
   fileUrl?: string;
+  fileType?: 'text' | 'pdf' | 'audio' | 'video' | 'image';
+  content?: string;
+  gradingType?: 'pass_fail' | 'letter_grade';
 }
 
 const TeacherDashboard = () => {
@@ -109,6 +114,9 @@ const TeacherDashboard = () => {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [gradeValue, setGradeValue] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
+  const [submissionReviewOpen, setSubmissionReviewOpen] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const [currentGradingType, setCurrentGradingType] = useState<'pass_fail' | 'letter_grade'>('pass_fail');
 
   // Listen for custom event from navbar to open create course modal
   useEffect(() => {
@@ -158,11 +166,28 @@ const TeacherDashboard = () => {
   ];
 
   const pendingSubmissions: Submission[] = [
-    { id: '1', studentName: 'Alemayehu M.', assignmentTitle: 'Week 1: Basic Greetings Essay', submittedAt: '2 hours ago', status: 'pending' },
-    { id: '2', studentName: 'Sara T.', assignmentTitle: 'Historical Analysis Report', submittedAt: '5 hours ago', status: 'late' },
-    { id: '3', studentName: 'Dawit B.', assignmentTitle: 'Business Letter Writing', submittedAt: '1 day ago', status: 'pending' },
-    { id: '4', studentName: 'Tigist K.', assignmentTitle: 'Kids Vocabulary Quiz', submittedAt: '2 days ago', grade: 85, feedback: 'Great work!', status: 'graded' },
+    { id: '1', studentName: 'Alemayehu M.', assignmentTitle: 'Week 1: Basic Greetings Essay', submittedAt: '2 hours ago', status: 'pending', fileType: 'text', content: 'ሰላም! ስሜ አለማየሁ ነው። ከአዲስ አበባ እመጣለሁ።\n\nይህ የመጀመሪያ ሳምንት የቤት ስራዬ ነው። በአማርኛ መሰረታዊ ሰላምታዎችን ተምሬያለሁ። "ሰላም ነው" ማለት "How are you?" ማለት ነው።\n\nምሳሌዎች:\n- ሰላም! (Hello!)\n- እንዴት ነህ? (How are you? - to male)\n- እንዴት ነሽ? (How are you? - to female)\n- ደህና ነኝ (I am fine)\n\nእነዚህን ሰላምታዎች ከቤተሰቤ ጋር ልምምድ አድርጌያለሁ።', gradingType: 'pass_fail' },
+    { id: '2', studentName: 'Sara T.', assignmentTitle: 'Historical Analysis Report', submittedAt: '5 hours ago', status: 'late', fileType: 'pdf', gradingType: 'letter_grade' },
+    { id: '3', studentName: 'Dawit B.', assignmentTitle: 'Business Letter Writing', submittedAt: '1 day ago', status: 'pending', fileType: 'text', content: 'Subject: Request for Meeting\n\nDear Mr. Kebede,\n\nI am writing to formally request a meeting to discuss our upcoming business partnership. As we discussed previously, I believe there are several opportunities we can explore together.\n\nPlease let me know your availability for next week.\n\nBest regards,\nDawit Bekele', gradingType: 'letter_grade' },
+    { id: '4', studentName: 'Tigist K.', assignmentTitle: 'Kids Vocabulary Quiz', submittedAt: '2 days ago', grade: 'Good Job! 🎉', feedback: 'Great work!', status: 'graded', fileType: 'audio', gradingType: 'pass_fail' },
+    { id: '5', studentName: 'Yonas G.', assignmentTitle: 'Week 1: Basic Greetings Essay', submittedAt: '3 hours ago', status: 'pending', fileType: 'video', gradingType: 'pass_fail' },
+    { id: '6', studentName: 'Hanna A.', assignmentTitle: 'Historical Analysis Report', submittedAt: '1 day ago', status: 'pending', fileType: 'text', content: 'The history of Ethiopia spans thousands of years. The Kingdom of Aksum was one of the great civilizations of the ancient world, rivaling Rome, Persia, and China.\n\nKey points:\n1. Aksum was a major trading empire\n2. Ethiopia was never colonized (except brief Italian occupation)\n3. The Ethiopian Orthodox Church dates back to 4th century AD\n\nConclusion: Ethiopia\'s rich history has shaped its unique cultural identity.', gradingType: 'letter_grade' },
   ];
+
+  const handleOpenSubmissionReview = (assignment: Assignment) => {
+    setSelectedAssignment(assignment);
+    // Get grading type from the first submission of this assignment
+    const assignmentSubmissions = pendingSubmissions.filter(
+      s => s.assignmentTitle === assignment.title
+    );
+    setCurrentGradingType(assignmentSubmissions[0]?.gradingType || 'pass_fail');
+    setSubmissionReviewOpen(true);
+  };
+
+  const handleGradeFromReview = (submissionId: string, grade: string, feedback: string) => {
+    console.log('Graded:', submissionId, grade, feedback);
+    // In real app, this would update the database
+  };
 
   const handleOpenReview = (student: Student) => {
     setSelectedStudent(student);
@@ -637,7 +662,13 @@ const TeacherDashboard = () => {
                   </div>
                   <div className="divide-y divide-border">
                     {assignments.map((assignment, i) => (
-                      <div key={assignment.id} className="p-4 hover:bg-muted/30 transition-colors">
+                      <motion.div 
+                        key={assignment.id} 
+                        className="p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => handleOpenSubmissionReview(assignment)}
+                        whileHover={{ x: 4 }}
+                        whileTap={{ scale: 0.99 }}
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
@@ -654,7 +685,7 @@ const TeacherDashboard = () => {
                               </span>
                             </div>
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -667,7 +698,7 @@ const TeacherDashboard = () => {
                           value={(assignment.submissions / assignment.totalStudents) * 100} 
                           className="h-1.5 mt-3" 
                         />
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
@@ -1017,73 +1048,23 @@ const TeacherDashboard = () => {
       </AnimatePresence>
 
       {/* Create Assignment Modal */}
-      <AnimatePresence>
-        {createAssignmentOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setCreateAssignmentOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-card rounded-2xl border border-border p-6 w-full max-w-md"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display font-semibold text-lg">Create Assignment</h3>
-                <Button variant="ghost" size="icon" onClick={() => setCreateAssignmentOpen(false)}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-2">Assignment Title</label>
-                  <Input placeholder="Enter assignment title..." />
-                </div>
+      <CreateAssignmentModal 
+        open={createAssignmentOpen} 
+        onOpenChange={setCreateAssignmentOpen}
+        courses={courses.filter(c => c.status === 'published').map(c => ({ id: c.id, title: c.title }))}
+      />
 
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-2">Course</label>
-                  <select className="w-full px-3 py-2 rounded-lg border border-border bg-card text-foreground">
-                    {courses.filter(c => c.status === 'published').map(course => (
-                      <option key={course.id} value={course.id}>{course.title}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-2">Due Date</label>
-                  <Input type="date" />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground block mb-2">Instructions</label>
-                  <Textarea placeholder="Enter assignment instructions..." rows={4} />
-                </div>
-              </div>
-
-              <div className="flex gap-2 mt-6">
-                <Button variant="outline" className="flex-1" onClick={() => setCreateAssignmentOpen(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  className="flex-1 gap-2" 
-                  onClick={() => {
-                    toast.success('Assignment created!', { description: 'Students will be notified.' });
-                    setCreateAssignmentOpen(false);
-                  }}
-                >
-                  <Plus className="w-4 h-4" /> Create
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Submission Review Modal */}
+      <SubmissionReviewModal
+        open={submissionReviewOpen}
+        onOpenChange={setSubmissionReviewOpen}
+        submissions={selectedAssignment 
+          ? pendingSubmissions.filter(s => s.assignmentTitle === selectedAssignment.title)
+          : pendingSubmissions
+        }
+        gradingType={currentGradingType}
+        onGrade={handleGradeFromReview}
+      />
     </>
   );
 };
