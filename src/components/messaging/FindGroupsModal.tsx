@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,14 +8,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, Users, Globe, Lock, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 
 interface GroupSearchResult {
   id: string;
@@ -35,6 +34,7 @@ interface FindGroupsModalProps {
 
 const FindGroupsModal = ({ open, onOpenChange, onJoinGroup }: FindGroupsModalProps) => {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const [searchQuery, setSearchQuery] = useState('');
   const [groups, setGroups] = useState<GroupSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,20 +80,24 @@ const FindGroupsModal = ({ open, onOpenChange, onJoinGroup }: FindGroupsModalPro
   };
 
   const handleJoin = async (group: GroupSearchResult) => {
-    if (!user) {
+    if (!user || !profile) {
       toast.error('Please log in to join groups');
       return;
     }
 
     setJoiningGroupId(group.id);
     try {
-      // Check if already a member
-      const { data: existing } = await supabase
+      // Check if already a member using profile.id
+      const { data: existing, error: checkError } = await supabase
         .from('group_members')
         .select('id')
         .eq('group_id', group.id)
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', profile.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking membership:', checkError);
+      }
 
       if (existing) {
         toast.info('Already a member', { description: 'You are already in this group' });
@@ -102,12 +106,12 @@ const FindGroupsModal = ({ open, onOpenChange, onJoinGroup }: FindGroupsModalPro
         return;
       }
 
-      // Join the group
+      // Join the group using profile.id
       const { error } = await supabase
         .from('group_members')
         .insert({
           group_id: group.id,
-          user_id: user.id,
+          user_id: profile.id,
           role: 'member'
         });
 
@@ -122,20 +126,20 @@ const FindGroupsModal = ({ open, onOpenChange, onJoinGroup }: FindGroupsModalPro
       toast.success('Joined group!', { description: `You are now a member of ${group.name}` });
       onJoinGroup(group.id);
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error joining group:', error);
-      toast.error('Failed to join group');
+      toast.error('Failed to join group', { description: error.message });
     } finally {
       setJoiningGroupId(null);
     }
   };
 
   // Load public groups when modal opens
-  useState(() => {
+  useEffect(() => {
     if (open) {
       handleSearch();
     }
-  });
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
