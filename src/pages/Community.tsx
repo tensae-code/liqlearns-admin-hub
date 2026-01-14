@@ -33,6 +33,14 @@ import {
   X
 } from 'lucide-react';
 
+interface Comment {
+  id: number;
+  author: string;
+  avatar: string;
+  content: string;
+  time: string;
+}
+
 const posts = [
   {
     id: 1,
@@ -41,7 +49,10 @@ const posts = [
     role: 'Top Contributor',
     content: 'Just completed my 30-day streak! 🔥 The daily consistency really pays off. My reading comprehension has improved so much!',
     likes: 45,
-    comments: 12,
+    comments: [
+      { id: 1, author: 'Daniel K.', avatar: 'D', content: 'Amazing progress! Keep it up! 🎉', time: '1 hour ago' },
+      { id: 2, author: 'Meron A.', avatar: 'M', content: 'Inspiring! I\'m on day 15 now.', time: '45 min ago' },
+    ] as Comment[],
     time: '2 hours ago',
     isLiked: false,
   },
@@ -52,7 +63,10 @@ const posts = [
     role: 'Language Expert',
     content: 'Quick tip for everyone learning Fidel: Try associating each character with a word you already know. It makes memorization so much easier! 📚',
     likes: 89,
-    comments: 23,
+    comments: [
+      { id: 1, author: 'Sara M.', avatar: 'S', content: 'This helped me so much!', time: '3 hours ago' },
+      { id: 2, author: 'Teacher Hana', avatar: 'H', content: 'Great advice Daniel!', time: '2 hours ago' },
+    ] as Comment[],
     time: '4 hours ago',
     isLiked: true,
     image: '💡',
@@ -63,7 +77,9 @@ const posts = [
     avatar: 'M',
     content: 'Can anyone help me understand the difference between ገ and ጌ? I keep mixing them up 😅',
     likes: 15,
-    comments: 8,
+    comments: [
+      { id: 1, author: 'Daniel K.', avatar: 'D', content: 'ገ is "ge" and ጌ is "gé" - the second has a longer vowel sound!', time: '5 hours ago' },
+    ] as Comment[],
     time: '6 hours ago',
     isLiked: false,
     isQuestion: true,
@@ -75,7 +91,10 @@ const posts = [
     role: 'Certified Instructor',
     content: 'New lesson alert! 🎉 I just uploaded a comprehensive guide on Ethiopian greetings for different times of the day. Check it out in the courses section!',
     likes: 127,
-    comments: 34,
+    comments: [
+      { id: 1, author: 'Sara M.', avatar: 'S', content: 'Can\'t wait to check it out!', time: '7 hours ago' },
+      { id: 2, author: 'Meron A.', avatar: 'M', content: 'This is exactly what I needed!', time: '6 hours ago' },
+    ] as Comment[],
     time: '8 hours ago',
     isLiked: true,
   },
@@ -154,7 +173,7 @@ interface Post {
   role?: string;
   content: string;
   likes: number;
-  comments: number;
+  comments: Comment[];
   time: string;
   isLiked: boolean;
   image?: string;
@@ -190,8 +209,16 @@ const Community = () => {
     const comment = commentInputs[postId];
     if (!comment?.trim()) return;
     
+    const newComment: Comment = {
+      id: Date.now(),
+      author: 'You',
+      avatar: 'Y',
+      content: comment,
+      time: 'Just now',
+    };
+    
     setCommunityPosts(prev => prev.map(post =>
-      post.id === postId ? { ...post, comments: post.comments + 1 } : post
+      post.id === postId ? { ...post, comments: [...post.comments, newComment] } : post
     ));
     setCommentInputs(prev => ({ ...prev, [postId]: '' }));
     toast.success('Comment added!');
@@ -237,7 +264,7 @@ const Community = () => {
       avatar: 'Y',
       content: newPost,
       likes: 0,
-      comments: 0,
+      comments: [],
       time: 'Just now',
       isLiked: false,
     };
@@ -390,7 +417,7 @@ const Community = () => {
                     onClick={() => toggleComments(post.id)}
                   >
                     <MessageCircle className="w-5 h-5" />
-                    <span>{post.comments}</span>
+                    <span>{post.comments.length}</span>
                   </button>
                   <button 
                     className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors ml-auto"
@@ -407,6 +434,29 @@ const Community = () => {
                 {/* Comment Section */}
                 {expandedComments.includes(post.id) && (
                   <div className="mt-4 pt-3 border-t border-border">
+                    {/* Existing Comments */}
+                    {post.comments.length > 0 && (
+                      <div className="space-y-3 mb-4">
+                        {post.comments.map((comment) => (
+                          <div key={comment.id} className="flex gap-2">
+                            <Avatar className="h-7 w-7 shrink-0">
+                              <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                                {comment.avatar}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-foreground">{comment.author}</span>
+                                <span className="text-xs text-muted-foreground">{comment.time}</span>
+                              </div>
+                              <p className="text-sm text-foreground mt-0.5">{comment.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Add Comment Input */}
                     <div className="flex gap-2">
                       <Input
                         placeholder="Write a comment..."
@@ -423,9 +473,9 @@ const Community = () => {
                         <Send className="w-4 h-4" />
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {post.comments > 0 ? `${post.comments} comments` : 'Be the first to comment!'}
-                    </p>
+                    {post.comments.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-2">Be the first to comment!</p>
+                    )}
                   </div>
                 )}
               </motion.div>
