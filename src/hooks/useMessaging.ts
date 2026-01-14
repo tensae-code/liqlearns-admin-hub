@@ -216,15 +216,15 @@ export const useMessaging = () => {
 
   // Send a message
   const sendMessage = useCallback(async (content: string) => {
-    if (!user || !currentConversation) {
-      console.error('Cannot send message: no user or conversation', { user: !!user, conv: !!currentConversation });
+    if (!user || !profile || !currentConversation) {
+      console.error('Cannot send message: missing requirements', { user: !!user, profile: !!profile, conv: !!currentConversation });
       toast.error('Unable to send message');
       return;
     }
 
     try {
       const [type, id] = currentConversation.id.split('_');
-      console.log('Sending message:', { type, id, userId: user.id, content: content.substring(0, 20) });
+      console.log('Sending message:', { type, id, profileId: profile.id, content: content.substring(0, 20) });
 
       if (type === 'dm') {
         const { data, error } = await supabase
@@ -272,11 +272,12 @@ export const useMessaging = () => {
         }
 
         if (channel) {
+          // Use profile.id for group messages (RLS requires it)
           const { data, error } = await supabase
             .from('group_messages')
             .insert({
               channel_id: channel.id,
-              sender_id: user.id,
+              sender_id: profile.id,
               content,
             })
             .select()
@@ -294,7 +295,7 @@ export const useMessaging = () => {
             id: data.id,
             content: data.content,
             sender: {
-              id: user.id,
+              id: profile.id,
               name: 'You',
             },
             timestamp: 'Just now',
@@ -307,7 +308,7 @@ export const useMessaging = () => {
       const errorMessage = error?.message || 'Failed to send message';
       toast.error(errorMessage);
     }
-  }, [user, currentConversation]);
+  }, [user, profile, currentConversation]);
 
   // Create a new group
   const createGroup = useCallback(async (data: {
@@ -414,7 +415,7 @@ export const useMessaging = () => {
   // Fetch group details
   const fetchGroupDetails = useCallback(async (groupId: string) => {
     try {
-      // Fetch members
+      // Fetch members - user_id in group_members is actually profile.id
       const { data: members } = await supabase
         .from('group_members')
         .select(`
@@ -425,18 +426,19 @@ export const useMessaging = () => {
         .eq('group_id', groupId);
 
       if (members) {
-        const userIds = members.map(m => m.user_id);
+        // user_id is profile.id, so we need to fetch profiles by id, not user_id
+        const profileIds = members.map(m => m.user_id);
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('user_id, full_name, avatar_url')
-          .in('user_id', userIds);
+          .select('id, user_id, full_name, avatar_url')
+          .in('id', profileIds);
 
         const formattedMembers: GroupMember[] = members.map(m => {
-          const profile = profiles?.find(p => p.user_id === m.user_id);
+          const memberProfile = profiles?.find(p => p.id === m.user_id);
           return {
-            id: m.user_id,
-            name: profile?.full_name || 'Unknown',
-            avatar: profile?.avatar_url,
+            id: m.user_id, // This is profile.id
+            name: memberProfile?.full_name || 'Unknown',
+            avatar: memberProfile?.avatar_url,
             role: m.role as 'owner' | 'admin' | 'member',
             adminTitle: m.admin_title,
           };

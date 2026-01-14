@@ -5,18 +5,21 @@ import ConversationList, { Conversation } from '@/components/messaging/Conversat
 import ChatWindow from '@/components/messaging/ChatWindow';
 import CreateGroupModal from '@/components/messaging/CreateGroupModal';
 import NewDMModal, { UserSearchResult } from '@/components/messaging/NewDMModal';
-import GroupInfoSheet from '@/components/messaging/GroupInfoSheet';
+import GroupInfoSheet, { GroupMember } from '@/components/messaging/GroupInfoSheet';
 import FindGroupsModal from '@/components/messaging/FindGroupsModal';
 import MessageRequestsModal from '@/components/messaging/MessageRequestsModal';
 import CreateChannelModal from '@/components/messaging/CreateChannelModal';
+import ManageMemberModal from '@/components/messaging/ManageMemberModal';
 import useMessaging from '@/hooks/useMessaging';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 
 const Messages = () => {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const isMobile = useIsMobile();
   const {
     conversations,
@@ -41,6 +44,8 @@ const Messages = () => {
   const [showFindGroups, setShowFindGroups] = useState(false);
   const [showMessageRequests, setShowMessageRequests] = useState(false);
   const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [showManageMember, setShowManageMember] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<GroupMember | null>(null);
   const [searchUsers, setSearchUsers] = useState<UserSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -124,10 +129,10 @@ const Messages = () => {
     }
   };
 
-  // Get current user's role in a group
+  // Get current user's role in a group (using profile.id)
   const getCurrentUserRole = (): 'owner' | 'admin' | 'member' => {
-    if (!user || currentConversation?.type !== 'group') return 'member';
-    const member = groupMembers.find(m => m.id === user.id);
+    if (!profile || currentConversation?.type !== 'group') return 'member';
+    const member = groupMembers.find(m => m.id === profile.id);
     return member?.role || 'member';
   };
 
@@ -207,14 +212,14 @@ const Messages = () => {
           group={getGroupInfo()!}
           members={groupMembers}
           channels={groupChannels}
-          currentUserId={user?.id || ''}
+          currentUserId={profile?.id || ''}
           currentUserRole={getCurrentUserRole()}
           onLeaveGroup={() => {
             // TODO: Implement leave group
             setShowGroupInfo(false);
           }}
           onAddMember={() => {
-            // TODO: Implement add member
+            // TODO: Implement add member search
           }}
           onCreateChannel={() => {
             setShowCreateChannel(true);
@@ -222,6 +227,10 @@ const Messages = () => {
           onSelectChannel={(channel) => {
             // TODO: Implement channel selection - switch to that channel's messages
             toast.info(`Switched to #${channel.name}`);
+          }}
+          onMemberClick={(member) => {
+            setSelectedMember(member);
+            setShowManageMember(true);
           }}
         />
       )}
@@ -251,6 +260,21 @@ const Messages = () => {
           onOpenChange={setShowCreateChannel}
           groupId={currentConversation.id.replace('group_', '')}
           onChannelCreated={() => {
+            const groupId = currentConversation.id.replace('group_', '');
+            fetchGroupDetails(groupId);
+          }}
+        />
+      )}
+
+      {/* Manage Member Modal */}
+      {currentConversation?.type === 'group' && selectedMember && (
+        <ManageMemberModal
+          open={showManageMember}
+          onOpenChange={setShowManageMember}
+          member={selectedMember}
+          groupId={currentConversation.id.replace('group_', '')}
+          currentUserRole={getCurrentUserRole()}
+          onMemberUpdated={() => {
             const groupId = currentConversation.id.replace('group_', '');
             fetchGroupDetails(groupId);
           }}

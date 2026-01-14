@@ -73,6 +73,7 @@ interface GroupInfoSheetProps {
   onAddMember?: () => void;
   onCreateChannel?: () => void;
   onSelectChannel?: (channel: GroupChannel) => void;
+  onMemberClick?: (member: GroupMember) => void;
 }
 
 const GroupInfoSheet = ({
@@ -86,7 +87,8 @@ const GroupInfoSheet = ({
   onLeaveGroup,
   onAddMember,
   onCreateChannel,
-  onSelectChannel
+  onSelectChannel,
+  onMemberClick
 }: GroupInfoSheetProps) => {
   const [isMuted, setIsMuted] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -280,7 +282,8 @@ const GroupInfoSheet = ({
                           key={member.id}
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group cursor-pointer"
+                          onClick={() => onMemberClick?.(member)}
                         >
                           <div className="relative">
                             <Avatar className="h-10 w-10">
