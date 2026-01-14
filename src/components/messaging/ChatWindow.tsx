@@ -55,11 +55,26 @@ interface ChatWindowProps {
   currentChannelName?: string;
 }
 
-// Format date for date separator
+// Format date for date separator - handles invalid dates gracefully
 const formatDateSeparator = (date: Date): string => {
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    return 'Today'; // Fallback for invalid dates
+  }
   if (isToday(date)) return 'Today';
   if (isYesterday(date)) return 'Yesterday';
   return format(date, 'MMMM d, yyyy');
+};
+
+// Safe date parser - returns a valid Date or current date as fallback
+const parseMessageDate = (timestamp: string): Date => {
+  // If it's already a valid ISO string or timestamp
+  const parsed = new Date(timestamp);
+  if (!isNaN(parsed.getTime())) {
+    return parsed;
+  }
+  // Fallback to current date for display strings like "Just now", "5:30 PM"
+  return new Date();
 };
 
 // Format call duration
@@ -189,9 +204,9 @@ const ChatWindow = ({
   }> = [];
 
   messages.forEach((msg, i) => {
-    const msgDate = new Date(msg.timestamp);
+    const msgDate = parseMessageDate(msg.timestamp);
     const prevMsg = messages[i - 1];
-    const prevMsgDate = prevMsg ? new Date(prevMsg.timestamp) : null;
+    const prevMsgDate = prevMsg ? parseMessageDate(prevMsg.timestamp) : null;
     
     // Check if we need a new date group
     if (!prevMsgDate || !isSameDay(msgDate, prevMsgDate)) {
@@ -201,7 +216,7 @@ const ChatWindow = ({
     const currentDateGroup = groupedMessages[groupedMessages.length - 1];
     const isNewSenderGroup = !prevMsg || 
       prevMsg.sender.id !== msg.sender.id || 
-      !isSameDay(msgDate, new Date(prevMsg.timestamp));
+      !isSameDay(msgDate, parseMessageDate(prevMsg.timestamp));
     
     if (isNewSenderGroup) {
       currentDateGroup.groups.push({ messages: [msg], senderId: msg.sender.id });
@@ -237,7 +252,10 @@ const ChatWindow = ({
                : msg.callStatus}
           </span>
           <span className="text-xs text-muted-foreground">
-            {format(new Date(msg.timestamp), 'h:mm a')}
+            {(() => {
+              const callDate = parseMessageDate(msg.timestamp);
+              return !isNaN(callDate.getTime()) ? format(callDate, 'h:mm a') : msg.timestamp;
+            })()}
           </span>
         </div>
       </motion.div>
