@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,9 +12,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Camera, Globe, Lock, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Users, Camera, Globe, Lock, Loader2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useClans } from '@/hooks/useClans';
 
 interface CreateGroupModalProps {
   open: boolean;
@@ -25,14 +27,17 @@ interface CreateGroupModalProps {
     description: string;
     isPublic: boolean;
     avatarUrl?: string;
+    clanId?: string;
   }) => void;
 }
 
 const CreateGroupModal = ({ open, onOpenChange, onCreateGroup }: CreateGroupModalProps) => {
+  const { myClans, loading: clansLoading } = useClans();
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+  const [selectedClanId, setSelectedClanId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -97,11 +102,19 @@ const CreateGroupModal = ({ open, onOpenChange, onCreateGroup }: CreateGroupModa
     setIsLoading(true);
     try {
       const avatarUrl = await uploadAvatar();
-      await onCreateGroup({ name, username, description, isPublic, avatarUrl });
+      await onCreateGroup({ 
+        name, 
+        username, 
+        description, 
+        isPublic, 
+        avatarUrl,
+        clanId: selectedClanId || undefined,
+      });
       setName('');
       setUsername('');
       setDescription('');
       setIsPublic(true);
+      setSelectedClanId('');
       setAvatarFile(null);
       setAvatarPreview(null);
       onOpenChange(false);
@@ -224,6 +237,32 @@ const CreateGroupModal = ({ open, onOpenChange, onCreateGroup }: CreateGroupModa
               onCheckedChange={setIsPublic}
             />
           </div>
+
+          {/* Clan Ownership */}
+          {myClans.length > 0 && (
+            <div className="space-y-2">
+              <Label>Owned by Clan (Optional)</Label>
+              <Select value={selectedClanId} onValueChange={setSelectedClanId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No clan (personal group)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No clan (personal group)</SelectItem>
+                  {myClans.map((clan) => (
+                    <SelectItem key={clan.id} value={clan.id}>
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-violet-500" />
+                        {clan.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Clan members will automatically have access to this group
+              </p>
+            </div>
+          )}
         </div>
 
         <DialogFooter>

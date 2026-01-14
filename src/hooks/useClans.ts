@@ -111,6 +111,60 @@ export const useClans = () => {
     }
   }, []);
 
+  // Create a new clan
+  const createClan = useCallback(async (data: {
+    name: string;
+    description?: string;
+    avatarUrl?: string;
+  }) => {
+    if (!profile) {
+      toast.error('Please sign in to create a clan');
+      return null;
+    }
+
+    try {
+      // Create the clan
+      const { data: clan, error: clanError } = await supabase
+        .from('clans')
+        .insert({
+          name: data.name,
+          description: data.description || null,
+          avatar_url: data.avatarUrl || null,
+          owner_id: profile.id,
+          owner_type: 'student', // Default to student, can be 'enterprise' for approved teachers
+        })
+        .select()
+        .single();
+
+      if (clanError) throw clanError;
+
+      // Add owner as member
+      const { error: memberError } = await supabase
+        .from('clan_members')
+        .insert({
+          clan_id: clan.id,
+          user_id: profile.id,
+          role: 'owner',
+        });
+
+      if (memberError) {
+        console.error('Error adding owner as clan member:', memberError);
+      }
+
+      toast.success('Clan created!', { description: `${data.name} is now active` });
+      await fetchMyClans();
+      return clan;
+    } catch (error: any) {
+      console.error('Error creating clan:', error);
+      if (error.code === '23505') {
+        toast.error('Clan name already taken');
+      } else {
+        toast.error('Failed to create clan', { description: error.message });
+      }
+      return null;
+    }
+  }, [profile, fetchMyClans]);
+
   // Join a clan
   const joinClan = useCallback(async (clanId: string) => {
     if (!profile) {
@@ -229,6 +283,7 @@ export const useClans = () => {
     fetchClans,
     fetchMyClans,
     fetchClanMembers,
+    createClan,
     joinClan,
     leaveClan,
     inviteToClan,
