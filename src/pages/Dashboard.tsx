@@ -12,6 +12,8 @@ import StudyTimeTracker from '@/components/dashboard/StudyTimeTracker';
 import AcquiredSkillsList from '@/components/dashboard/AcquiredSkillsList';
 import StreakGiftAnimation from '@/components/streak/StreakGiftAnimation';
 import StatsPopupCard from '@/components/dashboard/StatsPopupCard';
+import GradingSystem from '@/components/dashboard/GradingSystem';
+import ClanPopup from '@/components/dashboard/ClanPopup';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -27,7 +29,7 @@ import {
   CheckCircle2,
   Circle,
   Sparkles,
-  Calendar
+  Shield
 } from 'lucide-react';
 
 import { STAT_GRADIENTS } from '@/lib/theme';
@@ -181,11 +183,14 @@ const Dashboard = () => {
             <p className="text-muted-foreground text-sm md:text-base">Continue your learning journey — {formattedDate}</p>
           </div>
           <div 
-            className="hidden md:flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-600/10 border border-violet-500/20 cursor-pointer hover:border-violet-500/40 transition-all"
+            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-600/10 border border-violet-500/20 cursor-pointer hover:border-violet-500/40 transition-all"
             onClick={() => setShowClanPopup(true)}
           >
-            <span className="text-sm font-bold text-foreground">Eliteforce</span>
-            <span className="text-[10px] text-violet-600 font-medium">Leader • Clan</span>
+            <Shield className="w-5 h-5 text-violet-500" />
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-foreground">Eliteforce</span>
+              <span className="text-[10px] text-violet-600 dark:text-violet-400 font-medium">Leader • Clan</span>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -362,6 +367,11 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
+      {/* Grading System */}
+      <div className="mt-4 md:mt-6">
+        <GradingSystem />
+      </div>
+
       {/* Acquired Skills List */}
       <div className="mt-4 md:mt-6">
         <AcquiredSkillsList onViewAll={() => navigate('/quest')} />
@@ -407,69 +417,12 @@ const Dashboard = () => {
       />
 
       {/* Clan Popup */}
-      {showClanPopup && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
-          onClick={() => setShowClanPopup(false)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed z-[100] w-[90%] max-w-sm bg-card rounded-2xl border border-border shadow-2xl overflow-hidden"
-            style={{ top: '15%', left: '30%' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 bg-gradient-to-r from-violet-500 to-purple-600 text-white flex items-center justify-between">
-              <h3 className="text-lg font-display font-semibold">Your Clan</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => setShowClanPopup(false)}
-              >
-                ✕
-              </Button>
-            </div>
-            <div className="p-4 space-y-4">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mb-2">
-                  <span className="text-2xl">⚔️</span>
-                </div>
-                <h4 className="text-xl font-bold text-foreground">Eliteforce</h4>
-                <p className="text-sm text-muted-foreground">You are the Leader</p>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 rounded-lg bg-muted/50">
-                  <p className="text-lg font-bold text-foreground">12</p>
-                  <p className="text-[10px] text-muted-foreground">Members</p>
-                </div>
-                <div className="p-2 rounded-lg bg-muted/50">
-                  <p className="text-lg font-bold text-gold">5,400</p>
-                  <p className="text-[10px] text-muted-foreground">Clan XP</p>
-                </div>
-                <div className="p-2 rounded-lg bg-muted/50">
-                  <p className="text-lg font-bold text-accent">#3</p>
-                  <p className="text-[10px] text-muted-foreground">Rank</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Button className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white">
-                  View Clan
-                </Button>
-                <p className="text-[10px] text-center text-muted-foreground">
-                  Manage your clan in Profile → Clan Settings
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
+      <ClanPopup 
+        isOpen={showClanPopup}
+        onClose={() => setShowClanPopup(false)}
+        clanName="Eliteforce"
+        userRole="Leader"
+      />
 
       {/* Streak Gift Animation */}
       <StreakGiftAnimation 

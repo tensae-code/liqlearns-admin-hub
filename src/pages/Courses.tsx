@@ -145,50 +145,51 @@ const Courses = () => {
         )}
       </motion.div>
 
-      {/* Featured Courses */}
+      {/* Featured Courses - Compact */}
       {selectedCategory === 'all' && featuredCourses.length > 0 && (
         <motion.div
-          className="mb-8"
+          className="mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-gold" />
-            <h2 className="text-lg font-display font-semibold text-foreground">Featured Courses</h2>
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-gold" />
+            <h2 className="text-sm font-display font-semibold text-foreground">Featured</h2>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {coursesLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-48 rounded-xl" />
+                <Skeleton key={i} className="h-24 w-48 rounded-xl shrink-0" />
               ))
             ) : (
               featuredCourses.map((course, i) => (
                 <motion.div
                   key={course.id}
-                  className={`bg-gradient-to-br ${getGradient(i)} text-white rounded-xl p-5 cursor-pointer hover:scale-[1.02] transition-transform relative`}
+                  className={`bg-gradient-to-br ${getGradient(i)} text-white rounded-xl p-3 cursor-pointer hover:scale-[1.02] transition-transform relative shrink-0 w-48`}
                   onClick={() => navigate(`/course/${course.id}`)}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.2 + i * 0.05 }}
                 >
                   {course.is_enrolled && (
-                    <div className="absolute top-3 right-3">
-                      <CheckCircle className="w-5 h-5 text-success" />
+                    <div className="absolute top-2 right-2">
+                      <CheckCircle className="w-4 h-4 text-success" />
                     </div>
                   )}
-                  <span className="text-3xl mb-3 block">{course.thumbnail_emoji}</span>
-                  <h3 className="font-display font-semibold mb-1">{course.title}</h3>
-                  <p className="text-sm text-white/80 mb-3 line-clamp-2">{course.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-sm text-white/80">
-                      <Users className="w-4 h-4" />
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">{course.thumbnail_emoji}</span>
+                    <h3 className="font-display font-semibold text-sm line-clamp-1">{course.title}</h3>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1 text-white/80">
+                      <Users className="w-3 h-3" />
                       <span>{course.enrollment_count}</span>
                     </div>
                     {!course.price || course.price === 0 ? (
-                      <Badge className="bg-success/20 text-success border-0">Free</Badge>
+                      <Badge className="bg-success/20 text-success border-0 text-[10px] py-0 px-1">Free</Badge>
                     ) : (
-                      <span className="text-sm font-medium">{course.price} ETB</span>
+                      <span className="text-xs font-medium">{course.price} ETB</span>
                     )}
                   </div>
                 </motion.div>

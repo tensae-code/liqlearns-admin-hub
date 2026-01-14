@@ -84,15 +84,21 @@ const ChatBubble = ({
             {message}
           </p>
           
-          {/* Inline timestamp for sender */}
+          {/* Inline timestamp for sender with delivery status */}
           {isSender && isLastInGroup && (
             <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-1">
               <span className="text-[10px] opacity-70">{timestamp}</span>
               {isRead !== undefined && (
                 isRead ? (
-                  <CheckCheck className="w-3 h-3 opacity-70" />
+                  <>
+                    <CheckCheck className="w-3 h-3 text-blue-400" />
+                    <span className="text-[9px] opacity-60">seen</span>
+                  </>
                 ) : (
-                  <Check className="w-3 h-3 opacity-70" />
+                  <>
+                    <Check className="w-3 h-3 opacity-70" />
+                    <span className="text-[9px] opacity-60">sent</span>
+                  </>
                 )
               )}
             </span>
