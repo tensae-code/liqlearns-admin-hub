@@ -99,27 +99,20 @@ const ChatBubble = ({
         <div className="flex items-center gap-1">
           {/* Delete option for sender messages */}
           {isSender && showOptions && onDelete && (
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button 
                   type="button"
                   variant="ghost" 
                   size="icon" 
                   className="h-6 w-6 opacity-60 hover:opacity-100"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
                 >
                   <MoreVertical className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="z-50 bg-popover border border-border shadow-lg">
                 <DropdownMenuItem 
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    handleDelete();
-                  }} 
+                  onClick={() => handleDelete()}
                   className="text-destructive cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
@@ -158,27 +151,20 @@ const ChatBubble = ({
 
           {/* Delete option for received messages */}
           {!isSender && showOptions && onDelete && (
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button 
                   type="button"
                   variant="ghost" 
                   size="icon" 
                   className="h-6 w-6 opacity-60 hover:opacity-100"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
                 >
                   <MoreVertical className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="z-50 bg-popover border border-border shadow-lg">
                 <DropdownMenuItem 
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    handleDelete();
-                  }} 
+                  onClick={() => handleDelete()}
                   className="text-destructive cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />

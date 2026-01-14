@@ -179,7 +179,7 @@ const DashboardNavbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-gradient-to-r from-primary/95 via-accent/95 to-primary/95 backdrop-blur-lg border-b border-primary/20 dark:from-primary/80 dark:via-accent/80 dark:to-primary/80">
+    <nav className="sticky top-0 z-40 bg-gradient-to-r from-primary via-primary/90 to-primary backdrop-blur-lg border-b border-primary-foreground/10">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
         {/* Mobile Menu Button + Logo */}
         <div className="flex items-center gap-3 md:hidden">
@@ -189,7 +189,7 @@ const DashboardNavbar = () => {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-gradient-to-b from-primary to-primary/90 dark:from-primary/90 dark:to-primary/80 border-primary/20">
+            <SheetContent side="left" className="w-72 p-0 bg-gradient-to-b from-primary to-primary/95 border-primary-foreground/10">
               <SheetHeader className="p-4 border-b border-primary-foreground/20">
                 <SheetTitle className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center">
@@ -200,16 +200,16 @@ const DashboardNavbar = () => {
               </SheetHeader>
 
               {/* User Info */}
-              <div className="p-4 border-b border-orange-400/20">
+              <div className="p-4 border-b border-primary-foreground/20">
                 <div className="flex items-center gap-3 mb-3">
                   <Avatar className="h-10 w-10">
                     {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                    <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold">
+                    <AvatarFallback className="bg-gradient-accent text-accent-foreground font-semibold">
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="overflow-hidden">
-                    <p className="font-medium text-white truncate">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
+                    <p className="font-medium text-primary-foreground truncate">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
                     <span className={cn('text-xs px-2 py-0.5 rounded-full', getRoleBadgeColor())}>
                       {getRoleBadge()}
                     </span>
@@ -217,11 +217,11 @@ const DashboardNavbar = () => {
                 </div>
                 {(userRole === 'student' || !userRole) && (
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-1 text-amber-200">
+                    <div className="flex items-center gap-1 text-primary-foreground/80">
                       <Star className="w-4 h-4" />
                       <span className="font-medium">1,250 XP</span>
                     </div>
-                    <div className="flex items-center gap-1 text-orange-200">
+                    <div className="flex items-center gap-1 text-primary-foreground/80">
                       <Flame className="w-4 h-4" />
                       <span className="font-medium">7 day</span>
                     </div>
@@ -242,8 +242,8 @@ const DashboardNavbar = () => {
                           className={cn(
                             'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all',
                             isActive
-                              ? 'bg-orange-500 text-white font-medium'
-                              : 'text-orange-200 hover:bg-orange-500/20 hover:text-white'
+                              ? 'bg-accent text-accent-foreground font-medium'
+                              : 'text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground'
                           )}
                         >
                           <item.icon className="w-5 h-5 flex-shrink-0" />
@@ -256,7 +256,7 @@ const DashboardNavbar = () => {
               </div>
 
               {/* Sign Out */}
-              <div className="p-3 border-t border-orange-400/20">
+              <div className="p-3 border-t border-primary-foreground/20">
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-red-300 hover:text-red-200 hover:bg-red-500/10"
@@ -273,31 +273,31 @@ const DashboardNavbar = () => {
           </Sheet>
 
           <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-accent flex items-center justify-center">
+              <BookOpen className="w-4 h-4 text-accent-foreground" />
             </div>
-            <span className="text-lg font-display font-bold text-white">LiqLearns</span>
+            <span className="text-lg font-display font-bold text-primary-foreground">LiqLearns</span>
           </Link>
         </div>
 
         {/* Desktop Title */}
         <Link to="/dashboard" className="hidden md:flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-accent-foreground" />
           </div>
-          <span className="text-xl font-display font-bold text-white">LiqLearns</span>
+          <span className="text-xl font-display font-bold text-primary-foreground">LiqLearns</span>
         </Link>
 
         {/* Search Bar - Desktop */}
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-300" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-foreground/60" />
             <Input
               type="search"
               placeholder="Search courses, lessons..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-orange-500/20 border-orange-400/20 text-white placeholder:text-orange-300 focus:bg-orange-500/30 focus:border-orange-400/40"
+              className="pl-10 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/50 focus:bg-primary-foreground/15 focus:border-primary-foreground/30"
             />
           </div>
         </form>
@@ -308,7 +308,7 @@ const DashboardNavbar = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden h-9 w-9 text-white hover:bg-orange-500/20"
+            className="md:hidden h-9 w-9 text-primary-foreground hover:bg-primary-foreground/10"
             onClick={() => navigate('/courses')}
           >
             <Search className="h-5 w-5" />
@@ -323,10 +323,10 @@ const DashboardNavbar = () => {
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full p-0 ring-2 ring-orange-400/30">
+              <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full p-0 ring-2 ring-primary-foreground/30">
                 <Avatar className="h-9 w-9 md:h-10 md:w-10">
                   {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white font-semibold text-sm">
+                  <AvatarFallback className="bg-gradient-accent text-accent-foreground font-semibold text-sm">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
