@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { useCommunityPosts } from '@/hooks/useCommunityPosts';
-import { formatDistanceToNow } from 'date-fns';
+import { useSkillSuggestions } from '@/hooks/useSkillSuggestions';
+import { formatDistanceToNow, differenceInDays } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   MessageSquare,
@@ -34,7 +35,9 @@ import {
   Clock,
   Check,
   X,
-  Loader2
+  Loader2,
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 
 const brainBankQuestions = [
@@ -51,70 +54,31 @@ const topContributors = [
   { name: 'Tigist B.', points: 1432 },
 ];
 
-// Skill voting data
-const skillSuggestions = [
-  {
-    id: 1,
-    skill: 'Business Amharic',
-    description: 'Professional vocabulary and communication for business settings',
-    proposedBy: 'Daniel K.',
-    votes: 156,
-    status: 'voting' as const,
-    daysLeft: 5,
-    category: 'Professional',
-  },
-  {
-    id: 2,
-    skill: 'Medical Terminology',
-    description: 'Healthcare and medical vocabulary for professionals',
-    proposedBy: 'Dr. Abebe',
-    votes: 98,
-    status: 'voting' as const,
-    daysLeft: 12,
-    category: 'Professional',
-  },
-  {
-    id: 3,
-    skill: 'Ethiopian History',
-    description: 'Learn vocabulary related to Ethiopian history and culture',
-    proposedBy: 'Teacher Hana',
-    votes: 234,
-    status: 'approved' as const,
-    category: 'Culture',
-  },
-  {
-    id: 4,
-    skill: 'Poetry & Literature',
-    description: 'Classical and modern Ethiopian poetry vocabulary',
-    proposedBy: 'Meron A.',
-    votes: 67,
-    status: 'voting' as const,
-    daysLeft: 8,
-    category: 'Culture',
-  },
-  {
-    id: 5,
-    skill: 'Tech & Digital',
-    description: 'Modern technology and digital communication terms',
-    proposedBy: 'Yonas T.',
-    votes: 189,
-    status: 'in_development' as const,
-    category: 'Modern',
-  },
-];
+// Category options for skill suggestions
+const skillCategories = ['General', 'Professional', 'Culture', 'Modern', 'Academic'];
 
 const Community = () => {
   const [activeTab, setActiveTab] = useState<'wall' | 'brainbank' | 'skills'>('wall');
   const [newPost, setNewPost] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-  const [votedSkills, setVotedSkills] = useState<number[]>([]);
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillDesc, setNewSkillDesc] = useState('');
+  const [newSkillCategory, setNewSkillCategory] = useState('General');
   const [showSuggestForm, setShowSuggestForm] = useState(false);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [expandedComments, setExpandedComments] = useState<string[]>([]);
 
   const { posts, loading, createPost, toggleLike, addComment, isAuthenticated } = useCommunityPosts();
+  const { 
+    suggestions, 
+    mySuggestions, 
+    loading: suggestionsLoading, 
+    submitting, 
+    submitSuggestion, 
+    vote, 
+    deleteSuggestion,
+    isAuthenticated: isAuthenticatedSkills 
+  } = useSkillSuggestions();
 
   const handleComment = async (postId: string) => {
     const comment = commentInputs[postId];
@@ -132,28 +96,23 @@ const Community = () => {
     );
   };
 
-  const handleVote = (skillId: number, direction: 'up' | 'down') => {
-    if (votedSkills.includes(skillId)) {
-      toast.info('Already voted', { description: 'You have already voted on this skill suggestion.' });
-      return;
-    }
-    setVotedSkills(prev => [...prev, skillId]);
-    toast.success(direction === 'up' ? 'Upvoted!' : 'Downvoted!', { 
-      description: 'Your vote has been recorded.' 
-    });
+  const handleVote = async (skillId: string, direction: 'up' | 'down') => {
+    await vote(skillId, direction);
   };
 
-  const handleSuggestSkill = () => {
+  const handleSuggestSkill = async () => {
     if (!newSkillName.trim() || !newSkillDesc.trim()) {
       toast.error('Please fill in all fields');
       return;
     }
-    toast.success('Skill suggested!', { 
-      description: 'Your skill suggestion has been submitted for community voting.' 
-    });
-    setNewSkillName('');
-    setNewSkillDesc('');
-    setShowSuggestForm(false);
+    
+    const success = await submitSuggestion(newSkillName, newSkillDesc, newSkillCategory);
+    if (success) {
+      setNewSkillName('');
+      setNewSkillDesc('');
+      setNewSkillCategory('General');
+      setShowSuggestForm(false);
+    }
   };
 
   const handlePost = async () => {
@@ -179,12 +138,22 @@ const Community = () => {
     }
   };
 
-  const getStatusBadge = (status: 'voting' | 'approved' | 'in_development') => {
+  const getDaysLeft = (endDate: string | null) => {
+    if (!endDate) return null;
+    const days = differenceInDays(new Date(endDate), new Date());
+    return days > 0 ? days : 0;
+  };
+
+  const getStatusBadge = (status: 'pending' | 'voting' | 'approved' | 'rejected' | 'in_development') => {
     switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className="bg-muted text-muted-foreground"><Clock className="w-3 h-3 mr-1" />Pending Approval</Badge>;
       case 'voting':
         return <Badge variant="secondary" className="bg-accent/20 text-accent"><Vote className="w-3 h-3 mr-1" />Voting</Badge>;
       case 'approved':
         return <Badge variant="secondary" className="bg-success/20 text-success"><Check className="w-3 h-3 mr-1" />Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="secondary" className="bg-destructive/20 text-destructive"><X className="w-3 h-3 mr-1" />Rejected</Badge>;
       case 'in_development':
         return <Badge variant="secondary" className="bg-gold/20 text-gold"><Sparkles className="w-3 h-3 mr-1" />In Development</Badge>;
     }
@@ -537,6 +506,10 @@ const Community = () => {
                   animate={{ opacity: 1, height: 'auto' }}
                 >
                   <h3 className="font-medium text-foreground mb-3">Suggest a New Skill</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    <AlertCircle className="w-4 h-4 inline mr-1" />
+                    Your suggestion will be reviewed by admin before opening for community voting.
+                  </p>
                   <div className="space-y-3">
                     <Input
                       placeholder="Skill name (e.g., Legal Terminology)"
@@ -549,12 +522,23 @@ const Community = () => {
                       onChange={(e) => setNewSkillDesc(e.target.value)}
                       className="min-h-[80px]"
                     />
+                    <select
+                      value={newSkillCategory}
+                      onChange={(e) => setNewSkillCategory(e.target.value)}
+                      className="w-full p-2 rounded-md bg-background border border-border text-foreground"
+                    >
+                      {skillCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
                     <div className="flex gap-2">
                       <Button 
                         onClick={handleSuggestSkill}
                         className="bg-gradient-accent text-accent-foreground"
+                        disabled={submitting}
                       >
-                        Submit Suggestion
+                        {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        Submit for Review
                       </Button>
                       <Button 
                         variant="outline"
@@ -562,6 +546,7 @@ const Community = () => {
                           setShowSuggestForm(false);
                           setNewSkillName('');
                           setNewSkillDesc('');
+                          setNewSkillCategory('General');
                         }}
                       >
                         Cancel
@@ -571,77 +556,141 @@ const Community = () => {
                 </motion.div>
               )}
 
-              {/* Skill Suggestions List */}
-              {skillSuggestions.map((skill, i) => (
+              {/* User's Pending Suggestions */}
+              {mySuggestions.length > 0 && (
                 <motion.div
-                  key={skill.id}
-                  className="p-4 rounded-xl bg-card border border-border hover:border-accent/30 transition-all"
+                  className="mb-6"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
                 >
-                  <div className="flex items-start gap-4">
-                    {/* Vote Buttons */}
-                    <div className="flex flex-col items-center gap-1">
-                      <button
-                        onClick={() => handleVote(skill.id, 'up')}
-                        disabled={votedSkills.includes(skill.id) || skill.status !== 'voting'}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          votedSkills.includes(skill.id) 
-                            ? 'bg-accent/20 text-accent' 
-                            : skill.status === 'voting'
-                              ? 'hover:bg-accent/10 text-muted-foreground hover:text-accent'
-                              : 'text-muted-foreground/50 cursor-not-allowed'
-                        }`}
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Your Pending Suggestions</h3>
+                  <div className="space-y-3">
+                    {mySuggestions.map((skill) => (
+                      <div
+                        key={skill.id}
+                        className="p-3 rounded-lg bg-muted/50 border border-border"
                       >
-                        <ChevronUp className="w-5 h-5" />
-                      </button>
-                      <span className={`font-semibold ${votedSkills.includes(skill.id) ? 'text-accent' : 'text-foreground'}`}>
-                        {skill.votes + (votedSkills.includes(skill.id) ? 1 : 0)}
-                      </span>
-                      <button
-                        onClick={() => handleVote(skill.id, 'down')}
-                        disabled={votedSkills.includes(skill.id) || skill.status !== 'voting'}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          skill.status === 'voting' && !votedSkills.includes(skill.id)
-                            ? 'hover:bg-destructive/10 text-muted-foreground hover:text-destructive'
-                            : 'text-muted-foreground/50 cursor-not-allowed'
-                        }`}
-                      >
-                        <ChevronDown className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    {/* Skill Info */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium text-foreground">{skill.skill}</h3>
-                        {getStatusBadge(skill.status)}
-                        <Badge variant="outline" className="text-xs">{skill.category}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">{skill.description}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Proposed by {skill.proposedBy}</span>
-                        {skill.status === 'voting' && skill.daysLeft && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {skill.daysLeft} days left
-                          </span>
-                        )}
-                      </div>
-                      {skill.status === 'voting' && (
-                        <div className="mt-3">
-                          <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-muted-foreground">Progress to approval</span>
-                            <span className="text-accent">{Math.min(100, Math.round((skill.votes / 200) * 100))}%</span>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-medium text-foreground">{skill.name}</h4>
+                              {getStatusBadge(skill.status)}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{skill.description}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Submitted {formatTime(skill.created_at)}</p>
                           </div>
-                          <Progress value={Math.min(100, (skill.votes / 200) * 100)} className="h-2" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteSuggestion(skill.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    ))}
                   </div>
                 </motion.div>
-              ))}
+              )}
+
+              {/* Skill Suggestions List */}
+              {suggestionsLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-xl bg-card border border-border">
+                    <div className="flex items-start gap-4">
+                      <div className="flex flex-col items-center gap-1">
+                        <Skeleton className="w-8 h-8 rounded" />
+                        <Skeleton className="w-6 h-4" />
+                        <Skeleton className="w-8 h-8 rounded" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-5 w-40" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : suggestions.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Vote className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No skill suggestions yet. Be the first to suggest one!</p>
+                </div>
+              ) : (
+                suggestions.map((skill, i) => (
+                  <motion.div
+                    key={skill.id}
+                    className="p-4 rounded-xl bg-card border border-border hover:border-accent/30 transition-all"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Vote Buttons */}
+                      <div className="flex flex-col items-center gap-1">
+                        <button
+                          onClick={() => handleVote(skill.id, 'up')}
+                          disabled={skill.status !== 'voting'}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            skill.myVote === 'up'
+                              ? 'bg-accent/20 text-accent' 
+                              : skill.status === 'voting'
+                                ? 'hover:bg-accent/10 text-muted-foreground hover:text-accent'
+                                : 'text-muted-foreground/50 cursor-not-allowed'
+                          }`}
+                        >
+                          <ChevronUp className="w-5 h-5" />
+                        </button>
+                        <span className={`font-semibold ${skill.myVote ? 'text-accent' : 'text-foreground'}`}>
+                          {skill.votes_up - skill.votes_down}
+                        </span>
+                        <button
+                          onClick={() => handleVote(skill.id, 'down')}
+                          disabled={skill.status !== 'voting'}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            skill.myVote === 'down'
+                              ? 'bg-destructive/20 text-destructive'
+                              : skill.status === 'voting'
+                                ? 'hover:bg-destructive/10 text-muted-foreground hover:text-destructive'
+                                : 'text-muted-foreground/50 cursor-not-allowed'
+                          }`}
+                        >
+                          <ChevronDown className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      {/* Skill Info */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="font-medium text-foreground">{skill.name}</h3>
+                          {getStatusBadge(skill.status)}
+                          <Badge variant="outline" className="text-xs">{skill.category}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">{skill.description}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Proposed by {skill.author?.full_name || 'Unknown'}</span>
+                          {skill.status === 'voting' && skill.voting_ends_at && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {getDaysLeft(skill.voting_ends_at)} days left
+                            </span>
+                          )}
+                        </div>
+                        {skill.status === 'voting' && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-muted-foreground">Progress to approval</span>
+                              <span className="text-accent">{Math.min(100, Math.round((skill.votes_up / 200) * 100))}%</span>
+                            </div>
+                            <Progress value={Math.min(100, (skill.votes_up / 200) * 100)} className="h-2" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </motion.div>
           )}
         </div>
