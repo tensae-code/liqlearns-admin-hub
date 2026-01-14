@@ -107,14 +107,13 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     default: // student
       return [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+        { icon: Briefcase, label: 'Business', path: '/business' },
         { icon: Library, label: 'Courses', path: '/courses' },
         { icon: GraduationCap, label: 'Quest', path: '/quest' },
         { icon: Users, label: 'Study Rooms', path: '/study-rooms' },
         { icon: Calendar, label: 'Events', path: '/events' },
         { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
         { icon: MessageSquare, label: 'Community', path: '/community' },
-        { icon: Briefcase, label: 'Business', path: '/business' },
-        { icon: Trophy, label: 'Profile', path: '/profile' },
         { icon: HelpCircle, label: 'Help', path: '/help' },
         { icon: Settings, label: 'Settings', path: '/settings' },
       ];
@@ -180,23 +179,23 @@ const DashboardNavbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-gradient-to-r from-orange-600/95 via-amber-500/95 to-orange-600/95 backdrop-blur-lg border-b border-orange-400/20">
+    <nav className="sticky top-0 z-40 bg-gradient-to-r from-primary/95 via-accent/95 to-primary/95 backdrop-blur-lg border-b border-primary/20 dark:from-primary/80 dark:via-accent/80 dark:to-primary/80">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
         {/* Mobile Menu Button + Logo */}
         <div className="flex items-center gap-3 md:hidden">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-white hover:bg-orange-500/20">
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-primary-foreground hover:bg-primary/20">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-gradient-to-b from-orange-600 to-orange-700 border-orange-400/20">
-              <SheetHeader className="p-4 border-b border-orange-400/20">
+            <SheetContent side="left" className="w-72 p-0 bg-gradient-to-b from-primary to-primary/90 dark:from-primary/90 dark:to-primary/80 border-primary/20">
+              <SheetHeader className="p-4 border-b border-primary-foreground/20">
                 <SheetTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-accent-foreground" />
                   </div>
-                  <span className="text-xl font-display font-bold text-white">LiqLearns</span>
+                  <span className="text-xl font-display font-bold text-primary-foreground">LiqLearns</span>
                 </SheetTitle>
               </SheetHeader>
 
@@ -333,32 +332,32 @@ const DashboardNavbar = () => {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-orange-600 border-orange-400/20">
+            <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
               <div className="flex items-center gap-3 p-3">
                 <Avatar className="h-10 w-10">
                   {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name} />}
-                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-amber-400 text-white text-sm">
+                  <AvatarFallback className="bg-gradient-accent text-accent-foreground text-sm">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium truncate max-w-[140px] text-white">
+                  <span className="text-sm font-medium truncate max-w-[140px] text-foreground">
                     {profile?.full_name || 'User'}
                   </span>
-                  <span className="text-xs text-orange-200">{getRoleBadge()}</span>
+                  <span className="text-xs text-muted-foreground">{getRoleBadge()}</span>
                 </div>
               </div>
-              <DropdownMenuSeparator className="bg-orange-400/20" />
-              <DropdownMenuItem onClick={() => navigate('/profile')} className="text-orange-200 focus:bg-orange-500/20 focus:text-white">
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 My Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')} className="text-orange-200 focus:bg-orange-500/20 focus:text-white">
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-orange-400/20" />
-              <DropdownMenuItem onClick={handleSignOut} className="text-red-300 focus:text-red-200 focus:bg-red-500/10">
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>

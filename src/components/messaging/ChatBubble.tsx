@@ -101,12 +101,23 @@ const ChatBubble = ({
           {isSender && showOptions && onDelete && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6 opacity-60 hover:opacity-100"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreVertical className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+              <DropdownMenuContent align="end" className="z-50 bg-popover border border-border shadow-lg">
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete();
+                  }} 
+                  className="text-destructive cursor-pointer"
+                >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete message
                 </DropdownMenuItem>
@@ -145,12 +156,23 @@ const ChatBubble = ({
           {!isSender && showOptions && onDelete && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6 opacity-60 hover:opacity-100"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreVertical className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+              <DropdownMenuContent align="start" className="z-50 bg-popover border border-border shadow-lg">
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete();
+                  }} 
+                  className="text-destructive cursor-pointer"
+                >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete for me
                 </DropdownMenuItem>

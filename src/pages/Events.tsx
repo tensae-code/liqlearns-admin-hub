@@ -236,7 +236,7 @@ const Events = () => {
     date: '',
     time: '',
     type: 'workshop',
-    xpBonus: 50,
+    isPublic: false,
   });
 
   const filteredEvents = events.filter(e => 
@@ -266,11 +266,17 @@ const Events = () => {
       toast.error('Please fill in all required fields');
       return;
     }
-    toast.success('Event created!', {
-      description: `${newEvent.title} has been scheduled.`,
-    });
+    if (newEvent.isPublic) {
+      toast.success('Event submitted for approval!', {
+        description: `${newEvent.title} has been sent to admin for review.`,
+      });
+    } else {
+      toast.success('Private event created!', {
+        description: `${newEvent.title} has been scheduled.`,
+      });
+    }
     setShowAddEvent(false);
-    setNewEvent({ title: '', description: '', date: '', time: '', type: 'workshop', xpBonus: 50 });
+    setNewEvent({ title: '', description: '', date: '', time: '', type: 'workshop', isPublic: false });
   };
 
   return (
@@ -354,18 +360,20 @@ const Events = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label htmlFor="event-xp">XP Bonus</Label>
-                      <Input
-                        id="event-xp"
-                        type="number"
-                        value={newEvent.xpBonus}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, xpBonus: parseInt(e.target.value) || 0 }))}
+                    <div className="flex items-center gap-3 pt-6">
+                      <Switch
+                        id="make-public"
+                        checked={newEvent.isPublic}
+                        onCheckedChange={(checked) => setNewEvent(prev => ({ ...prev, isPublic: checked }))}
                       />
+                      <Label htmlFor="make-public" className="text-sm">
+                        Make Public
+                        <span className="block text-xs text-muted-foreground">(Requires admin approval)</span>
+                      </Label>
                     </div>
                   </div>
                   <Button onClick={handleAddEvent} className="w-full bg-gradient-accent text-accent-foreground">
-                    Create Event
+                    {newEvent.isPublic ? 'Submit for Approval' : 'Create Private Event'}
                   </Button>
                 </div>
               </DialogContent>
