@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Users, User, Plus, Settings, Compass, Inbox } from 'lucide-react';
+import { Search, Users, User, Plus, Settings, Compass, Inbox, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +20,8 @@ export interface Conversation {
   unreadCount?: number;
   isOnline?: boolean;
   members?: number;
+  lastMessageIsMine?: boolean;
+  lastMessageStatus?: 'sent' | 'delivered' | 'seen';
 }
 
 interface ConversationListProps {
@@ -208,10 +210,28 @@ const ConversationList = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-foreground truncate">{conv.name}</span>
-                  <span className="text-[10px] text-muted-foreground shrink-0">{conv.lastMessageTime}</span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[10px] text-muted-foreground">{conv.lastMessageTime}</span>
+                    {/* Message status indicator */}
+                    {conv.type === 'dm' && conv.lastMessageIsMine && (
+                      conv.lastMessageStatus === 'seen' ? (
+                        <CheckCheck className="w-3 h-3 text-blue-500" />
+                      ) : (
+                        <Check className="w-3 h-3 text-muted-foreground" />
+                      )
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-between mt-0.5">
-                  <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
+                  <p className={cn(
+                    "text-sm truncate",
+                    conv.lastMessageIsMine 
+                      ? "text-accent" 
+                      : "text-muted-foreground"
+                  )}>
+                    {conv.lastMessageIsMine && <span className="text-muted-foreground">You: </span>}
+                    {conv.lastMessage}
+                  </p>
                   {conv.unreadCount && conv.unreadCount > 0 && (
                     <Badge className="bg-accent text-accent-foreground text-[10px] h-5 min-w-5 rounded-full shrink-0">
                       {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
