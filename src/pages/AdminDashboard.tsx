@@ -51,7 +51,7 @@ import {
 
 import { STAT_GRADIENTS } from '@/lib/theme';
 
-type TabType = 'overview' | 'users' | 'courses' | 'approvals' | 'skills';
+type TabType = 'overview' | 'users' | 'courses' | 'approvals' | 'skills' | 'moderation' | 'reports';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -90,6 +90,8 @@ const AdminDashboard = () => {
     courses: { label: 'Courses', description: 'Review and manage courses' },
     approvals: { label: 'Approvals', description: 'Pending content approvals' },
     skills: { label: 'Skills', description: 'Review skill suggestions' },
+    moderation: { label: 'Moderation', description: 'Review user reports' },
+    reports: { label: 'Reports', description: 'System analytics & reports' },
   };
 
   const recentUsers = [
@@ -714,6 +716,68 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* Moderation Tab */}
+          {activeTab === 'moderation' && (
+            <motion.div
+              className="space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="bg-card rounded-xl border border-border p-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center">
+                    <XCircle className="w-6 h-6 text-destructive" />
+                  </div>
+                  <div>
+                    <h2 className="font-display font-semibold text-foreground">User Reports</h2>
+                    <p className="text-sm text-muted-foreground">Review and take action on reported content</p>
+                  </div>
+                </div>
+                <div className="text-center py-12">
+                  <CheckCircle2 className="w-16 h-16 text-success/50 mx-auto mb-4" />
+                  <h3 className="text-lg font-display font-semibold text-foreground mb-2">All Clear!</h3>
+                  <p className="text-muted-foreground">No pending reports to review at this time.</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Reports Tab */}
+          {activeTab === 'reports' && (
+            <motion.div
+              className="space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-card rounded-xl border border-border p-6">
+                  <h3 className="font-display font-semibold text-foreground mb-4">User Growth</h3>
+                  <div className="h-48 flex items-center justify-center bg-muted/30 rounded-lg">
+                    <p className="text-muted-foreground text-sm">Chart coming soon</p>
+                  </div>
+                </div>
+                <div className="bg-card rounded-xl border border-border p-6">
+                  <h3 className="font-display font-semibold text-foreground mb-4">Course Enrollments</h3>
+                  <div className="h-48 flex items-center justify-center bg-muted/30 rounded-lg">
+                    <p className="text-muted-foreground text-sm">Chart coming soon</p>
+                  </div>
+                </div>
+                <div className="bg-card rounded-xl border border-border p-6">
+                  <h3 className="font-display font-semibold text-foreground mb-4">Revenue Overview</h3>
+                  <div className="h-48 flex items-center justify-center bg-muted/30 rounded-lg">
+                    <p className="text-muted-foreground text-sm">Chart coming soon</p>
+                  </div>
+                </div>
+                <div className="bg-card rounded-xl border border-border p-6">
+                  <h3 className="font-display font-semibold text-foreground mb-4">Active Sessions</h3>
+                  <div className="h-48 flex items-center justify-center bg-muted/30 rounded-lg">
+                    <p className="text-muted-foreground text-sm">Chart coming soon</p>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           )}
         </div>
