@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
 import { Conversation } from '@/components/messaging/ConversationList';
 import { Message } from '@/components/messaging/ChatWindow';
 import { GroupMember, GroupChannel } from '@/components/messaging/GroupInfoSheet';
 
-interface Profile {
+interface ProfileData {
   id: string;
   user_id: string;
   full_name: string;
@@ -16,6 +17,7 @@ interface Profile {
 
 export const useMessaging = () => {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -314,10 +316,13 @@ export const useMessaging = () => {
     description: string;
     isPublic: boolean;
   }) => {
-    if (!user) return;
+    if (!user || !profile) {
+      toast.error('Please sign in to create a group');
+      return;
+    }
 
     try {
-      // Create the group
+      // Create the group with profile.id as owner
       const { data: group, error: groupError } = await supabase
         .from('groups')
         .insert({
@@ -325,7 +330,7 @@ export const useMessaging = () => {
           username: data.username,
           description: data.description,
           is_public: data.isPublic,
-          owner_id: user.id,
+          owner_id: profile.id,
           invite_link: `https://liqlearns.com/join/${data.username}`,
         })
         .select()
@@ -333,17 +338,21 @@ export const useMessaging = () => {
 
       if (groupError) throw groupError;
 
-      // Add owner as member
-      await supabase
+      // Add owner as member with profile.id
+      const { error: memberError } = await supabase
         .from('group_members')
         .insert({
           group_id: group.id,
-          user_id: user.id,
+          user_id: profile.id,
           role: 'owner',
         });
 
+      if (memberError) {
+        console.error('Error adding owner as member:', memberError);
+      }
+
       // Create default channel
-      await supabase
+      const { error: channelError } = await supabase
         .from('group_channels')
         .insert({
           group_id: group.id,
@@ -353,6 +362,10 @@ export const useMessaging = () => {
           description: 'General discussion',
         });
 
+      if (channelError) {
+        console.error('Error creating default channel:', channelError);
+      }
+
       toast.success('Group created!', { description: `@${data.username} is now live` });
       await fetchConversations();
     } catch (error: any) {
@@ -360,10 +373,10 @@ export const useMessaging = () => {
       if (error.code === '23505') {
         toast.error('Username already taken', { description: 'Please choose a different username' });
       } else {
-        toast.error('Failed to create group');
+        toast.error('Failed to create group', { description: error.message });
       }
     }
-  }, [user, fetchConversations]);
+  }, [user, profile, fetchConversations]);
 
   // Start a new DM
   const startDM = useCallback(async (userId: string) => {

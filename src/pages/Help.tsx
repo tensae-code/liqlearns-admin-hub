@@ -1,8 +1,25 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Accordion,
   AccordionContent,
@@ -16,10 +33,13 @@ import {
   MessageCircle,
   HelpCircle,
   Mail,
-  ExternalLink,
   ChevronRight,
-  Play
+  Play,
+  Send
 } from 'lucide-react';
+import { useSupportTickets } from '@/hooks/useSupportTickets';
+import { useMessaging } from '@/hooks/useMessaging';
+import { toast } from 'sonner';
 
 const faqCategories = [
   {
@@ -100,13 +120,6 @@ const faqCategories = [
   },
 ];
 
-const helpResources = [
-  { title: 'Video Tutorials', description: 'Watch step-by-step guides', icon: Video, link: '#' },
-  { title: 'User Guide', description: 'Detailed documentation', icon: BookOpen, link: '#' },
-  { title: 'Live Chat', description: 'Chat with support', icon: MessageCircle, link: '#' },
-  { title: 'Email Support', description: 'support@liqlearns.com', icon: Mail, link: 'mailto:support@liqlearns.com' },
-];
-
 const popularArticles = [
   'How to maintain your learning streak',
   'Understanding the Ethiopian calendar',
@@ -116,10 +129,63 @@ const popularArticles = [
 ];
 
 const Help = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('getting-started');
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [ticketForm, setTicketForm] = useState({
+    subject: '',
+    description: '',
+    category: 'general',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+  });
+
+  const { submitTicket, submitting, startLiveChat } = useSupportTickets();
+  const { startDM } = useMessaging();
 
   const activeCategory = faqCategories.find(c => c.id === selectedCategory);
+
+  const handleSubmitTicket = async () => {
+    if (!ticketForm.subject.trim() || !ticketForm.description.trim()) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    const success = await submitTicket(
+      ticketForm.subject,
+      ticketForm.description,
+      ticketForm.category,
+      ticketForm.priority
+    );
+
+    if (success) {
+      setShowTicketModal(false);
+      setTicketForm({
+        subject: '',
+        description: '',
+        category: 'general',
+        priority: 'medium',
+      });
+    }
+  };
+
+  const handleLiveChat = async () => {
+    const supportUserId = await startLiveChat();
+    if (supportUserId) {
+      await startDM(supportUserId);
+      navigate('/messages');
+      toast.success('Connected to support!', {
+        description: 'You can now chat with our support team.',
+      });
+    }
+  };
+
+  const helpResources = [
+    { title: 'Video Tutorials', description: 'Watch step-by-step guides', icon: Video, action: () => toast.info('Coming soon!') },
+    { title: 'User Guide', description: 'Detailed documentation', icon: BookOpen, action: () => toast.info('Coming soon!') },
+    { title: 'Live Chat', description: 'Chat with support', icon: MessageCircle, action: handleLiveChat },
+    { title: 'Submit Ticket', description: 'Get help via email', icon: Mail, action: () => setShowTicketModal(true) },
+  ];
 
   return (
     <DashboardLayout>
@@ -150,11 +216,11 @@ const Help = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        {helpResources.map((resource, i) => (
-          <a
+        {helpResources.map((resource) => (
+          <button
             key={resource.title}
-            href={resource.link}
-            className="p-5 rounded-xl bg-card border border-border hover:border-accent/30 hover:shadow-lg transition-all group"
+            onClick={resource.action}
+            className="p-5 rounded-xl bg-card border border-border hover:border-accent/30 hover:shadow-lg transition-all group text-left"
           >
             <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-3 group-hover:bg-accent/20 transition-colors">
               <resource.icon className="w-6 h-6 text-accent" />
@@ -163,7 +229,7 @@ const Help = () => {
               {resource.title}
             </h3>
             <p className="text-sm text-muted-foreground">{resource.description}</p>
-          </a>
+          </button>
         ))}
       </motion.div>
 
@@ -228,13 +294,12 @@ const Help = () => {
             <ul className="space-y-3">
               {popularArticles.map((article, i) => (
                 <li key={i}>
-                  <a
-                    href="#"
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors group"
+                  <button
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors group w-full text-left"
                   >
                     <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     {article}
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -273,13 +338,105 @@ const Help = () => {
             <p className="text-sm text-muted-foreground mb-4">
               Our support team is available 24/7 to assist you.
             </p>
-            <Button className="w-full bg-gradient-accent text-accent-foreground hover:opacity-90">
+            <Button 
+              className="w-full bg-gradient-accent text-accent-foreground hover:opacity-90"
+              onClick={() => setShowTicketModal(true)}
+            >
               <MessageCircle className="w-4 h-4 mr-2" />
               Contact Support
             </Button>
           </motion.div>
         </div>
       </div>
+
+      {/* Submit Ticket Modal */}
+      <Dialog open={showTicketModal} onOpenChange={setShowTicketModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Submit Support Ticket</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="subject">Subject</Label>
+              <Input
+                id="subject"
+                placeholder="Brief description of your issue"
+                value={ticketForm.subject}
+                onChange={(e) => setTicketForm(prev => ({ ...prev, subject: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select 
+                  value={ticketForm.category} 
+                  onValueChange={(value) => setTicketForm(prev => ({ ...prev, category: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="technical">Technical</SelectItem>
+                    <SelectItem value="billing">Billing</SelectItem>
+                    <SelectItem value="account">Account</SelectItem>
+                    <SelectItem value="course">Course</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select 
+                  value={ticketForm.priority} 
+                  onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setTicketForm(prev => ({ ...prev, priority: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Please describe your issue in detail..."
+                value={ticketForm.description}
+                onChange={(e) => setTicketForm(prev => ({ ...prev, description: e.target.value }))}
+                className="min-h-[120px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTicketModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmitTicket}
+              disabled={submitting}
+              className="bg-gradient-accent text-accent-foreground"
+            >
+              {submitting ? 'Submitting...' : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Submit Ticket
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
