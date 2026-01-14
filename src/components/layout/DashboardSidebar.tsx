@@ -105,7 +105,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
-    default: // student - max 10 items
+    default: // student - max 9 items (Profile removed - accessible via Settings)
       return [
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Your overview', path: '/dashboard' },
         { icon: Library, label: 'Courses', description: 'Browse & learn', path: '/courses' },
@@ -115,7 +115,6 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Calendar, label: 'Events', description: 'Upcoming events', path: '/events' },
         { icon: ShoppingBag, label: 'Marketplace', description: 'Spend rewards', path: '/marketplace' },
         { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
-        { icon: Trophy, label: 'Profile', description: 'Your achievements', path: '/profile' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
   }
