@@ -27,6 +27,7 @@ import { STAT_GRADIENTS } from '@/lib/theme';
 import BrainBankModal from '@/components/brain-bank/BrainBankModal';
 import DailyBonusModal from './DailyBonusModal';
 import AIAssistantModal from './AIAssistantModal';
+import NewDMModal, { UserSearchResult } from '@/components/messaging/NewDMModal';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -152,8 +153,14 @@ const QuickAccessButton = () => {
   const [brainBankOpen, setBrainBankOpen] = useState(false);
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
+  const [dmPickerOpen, setDmPickerOpen] = useState(false);
+  const [videoCallPickerOpen, setVideoCallPickerOpen] = useState(false);
+  const [searchUsers, setSearchUsers] = useState<Array<{ id: string; name: string; username: string; avatar?: string; isOnline?: boolean; isFriend?: boolean }>>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    return (localStorage.getItem('quickAccessViewMode') as ViewMode) || 'full';
+    // Default to 'full' on desktop, 'compact' on mobile
+    const saved = localStorage.getItem('quickAccessViewMode') as ViewMode;
+    return saved || 'full';
   });
   const [items, setItems] = useState<QuickAccessItem[]>(() => {
     const saved = localStorage.getItem('quickAccessItems');
@@ -200,6 +207,35 @@ const QuickAccessButton = () => {
     });
   };
 
+  // Search users for DM/video call picker
+  const handleSearchUsers = async (query: string) => {
+    setSearchLoading(true);
+    try {
+      const { data, error } = await import('@/integrations/supabase/client').then(m => 
+        m.supabase
+          .from('profiles')
+          .select('id, user_id, full_name, username, avatar_url')
+          .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`)
+          .limit(20)
+      );
+      
+      if (error) throw error;
+      
+      setSearchUsers(data?.map(p => ({
+        id: p.user_id,
+        name: p.full_name,
+        username: p.username,
+        avatar: p.avatar_url || undefined,
+        isOnline: false,
+        isFriend: false,
+      })) || []);
+    } catch (error) {
+      console.error('Error searching users:', error);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   const handleItemClick = (id: string) => {
     if (isEditMode) return;
     
@@ -220,13 +256,15 @@ const QuickAccessButton = () => {
         navigate('/help');
         break;
       case 'dm':
-        navigate('/messages');
+        // Open user picker for DM
+        setDmPickerOpen(true);
         break;
       case 'group-chat':
         navigate('/messages');
         break;
       case 'video-call':
-        navigate('/study-rooms');
+        // Open user picker for video call
+        setVideoCallPickerOpen(true);
         break;
       case 'add-friend':
         navigate('/community');
@@ -240,6 +278,18 @@ const QuickAccessButton = () => {
       default:
         toast.info('Coming Soon', { description: 'This feature is coming soon!' });
     }
+  };
+
+  const handleSelectUserForDM = (user: { id: string; name: string }) => {
+    setDmPickerOpen(false);
+    navigate('/messages', { state: { startDmWith: user.id } });
+    toast.success(`Starting chat with ${user.name}`);
+  };
+
+  const handleSelectUserForCall = (user: { id: string; name: string }) => {
+    setVideoCallPickerOpen(false);
+    navigate('/messages', { state: { startCallWith: user.id, callType: 'video' } });
+    toast.success(`Starting video call with ${user.name}`);
   };
 
   const toggleItem = (id: string) => {
@@ -647,6 +697,26 @@ const QuickAccessButton = () => {
 
       {/* AI Assistant Modal */}
       <AIAssistantModal open={aiAssistantOpen} onOpenChange={setAiAssistantOpen} />
+
+      {/* DM User Picker Modal */}
+      <NewDMModal
+        open={dmPickerOpen}
+        onOpenChange={setDmPickerOpen}
+        users={searchUsers}
+        onSelectUser={handleSelectUserForDM}
+        onSearch={handleSearchUsers}
+        isLoading={searchLoading}
+      />
+
+      {/* Video Call User Picker Modal */}
+      <NewDMModal
+        open={videoCallPickerOpen}
+        onOpenChange={setVideoCallPickerOpen}
+        users={searchUsers}
+        onSelectUser={handleSelectUserForCall}
+        onSearch={handleSearchUsers}
+        isLoading={searchLoading}
+      />
     </>
   );
 };
