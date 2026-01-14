@@ -64,15 +64,37 @@ interface Review {
   date: string;
 }
 
+interface Assignment {
+  id: string;
+  title: string;
+  course: string;
+  dueDate: string;
+  submissions: number;
+  totalStudents: number;
+  status: 'active' | 'past_due' | 'graded';
+}
+
+interface Submission {
+  id: string;
+  studentName: string;
+  studentAvatar?: string;
+  assignmentTitle: string;
+  submittedAt: string;
+  grade?: number;
+  feedback?: string;
+  status: 'pending' | 'graded' | 'late';
+  fileUrl?: string;
+}
+
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { profile } = useProfile();
   
   // Get active tab from URL query param, default to 'overview'
-  const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'earnings') || 'overview';
+  const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'assignments' | 'earnings') || 'overview';
   
-  const setActiveTab = (tab: 'overview' | 'courses' | 'students' | 'earnings') => {
+  const setActiveTab = (tab: 'overview' | 'courses' | 'students' | 'assignments' | 'earnings') => {
     setSearchParams({ tab });
   };
   
@@ -82,6 +104,11 @@ const TeacherDashboard = () => {
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
   const [studentDetailOpen, setStudentDetailOpen] = useState(false);
+  const [createAssignmentOpen, setCreateAssignmentOpen] = useState(false);
+  const [gradeModalOpen, setGradeModalOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [gradeValue, setGradeValue] = useState('');
+  const [feedbackText, setFeedbackText] = useState('');
 
   const stats = [
     { label: 'Total Students', value: '1,248', icon: Users, gradient: STAT_GRADIENTS[0], change: '+12%' },
@@ -111,6 +138,20 @@ const TeacherDashboard = () => {
     { id: '3', studentId: '3', studentName: 'Bereket F.', rating: 4, comment: 'Great content, very practical.', type: 'student', date: '1 day ago' },
   ];
 
+  const assignments: Assignment[] = [
+    { id: '1', title: 'Week 1: Basic Greetings Essay', course: 'Amharic for Beginners', dueDate: '2024-01-20', submissions: 42, totalStudents: 50, status: 'active' },
+    { id: '2', title: 'Historical Analysis Report', course: 'Ethiopian History', dueDate: '2024-01-18', submissions: 28, totalStudents: 32, status: 'past_due' },
+    { id: '3', title: 'Business Letter Writing', course: 'Business Amharic', dueDate: '2024-01-25', submissions: 15, totalStudents: 20, status: 'active' },
+    { id: '4', title: 'Kids Vocabulary Quiz', course: 'Kids Amharic Fun', dueDate: '2024-01-15', submissions: 30, totalStudents: 30, status: 'graded' },
+  ];
+
+  const pendingSubmissions: Submission[] = [
+    { id: '1', studentName: 'Alemayehu M.', assignmentTitle: 'Week 1: Basic Greetings Essay', submittedAt: '2 hours ago', status: 'pending' },
+    { id: '2', studentName: 'Sara T.', assignmentTitle: 'Historical Analysis Report', submittedAt: '5 hours ago', status: 'late' },
+    { id: '3', studentName: 'Dawit B.', assignmentTitle: 'Business Letter Writing', submittedAt: '1 day ago', status: 'pending' },
+    { id: '4', studentName: 'Tigist K.', assignmentTitle: 'Kids Vocabulary Quiz', submittedAt: '2 days ago', grade: 85, feedback: 'Great work!', status: 'graded' },
+  ];
+
   const handleOpenReview = (student: Student) => {
     setSelectedStudent(student);
     setReviewModalOpen(true);
@@ -135,13 +176,51 @@ const TeacherDashboard = () => {
     setStudentDetailOpen(true);
   };
 
+  const handleGradeSubmission = (submission: Submission) => {
+    setSelectedSubmission(submission);
+    setGradeValue(submission.grade?.toString() || '');
+    setFeedbackText(submission.feedback || '');
+    setGradeModalOpen(true);
+  };
+
+  const handleSubmitGrade = () => {
+    if (!gradeValue.trim()) {
+      toast.error('Please enter a grade');
+      return;
+    }
+    const grade = parseInt(gradeValue);
+    if (isNaN(grade) || grade < 0 || grade > 100) {
+      toast.error('Grade must be between 0 and 100');
+      return;
+    }
+    toast.success(`Grade submitted for ${selectedSubmission?.studentName}`, {
+      description: `Grade: ${grade}% - Feedback sent to student.`
+    });
+    setGradeModalOpen(false);
+    setGradeValue('');
+    setFeedbackText('');
+    setSelectedSubmission(null);
+  };
+
   const getProgressColor = (progress: number) => {
     if (progress >= 80) return 'text-success';
     if (progress >= 50) return 'text-gold';
     return 'text-destructive';
   };
 
-  const tabs = ['overview', 'courses', 'students', 'earnings'] as const;
+  const getAssignmentStatusBadge = (status: Assignment['status']) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-success/10 text-success border-success/30">Active</Badge>;
+      case 'past_due':
+        return <Badge className="bg-destructive/10 text-destructive border-destructive/30">Past Due</Badge>;
+      case 'graded':
+        return <Badge className="bg-muted text-muted-foreground">Graded</Badge>;
+    }
+  };
+
+  const tabs = ['overview', 'courses', 'students', 'assignments', 'earnings'] as const;
+
 
   return (
     <>
@@ -503,6 +582,135 @@ const TeacherDashboard = () => {
             </motion.div>
           )}
 
+          {activeTab === 'assignments' && (
+            <motion.div
+              key="assignments"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              {/* Assignment Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className={`rounded-xl p-4 bg-gradient-to-br ${STAT_GRADIENTS[0]} text-white`}>
+                  <FileText className="w-5 h-5 mb-2 opacity-80" />
+                  <p className="text-2xl font-bold">{assignments.length}</p>
+                  <p className="text-xs opacity-80">Total Assignments</p>
+                </div>
+                <div className={`rounded-xl p-4 bg-gradient-to-br ${STAT_GRADIENTS[1]} text-white`}>
+                  <Clock className="w-5 h-5 mb-2 opacity-80" />
+                  <p className="text-2xl font-bold">{pendingSubmissions.filter(s => s.status === 'pending').length}</p>
+                  <p className="text-xs opacity-80">Pending Review</p>
+                </div>
+                <div className={`rounded-xl p-4 bg-gradient-to-br ${STAT_GRADIENTS[2]} text-white`}>
+                  <CheckCircle className="w-5 h-5 mb-2 opacity-80" />
+                  <p className="text-2xl font-bold">{pendingSubmissions.filter(s => s.status === 'graded').length}</p>
+                  <p className="text-xs opacity-80">Graded</p>
+                </div>
+                <div className={`rounded-xl p-4 bg-gradient-to-br ${STAT_GRADIENTS[3]} text-white`}>
+                  <AlertTriangle className="w-5 h-5 mb-2 opacity-80" />
+                  <p className="text-2xl font-bold">{pendingSubmissions.filter(s => s.status === 'late').length}</p>
+                  <p className="text-xs opacity-80">Late Submissions</p>
+                </div>
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-6">
+                {/* Assignments List */}
+                <div className="bg-card rounded-xl border border-border">
+                  <div className="p-4 border-b border-border flex items-center justify-between">
+                    <h2 className="font-display font-semibold text-foreground">All Assignments</h2>
+                    <Button size="sm" onClick={() => setCreateAssignmentOpen(true)}>
+                      <Plus className="w-4 h-4 mr-1" /> Create
+                    </Button>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {assignments.map((assignment, i) => (
+                      <div key={assignment.id} className="p-4 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-medium text-foreground">{assignment.title}</h3>
+                              {getAssignmentStatusBadge(assignment.status)}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{assignment.course}</p>
+                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" /> Due: {assignment.dueDate}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="w-3 h-3" /> {assignment.submissions}/{assignment.totalStudents} submitted
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <Progress 
+                          value={(assignment.submissions / assignment.totalStudents) * 100} 
+                          className="h-1.5 mt-3" 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pending Submissions */}
+                <div className="bg-card rounded-xl border border-border">
+                  <div className="p-4 border-b border-border">
+                    <h2 className="font-display font-semibold text-foreground">Submissions to Review</h2>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {pendingSubmissions.map((submission, i) => (
+                      <div key={submission.id} className="p-4 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${STAT_GRADIENTS[i % 4]} flex items-center justify-center text-white font-semibold`}>
+                            {submission.studentName.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-foreground truncate">{submission.studentName}</p>
+                              {submission.status === 'late' && (
+                                <Badge className="bg-destructive/10 text-destructive border-destructive/30 text-xs">Late</Badge>
+                              )}
+                              {submission.status === 'graded' && (
+                                <Badge className="bg-success/10 text-success border-success/30 text-xs">{submission.grade}%</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">{submission.assignmentTitle}</p>
+                            <p className="text-xs text-muted-foreground">{submission.submittedAt}</p>
+                          </div>
+                          {submission.status !== 'graded' ? (
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleGradeSubmission(submission)}
+                              className="gap-1"
+                            >
+                              <Award className="w-4 h-4" /> Grade
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleGradeSubmission(submission)}
+                            >
+                              Edit
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === 'earnings' && (
             <motion.div
               key="earnings"
@@ -715,6 +923,149 @@ const TeacherDashboard = () => {
                   }}
                 >
                   <MessageSquare className="w-4 h-4" /> Send Review
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Grade Submission Modal */}
+      <AnimatePresence>
+        {gradeModalOpen && selectedSubmission && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setGradeModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-card rounded-2xl border border-border p-6 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display font-semibold text-lg">Grade Submission</h3>
+                <Button variant="ghost" size="icon" onClick={() => setGradeModalOpen(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="flex items-center gap-3 mb-4 p-3 bg-muted/30 rounded-lg">
+                <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${STAT_GRADIENTS[0]} flex items-center justify-center text-white font-bold`}>
+                  {selectedSubmission.studentName.charAt(0)}
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">{selectedSubmission.studentName}</p>
+                  <p className="text-sm text-muted-foreground">{selectedSubmission.assignmentTitle}</p>
+                </div>
+                {selectedSubmission.status === 'late' && (
+                  <Badge className="bg-destructive/10 text-destructive border-destructive/30">Late</Badge>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-2">Grade (0-100)</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="Enter grade..."
+                    value={gradeValue}
+                    onChange={(e) => setGradeValue(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-2">Feedback (Optional)</label>
+                  <Textarea
+                    placeholder="Write feedback for the student..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-6">
+                <Button variant="outline" className="flex-1" onClick={() => setGradeModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button className="flex-1 gap-2" onClick={handleSubmitGrade}>
+                  <Send className="w-4 h-4" /> Submit Grade
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create Assignment Modal */}
+      <AnimatePresence>
+        {createAssignmentOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setCreateAssignmentOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-card rounded-2xl border border-border p-6 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display font-semibold text-lg">Create Assignment</h3>
+                <Button variant="ghost" size="icon" onClick={() => setCreateAssignmentOpen(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-2">Assignment Title</label>
+                  <Input placeholder="Enter assignment title..." />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-2">Course</label>
+                  <select className="w-full px-3 py-2 rounded-lg border border-border bg-card text-foreground">
+                    {courses.filter(c => c.status === 'published').map(course => (
+                      <option key={course.id} value={course.id}>{course.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-2">Due Date</label>
+                  <Input type="date" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-2">Instructions</label>
+                  <Textarea placeholder="Enter assignment instructions..." rows={4} />
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-6">
+                <Button variant="outline" className="flex-1" onClick={() => setCreateAssignmentOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  className="flex-1 gap-2" 
+                  onClick={() => {
+                    toast.success('Assignment created!', { description: 'Students will be notified.' });
+                    setCreateAssignmentOpen(false);
+                  }}
+                >
+                  <Plus className="w-4 h-4" /> Create
                 </Button>
               </div>
             </motion.div>
