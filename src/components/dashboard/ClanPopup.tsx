@@ -155,13 +155,13 @@ const ClanPopup = ({ isOpen, onClose, clanName = 'Eliteforce', userRole = 'Leade
               className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white"
               onClick={() => {
                 onClose();
-                navigate('/settings');
+                navigate('/profile');
               }}
             >
               Manage Clan in Profile
             </Button>
             <p className="text-[10px] text-center text-muted-foreground">
-              Join or create clans in your profile settings
+              Join or create clans in your profile
             </p>
           </div>
         </div>

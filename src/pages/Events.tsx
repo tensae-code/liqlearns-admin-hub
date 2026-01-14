@@ -5,6 +5,23 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import EthiopianCalendar from '@/components/calendar/EthiopianCalendar';
 import {
   Calendar,
@@ -15,7 +32,10 @@ import {
   Star,
   Bell,
   ExternalLink,
-  Languages
+  Languages,
+  Plus,
+  Zap,
+  Gift
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -209,6 +229,15 @@ const Events = () => {
   const [calendarView, setCalendarView] = useState<'ethiopian' | 'gregorian'>('ethiopian');
   const [showAmharic, setShowAmharic] = useState(true);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: '',
+    description: '',
+    date: '',
+    time: '',
+    type: 'workshop',
+    xpBonus: 50,
+  });
 
   const filteredEvents = events.filter(e => 
     selectedType === 'all' || e.type === selectedType
@@ -232,6 +261,18 @@ const Events = () => {
     });
   };
 
+  const handleAddEvent = () => {
+    if (!newEvent.title || !newEvent.date || !newEvent.time) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    toast.success('Event created!', {
+      description: `${newEvent.title} has been scheduled.`,
+    });
+    setShowAddEvent(false);
+    setNewEvent({ title: '', description: '', date: '', time: '', type: 'workshop', xpBonus: 50 });
+  };
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -240,59 +281,183 @@ const Events = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-display font-bold text-foreground mb-1">Events 📅</h1>
-            <p className="text-muted-foreground">Upcoming workshops, webinars, and cultural celebrations</p>
+            <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-1">Events 📅</h1>
+            <p className="text-sm text-muted-foreground">Workshops, webinars & celebrations</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Add Event Button */}
+            <Dialog open={showAddEvent} onOpenChange={setShowAddEvent}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-gradient-accent text-accent-foreground">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Event
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create New Event</DialogTitle>
+                  <DialogDescription>Schedule a new event for the community</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label htmlFor="event-title">Event Title *</Label>
+                    <Input
+                      id="event-title"
+                      placeholder="e.g., Beginner Workshop"
+                      value={newEvent.title}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="event-desc">Description</Label>
+                    <Textarea
+                      id="event-desc"
+                      placeholder="What will this event cover?"
+                      value={newEvent.description}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="event-date">Date *</Label>
+                      <Input
+                        id="event-date"
+                        type="date"
+                        value={newEvent.date}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="event-time">Time *</Label>
+                      <Input
+                        id="event-time"
+                        type="time"
+                        value={newEvent.time}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, time: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Event Type</Label>
+                      <Select value={newEvent.type} onValueChange={(v) => setNewEvent(prev => ({ ...prev, type: v }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="workshop">Workshop</SelectItem>
+                          <SelectItem value="webinar">Webinar</SelectItem>
+                          <SelectItem value="cultural">Cultural</SelectItem>
+                          <SelectItem value="kids">Kids</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="event-xp">XP Bonus</Label>
+                      <Input
+                        id="event-xp"
+                        type="number"
+                        value={newEvent.xpBonus}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, xpBonus: parseInt(e.target.value) || 0 }))}
+                      />
+                    </div>
+                  </div>
+                  <Button onClick={handleAddEvent} className="w-full bg-gradient-accent text-accent-foreground">
+                    Create Event
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             {/* Amharic Toggle */}
-            <div className="flex items-center gap-2">
-              <Languages className="w-4 h-4 text-muted-foreground" />
+            <div className="hidden md:flex items-center gap-2">
               <Switch
                 id="amharic-mode"
                 checked={showAmharic}
                 onCheckedChange={setShowAmharic}
               />
-              <Label htmlFor="amharic-mode" className="text-sm text-muted-foreground">
+              <Label htmlFor="amharic-mode" className="text-xs text-muted-foreground">
                 አማርኛ
               </Label>
             </div>
 
             {/* View Toggle */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1">
               <Button
-                variant={calendarView === 'ethiopian' ? 'default' : 'outline'}
+                variant={calendarView === 'ethiopian' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setCalendarView('ethiopian')}
-                className={calendarView === 'ethiopian' ? 'bg-gradient-accent' : ''}
+                className={`text-xs px-2 ${calendarView === 'ethiopian' ? 'bg-accent text-accent-foreground' : ''}`}
               >
-                🇪🇹 Ethiopian
+                🇪🇹
               </Button>
               <Button
-                variant={calendarView === 'gregorian' ? 'default' : 'outline'}
+                variant={calendarView === 'gregorian' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setCalendarView('gregorian')}
-                className={calendarView === 'gregorian' ? 'bg-gradient-accent' : ''}
+                className={`text-xs px-2 ${calendarView === 'gregorian' ? 'bg-accent text-accent-foreground' : ''}`}
               >
-                📅 Gregorian
+                📅
               </Button>
-              <div className="w-px h-6 bg-border mx-1" />
               <Button
-                variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('calendar')}
+                className={`text-xs px-2 ${viewMode === 'calendar' ? 'bg-primary text-primary-foreground' : ''}`}
               >
-                📆 Calendar
+                📆
               </Button>
               <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('list')}
+                className={`text-xs px-2 ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : ''}`}
               >
-                📋 List
+                📋
               </Button>
             </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Compact Promo Cards - Limited Time Offer & Upcoming */}
+      <motion.div
+        className="grid grid-cols-2 gap-3 mb-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
+        {/* Limited Time Offer */}
+        <div className="relative overflow-hidden rounded-xl p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-amber-500/20">
+              <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-foreground truncate">Limited Time!</p>
+              <p className="text-[10px] text-muted-foreground">2x XP on all events</p>
+            </div>
+            <Badge className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 px-1.5 py-0">
+              3d left
+            </Badge>
+          </div>
+        </div>
+
+        {/* Upcoming Event */}
+        <div className="relative overflow-hidden rounded-xl p-3 bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-violet-500/20">
+              <Gift className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-foreground truncate">New Year Event</p>
+              <p className="text-[10px] text-muted-foreground">+100 XP bonus</p>
+            </div>
+            <Badge className="text-[10px] bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-500/30 px-1.5 py-0">
+              Soon
+            </Badge>
           </div>
         </div>
       </motion.div>
