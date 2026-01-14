@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,7 +37,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { STAT_GRADIENTS } from '@/lib/theme';
 
 interface NavItem {
   icon: typeof LayoutDashboard;
@@ -55,13 +54,6 @@ const navItems: NavItem[] = [
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
-// Tabs that map to activeTab state in TeacherDashboard
-const dashboardTabs = [
-  { id: 'overview', label: 'Dashboard', gradient: STAT_GRADIENTS[0] },
-  { id: 'courses', label: 'My Courses', gradient: STAT_GRADIENTS[1] },
-  { id: 'students', label: 'Students', gradient: STAT_GRADIENTS[2] },
-  { id: 'earnings', label: 'Earnings', gradient: STAT_GRADIENTS[3] },
-];
 
 const TeacherNavbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,11 +62,6 @@ const TeacherNavbar = () => {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  
-  // Get active tab from URL query param
-  const activeTab = searchParams.get('tab') || 'overview';
-
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
@@ -98,13 +85,6 @@ const TeacherNavbar = () => {
     return location.pathname === itemPath || 
            (itemPath !== '/teacher' && location.pathname.startsWith(itemPath));
   };
-
-  const handleTabClick = (tabId: string) => {
-    setSearchParams({ tab: tabId });
-  };
-
-  // Only show tabs on teacher dashboard
-  const showTabs = location.pathname === '/teacher';
 
   return (
     <nav className="sticky top-0 z-40 bg-gradient-to-r from-orange-300/95 via-amber-200/95 to-orange-300/95 backdrop-blur-lg border-b border-orange-400/30">
@@ -213,29 +193,9 @@ const TeacherNavbar = () => {
           </Link>
         </div>
 
-        {/* Desktop - Hub Name + Tabs */}
-        <div className="hidden md:flex items-center gap-6">
+        {/* Desktop - Hub Name */}
+        <div className="hidden md:flex items-center">
           <span className="text-lg font-display font-bold text-orange-800">Teacher Hub</span>
-          
-          {/* Dashboard Tabs - in Navbar */}
-          {showTabs && (
-            <div className="flex gap-2">
-              {dashboardTabs.map((tab, i) => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabClick(tab.id)}
-                  className={cn(
-                    'px-4 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap',
-                    activeTab === tab.id
-                      ? `bg-gradient-to-r ${tab.gradient} text-white shadow-md`
-                      : 'bg-white/30 text-orange-800 hover:bg-white/50'
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Search Bar - Desktop */}
