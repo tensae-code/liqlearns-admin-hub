@@ -4,16 +4,17 @@ import { Gift, X, Sparkles, Star, Zap, Trophy, Flame, Crown } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/useProfile';
 
 const prizes = [
-  { name: '50 XP', icon: Zap, color: 'text-accent', value: 50 },
-  { name: '100 XP', icon: Star, color: 'text-gold', value: 100 },
-  { name: '25 Aura', icon: Sparkles, color: 'text-success', value: 25 },
-  { name: '50 Aura', icon: Sparkles, color: 'text-gold', value: 50 },
-  { name: 'Badge', icon: Trophy, color: 'text-streak', value: 1 },
-  { name: 'Streak Shield', icon: Flame, color: 'text-destructive', value: 1 },
-  { name: '200 XP', icon: Crown, color: 'text-accent', value: 200 },
-  { name: '100 Aura', icon: Star, color: 'text-gold', value: 100 },
+  { name: '50 XP', icon: Zap, color: 'text-accent', value: 50, type: 'xp' },
+  { name: '100 XP', icon: Star, color: 'text-gold', value: 100, type: 'xp' },
+  { name: '25 Aura', icon: Sparkles, color: 'text-success', value: 25, type: 'aura' },
+  { name: '50 Aura', icon: Sparkles, color: 'text-gold', value: 50, type: 'aura' },
+  { name: 'Badge', icon: Trophy, color: 'text-streak', value: 1, type: 'badge' },
+  { name: 'Streak Shield', icon: Flame, color: 'text-destructive', value: 1, type: 'shield' },
+  { name: '200 XP', icon: Crown, color: 'text-accent', value: 200, type: 'xp' },
+  { name: '100 Aura', icon: Star, color: 'text-gold', value: 100, type: 'aura' },
 ];
 
 interface DailyBonusModalProps {
@@ -22,6 +23,7 @@ interface DailyBonusModalProps {
 }
 
 const DailyBonusModal = ({ open, onOpenChange }: DailyBonusModalProps) => {
+  const { addXP } = useProfile();
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [hasSpun, setHasSpun] = useState(() => {
@@ -48,7 +50,7 @@ const DailyBonusModal = ({ open, onOpenChange }: DailyBonusModalProps) => {
     }
   }, [open]);
 
-  const spin = () => {
+  const spin = async () => {
     if (isSpinning || hasSpun) return;
     
     setIsSpinning(true);
@@ -64,13 +66,26 @@ const DailyBonusModal = ({ open, onOpenChange }: DailyBonusModalProps) => {
     
     setRotation(prev => prev + targetAngle);
     
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsSpinning(false);
       setHasSpun(true);
       setWonPrize(prize);
       localStorage.setItem('dailyBonusLastSpin', new Date().toISOString());
       localStorage.setItem('dailyBonusClaimed', 'true');
-      toast.success(`🎉 You won ${prize.name}!`);
+      
+      // Actually add XP to the profile if it's an XP prize
+      if (prize.type === 'xp') {
+        const success = await addXP(prize.value);
+        if (success) {
+          toast.success(`🎉 You won ${prize.name}!`, {
+            description: `${prize.value} XP has been added to your account!`
+          });
+        } else {
+          toast.success(`🎉 You won ${prize.name}!`);
+        }
+      } else {
+        toast.success(`🎉 You won ${prize.name}!`);
+      }
     }, 4000);
   };
 

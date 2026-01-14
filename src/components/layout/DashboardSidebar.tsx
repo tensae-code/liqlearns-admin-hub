@@ -292,7 +292,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
               <BookOpen className="w-5 h-5 text-white" />
             </div>
             {!collapsed && (
-              <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>LiqLearns</span>
+              <span className={cn('text-xl font-display font-bold', getSidebarTextColor())}>{getRoleHubName(userRole)}</span>
             )}
           </Link>
           

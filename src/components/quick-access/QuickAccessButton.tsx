@@ -26,8 +26,10 @@ import { cn } from '@/lib/utils';
 import { STAT_GRADIENTS } from '@/lib/theme';
 import BrainBankModal from '@/components/brain-bank/BrainBankModal';
 import DailyBonusModal from './DailyBonusModal';
+import AIAssistantModal from './AIAssistantModal';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface QuickAccessItem {
   id: string;
@@ -144,10 +146,12 @@ interface Position {
 
 const QuickAccessButton = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [brainBankOpen, setBrainBankOpen] = useState(false);
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
+  const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (localStorage.getItem('quickAccessViewMode') as ViewMode) || 'full';
   });
@@ -209,10 +213,11 @@ const QuickAccessButton = () => {
         setDailyBonusOpen(true);
         break;
       case 'ai-chat':
-        toast.info('AI Assistant', { description: 'Opening AI chat...' });
+        setAiAssistantOpen(true);
         break;
       case 'talk-agent':
-        toast.info('Support', { description: 'Connecting to support agent...' });
+        // Navigate to support/help page
+        navigate('/help');
         break;
       case 'dm':
         navigate('/messages');
@@ -639,6 +644,9 @@ const QuickAccessButton = () => {
       
       {/* Daily Bonus Modal */}
       <DailyBonusModal open={dailyBonusOpen} onOpenChange={setDailyBonusOpen} />
+
+      {/* AI Assistant Modal */}
+      <AIAssistantModal open={aiAssistantOpen} onOpenChange={setAiAssistantOpen} />
     </>
   );
 };

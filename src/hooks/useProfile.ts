@@ -115,8 +115,25 @@ export const useProfile = () => {
     }
   };
 
+  const addXP = async (amount: number): Promise<boolean> => {
+    if (!user || !profile) return false;
+
+    const newXP = (profile.xp_points || 0) + amount;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ xp_points: newXP })
+      .eq('user_id', user.id);
+
+    if (!error) {
+      setProfile(prev => prev ? { ...prev, xp_points: newXP } : null);
+      return true;
+    }
+    return false;
+  };
+
   const age = profile ? calculateAge(profile.birthday) : null;
   const isUnderage = age !== null && age < 16;
 
-  return { profile, loading, error, updateStreak, refetch, age, isUnderage };
+  return { profile, loading, error, updateStreak, addXP, refetch, age, isUnderage };
 };
