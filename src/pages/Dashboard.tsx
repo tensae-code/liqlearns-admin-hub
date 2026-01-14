@@ -14,6 +14,7 @@ import StreakGiftAnimation from '@/components/streak/StreakGiftAnimation';
 import StatsPopupCard from '@/components/dashboard/StatsPopupCard';
 import GradingSystem from '@/components/dashboard/GradingSystem';
 import ClanPopup from '@/components/dashboard/ClanPopup';
+import AchievementsSection from '@/components/dashboard/AchievementsSection';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -370,6 +371,11 @@ const Dashboard = () => {
       {/* Grading System */}
       <div className="mt-4 md:mt-6">
         <GradingSystem />
+      </div>
+
+      {/* Achievements */}
+      <div className="mt-4 md:mt-6">
+        <AchievementsSection />
       </div>
 
       {/* Acquired Skills List */}

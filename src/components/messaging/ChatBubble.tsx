@@ -1,6 +1,14 @@
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck } from 'lucide-react';
+import { Check, CheckCheck, Trash2, MoreVertical } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ChatBubbleProps {
   message: string;
@@ -14,6 +22,8 @@ interface ChatBubbleProps {
   isRead?: boolean;
   isFirstInGroup?: boolean;
   isLastInGroup?: boolean;
+  onDelete?: () => void;
+  messageId?: string;
 }
 
 const ChatBubble = ({ 
@@ -25,7 +35,11 @@ const ChatBubble = ({
   isRead,
   isFirstInGroup = true,
   isLastInGroup = true,
+  onDelete,
+  messageId,
 }: ChatBubbleProps) => {
+  const [showOptions, setShowOptions] = useState(false);
+
   // iPhone-style bubble corners
   const getBubbleRadius = () => {
     if (isSender) {
@@ -41,12 +55,22 @@ const ChatBubble = ({
     }
   };
 
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete();
+    }
+  };
+
   return (
-    <div className={cn(
-      "flex gap-2",
-      isSender ? "flex-row-reverse" : "flex-row",
-      isLastInGroup ? "mb-3" : "mb-0.5"
-    )}>
+    <div 
+      className={cn(
+        "flex gap-2 group",
+        isSender ? "flex-row-reverse" : "flex-row",
+        isLastInGroup ? "mb-3" : "mb-0.5"
+      )}
+      onMouseEnter={() => setShowOptions(true)}
+      onMouseLeave={() => setShowOptions(false)}
+    >
       {/* Avatar space - only show on last message in group */}
       {!isSender && (
         <div className="w-8 shrink-0">
@@ -62,7 +86,7 @@ const ChatBubble = ({
       )}
       
       <div className={cn(
-        "max-w-[75%] flex flex-col",
+        "max-w-[75%] flex flex-col relative",
         isSender ? "items-end" : "items-start"
       )}>
         {/* Sender name - only show on first message in group for non-senders */}
@@ -72,36 +96,66 @@ const ChatBubble = ({
           </span>
         )}
         
-        {/* Message bubble - iPhone style */}
-        <div className={cn(
-          "px-3 py-2 relative shadow-sm",
-          getBubbleRadius(),
-          isSender 
-            ? "bg-[hsl(var(--accent))] text-accent-foreground" 
-            : "bg-muted text-foreground"
-        )}>
-          <p className="text-[15px] leading-[1.35] whitespace-pre-wrap break-words">
-            {message}
-          </p>
-          
-          {/* Inline timestamp for sender with delivery status */}
-          {isSender && isLastInGroup && (
-            <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-1">
-              <span className="text-[10px] opacity-70">{timestamp}</span>
-              {isRead !== undefined && (
-                isRead ? (
-                  <>
+        <div className="flex items-center gap-1">
+          {/* Delete option for sender messages */}
+          {isSender && showOptions && onDelete && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100">
+                  <MoreVertical className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete message
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Message bubble - iPhone style */}
+          <div className={cn(
+            "px-3 py-2 relative shadow-sm",
+            getBubbleRadius(),
+            isSender 
+              ? "bg-[hsl(var(--accent))] text-accent-foreground" 
+              : "bg-muted text-foreground"
+          )}>
+            <p className="text-[15px] leading-[1.35] whitespace-pre-wrap break-words">
+              {message}
+            </p>
+            
+            {/* Inline timestamp for sender with delivery status */}
+            {isSender && isLastInGroup && (
+              <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-1">
+                <span className="text-[10px] opacity-70">{timestamp}</span>
+                {isRead !== undefined && (
+                  isRead ? (
                     <CheckCheck className="w-3 h-3 text-blue-400" />
-                    <span className="text-[9px] opacity-60">seen</span>
-                  </>
-                ) : (
-                  <>
+                  ) : (
                     <Check className="w-3 h-3 opacity-70" />
-                    <span className="text-[9px] opacity-60">sent</span>
-                  </>
-                )
-              )}
-            </span>
+                  )
+                )}
+              </span>
+            )}
+          </div>
+
+          {/* Delete option for received messages */}
+          {!isSender && showOptions && onDelete && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100">
+                  <MoreVertical className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete for me
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
         

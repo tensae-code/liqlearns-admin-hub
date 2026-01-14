@@ -13,6 +13,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+import { toast } from 'sonner';
+import { useEffect } from 'react';
+
 const Messages = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
@@ -41,8 +44,19 @@ const Messages = () => {
   const [searchUsers, setSearchUsers] = useState<UserSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [localMessages, setLocalMessages] = useState(messages);
 
-  // When a conversation is selected
+  // Sync local messages with hook messages
+  useEffect(() => {
+    setLocalMessages(messages);
+  }, [messages]);
+
+  // Handle delete message
+  const handleDeleteMessage = (messageId: string) => {
+    setLocalMessages(prev => prev.filter(m => m.id !== messageId));
+    toast.success('Message deleted');
+  };
+
   const handleSelectConversation = async (conversation: Conversation) => {
     setCurrentConversation(conversation);
     await fetchMessages(conversation.id);
@@ -157,12 +171,13 @@ const Messages = () => {
         {(!isMobile || showChat) && (
           <ChatWindow
             conversation={currentConversation}
-            messages={messages}
+            messages={localMessages}
             currentUserId={user?.id || ''}
             onSendMessage={sendMessage}
             onBack={isMobile ? () => setShowChat(false) : undefined}
             onViewInfo={currentConversation?.type === 'group' ? () => setShowGroupInfo(true) : undefined}
             isMobile={isMobile}
+            onDeleteMessage={handleDeleteMessage}
           />
         )}
       </motion.div>

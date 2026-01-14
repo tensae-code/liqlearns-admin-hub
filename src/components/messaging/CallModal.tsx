@@ -52,17 +52,20 @@ const CallModal = ({
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Simulate call connection
+  // Simulate call connection - Wait for answer (realistic timing)
   useEffect(() => {
     if (open && !isIncoming) {
-      // Simulate ringing then connecting
+      // Stay in ringing state longer - simulating waiting for the other person to pick up
+      // Random time between 5-12 seconds to feel realistic
+      const ringDuration = Math.floor(Math.random() * 7000) + 5000;
+      
       const ringTimer = setTimeout(() => {
         setCallStatus('connecting');
-      }, 2000);
+      }, ringDuration);
 
       const connectTimer = setTimeout(() => {
         setCallStatus('connected');
-      }, 4000);
+      }, ringDuration + 2000);
 
       return () => {
         clearTimeout(ringTimer);

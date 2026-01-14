@@ -297,46 +297,42 @@ const Events = () => {
         </div>
       </motion.div>
 
-      {/* Featured Event */}
+      {/* Featured Event - Compact */}
       {featuredEvent && (
         <motion.div
-          className="mb-8 p-6 rounded-2xl bg-gradient-hero text-primary-foreground relative overflow-hidden"
+          className="mb-6 p-4 rounded-xl bg-gradient-to-r from-accent/20 to-primary/20 border border-accent/30 relative overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gold/20 rounded-full blur-3xl" />
-          <div className="relative z-10">
-            <Badge className="bg-gold text-gold-foreground mb-3">
-              <Star className="w-3 h-3 mr-1 fill-current" />
-              Featured Event
-            </Badge>
-            <h2 className="text-2xl lg:text-3xl font-display font-bold mb-2">{featuredEvent.title}</h2>
-            <p className="text-primary-foreground/80 mb-4 max-w-2xl">{featuredEvent.description}</p>
-            
-            <div className="flex flex-wrap items-center gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                <span>{calendarView === 'ethiopian' ? featuredEvent.date : featuredEvent.gregorianDate}</span>
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge className="bg-gold/20 text-gold border-gold/30">
+                  <Star className="w-3 h-3 mr-1 fill-current" />
+                  Featured
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  +{featuredEvent.xpBonus} XP
+                </Badge>
               </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                <span>{featuredEvent.time}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                <span>{featuredEvent.attendees} attending</span>
-              </div>
+              <h2 className="text-lg font-display font-bold text-foreground mb-1">{featuredEvent.title}</h2>
+              <p className="text-sm text-muted-foreground line-clamp-1">{featuredEvent.description}</p>
             </div>
-
-            <div className="flex items-center gap-4">
-              <Button size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90">
-                <Bell className="w-4 h-4 mr-2" />
-                Register Now
+            
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                <span className="hidden sm:inline">{calendarView === 'ethiopian' ? featuredEvent.date : featuredEvent.gregorianDate}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                <span>{featuredEvent.attendees}</span>
+              </div>
+              <Button size="sm" className="bg-gradient-accent text-accent-foreground">
+                <Bell className="w-3 h-3 mr-1" />
+                Register
               </Button>
-              <Badge variant="secondary" className="text-lg py-2 px-4">
-                +{featuredEvent.xpBonus} XP
-              </Badge>
             </div>
           </div>
         </motion.div>

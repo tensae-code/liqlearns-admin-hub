@@ -147,18 +147,59 @@ const skillSuggestions = [
   },
 ];
 
+interface Post {
+  id: number;
+  author: string;
+  avatar: string;
+  role?: string;
+  content: string;
+  likes: number;
+  comments: number;
+  time: string;
+  isLiked: boolean;
+  image?: string;
+  isQuestion?: boolean;
+}
+
 const Community = () => {
   const [activeTab, setActiveTab] = useState<'wall' | 'brainbank' | 'skills'>('wall');
   const [newPost, setNewPost] = useState('');
+  const [communityPosts, setCommunityPosts] = useState<Post[]>(posts);
   const [likedPosts, setLikedPosts] = useState<number[]>([2, 4]);
   const [votedSkills, setVotedSkills] = useState<number[]>([]);
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillDesc, setNewSkillDesc] = useState('');
   const [showSuggestForm, setShowSuggestForm] = useState(false);
+  const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
+  const [expandedComments, setExpandedComments] = useState<number[]>([]);
 
   const toggleLike = (id: number) => {
     setLikedPosts(prev => 
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+    );
+    // Update post likes count
+    setCommunityPosts(prev => prev.map(post => 
+      post.id === id 
+        ? { ...post, likes: likedPosts.includes(id) ? post.likes - 1 : post.likes + 1 }
+        : post
+    ));
+    toast.success(likedPosts.includes(id) ? 'Unliked' : 'Liked!');
+  };
+
+  const handleComment = (postId: number) => {
+    const comment = commentInputs[postId];
+    if (!comment?.trim()) return;
+    
+    setCommunityPosts(prev => prev.map(post =>
+      post.id === postId ? { ...post, comments: post.comments + 1 } : post
+    ));
+    setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+    toast.success('Comment added!');
+  };
+
+  const toggleComments = (postId: number) => {
+    setExpandedComments(prev => 
+      prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
     );
   };
 
@@ -190,6 +231,17 @@ const Community = () => {
     if (!newPost.trim()) {
       return;
     }
+    const newPostObj: Post = {
+      id: Date.now(),
+      author: 'You',
+      avatar: 'Y',
+      content: newPost,
+      likes: 0,
+      comments: 0,
+      time: 'Just now',
+      isLiked: false,
+    };
+    setCommunityPosts(prev => [newPostObj, ...prev]);
     toast.success('Post created!', { description: 'Your post has been shared with the community.' });
     setNewPost('');
   };
@@ -301,7 +353,7 @@ const Community = () => {
 
               {/* Posts Feed */}
               <div className="space-y-4">
-                {posts.map((post, i) => (
+                {communityPosts.map((post, i) => (
                   <motion.div
                     key={post.id}
                     className="p-5 rounded-xl bg-card border border-border hover:border-accent/30 transition-all"
@@ -353,17 +405,51 @@ const Community = () => {
                         onClick={() => toggleLike(post.id)}
                       >
                         <Heart className={`w-5 h-5 ${likedPosts.includes(post.id) ? 'fill-current' : ''}`} />
-                        <span>{post.likes + (likedPosts.includes(post.id) && !post.isLiked ? 1 : 0)}</span>
+                        <span>{post.likes}</span>
                       </button>
-                      <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors">
+                      <button 
+                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors"
+                        onClick={() => toggleComments(post.id)}
+                      >
                         <MessageCircle className="w-5 h-5" />
                         <span>{post.comments}</span>
                       </button>
-                      <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors ml-auto">
+                      <button 
+                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors ml-auto"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`Check out this post on LiqLearns!`);
+                          toast.success('Link copied!');
+                        }}
+                      >
                         <Share2 className="w-5 h-5" />
                         <span>Share</span>
                       </button>
                     </div>
+
+                    {/* Comment Section */}
+                    {expandedComments.includes(post.id) && (
+                      <div className="mt-4 pt-3 border-t border-border">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Write a comment..."
+                            value={commentInputs[post.id] || ''}
+                            onChange={(e) => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
+                            onKeyPress={(e) => e.key === 'Enter' && handleComment(post.id)}
+                            className="flex-1"
+                          />
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleComment(post.id)}
+                            disabled={!commentInputs[post.id]?.trim()}
+                          >
+                            <Send className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {post.comments > 0 ? `${post.comments} comments` : 'Be the first to comment!'}
+                        </p>
+                      </div>
+                    )}
                   </motion.div>
                 ))}
               </div>

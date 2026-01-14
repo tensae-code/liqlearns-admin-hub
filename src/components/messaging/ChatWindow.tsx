@@ -42,6 +42,7 @@ interface ChatWindowProps {
   onBack?: () => void;
   onViewInfo?: () => void;
   isMobile?: boolean;
+  onDeleteMessage?: (messageId: string) => void;
 }
 
 const ChatWindow = ({
@@ -51,7 +52,8 @@ const ChatWindow = ({
   onSendMessage,
   onBack,
   onViewInfo,
-  isMobile
+  isMobile,
+  onDeleteMessage,
 }: ChatWindowProps) => {
   const [newMessage, setNewMessage] = useState('');
   const [showCall, setShowCall] = useState(false);
@@ -226,6 +228,7 @@ const ChatWindow = ({
             {group.messages.map((msg, msgIndex) => (
               <ChatBubble
                 key={msg.id}
+                messageId={msg.id}
                 message={msg.content}
                 sender={msg.sender}
                 timestamp={msg.timestamp}
@@ -234,6 +237,7 @@ const ChatWindow = ({
                 isRead={msg.isRead}
                 isFirstInGroup={msgIndex === 0}
                 isLastInGroup={msgIndex === group.messages.length - 1}
+                onDelete={onDeleteMessage ? () => onDeleteMessage(msg.id) : undefined}
               />
             ))}
           </div>
