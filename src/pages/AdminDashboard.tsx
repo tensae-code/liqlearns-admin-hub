@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
 import { useAdminSkillSuggestions } from '@/hooks/useAdminSkillSuggestions';
@@ -10,13 +10,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import {
   Users,
   BookOpen,
   DollarSign,
-  TrendingUp,
   Search,
   Filter,
   MoreVertical,
@@ -28,19 +26,13 @@ import {
   Trash2,
   UserPlus,
   FileText,
-  BarChart3,
-  Settings,
-  Shield,
-  AlertTriangle,
   Vote,
   Lightbulb,
   Sparkles,
   Check,
   X,
   RefreshCw,
-  ChevronDown,
-  LayoutDashboard,
-  ClipboardCheck
+  ChevronDown
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -61,17 +53,13 @@ import { STAT_GRADIENTS } from '@/lib/theme';
 
 type TabType = 'overview' | 'users' | 'courses' | 'approvals' | 'skills';
 
-interface SidebarNavItem {
-  id: TabType;
-  label: string;
-  icon: React.ElementType;
-  badge?: number;
-}
-
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { profile } = useProfile();
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  
+  // Get active tab from URL query param, default to 'overview'
+  const activeTab = (searchParams.get('tab') as TabType) || 'overview';
   const [searchQuery, setSearchQuery] = useState('');
 
   const {
@@ -96,13 +84,13 @@ const AdminDashboard = () => {
     { label: 'Skill Suggestions', value: pendingCount.toString(), change: 'pending', icon: Lightbulb, gradient: STAT_GRADIENTS[3] },
   ];
 
-  const sidebarNavItems: SidebarNavItem[] = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'courses', label: 'Courses', icon: BookOpen },
-    { id: 'approvals', label: 'Approvals', icon: ClipboardCheck },
-    { id: 'skills', label: 'Skills', icon: Lightbulb, badge: pendingCount > 0 ? pendingCount : undefined },
-  ];
+  const tabLabels: Record<TabType, { label: string; description: string }> = {
+    overview: { label: 'Dashboard', description: 'Platform overview & quick stats' },
+    users: { label: 'Users', description: 'Manage platform users' },
+    courses: { label: 'Courses', description: 'Review and manage courses' },
+    approvals: { label: 'Approvals', description: 'Pending content approvals' },
+    skills: { label: 'Skills', description: 'Review skill suggestions' },
+  };
 
   const recentUsers = [
     { id: 1, name: 'Sara T.', email: 'sara@email.com', role: 'Student', status: 'active', joinDate: '2 hours ago' },
@@ -160,116 +148,22 @@ const AdminDashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex gap-6 min-h-[calc(100vh-8rem)]">
-        {/* Left Sidebar Navigation */}
-        <aside className="hidden lg:flex flex-col w-56 shrink-0">
-          <div className="bg-card rounded-xl border border-border p-3 sticky top-4">
-            <h2 className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Admin Panel
-            </h2>
-            <nav className="space-y-1 mt-2">
-              {sidebarNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      isActive
-                        ? 'bg-accent text-accent-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="flex-1 text-left">{item.label}</span>
-                    {item.badge && (
-                      <span className="text-xs bg-gold/20 text-gold px-1.5 py-0.5 rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-            
-            {/* Quick Actions */}
-            <div className="mt-6 pt-4 border-t border-border space-y-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full justify-start" 
-                onClick={() => navigate('/admin')}
-              >
-                <BarChart3 className="w-4 h-4 mr-2" /> Reports
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full justify-start" 
-                onClick={() => navigate('/settings')}
-              >
-                <Settings className="w-4 h-4 mr-2" /> Settings
-              </Button>
-            </div>
+      <div className="space-y-4 md:space-y-6 pb-24 lg:pb-0">
+        {/* Header */}
+        <motion.div
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div>
+            <h1 className="text-xl md:text-3xl font-display font-bold text-foreground">
+              {tabLabels[activeTab]?.label || 'Dashboard'}
+            </h1>
+            <p className="text-sm md:text-base text-muted-foreground">
+              {tabLabels[activeTab]?.description}
+            </p>
           </div>
-        </aside>
-
-        {/* Mobile Tab Navigation */}
-        <div className="lg:hidden fixed bottom-20 left-4 right-4 z-40">
-          <div className="flex gap-1 p-1 bg-card/95 backdrop-blur-sm rounded-xl border border-border shadow-lg overflow-x-auto">
-            {sidebarNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                    isActive
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="truncate">{item.label}</span>
-                  {item.badge && (
-                    <span className="absolute -top-1 -right-1 text-[10px] bg-gold text-gold-foreground w-4 h-4 rounded-full flex items-center justify-center">
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <main className="flex-1 space-y-4 md:space-y-6 pb-24 lg:pb-0">
-          {/* Header */}
-          <motion.div
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div>
-              <h1 className="text-xl md:text-3xl font-display font-bold text-foreground">
-                {sidebarNavItems.find(item => item.id === activeTab)?.label || 'Dashboard'}
-              </h1>
-              <p className="text-sm md:text-base text-muted-foreground">
-                {activeTab === 'overview' && 'Platform overview & quick stats'}
-                {activeTab === 'users' && 'Manage platform users'}
-                {activeTab === 'courses' && 'Review and manage courses'}
-                {activeTab === 'approvals' && 'Pending content approvals'}
-                {activeTab === 'skills' && 'Review skill suggestions'}
-              </p>
-            </div>
-            <div className="flex gap-2 lg:hidden">
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => navigate('/courses')}>
-                <BookOpen className="w-4 h-4 mr-1 md:mr-2" /> <span className="hidden sm:inline">Courses</span>
-              </Button>
-            </div>
-          </motion.div>
+        </motion.div>
 
           {/* Stats Grid - Only show on overview */}
           {activeTab === 'overview' && (
@@ -307,7 +201,7 @@ const AdminDashboard = () => {
               >
                 <div className="p-4 border-b border-border flex items-center justify-between">
                   <h2 className="font-display font-semibold text-foreground">Recent Users</h2>
-                  <Button variant="ghost" size="sm" onClick={() => setActiveTab('users')}>View All</Button>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/admin?tab=users')}>View All</Button>
                 </div>
                 <div className="divide-y divide-border">
                   {recentUsers.map((user) => (
@@ -346,7 +240,7 @@ const AdminDashboard = () => {
                       {pendingApprovals.length}
                     </span>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setActiveTab('approvals')}>View All</Button>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/admin?tab=approvals')}>View All</Button>
                 </div>
                 <div className="divide-y divide-border">
                   {pendingApprovals.map((item) => (
@@ -822,8 +716,7 @@ const AdminDashboard = () => {
               )}
             </motion.div>
           )}
-        </main>
-      </div>
+        </div>
     </DashboardLayout>
   );
 };
