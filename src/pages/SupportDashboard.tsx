@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
+import { useSupportTickets, SupportTicket } from '@/hooks/useSupportTickets';
+import { useMessaging } from '@/hooks/useMessaging';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -28,47 +31,31 @@ import {
   Phone,
   Settings,
   Send,
-  X
+  RefreshCw
 } from 'lucide-react';
-
-interface Ticket {
-  id: string;
-  subject: string;
-  user: string;
-  email: string;
-  priority: string;
-  status: string;
-  time: string;
-  description?: string;
-}
-
 import { STAT_GRADIENTS } from '@/lib/theme';
+import { formatDistanceToNow } from 'date-fns';
 
 const SupportDashboard = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
-  const [activeTab, setActiveTab] = useState<'all' | 'open' | 'pending' | 'resolved'>('all');
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const { tickets, loading, stats, updateTicketStatus, refresh } = useSupportTickets(true);
+  const { startDM } = useMessaging();
+  const [activeTab, setActiveTab] = useState<'all' | 'open' | 'in_progress' | 'resolved'>('all');
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [reply, setReply] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const stats = [
-    { label: 'Open Tickets', value: '23', icon: MessageSquare, gradient: STAT_GRADIENTS[3] },
-    { label: 'Pending', value: '8', icon: Clock, gradient: STAT_GRADIENTS[1] },
-    { label: 'Resolved Today', value: '45', icon: CheckCircle2, gradient: STAT_GRADIENTS[2] },
-    { label: 'Avg. Response', value: '2.5h', icon: HeadphonesIcon, gradient: STAT_GRADIENTS[0] },
-  ];
-
-  const tickets: Ticket[] = [
-    { id: 'TK-1234', subject: 'Cannot access course materials', user: 'Alemayehu M.', email: 'alem@email.com', priority: 'high', status: 'open', time: '5 min ago', description: 'I purchased the Advanced Amharic course but I cannot access any of the video lessons. When I click on them, it shows a loading spinner but never loads.' },
-    { id: 'TK-1233', subject: 'Payment issue with subscription', user: 'Sara T.', email: 'sara@email.com', priority: 'high', status: 'open', time: '15 min ago', description: 'My credit card was charged twice for my monthly subscription. Please help me get a refund for the duplicate charge.' },
-    { id: 'TK-1232', subject: 'How to download certificates?', user: 'Dawit B.', email: 'dawit@email.com', priority: 'low', status: 'pending', time: '1 hour ago', description: 'I completed the Basic Amharic course but I cannot find where to download my certificate. Can you please guide me?' },
-    { id: 'TK-1231', subject: 'Video not playing on mobile', user: 'Tigist K.', email: 'tigist@email.com', priority: 'medium', status: 'open', time: '2 hours ago', description: 'Videos work fine on my laptop but when I try to watch on my Android phone, they just show a black screen.' },
-    { id: 'TK-1230', subject: 'Request for course refund', user: 'Yonas G.', email: 'yonas@email.com', priority: 'high', status: 'pending', time: '3 hours ago', description: 'I would like to request a full refund for the Ethiopian History course. I realized it is not what I was looking for.' },
-    { id: 'TK-1229', subject: 'Quiz score not updating', user: 'Hanna A.', email: 'hanna@email.com', priority: 'medium', status: 'resolved', time: '5 hours ago', description: 'I completed the quiz for Lesson 5 but my score is still showing as 0%. I definitely got most questions correct.' },
+  const statCards = [
+    { label: 'Open Tickets', value: stats.open.toString(), icon: MessageSquare, gradient: STAT_GRADIENTS[3] },
+    { label: 'In Progress', value: stats.inProgress.toString(), icon: Clock, gradient: STAT_GRADIENTS[1] },
+    { label: 'Resolved', value: stats.resolved.toString(), icon: CheckCircle2, gradient: STAT_GRADIENTS[2] },
+    { label: 'Total', value: stats.total.toString(), icon: HeadphonesIcon, gradient: STAT_GRADIENTS[0] },
   ];
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
+      case 'urgent': return 'bg-destructive text-destructive-foreground';
       case 'high': return 'bg-destructive/10 text-destructive border-destructive/30';
       case 'medium': return 'bg-gold/10 text-gold border-gold/30';
       case 'low': return 'bg-success/10 text-success border-success/30';
@@ -79,28 +66,57 @@ const SupportDashboard = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'bg-accent/10 text-accent';
-      case 'pending': return 'bg-gold/10 text-gold';
+      case 'in_progress': return 'bg-gold/10 text-gold';
       case 'resolved': return 'bg-success/10 text-success';
+      case 'closed': return 'bg-muted text-muted-foreground';
       default: return 'bg-muted text-muted-foreground';
     }
   };
 
-  const filteredTickets = activeTab === 'all' ? tickets : tickets.filter(t => t.status === activeTab);
+  const filteredTickets = tickets.filter(t => {
+    const matchesTab = activeTab === 'all' || t.status === activeTab;
+    const matchesSearch = !searchQuery || 
+      t.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.user?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTab && matchesSearch;
+  });
 
-  const handleViewTicket = (ticket: Ticket) => {
+  const handleViewTicket = (ticket: SupportTicket) => {
     setSelectedTicket(ticket);
   };
 
-  const handleSendReply = () => {
-    if (!reply.trim()) return;
-    toast.success('Reply sent!', { description: `Response sent to ${selectedTicket?.user}` });
+  const handleSendReply = async () => {
+    if (!reply.trim() || !selectedTicket) return;
+    
+    // For now, just show success - in a real app, you'd send this via email or in-app messaging
+    toast.success('Reply sent!', { description: `Response sent to ${selectedTicket.user?.full_name}` });
     setReply('');
+    
+    // Update status to in_progress if it was open
+    if (selectedTicket.status === 'open') {
+      await updateTicketStatus(selectedTicket.id, 'in_progress');
+    }
+    
     setSelectedTicket(null);
   };
 
-  const handleUpdateStatus = (status: string) => {
-    toast.success('Status updated', { description: `Ticket ${selectedTicket?.id} marked as ${status}` });
+  const handleUpdateStatus = async (status: 'open' | 'in_progress' | 'resolved' | 'closed') => {
+    if (!selectedTicket) return;
+    await updateTicketStatus(selectedTicket.id, status);
     setSelectedTicket(null);
+  };
+
+  const handleStartDM = async (userId: string) => {
+    await startDM(userId);
+    navigate('/messages');
+  };
+
+  const formatTime = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch {
+      return dateString;
+    }
   };
 
   return (
@@ -119,8 +135,8 @@ const SupportDashboard = () => {
             <p className="text-muted-foreground text-sm md:text-base">Manage customer tickets and inquiries</p>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" className="w-fit" onClick={() => navigate('/support')}>
-              <MessageSquare className="w-4 h-4 mr-2" /> New Ticket
+            <Button size="sm" variant="outline" onClick={refresh}>
+              <RefreshCw className="w-4 h-4 mr-2" /> Refresh
             </Button>
             <Button variant="outline" size="icon" onClick={() => navigate('/settings')}>
               <Settings className="w-4 h-4" />
@@ -128,9 +144,9 @@ const SupportDashboard = () => {
           </div>
         </motion.div>
 
-        {/* Stats Grid - Colorful Gradient Cards */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {stats.map((stat, i) => (
+          {statCards.map((stat, i) => (
             <motion.div
               key={stat.label}
               className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
@@ -157,7 +173,12 @@ const SupportDashboard = () => {
           <div className="p-3 md:p-4 border-b border-border flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Search tickets..." className="pl-10" />
+              <Input 
+                placeholder="Search tickets..." 
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm">
@@ -169,7 +190,7 @@ const SupportDashboard = () => {
           {/* Tabs */}
           <div className="p-3 md:p-4 border-b border-border overflow-x-auto">
             <div className="flex gap-2">
-              {(['all', 'open', 'pending', 'resolved'] as const).map((tab) => (
+              {(['all', 'open', 'in_progress', 'resolved'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -179,7 +200,7 @@ const SupportDashboard = () => {
                       : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
                 >
-                  {tab}
+                  {tab.replace('_', ' ')}
                 </button>
               ))}
             </div>
@@ -187,42 +208,69 @@ const SupportDashboard = () => {
 
           {/* Tickets List */}
           <div className="divide-y divide-border">
-            {filteredTickets.map((ticket) => (
-              <div key={ticket.id} className="p-3 md:p-4 hover:bg-muted/30 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-accent" />
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-10 h-10 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-48 mb-2" />
+                      <Skeleton className="h-3 w-32" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-xs text-muted-foreground">{ticket.id}</span>
-                        <Badge className={getPriorityColor(ticket.priority)}>
-                          {ticket.priority}
-                        </Badge>
-                        <Badge className={getStatusColor(ticket.status)}>
-                          {ticket.status}
-                        </Badge>
-                      </div>
-                      <p className="font-medium text-foreground truncate">{ticket.subject}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <span>{ticket.user}</span>
-                        <span>•</span>
-                        <span>{ticket.time}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-auto">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Mail className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleViewTicket(ticket)}>
-                      View <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
                   </div>
                 </div>
+              ))
+            ) : filteredTickets.length === 0 ? (
+              <div className="p-8 text-center">
+                <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No tickets found</p>
               </div>
-            ))}
+            ) : (
+              filteredTickets.map((ticket) => (
+                <div key={ticket.id} className="p-3 md:p-4 hover:bg-muted/30 transition-colors">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                        <User className="w-5 h-5 text-accent" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <Badge className={getPriorityColor(ticket.priority)}>
+                            {ticket.priority}
+                          </Badge>
+                          <Badge className={getStatusColor(ticket.status)}>
+                            {ticket.status.replace('_', ' ')}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">{ticket.category}</span>
+                        </div>
+                        <p className="font-medium text-foreground truncate">{ticket.subject}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                          <span>{ticket.user?.full_name || 'Unknown'}</span>
+                          <span>•</span>
+                          <span>{formatTime(ticket.created_at)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-auto">
+                      {ticket.user && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleStartDM(ticket.user!.id)}
+                          title="Direct Message"
+                        >
+                          <Mail className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" onClick={() => handleViewTicket(ticket)}>
+                        View <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </motion.div>
 
@@ -256,18 +304,18 @@ const SupportDashboard = () => {
           >
             <AlertCircle className="w-8 h-8 text-destructive mb-3" />
             <h3 className="font-medium text-foreground">Escalations</h3>
-            <p className="text-sm text-muted-foreground">3 urgent issues</p>
+            <p className="text-sm text-muted-foreground">{tickets.filter(t => t.priority === 'urgent').length} urgent issues</p>
           </motion.div>
           <motion.div
             className="bg-gradient-to-br from-emerald-500 to-teal-400 rounded-xl p-4 cursor-pointer text-white"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45 }}
-            onClick={() => toast.info('Live Chat', { description: 'Opening live chat...' })}
+            onClick={() => navigate('/messages')}
           >
             <MessageSquare className="w-8 h-8 mb-3" />
             <h3 className="font-medium">Live Chat</h3>
-            <p className="text-sm opacity-80">12 active conversations</p>
+            <p className="text-sm opacity-80">View messages</p>
           </motion.div>
         </div>
 
@@ -276,7 +324,7 @@ const SupportDashboard = () => {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-3">
-                <span className="text-muted-foreground text-sm">{selectedTicket?.id}</span>
+                <span className="text-muted-foreground text-sm">{selectedTicket?.category}</span>
                 {selectedTicket?.priority && (
                   <Badge className={getPriorityColor(selectedTicket.priority)}>
                     {selectedTicket.priority}
@@ -284,7 +332,7 @@ const SupportDashboard = () => {
                 )}
                 {selectedTicket?.status && (
                   <Badge className={getStatusColor(selectedTicket.status)}>
-                    {selectedTicket.status}
+                    {selectedTicket.status.replace('_', ' ')}
                   </Badge>
                 )}
               </DialogTitle>
@@ -296,18 +344,18 @@ const SupportDashboard = () => {
                   <h3 className="font-semibold text-lg text-foreground">{selectedTicket.subject}</h3>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                     <User className="w-4 h-4" />
-                    <span>{selectedTicket.user}</span>
+                    <span>{selectedTicket.user?.full_name || 'Unknown'}</span>
                     <span>•</span>
                     <Mail className="w-4 h-4" />
-                    <span>{selectedTicket.email}</span>
+                    <span>{selectedTicket.user?.email || 'No email'}</span>
                     <span>•</span>
                     <Clock className="w-4 h-4" />
-                    <span>{selectedTicket.time}</span>
+                    <span>{formatTime(selectedTicket.created_at)}</span>
                   </div>
                 </div>
 
                 <div className="p-4 bg-muted/30 rounded-lg border border-border">
-                  <p className="text-foreground">{selectedTicket.description}</p>
+                  <p className="text-foreground whitespace-pre-wrap">{selectedTicket.description}</p>
                 </div>
 
                 <div className="space-y-3">
@@ -322,11 +370,11 @@ const SupportDashboard = () => {
 
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleUpdateStatus('pending')}>
-                      <Clock className="w-4 h-4 mr-1" /> Mark Pending
+                    <Button variant="outline" size="sm" onClick={() => handleUpdateStatus('in_progress')}>
+                      <Clock className="w-4 h-4 mr-1" /> In Progress
                     </Button>
                     <Button variant="outline" size="sm" className="text-success" onClick={() => handleUpdateStatus('resolved')}>
-                      <CheckCircle2 className="w-4 h-4 mr-1" /> Mark Resolved
+                      <CheckCircle2 className="w-4 h-4 mr-1" /> Resolved
                     </Button>
                   </div>
                   <Button onClick={handleSendReply} disabled={!reply.trim()}>
