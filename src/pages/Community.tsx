@@ -365,15 +365,18 @@ const Community = () => {
                     <Textarea
                       placeholder="Share something with the community..."
                       value={newPost}
-                      onChange={(e) => setNewPost(e.target.value)}
+                      onChange={(e) => {
+                        console.log('Textarea change:', e.target.value);
+                        setNewPost(e.target.value);
+                      }}
                       className="min-h-[80px] mb-3"
                     />
                     <div className="flex items-center justify-between">
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button type="button" variant="ghost" size="icon">
                           <Image className="w-5 h-5 text-muted-foreground" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button type="button" variant="ghost" size="icon">
                           <Smile className="w-5 h-5 text-muted-foreground" />
                         </Button>
                       </div>
