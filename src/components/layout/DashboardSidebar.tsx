@@ -187,23 +187,28 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
 
   // Check if current path matches (including query params for admin tabs)
   const isItemActive = (itemPath: string) => {
+    const currentParams = new URLSearchParams(location.search);
+    const currentTab = currentParams.get('tab');
+    
     // Check for query param based routes (e.g., /admin?tab=users)
     if (itemPath.includes('?')) {
       const [basePath, query] = itemPath.split('?');
       const params = new URLSearchParams(query);
       const tabValue = params.get('tab');
-      const currentParams = new URLSearchParams(location.search);
-      const currentTab = currentParams.get('tab');
       
       if (basePath === location.pathname) {
-        // If no tab in URL and itemPath has no tab, it's the default/overview
-        if (!tabValue && !currentTab) return true;
         return tabValue === currentTab;
       }
       return false;
     }
-    // Exact match for non-query routes
-    return location.pathname === itemPath;
+    
+    // For base paths without query params (like /teacher for Dashboard)
+    // Only match if there's no tab in the current URL
+    if (location.pathname === itemPath) {
+      return !currentTab;
+    }
+    
+    return false;
   };
 
   // iOS glassmorphism effect for nav items
