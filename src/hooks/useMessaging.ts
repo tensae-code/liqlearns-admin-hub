@@ -499,12 +499,12 @@ export const useMessaging = () => {
     };
   }, [user]); // Remove fetchConversations and fetchMessages from dependencies
 
-  // Initial fetch - only run once when user changes
+  // Initial fetch - run when both user AND profile are ready
   useEffect(() => {
-    if (user) {
+    if (user && profile) {
       fetchConversations();
     }
-  }, [user?.id]); // Only depend on user.id, not the whole user object or fetchConversations
+  }, [user?.id, profile?.id]); // Depend on both user.id and profile.id
 
   return {
     conversations,
