@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
+import CourseCategoryManager from '@/components/ceo/CourseCategoryManager';
 import {
   Users,
   BookOpen,
@@ -18,7 +20,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   FileText,
-  Settings
+  Settings,
+  Smile,
+  FolderTree
 } from 'lucide-react';
 
 import { STAT_GRADIENTS } from '@/lib/theme';
@@ -26,6 +30,8 @@ import { STAT_GRADIENTS } from '@/lib/theme';
 const CEODashboard = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
+  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
+  
   const stats = [
     { label: 'Total Revenue', value: '$2.4M', change: '+28%', isUp: true, icon: DollarSign, gradient: STAT_GRADIENTS[2] },
     { label: 'Active Users', value: '45,280', change: '+15%', isUp: true, icon: Users, gradient: STAT_GRADIENTS[0] },
@@ -62,7 +68,11 @@ const CEODashboard = () => {
             </h1>
             <p className="text-muted-foreground text-sm md:text-base">Company overview and strategic metrics</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => setCategoryManagerOpen(true)}>
+              <FolderTree className="w-4 h-4 mr-1 md:mr-2" /> 
+              <span className="hidden sm:inline">Categories</span>
+            </Button>
             <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => navigate('/ceo/reports')}>
               <FileText className="w-4 h-4 mr-1 md:mr-2" /> 
               <span className="hidden sm:inline">Reports</span>
@@ -235,6 +245,12 @@ const CEODashboard = () => {
           </motion.div>
         </div>
       </div>
+      
+      {/* Category Manager Modal */}
+      <CourseCategoryManager 
+        open={categoryManagerOpen} 
+        onOpenChange={setCategoryManagerOpen} 
+      />
     </DashboardLayout>
   );
 };
