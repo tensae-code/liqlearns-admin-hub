@@ -10,6 +10,7 @@ import FindGroupsModal from '@/components/messaging/FindGroupsModal';
 import MessageRequestsModal from '@/components/messaging/MessageRequestsModal';
 import CreateChannelModal from '@/components/messaging/CreateChannelModal';
 import ManageMemberModal from '@/components/messaging/ManageMemberModal';
+import AddMembersModal from '@/components/messaging/AddMembersModal';
 import useMessaging from '@/hooks/useMessaging';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -45,6 +46,7 @@ const Messages = () => {
   const [showMessageRequests, setShowMessageRequests] = useState(false);
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [showManageMember, setShowManageMember] = useState(false);
+  const [showAddMembers, setShowAddMembers] = useState(false);
   const [selectedMember, setSelectedMember] = useState<GroupMember | null>(null);
   const [searchUsers, setSearchUsers] = useState<UserSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -219,7 +221,7 @@ const Messages = () => {
             setShowGroupInfo(false);
           }}
           onAddMember={() => {
-            // TODO: Implement add member search
+            setShowAddMembers(true);
           }}
           onCreateChannel={() => {
             setShowCreateChannel(true);
@@ -275,6 +277,20 @@ const Messages = () => {
           groupId={currentConversation.id.replace('group_', '')}
           currentUserRole={getCurrentUserRole()}
           onMemberUpdated={() => {
+            const groupId = currentConversation.id.replace('group_', '');
+            fetchGroupDetails(groupId);
+          }}
+        />
+      )}
+
+      {/* Add Members Modal */}
+      {currentConversation?.type === 'group' && (
+        <AddMembersModal
+          open={showAddMembers}
+          onOpenChange={setShowAddMembers}
+          groupId={currentConversation.id.replace('group_', '')}
+          inviteLink={`${window.location.origin}/join/${currentConversation.id.replace('group_', '')}`}
+          onMemberAdded={() => {
             const groupId = currentConversation.id.replace('group_', '');
             fetchGroupDetails(groupId);
           }}

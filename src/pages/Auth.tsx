@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { 
   BookOpen, 
   Mail, 
@@ -29,13 +30,19 @@ import {
   Shield,
   Check,
   Users,
-  KeyRound
+  KeyRound,
+  Paperclip
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 type Role = 'student' | 'teacher' | 'parent' | 'support' | 'admin';
+type TeacherType = 'individual' | 'enterprise';
 
 interface FormData {
   role: Role;
+  teacherType: TeacherType | null;
+  enterpriseOrgName: string;
+  enterpriseDocsFile: File | null;
   fullName: string;
   username: string;
   email: string;
@@ -64,8 +71,12 @@ const Auth = () => {
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [sponsorStatus, setSponsorStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+  const [uploadingDocs, setUploadingDocs] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     role: 'student',
+    teacherType: null,
+    enterpriseOrgName: '',
+    enterpriseDocsFile: null,
     fullName: '',
     username: '',
     email: '',
@@ -91,16 +102,17 @@ const Auth = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (user && !redirecting) {
-      setRedirecting(true);
-      navigate(getDashboardPath());
+  // Determine steps based on role
+  const getSteps = () => {
+    if (formData.role === 'teacher') {
+      return ['Role', 'Teacher Type', 'Details', 'Policies', 'Complete'];
     }
-  }, [user, navigate, getDashboardPath, redirecting]);
+    return ['Role', 'Details', 'Policies', 'Complete'];
+  };
 
-  const steps = isSignUp ? ['Role', 'Details', 'Policies', 'Complete'] : ['Login'];
+  const steps = isSignUp ? getSteps() : ['Login'];
   
-  const updateFormData = (key: keyof FormData, value: string | boolean) => {
+  const updateFormData = (key: keyof FormData, value: string | boolean | File | null) => {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
@@ -264,14 +276,20 @@ const Auth = () => {
   };
 
   const canProceed = () => {
-    switch (currentStep) {
-      case 0: return formData.role;
-      case 1: 
+    const stepName = steps[currentStep];
+    switch (stepName) {
+      case 'Role': return formData.role;
+      case 'Teacher Type': 
+        if (formData.teacherType === 'enterprise') {
+          return formData.enterpriseOrgName && formData.enterpriseDocsFile;
+        }
+        return formData.teacherType;
+      case 'Details': 
         const hasBasics = formData.fullName && formData.username && formData.email && formData.password.length >= 6 && formData.birthday;
         const usernameOk = usernameStatus === 'available';
         const sponsorOk = !formData.sponsorUsername || sponsorStatus === 'valid';
         return hasBasics && usernameOk && sponsorOk;
-      case 2: return formData.acceptTerms && formData.acceptPrivacy;
+      case 'Policies': return formData.acceptTerms && formData.acceptPrivacy;
       default: return true;
     }
   };
@@ -400,6 +418,147 @@ const Auth = () => {
           </button>
         ))}
       </div>
+    </div>
+  );
+
+  const renderTeacherTypeSelection = () => (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground text-center mb-6">
+        Choose how you'll use LiqLearns
+      </p>
+      
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => updateFormData('teacherType', 'individual')}
+          className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+            formData.teacherType === 'individual'
+              ? 'border-accent bg-accent/5 shadow-glow'
+              : 'border-border hover:border-accent/50'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              formData.teacherType === 'individual' ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground'
+            }`}>
+              <User className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground">Individual Teacher</h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                Teach independently, create your own courses, and build your personal brand
+              </p>
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => updateFormData('teacherType', 'enterprise')}
+          className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+            formData.teacherType === 'enterprise'
+              ? 'border-accent bg-accent/5 shadow-glow'
+              : 'border-border hover:border-accent/50'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+              formData.teacherType === 'enterprise' ? 'bg-gold/20 text-gold' : 'bg-muted text-muted-foreground'
+            }`}>
+              <Briefcase className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground">Enterprise Teacher</h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                Represent an organization, manage team courses, and access enterprise features like Clans
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge className="bg-gold/20 text-gold text-[10px]">
+                  <Shield className="w-3 h-3 mr-1" />
+                  CEO Approval Required
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      {/* Enterprise Details */}
+      {formData.teacherType === 'enterprise' && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="space-y-4 pt-4 border-t border-border mt-4"
+        >
+          <div>
+            <Label htmlFor="orgName">Organization Name</Label>
+            <div className="relative mt-1">
+              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                id="orgName"
+                type="text"
+                placeholder="Your School / Company Name"
+                value={formData.enterpriseOrgName}
+                onChange={(e) => updateFormData('enterpriseOrgName', e.target.value)}
+                className="pl-10"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="entDocs">Verification Documents</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Upload proof of your organization (business license, school ID, etc.)
+            </p>
+            <div className="mt-1">
+              <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                formData.enterpriseDocsFile ? 'border-success bg-success/5' : 'border-border hover:border-accent/50'
+              }`}>
+                <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                  {formData.enterpriseDocsFile ? (
+                    <>
+                      <Check className="w-6 h-6 text-success mb-1" />
+                      <p className="text-xs text-success font-medium">{formData.enterpriseDocsFile.name}</p>
+                      <p className="text-[10px] text-muted-foreground">Click to change</p>
+                    </>
+                  ) : (
+                    <>
+                      <Paperclip className="w-6 h-6 text-muted-foreground mb-1" />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="text-accent">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">PDF, PNG, JPG (max 10MB)</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  id="entDocs"
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 10 * 1024 * 1024) {
+                        toast({ title: 'File must be less than 10MB', variant: 'destructive' });
+                        return;
+                      }
+                      updateFormData('enterpriseDocsFile', file);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-lg bg-gold/10 border border-gold/30">
+            <p className="text-xs text-foreground">
+              ⏳ <strong>Pending Approval:</strong> Your enterprise account will be reviewed by our CEO team. You can start as an individual teacher while waiting.
+            </p>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 
@@ -635,11 +794,13 @@ const Auth = () => {
   );
 
   const renderSignupStep = () => {
-    switch (currentStep) {
-      case 0: return renderRoleSelection();
-      case 1: return renderDetailsForm();
-      case 2: return renderPolicies();
-      case 3: return renderComplete();
+    const stepName = steps[currentStep];
+    switch (stepName) {
+      case 'Role': return renderRoleSelection();
+      case 'Teacher Type': return renderTeacherTypeSelection();
+      case 'Details': return renderDetailsForm();
+      case 'Policies': return renderPolicies();
+      case 'Complete': return renderComplete();
       default: return null;
     }
   };
