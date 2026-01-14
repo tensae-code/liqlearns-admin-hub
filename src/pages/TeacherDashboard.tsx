@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -109,6 +109,18 @@ const TeacherDashboard = () => {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [gradeValue, setGradeValue] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
+
+  // Listen for custom event from navbar to open create course modal
+  useEffect(() => {
+    const handleOpenCreateCourseModal = () => {
+      setCreateCourseOpen(true);
+    };
+    
+    window.addEventListener('openCreateCourseModal', handleOpenCreateCourseModal);
+    return () => {
+      window.removeEventListener('openCreateCourseModal', handleOpenCreateCourseModal);
+    };
+  }, []);
 
   const stats = [
     { label: 'Total Students', value: '1,248', icon: Users, gradient: STAT_GRADIENTS[0], change: '+12%' },

@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { STAT_GRADIENTS } from '@/lib/theme';
+import AddTeamMemberModal from '@/components/ceo/AddTeamMemberModal';
+import EditDepartmentModal from '@/components/ceo/EditDepartmentModal';
 import {
   Users,
   ArrowLeft,
@@ -17,13 +20,36 @@ import {
   TrendingUp,
   UserCheck,
   UserPlus,
-  Clock
+  Clock,
+  Edit,
+  Settings
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+interface Department {
+  name: string;
+  head: string;
+  headEmail: string;
+  employees: number;
+  growth: string;
+  budget?: string;
+  members: Array<{ name: string; role: string; avatar: string }>;
+}
 
 const CEOTeam = () => {
   const navigate = useNavigate();
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [editDeptOpen, setEditDeptOpen] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const teamStats = [
     { label: 'Total Employees', value: '86', icon: Users, gradient: STAT_GRADIENTS[0] },
@@ -32,13 +58,14 @@ const CEOTeam = () => {
     { label: 'Avg. Tenure', value: '2.3 yrs', icon: Clock, gradient: STAT_GRADIENTS[3] },
   ];
 
-  const departments = [
+  const departments: Department[] = [
     { 
       name: 'Engineering', 
       head: 'Dawit M.', 
       headEmail: 'dawit@liqlearns.com',
       employees: 24, 
       growth: '+3',
+      budget: '$450K',
       members: [
         { name: 'Abel T.', role: 'Senior Developer', avatar: 'AT' },
         { name: 'Hana G.', role: 'Frontend Lead', avatar: 'HG' },
@@ -51,6 +78,7 @@ const CEOTeam = () => {
       headEmail: 'sara@liqlearns.com',
       employees: 12, 
       growth: '+2',
+      budget: '$180K',
       members: [
         { name: 'Meron H.', role: 'Content Manager', avatar: 'MH' },
         { name: 'Daniel B.', role: 'Social Media', avatar: 'DB' },
@@ -62,6 +90,7 @@ const CEOTeam = () => {
       headEmail: 'tigist@liqlearns.com',
       employees: 18, 
       growth: '+4',
+      budget: '$220K',
       members: [
         { name: 'Bethel M.', role: 'Course Creator', avatar: 'BM' },
         { name: 'Solomon A.', role: 'Video Editor', avatar: 'SA' },
@@ -74,6 +103,7 @@ const CEOTeam = () => {
       headEmail: 'yonas@liqlearns.com',
       employees: 8, 
       growth: '+1',
+      budget: '$95K',
       members: [
         { name: 'Kidus L.', role: 'Support Lead', avatar: 'KL' },
         { name: 'Marta S.', role: 'Support Agent', avatar: 'MS' },
@@ -85,6 +115,7 @@ const CEOTeam = () => {
       headEmail: 'abebe@liqlearns.com',
       employees: 6, 
       growth: '0',
+      budget: '$120K',
       members: [
         { name: 'Eyob T.', role: 'Accountant', avatar: 'ET' },
       ]
@@ -95,19 +126,30 @@ const CEOTeam = () => {
       headEmail: 'meseret@liqlearns.com',
       employees: 4, 
       growth: '+1',
+      budget: '$80K',
       members: [
         { name: 'Liya N.', role: 'Recruiter', avatar: 'LN' },
       ]
     },
   ];
 
-  const handleAddMember = () => {
-    toast.info('Add team member feature coming soon!');
-  };
+  const allHeads = departments.map(d => ({ name: d.head, email: d.headEmail }));
 
   const handleContactHead = (email: string) => {
+    window.location.href = `mailto:${email}`;
     toast.success(`Opening email to ${email}`);
   };
+
+  const handleEditDepartment = (dept: Department) => {
+    setSelectedDepartment(dept);
+    setEditDeptOpen(true);
+  };
+
+  const filteredDepartments = departments.filter(dept => 
+    dept.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    dept.head.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    dept.members.some(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   return (
     <DashboardLayout>
@@ -130,7 +172,7 @@ const CEOTeam = () => {
               <p className="text-muted-foreground">Manage your organization's team members</p>
             </div>
           </div>
-          <Button onClick={handleAddMember}>
+          <Button onClick={() => setAddMemberOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add Team Member
           </Button>
@@ -158,7 +200,12 @@ const CEOTeam = () => {
         <div className="flex gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search team members..." className="pl-10" />
+            <Input 
+              placeholder="Search team members..." 
+              className="pl-10" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
           <Button variant="outline">
             <Filter className="w-4 h-4 mr-2" />
@@ -168,7 +215,7 @@ const CEOTeam = () => {
 
         {/* Departments Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {departments.map((dept, i) => (
+          {filteredDepartments.map((dept, i) => (
             <motion.div
               key={dept.name}
               className="bg-card border border-border rounded-xl overflow-hidden"
@@ -183,9 +230,31 @@ const CEOTeam = () => {
                     <Building2 className="w-5 h-5 text-primary" />
                     <h3 className="font-semibold text-foreground">{dept.name}</h3>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditDepartment(dept)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Department
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setSelectedDepartment(dept);
+                        setAddMemberOpen(true);
+                      }}>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Add Member
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => toast.info('Department settings')}>
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{dept.employees} members</span>
@@ -245,6 +314,19 @@ const CEOTeam = () => {
           ))}
         </div>
       </div>
+
+      {/* Modals */}
+      <AddTeamMemberModal
+        open={addMemberOpen}
+        onOpenChange={setAddMemberOpen}
+        departments={departments}
+      />
+      <EditDepartmentModal
+        open={editDeptOpen}
+        onOpenChange={setEditDeptOpen}
+        department={selectedDepartment}
+        allHeads={allHeads}
+      />
     </DashboardLayout>
   );
 };

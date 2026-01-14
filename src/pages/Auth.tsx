@@ -236,6 +236,7 @@ const Auth = () => {
     { email: 'student@liqlearns.com', role: 'Student' },
     { email: 'teacher@liqlearns.com', role: 'Teacher' },
     { email: 'support@liqlearns.com', role: 'Support' },
+    { email: 'parent@liqlearns.com', role: 'Parent' },
   ] : [];
 
   const handleSignUp = async () => {

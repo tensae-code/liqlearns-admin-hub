@@ -218,7 +218,10 @@ const TeacherNavbar = () => {
             variant="ghost"
             size="sm"
             className="hidden md:flex text-orange-800 hover:bg-orange-400/30"
-            onClick={() => navigate('/teacher')}
+            onClick={() => {
+              // Dispatch custom event to open CreateCourseModal from TeacherDashboard
+              window.dispatchEvent(new CustomEvent('openCreateCourseModal'));
+            }}
           >
             <Plus className="w-4 h-4 mr-2" />
             New Course
