@@ -102,7 +102,7 @@ const AdminNavbar = () => {
                     <BookOpen className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <span className="text-xl font-display font-bold text-white">LiqLearns</span>
+                    <span className="text-xl font-display font-bold text-white">Admin Hub</span>
                     <p className="text-xs text-orange-200">Admin Panel</p>
                   </div>
                 </SheetTitle>
@@ -187,7 +187,7 @@ const AdminNavbar = () => {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-white" />
             </div>
-            <span className="text-lg font-display font-bold text-white">LiqLearns</span>
+            <span className="text-lg font-display font-bold text-white">Admin Hub</span>
           </Link>
         </div>
 
