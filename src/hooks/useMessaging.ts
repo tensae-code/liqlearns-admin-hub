@@ -27,7 +27,7 @@ export const useMessaging = () => {
 
   // Fetch all conversations (DMs and Groups)
   const fetchConversations = useCallback(async () => {
-    if (!user) return;
+    if (!user || !profile) return;
 
     try {
       setLoading(true);
@@ -64,7 +64,7 @@ export const useMessaging = () => {
           .in('user_id', partnerIds);
 
         dmConversations = partnerIds.map(partnerId => {
-          const profile = profiles?.find(p => p.user_id === partnerId);
+          const partnerProfile = profiles?.find(p => p.user_id === partnerId);
           const lastDm = dmConversationsMap.get(partnerId);
           
           // Count unread messages
@@ -75,8 +75,8 @@ export const useMessaging = () => {
           return {
             id: `dm_${partnerId}`,
             type: 'dm' as const,
-            name: profile?.full_name || 'Unknown User',
-            avatar: profile?.avatar_url,
+            name: partnerProfile?.full_name || 'Unknown User',
+            avatar: partnerProfile?.avatar_url,
             lastMessage: lastDm?.content?.substring(0, 50) || '',
             lastMessageTime: formatTime(lastDm?.created_at),
             unreadCount,
@@ -85,7 +85,7 @@ export const useMessaging = () => {
         });
       }
 
-      // Fetch group conversations
+      // Fetch group conversations using profile.id (not user.id)
       const { data: groupMemberships, error: groupError } = await supabase
         .from('group_members')
         .select(`
@@ -99,7 +99,7 @@ export const useMessaging = () => {
             description
           )
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', profile.id);
 
       if (groupError) throw groupError;
 
@@ -120,7 +120,7 @@ export const useMessaging = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, profile]);
 
   // Fetch messages for a conversation
   const fetchMessages = useCallback(async (conversationId: string) => {
