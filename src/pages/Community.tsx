@@ -378,8 +378,12 @@ const Community = () => {
                         </Button>
                       </div>
                       <Button 
+                        type="button"
                         className="bg-gradient-accent text-accent-foreground hover:opacity-90"
-                        onClick={handlePost}
+                        onClick={() => {
+                          console.log('Post button clicked, content:', newPost);
+                          handlePost();
+                        }}
                         disabled={!newPost.trim()}
                       >
                         <Send className="w-4 h-4 mr-2" />
