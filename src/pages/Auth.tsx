@@ -62,6 +62,8 @@ const Auth = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [sponsorStatus, setSponsorStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
   const [formData, setFormData] = useState<FormData>({
     role: 'student',
     fullName: '',
@@ -79,6 +81,16 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Get sponsor from URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sponsor = params.get('ref') || params.get('sponsor');
+    if (sponsor) {
+      setFormData(prev => ({ ...prev, sponsorUsername: sponsor }));
+      setIsSignUp(true);
+    }
+  }, []);
+
   useEffect(() => {
     if (user && !redirecting) {
       setRedirecting(true);
@@ -91,6 +103,88 @@ const Auth = () => {
   const updateFormData = (key: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
+
+  // Instagram-style username validation
+  const checkUsername = async (username: string) => {
+    if (!username || username.length < 3) {
+      setUsernameStatus('idle');
+      return;
+    }
+
+    // Only allow alphanumeric, underscores, and periods (Instagram style)
+    const isValidFormat = /^[a-z0-9._]+$/.test(username);
+    if (!isValidFormat) {
+      setUsernameStatus('taken'); // Show as taken if invalid format
+      return;
+    }
+
+    setUsernameStatus('checking');
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username)
+      .maybeSingle();
+    
+    setUsernameStatus(data ? 'taken' : 'available');
+  };
+
+  // Check sponsor validity (only CEO and students can be sponsors)
+  const checkSponsor = async (sponsorUsername: string) => {
+    if (!sponsorUsername) {
+      setSponsorStatus('idle');
+      return;
+    }
+
+    setSponsorStatus('checking');
+    
+    // Get sponsor profile
+    const { data: sponsorProfile } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('username', sponsorUsername.replace('@', ''))
+      .maybeSingle();
+    
+    if (!sponsorProfile) {
+      setSponsorStatus('invalid');
+      return;
+    }
+
+    // Check sponsor's role
+    const { data: sponsorRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', sponsorProfile.user_id)
+      .maybeSingle();
+    
+    // Only CEO and students can be sponsors (not admin, support, teacher)
+    const validSponsorRoles = ['student', 'ceo'];
+    if (sponsorRole && validSponsorRoles.includes(sponsorRole.role)) {
+      setSponsorStatus('valid');
+    } else {
+      setSponsorStatus('invalid');
+    }
+  };
+
+  // Debounced username check
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.username) {
+        checkUsername(formData.username);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [formData.username]);
+
+  // Debounced sponsor check
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.sponsorUsername) {
+        checkSponsor(formData.sponsorUsername);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [formData.sponsorUsername]);
 
   const handleLogin = async (e?: React.FormEvent, demoEmail?: string, demoPassword?: string) => {
     if (e) e.preventDefault();
@@ -172,7 +266,11 @@ const Auth = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 0: return formData.role;
-      case 1: return formData.fullName && formData.username && formData.email && formData.password.length >= 6 && formData.birthday;
+      case 1: 
+        const hasBasics = formData.fullName && formData.username && formData.email && formData.password.length >= 6 && formData.birthday;
+        const usernameOk = usernameStatus === 'available';
+        const sponsorOk = !formData.sponsorUsername || sponsorStatus === 'valid';
+        return hasBasics && usernameOk && sponsorOk;
       case 2: return formData.acceptTerms && formData.acceptPrivacy;
       default: return true;
     }
@@ -332,11 +430,37 @@ const Auth = () => {
             type="text"
             placeholder="johndoe"
             value={formData.username}
-            onChange={(e) => updateFormData('username', e.target.value.toLowerCase().replace(/\s/g, ''))}
-            className="pl-10"
+            onChange={(e) => {
+              const val = e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, '');
+              updateFormData('username', val);
+            }}
+            className={`pl-10 pr-10 ${
+              usernameStatus === 'available' ? 'border-success' :
+              usernameStatus === 'taken' ? 'border-destructive' : ''
+            }`}
             required
           />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            {usernameStatus === 'checking' && (
+              <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            )}
+            {usernameStatus === 'available' && (
+              <Check className="w-4 h-4 text-success" />
+            )}
+            {usernameStatus === 'taken' && (
+              <span className="text-destructive text-xs">✕</span>
+            )}
+          </div>
         </div>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Letters, numbers, periods, and underscores only
+        </p>
+        {usernameStatus === 'taken' && (
+          <p className="text-[10px] text-destructive mt-0.5">Username not available</p>
+        )}
+        {usernameStatus === 'available' && (
+          <p className="text-[10px] text-success mt-0.5">Username available!</p>
+        )}
       </div>
 
       <div>
@@ -405,7 +529,7 @@ const Auth = () => {
       </div>
 
       <div>
-        <Label htmlFor="sponsor">Sponsor Username (Optional)</Label>
+        <Label htmlFor="sponsor">Sponsor Username (For Network Marketing)</Label>
         <div className="relative mt-1">
           <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -413,10 +537,31 @@ const Auth = () => {
             type="text"
             placeholder="@sponsor_username"
             value={formData.sponsorUsername}
-            onChange={(e) => updateFormData('sponsorUsername', e.target.value)}
-            className="pl-10"
+            onChange={(e) => updateFormData('sponsorUsername', e.target.value.replace('@', ''))}
+            className={`pl-10 pr-10 ${
+              sponsorStatus === 'valid' ? 'border-success' :
+              sponsorStatus === 'invalid' ? 'border-destructive' : ''
+            }`}
           />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            {sponsorStatus === 'checking' && (
+              <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            )}
+            {sponsorStatus === 'valid' && (
+              <Check className="w-4 h-4 text-success" />
+            )}
+            {sponsorStatus === 'invalid' && (
+              <span className="text-destructive text-xs">✕</span>
+            )}
+          </div>
         </div>
+        {sponsorStatus === 'valid' && (
+          <p className="text-[10px] text-success mt-0.5">✓ Sponsor verified!</p>
+        )}
+        {sponsorStatus === 'invalid' && (
+          <p className="text-[10px] text-destructive mt-0.5">Sponsor not found or cannot be a sponsor</p>
+        )}
+        <p className="text-[10px] text-muted-foreground mt-1">Only CEO and Students can be sponsors</p>
       </div>
     </div>
   );
