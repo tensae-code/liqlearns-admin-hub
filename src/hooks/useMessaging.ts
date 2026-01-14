@@ -7,6 +7,13 @@ import { Conversation } from '@/components/messaging/ConversationList';
 import { Message } from '@/components/messaging/ChatWindow';
 import { GroupMember, GroupChannel } from '@/components/messaging/GroupInfoSheet';
 
+// Current channel state
+interface ChannelState {
+  channelId: string | null;
+  channelName: string;
+  channelType: 'text' | 'announcement' | 'voice';
+}
+
 interface ProfileData {
   id: string;
   user_id: string;
@@ -24,6 +31,11 @@ export const useMessaging = () => {
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [groupChannels, setGroupChannels] = useState<GroupChannel[]>([]);
+  const [currentChannel, setCurrentChannel] = useState<ChannelState>({
+    channelId: null,
+    channelName: 'general',
+    channelType: 'text',
+  });
 
   // Fetch all conversations (DMs and Groups)
   const fetchConversations = useCallback(async () => {
@@ -470,6 +482,61 @@ export const useMessaging = () => {
     }
   }, []);
 
+  // Switch to a specific channel and fetch its messages
+  const switchChannel = useCallback(async (channel: GroupChannel, groupId: string) => {
+    setCurrentChannel({
+      channelId: channel.id,
+      channelName: channel.name,
+      channelType: channel.type,
+    });
+
+    // Update channel as default for UI display
+    setGroupChannels(prev => prev.map(c => ({
+      ...c,
+      isDefault: c.id === channel.id,
+    })));
+
+    // For voice channels, don't fetch messages - they'll open the Club Room
+    if (channel.type === 'voice') {
+      return;
+    }
+
+    // Fetch messages for this channel
+    try {
+      const { data, error } = await supabase
+        .from('group_messages')
+        .select('*')
+        .eq('channel_id', channel.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const senderIds = [...new Set(data?.map(m => m.sender_id) || [])];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, user_id, full_name, avatar_url')
+        .in('id', senderIds);
+
+      const formattedMessages: Message[] = (data || []).map(msg => {
+        const senderProfile = profiles?.find(p => p.id === msg.sender_id);
+        return {
+          id: msg.id,
+          content: msg.content,
+          sender: {
+            id: msg.sender_id,
+            name: senderProfile?.full_name || 'Unknown',
+            avatar: senderProfile?.avatar_url,
+          },
+          timestamp: formatTime(msg.created_at),
+        };
+      });
+
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error('Error fetching channel messages:', error);
+    }
+  }, []);
+
   // Real-time subscription for new messages
   useEffect(() => {
     if (!user) return;
@@ -516,12 +583,14 @@ export const useMessaging = () => {
     setCurrentConversation,
     groupMembers,
     groupChannels,
+    currentChannel,
     fetchMessages,
     sendMessage,
     createGroup,
     startDM,
     fetchGroupDetails,
     fetchConversations,
+    switchChannel,
   };
 };
 

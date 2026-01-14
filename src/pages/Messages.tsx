@@ -5,12 +5,13 @@ import ConversationList, { Conversation } from '@/components/messaging/Conversat
 import ChatWindow from '@/components/messaging/ChatWindow';
 import CreateGroupModal from '@/components/messaging/CreateGroupModal';
 import NewDMModal, { UserSearchResult } from '@/components/messaging/NewDMModal';
-import GroupInfoSheet, { GroupMember } from '@/components/messaging/GroupInfoSheet';
+import GroupInfoSheet, { GroupMember, GroupChannel } from '@/components/messaging/GroupInfoSheet';
 import FindGroupsModal from '@/components/messaging/FindGroupsModal';
 import MessageRequestsModal from '@/components/messaging/MessageRequestsModal';
 import CreateChannelModal from '@/components/messaging/CreateChannelModal';
 import ManageMemberModal from '@/components/messaging/ManageMemberModal';
 import AddMembersModal from '@/components/messaging/AddMembersModal';
+import ClubRoomView from '@/components/messaging/ClubRoomView';
 import useMessaging from '@/hooks/useMessaging';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -30,12 +31,14 @@ const Messages = () => {
     setCurrentConversation,
     groupMembers,
     groupChannels,
+    currentChannel,
     fetchMessages,
     sendMessage,
     createGroup,
     startDM,
     fetchGroupDetails,
     fetchConversations,
+    switchChannel,
   } = useMessaging();
 
   const [filter, setFilter] = useState<'all' | 'dms' | 'groups'>('all');
@@ -47,6 +50,7 @@ const Messages = () => {
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [showManageMember, setShowManageMember] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
+  const [showClubRoom, setShowClubRoom] = useState(false);
   const [selectedMember, setSelectedMember] = useState<GroupMember | null>(null);
   const [searchUsers, setSearchUsers] = useState<UserSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -227,8 +231,17 @@ const Messages = () => {
             setShowCreateChannel(true);
           }}
           onSelectChannel={(channel) => {
-            // TODO: Implement channel selection - switch to that channel's messages
-            toast.info(`Switched to #${channel.name}`);
+            const groupId = currentConversation!.id.replace('group_', '');
+            if (channel.type === 'voice') {
+              // Open Club Room for voice channels
+              switchChannel(channel, groupId);
+              setShowClubRoom(true);
+              setShowGroupInfo(false);
+            } else {
+              // Switch to text/announcement channel
+              switchChannel(channel, groupId);
+              toast.success(`Switched to #${channel.name}`);
+            }
           }}
           onMemberClick={(member) => {
             setSelectedMember(member);
@@ -295,6 +308,24 @@ const Messages = () => {
             fetchGroupDetails(groupId);
           }}
         />
+      )}
+
+      {/* Club Room View */}
+      {showClubRoom && currentConversation?.type === 'group' && (
+        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm p-4">
+          <ClubRoomView
+            channelName={currentChannel.channelName}
+            groupName={currentConversation.name}
+            participants={groupMembers}
+            currentUserId={profile?.id || ''}
+            currentUserRole={getCurrentUserRole()}
+            onLeave={() => {
+              setShowClubRoom(false);
+              toast.info('Left the room');
+            }}
+            onClose={() => setShowClubRoom(false)}
+          />
+        </div>
       )}
     </DashboardLayout>
   );

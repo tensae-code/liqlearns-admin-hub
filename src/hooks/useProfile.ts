@@ -17,6 +17,9 @@ interface Profile {
   bio: string | null;
   last_login_date: string | null;
   birthday: string | null;
+  teacher_type: string | null;
+  enterprise_status: string | null;
+  enterprise_org_name: string | null;
 }
 
 // Helper to calculate age from birthday
