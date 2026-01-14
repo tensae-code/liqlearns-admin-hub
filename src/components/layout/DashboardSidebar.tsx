@@ -91,9 +91,9 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     case 'teacher':
       return [
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Teaching overview', path: '/teacher' },
-        { icon: Library, label: 'My Courses', description: 'Manage content', path: '/teacher/courses' },
-        { icon: Users, label: 'Students', description: 'View learners', path: '/teacher/students' },
-        { icon: BarChart3, label: 'Earnings', description: 'Revenue stats', path: '/teacher/earnings' },
+        { icon: Library, label: 'My Courses', description: 'Manage content', path: '/teacher?tab=courses' },
+        { icon: Users, label: 'Students', description: 'View learners', path: '/teacher?tab=students' },
+        { icon: BarChart3, label: 'Earnings', description: 'Revenue stats', path: '/teacher?tab=earnings' },
         { icon: Calendar, label: 'Events', description: 'Scheduled events', path: '/events' },
         { icon: Mail, label: 'Messages', description: 'Student chat', path: '/messages' },
         { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
