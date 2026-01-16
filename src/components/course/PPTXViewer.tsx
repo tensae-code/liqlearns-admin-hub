@@ -16,13 +16,15 @@ import {
   Pause,
   Maximize2,
   Minimize2,
-  Volume2,
-  BookOpen,
-  HelpCircle,
   Loader2
 } from 'lucide-react';
 import { ParsedSlide } from '@/lib/pptxParser';
 import SlideRenderer from './SlideRenderer';
+import VideoResource from './resources/VideoResource';
+import AudioResource from './resources/AudioResource';
+import QuizResource from './resources/QuizResource';
+import FlashcardResource from './resources/FlashcardResource';
+import { toast } from 'sonner';
 
 interface SlideResource {
   id: string;
@@ -30,6 +32,10 @@ interface SlideResource {
   title: string;
   showAfterSlide: number;
   showBeforeSlide: number;
+  videoUrl?: string;
+  audioUrl?: string;
+  quizQuestions?: any[];
+  flashcards?: any[];
 }
 
 interface PPTXViewerProps {
@@ -336,65 +342,56 @@ const PPTXViewer = ({
               className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-8 z-50"
               onClick={handleDismissResource}
             >
-              <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                className="bg-card rounded-xl border border-border shadow-xl max-w-2xl w-full p-6"
-                onClick={e => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{resourceIcons[activeResource.type]}</span>
-                    <div>
-                      <p className="font-semibold text-foreground">{activeResource.title}</p>
-                      <Badge variant="secondary" className="capitalize mt-1">
-                        {activeResource.type}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={handleDismissResource}>
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Resource Content Preview */}
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-4">
-                  {activeResource.type === 'video' && (
-                    <div className="text-center">
-                      <Play className="w-16 h-16 text-muted-foreground mb-2 mx-auto" />
-                      <p className="text-muted-foreground">Video Player</p>
-                    </div>
-                  )}
-                  {activeResource.type === 'audio' && (
-                    <div className="text-center">
-                      <Volume2 className="w-16 h-16 text-muted-foreground mb-2 mx-auto" />
-                      <p className="text-muted-foreground">Audio Player</p>
-                    </div>
-                  )}
-                  {activeResource.type === 'quiz' && (
-                    <div className="text-center">
-                      <HelpCircle className="w-16 h-16 text-muted-foreground mb-2 mx-auto" />
-                      <p className="text-muted-foreground">Quiz Interface</p>
-                    </div>
-                  )}
-                  {activeResource.type === 'flashcard' && (
-                    <div className="text-center">
-                      <BookOpen className="w-16 h-16 text-muted-foreground mb-2 mx-auto" />
-                      <p className="text-muted-foreground">Flashcard Deck</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={handleDismissResource}>
-                    Skip
-                  </Button>
-                  <Button className="bg-gradient-accent">
-                    Start {activeResource.type}
-                  </Button>
-                </div>
-              </motion.div>
+              <div onClick={e => e.stopPropagation()}>
+                {activeResource.type === 'video' && (
+                  <VideoResource
+                    title={activeResource.title}
+                    videoUrl={activeResource.videoUrl}
+                    onComplete={() => {
+                      toast.success('Video completed! +10 XP');
+                      handleDismissResource();
+                    }}
+                    onClose={handleDismissResource}
+                  />
+                )}
+                {activeResource.type === 'audio' && (
+                  <AudioResource
+                    title={activeResource.title}
+                    audioUrl={activeResource.audioUrl}
+                    onComplete={() => {
+                      toast.success('Audio completed! +10 XP');
+                      handleDismissResource();
+                    }}
+                    onClose={handleDismissResource}
+                  />
+                )}
+                {activeResource.type === 'quiz' && (
+                  <QuizResource
+                    title={activeResource.title}
+                    questions={activeResource.quizQuestions}
+                    onComplete={(score, passed) => {
+                      if (passed) {
+                        toast.success(`Quiz passed with ${score}%! +25 XP`);
+                      } else {
+                        toast.info(`Quiz completed with ${score}%`);
+                      }
+                      handleDismissResource();
+                    }}
+                    onClose={handleDismissResource}
+                  />
+                )}
+                {activeResource.type === 'flashcard' && (
+                  <FlashcardResource
+                    title={activeResource.title}
+                    cards={activeResource.flashcards}
+                    onComplete={(known, total) => {
+                      toast.success(`Flashcards reviewed! ${known}/${total} mastered. +15 XP`);
+                      handleDismissResource();
+                    }}
+                    onClose={handleDismissResource}
+                  />
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
