@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +14,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -31,7 +43,12 @@ import {
   Eye,
   X,
   GripVertical,
-  Loader2
+  Loader2,
+  Video,
+  Music,
+  HelpCircle,
+  Sparkles,
+  CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { parsePPTX, ParsedPresentation, ParsedSlide } from '@/lib/pptxParser';
@@ -43,6 +60,7 @@ interface SlideResource {
   title: string;
   showAfterSlide: number;
   showBeforeSlide: number;
+  content?: any; // Quiz questions, flashcards, or URL
 }
 
 interface UploadedPPTX {
@@ -63,11 +81,24 @@ interface ModulePPTXUploaderProps {
 }
 
 const resourceTypes = [
-  { id: 'video', label: 'Video', icon: '🎬' },
-  { id: 'audio', label: 'Audio', icon: '🎧' },
-  { id: 'quiz', label: 'Quiz', icon: '📝' },
-  { id: 'flashcard', label: 'Flashcards', icon: '🃏' },
+  { id: 'video', label: 'Video', icon: Video, emoji: '🎬', description: 'YouTube, Vimeo, or direct URL' },
+  { id: 'audio', label: 'Audio', icon: Music, emoji: '🎧', description: 'Podcast or audio file' },
+  { id: 'quiz', label: 'Quiz', icon: HelpCircle, emoji: '📝', description: 'Multiple choice questions' },
+  { id: 'flashcard', label: 'Flashcards', icon: Sparkles, emoji: '🃏', description: 'Terms and definitions' },
 ];
+
+interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+}
+
+interface Flashcard {
+  id: string;
+  front: string;
+  back: string;
+}
 
 const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }: ModulePPTXUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,13 +109,31 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
   const [parsedPresentation, setParsedPresentation] = useState<ParsedPresentation | null>(null);
   const [currentPreviewSlide, setCurrentPreviewSlide] = useState(1);
   const [resources, setResources] = useState<SlideResource[]>([]);
-  const [showAddResource, setShowAddResource] = useState(false);
-  const [newResource, setNewResource] = useState({
-    type: 'video' as 'video' | 'audio' | 'quiz' | 'flashcard',
-    title: '',
-    showAfterSlide: 1,
-    showBeforeSlide: 2
-  });
+  
+  // Resource creation state
+  const [showResourceCreator, setShowResourceCreator] = useState(false);
+  const [insertAfterSlide, setInsertAfterSlide] = useState<number | null>(null);
+  const [selectedResourceType, setSelectedResourceType] = useState<'video' | 'audio' | 'quiz' | 'flashcard' | null>(null);
+  
+  // Video/Audio form state
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaTitle, setMediaTitle] = useState('');
+  
+  // Quiz form state
+  const [quizTitle, setQuizTitle] = useState('');
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([
+    { id: `q-${Date.now()}`, question: '', options: ['', '', '', ''], correctAnswer: 0 }
+  ]);
+  
+  // Flashcard form state
+  const [flashcardTitle, setFlashcardTitle] = useState('');
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([
+    { id: `fc-${Date.now()}`, front: '', back: '' }
+  ]);
+  
+  // Unsaved changes dialog
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,7 +144,7 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
       return;
     }
 
-    if (file.size > 100 * 1024 * 1024) { // 100MB limit
+    if (file.size > 100 * 1024 * 1024) {
       toast.error('File size must be under 100MB');
       return;
     }
@@ -105,12 +154,10 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
     setUploadProgress(0);
 
     try {
-      // Start progress animation
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 5, 90));
       }, 100);
 
-      // Parse the PPTX file
       const parsed = await parsePPTX(file);
       
       clearInterval(progressInterval);
@@ -128,6 +175,7 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
       };
 
       setPptxData(pptx);
+      setHasUnsavedChanges(true);
       toast.success('PPTX parsed successfully!', {
         description: `${parsed.totalSlides} slides extracted`
       });
@@ -142,35 +190,136 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
     }
   };
 
-  const handleAddResource = () => {
-    if (!newResource.title.trim()) {
-      toast.error('Please enter a resource title');
-      return;
-    }
+  const handleOpenResourceCreator = (afterSlide: number) => {
+    setInsertAfterSlide(afterSlide);
+    setShowResourceCreator(true);
+    setSelectedResourceType(null);
+    resetResourceForms();
+  };
 
-    if (newResource.showAfterSlide >= newResource.showBeforeSlide) {
-      toast.error('End slide must be after start slide');
-      return;
+  const resetResourceForms = () => {
+    setMediaUrl('');
+    setMediaTitle('');
+    setQuizTitle('');
+    setQuizQuestions([{ id: `q-${Date.now()}`, question: '', options: ['', '', '', ''], correctAnswer: 0 }]);
+    setFlashcardTitle('');
+    setFlashcards([{ id: `fc-${Date.now()}`, front: '', back: '' }]);
+  };
+
+  const handleAddQuizQuestion = () => {
+    setQuizQuestions([...quizQuestions, {
+      id: `q-${Date.now()}`,
+      question: '',
+      options: ['', '', '', ''],
+      correctAnswer: 0
+    }]);
+  };
+
+  const handleRemoveQuizQuestion = (index: number) => {
+    if (quizQuestions.length > 1) {
+      setQuizQuestions(quizQuestions.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleUpdateQuizQuestion = (index: number, field: string, value: any) => {
+    const updated = [...quizQuestions];
+    if (field === 'question') {
+      updated[index].question = value;
+    } else if (field === 'correctAnswer') {
+      updated[index].correctAnswer = value;
+    }
+    setQuizQuestions(updated);
+  };
+
+  const handleUpdateQuizOption = (qIndex: number, oIndex: number, value: string) => {
+    const updated = [...quizQuestions];
+    updated[qIndex].options[oIndex] = value;
+    setQuizQuestions(updated);
+  };
+
+  const handleAddFlashcard = () => {
+    setFlashcards([...flashcards, {
+      id: `fc-${Date.now()}`,
+      front: '',
+      back: ''
+    }]);
+  };
+
+  const handleRemoveFlashcard = (index: number) => {
+    if (flashcards.length > 1) {
+      setFlashcards(flashcards.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleUpdateFlashcard = (index: number, field: 'front' | 'back', value: string) => {
+    const updated = [...flashcards];
+    updated[index][field] = value;
+    setFlashcards(updated);
+  };
+
+  const handleSaveResource = () => {
+    if (!selectedResourceType || insertAfterSlide === null) return;
+
+    let resourceContent: any = null;
+    let title = '';
+
+    switch (selectedResourceType) {
+      case 'video':
+      case 'audio':
+        if (!mediaUrl.trim()) {
+          toast.error('Please enter a URL');
+          return;
+        }
+        title = mediaTitle || `${selectedResourceType === 'video' ? 'Video' : 'Audio'} Resource`;
+        resourceContent = { url: mediaUrl };
+        break;
+      case 'quiz':
+        if (!quizTitle.trim()) {
+          toast.error('Please enter a quiz title');
+          return;
+        }
+        const validQuestions = quizQuestions.filter(q => q.question.trim() && q.options.some(o => o.trim()));
+        if (validQuestions.length === 0) {
+          toast.error('Please add at least one question');
+          return;
+        }
+        title = quizTitle;
+        resourceContent = { questions: validQuestions };
+        break;
+      case 'flashcard':
+        if (!flashcardTitle.trim()) {
+          toast.error('Please enter a flashcard set title');
+          return;
+        }
+        const validCards = flashcards.filter(f => f.front.trim() && f.back.trim());
+        if (validCards.length === 0) {
+          toast.error('Please add at least one flashcard');
+          return;
+        }
+        title = flashcardTitle;
+        resourceContent = { cards: validCards };
+        break;
     }
 
     const resource: SlideResource = {
       id: `res-${Date.now()}`,
-      ...newResource
+      type: selectedResourceType,
+      title,
+      showAfterSlide: insertAfterSlide,
+      showBeforeSlide: insertAfterSlide + 1,
+      content: resourceContent
     };
 
     setResources([...resources, resource]);
-    setNewResource({
-      type: 'video',
-      title: '',
-      showAfterSlide: 1,
-      showBeforeSlide: 2
-    });
-    setShowAddResource(false);
+    setHasUnsavedChanges(true);
+    setShowResourceCreator(false);
+    resetResourceForms();
     toast.success('Resource added!');
   };
 
   const handleRemoveResource = (id: string) => {
     setResources(resources.filter(r => r.id !== id));
+    setHasUnsavedChanges(true);
   };
 
   const handleSave = () => {
@@ -181,330 +330,575 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
       resources
     });
 
+    setHasUnsavedChanges(false);
     toast.success('Module presentation saved!');
     onOpenChange(false);
     resetState();
   };
 
+  const handleClose = () => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedDialog(true);
+    } else {
+      onOpenChange(false);
+      resetState();
+    }
+  };
+
   const resetState = () => {
     setPptxData(null);
+    setParsedPresentation(null);
     setResources([]);
     setCurrentPreviewSlide(1);
-    setShowAddResource(false);
+    setShowResourceCreator(false);
     setUploadProgress(0);
+    setHasUnsavedChanges(false);
+    resetResourceForms();
+  };
+
+  const getResourcesForSlide = (slideIndex: number) => {
+    return resources.filter(r => r.showAfterSlide === slideIndex);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => {
-      if (!o) resetState();
-      onOpenChange(o);
-    }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Presentation className="w-5 h-5 text-accent" />
-            Upload Presentation - {moduleName}
-          </DialogTitle>
-          <DialogDescription>
-            Upload a PPTX file and add interactive resources between slides
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Presentation className="w-5 h-5 text-accent" />
+              Upload Presentation - {moduleName}
+            </DialogTitle>
+            <DialogDescription>
+              Upload a PPTX file and add interactive resources between slides
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Upload Section */}
-          {!pptxData && (
-            <motion.div
-              className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-                isUploading ? 'border-accent bg-accent/5' : 'border-border hover:border-accent'
-              }`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pptx"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
+          <div className="space-y-6">
+            {/* Upload Section */}
+            {!pptxData && (
+              <motion.div
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                  isUploading ? 'border-accent bg-accent/5' : 'border-border hover:border-accent'
+                }`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pptx"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
 
-              {isUploading ? (
-                <div className="space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-accent/10 rounded-full flex items-center justify-center">
-                    <FileType className="w-8 h-8 text-accent animate-pulse" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Processing presentation...</p>
-                    <p className="text-sm text-muted-foreground">Extracting slides</p>
-                  </div>
-                  <Progress value={uploadProgress} className="h-2 max-w-xs mx-auto" />
-                </div>
-              ) : (
-                <>
-                  <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-4">
-                    <Upload className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-2">Upload PowerPoint</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Drag and drop your .pptx file or click to browse
-                  </p>
-                  <Button onClick={() => fileInputRef.current?.click()}>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Select PPTX File
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    Maximum file size: 100MB
-                  </p>
-                </>
-              )}
-            </motion.div>
-          )}
-
-          {/* PPTX Preview & Resources */}
-          {pptxData && (
-            <div className="space-y-6">
-              {/* File Info */}
-              <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
-                  <Presentation className="w-6 h-6 text-accent" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">{pptxData.fileName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {pptxData.totalSlides} slides
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setPptxData(null)}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {/* Slide Preview */}
-              <div className="bg-muted/30 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-foreground flex items-center gap-2">
-                    <Eye className="w-4 h-4" />
-                    Slide Preview
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setCurrentPreviewSlide(Math.max(1, currentPreviewSlide - 1))}
-                      disabled={currentPreviewSlide === 1}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <span className="text-sm font-medium text-foreground px-3">
-                      {currentPreviewSlide} / {pptxData.totalSlides}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setCurrentPreviewSlide(Math.min(pptxData.totalSlides, currentPreviewSlide + 1))}
-                      disabled={currentPreviewSlide === pptxData.totalSlides}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Real Slide Display */}
-                <div className="aspect-video bg-card border border-border rounded-lg flex items-center justify-center overflow-hidden">
-                  {parsedPresentation && parsedPresentation.slides[currentPreviewSlide - 1] ? (
-                    <SlideRenderer 
-                      slide={parsedPresentation.slides[currentPreviewSlide - 1]}
-                      className="rounded-lg"
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-6xl mb-4">📊</p>
-                      <p className="text-muted-foreground">Slide {currentPreviewSlide}</p>
+                {isUploading ? (
+                  <div className="space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-accent/10 rounded-full flex items-center justify-center">
+                      <FileType className="w-8 h-8 text-accent animate-pulse" />
                     </div>
-                  )}
-                </div>
-
-                {/* Show resources for current slide */}
-                {resources.filter(r => 
-                  currentPreviewSlide >= r.showAfterSlide && 
-                  currentPreviewSlide < r.showBeforeSlide
-                ).length > 0 && (
-                  <div className="mt-4 p-3 bg-accent/10 rounded-lg">
-                    <p className="text-xs font-medium text-accent mb-2">Resources shown at this slide:</p>
-                    {resources.filter(r => 
-                      currentPreviewSlide >= r.showAfterSlide && 
-                      currentPreviewSlide < r.showBeforeSlide
-                    ).map(r => (
-                      <Badge key={r.id} variant="secondary" className="mr-2">
-                        {resourceTypes.find(t => t.id === r.type)?.icon} {r.title}
-                      </Badge>
-                    ))}
+                    <div>
+                      <p className="font-medium text-foreground">Processing presentation...</p>
+                      <p className="text-sm text-muted-foreground">Extracting slides</p>
+                    </div>
+                    <Progress value={uploadProgress} className="h-2 max-w-xs mx-auto" />
                   </div>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-4">
+                      <Upload className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-semibold text-foreground mb-2">Upload PowerPoint</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Drag and drop your .pptx file or click to browse
+                    </p>
+                    <Button onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Select PPTX File
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Maximum file size: 100MB
+                    </p>
+                  </>
                 )}
-              </div>
+              </motion.div>
+            )}
 
-              {/* Resources Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-foreground flex items-center gap-2">
-                    <Layers className="w-4 h-4" />
-                    Interactive Resources ({resources.length})
-                  </h4>
-                  <Button variant="outline" size="sm" onClick={() => setShowAddResource(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Resource
+            {/* PPTX Preview & Resources */}
+            {pptxData && (
+              <div className="space-y-6">
+                {/* File Info */}
+                <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
+                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                    <Presentation className="w-6 h-6 text-accent" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{pptxData.fileName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {pptxData.totalSlides} slides • {resources.length} resources
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setPptxData(null)}>
+                    <X className="w-4 h-4" />
                   </Button>
                 </div>
 
-                {/* Resource List */}
-                <div className="space-y-2">
-                  {resources.length === 0 ? (
-                    <div className="p-6 text-center text-muted-foreground bg-muted/30 rounded-lg">
-                      <p>No resources added yet</p>
-                      <p className="text-sm mt-1">Add videos, quizzes, or flashcards between slides</p>
-                    </div>
-                  ) : (
-                    <AnimatePresence>
-                      {resources.map((resource) => (
-                        <motion.div
-                          key={resource.id}
-                          className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
+                {/* Slide Navigator with Resource Insertion Points */}
+                <div className="bg-muted/30 rounded-xl p-4">
+                  <h4 className="font-semibold text-foreground flex items-center gap-2 mb-4">
+                    <Layers className="w-4 h-4" />
+                    Slides & Resources
+                  </h4>
+                  
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {Array.from({ length: pptxData.totalSlides }, (_, i) => i + 1).map((slideNum) => (
+                      <div key={slideNum}>
+                        {/* Add Resource Button BEFORE slide (except first) */}
+                        {slideNum > 1 && (
+                          <div className="relative py-2 group">
+                            <div className="border-t border-dashed border-border" />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-background"
+                              onClick={() => handleOpenResourceCreator(slideNum - 1)}
+                            >
+                              <Plus className="w-3 h-3 mr-1" />
+                              Add Resource Here
+                            </Button>
+                            
+                            {/* Show existing resources at this position */}
+                            {getResourcesForSlide(slideNum - 1).map((res) => (
+                              <div key={res.id} className="mx-8 my-2 flex items-center gap-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
+                                <span className="text-lg">
+                                  {resourceTypes.find(t => t.id === res.type)?.emoji}
+                                </span>
+                                <span className="flex-1 text-sm font-medium text-foreground">{res.title}</span>
+                                <Badge variant="secondary" className="text-xs">{res.type}</Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-destructive hover:text-destructive"
+                                  onClick={() => handleRemoveResource(res.id)}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Slide Preview Card */}
+                        <div
+                          className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                            currentPreviewSlide === slideNum 
+                              ? 'bg-accent/10 border border-accent/30' 
+                              : 'hover:bg-muted/50'
+                          }`}
+                          onClick={() => setCurrentPreviewSlide(slideNum)}
                         >
-                          <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
-                          <span className="text-2xl">
-                            {resourceTypes.find(t => t.id === resource.type)?.icon}
-                          </span>
+                          <div className="w-16 h-10 bg-card border border-border rounded flex items-center justify-center text-sm font-medium">
+                            {slideNum}
+                          </div>
                           <div className="flex-1">
-                            <p className="font-medium text-foreground">{resource.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Show after slide {resource.showAfterSlide}, before slide {resource.showBeforeSlide}
+                            <p className="text-sm font-medium text-foreground">
+                              {parsedPresentation?.slides[slideNum - 1]?.title || `Slide ${slideNum}`}
                             </p>
                           </div>
-                          <Badge variant="secondary" className="capitalize">
-                            {resource.type}
-                          </Badge>
+                          {currentPreviewSlide === slideNum && (
+                            <Eye className="w-4 h-4 text-accent" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Add resource after last slide */}
+                    <div className="relative py-2 group">
+                      <div className="border-t border-dashed border-border" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-background"
+                        onClick={() => handleOpenResourceCreator(pptxData.totalSlides)}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Resource Here
+                      </Button>
+                      {getResourcesForSlide(pptxData.totalSlides).map((res) => (
+                        <div key={res.id} className="mx-8 my-2 flex items-center gap-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
+                          <span className="text-lg">
+                            {resourceTypes.find(t => t.id === res.type)?.emoji}
+                          </span>
+                          <span className="flex-1 text-sm font-medium text-foreground">{res.title}</span>
+                          <Badge variant="secondary" className="text-xs">{res.type}</Badge>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleRemoveResource(resource.id)}
-                            className="text-destructive hover:text-destructive"
+                            className="h-6 w-6 text-destructive hover:text-destructive"
+                            onClick={() => handleRemoveResource(res.id)}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3" />
                           </Button>
-                        </motion.div>
+                        </div>
                       ))}
-                    </AnimatePresence>
-                  )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Add Resource Form */}
-                <AnimatePresence>
-                  {showAddResource && (
-                    <motion.div
-                      className="p-4 bg-muted/50 rounded-lg border border-border space-y-4"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                    >
+                {/* Large Slide Preview */}
+                <div className="bg-muted/30 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-semibold text-foreground flex items-center gap-2">
+                      <Eye className="w-4 h-4" />
+                      Slide Preview
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPreviewSlide(Math.max(1, currentPreviewSlide - 1))}
+                        disabled={currentPreviewSlide === 1}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </Button>
+                      <span className="text-sm font-medium text-foreground px-3">
+                        {currentPreviewSlide} / {pptxData.totalSlides}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPreviewSlide(Math.min(pptxData.totalSlides, currentPreviewSlide + 1))}
+                        disabled={currentPreviewSlide === pptxData.totalSlides}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="aspect-video bg-card border border-border rounded-lg flex items-center justify-center overflow-hidden">
+                    {parsedPresentation && parsedPresentation.slides[currentPreviewSlide - 1] ? (
+                      <SlideRenderer 
+                        slide={parsedPresentation.slides[currentPreviewSlide - 1]}
+                        className="rounded-lg"
+                      />
+                    ) : (
+                      <div className="text-center">
+                        <p className="text-6xl mb-4">📊</p>
+                        <p className="text-muted-foreground">Slide {currentPreviewSlide}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                  <Button variant="outline" onClick={handleClose}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave} className="bg-gradient-accent">
+                    Save Presentation
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resource Creator Dialog */}
+      <Dialog open={showResourceCreator} onOpenChange={setShowResourceCreator}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Add Resource {insertAfterSlide !== null && `after Slide ${insertAfterSlide}`}
+            </DialogTitle>
+            <DialogDescription>
+              Choose a resource type and configure it
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Resource Type Selection */}
+            {!selectedResourceType && (
+              <div className="grid grid-cols-2 gap-4">
+                {resourceTypes.map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => setSelectedResourceType(type.id as any)}
+                    className="p-4 rounded-xl border-2 border-border hover:border-accent hover:bg-accent/5 transition-all text-left group"
+                  >
+                    <div className="text-3xl mb-2">{type.emoji}</div>
+                    <h4 className="font-semibold text-foreground group-hover:text-accent">{type.label}</h4>
+                    <p className="text-sm text-muted-foreground">{type.description}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Video/Audio Form */}
+            {(selectedResourceType === 'video' || selectedResourceType === 'audio') && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedResourceType(null)}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <h4 className="font-semibold text-foreground">
+                    {resourceTypes.find(t => t.id === selectedResourceType)?.emoji} Add {selectedResourceType === 'video' ? 'Video' : 'Audio'}
+                  </h4>
+                </div>
+
+                <div>
+                  <Label>Title</Label>
+                  <Input
+                    value={mediaTitle}
+                    onChange={(e) => setMediaTitle(e.target.value)}
+                    placeholder={`e.g., ${selectedResourceType === 'video' ? 'Introduction Video' : 'Audio Lesson'}`}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label>URL</Label>
+                  <Input
+                    value={mediaUrl}
+                    onChange={(e) => setMediaUrl(e.target.value)}
+                    placeholder={selectedResourceType === 'video' 
+                      ? 'https://youtube.com/watch?v=... or https://vimeo.com/...'
+                      : 'https://soundcloud.com/... or direct audio URL'}
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {selectedResourceType === 'video' 
+                      ? 'Supports YouTube, Vimeo, and direct video URLs'
+                      : 'Supports SoundCloud, Spotify, and direct audio URLs'}
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => setShowResourceCreator(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveResource}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add {selectedResourceType === 'video' ? 'Video' : 'Audio'}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Quiz Form */}
+            {selectedResourceType === 'quiz' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedResourceType(null)}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <h4 className="font-semibold text-foreground">📝 Create Quiz</h4>
+                </div>
+
+                <div>
+                  <Label>Quiz Title</Label>
+                  <Input
+                    value={quizTitle}
+                    onChange={(e) => setQuizTitle(e.target.value)}
+                    placeholder="e.g., Chapter 1 Review"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Questions</Label>
+                    <Button variant="outline" size="sm" onClick={handleAddQuizQuestion}>
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add Question
+                    </Button>
+                  </div>
+
+                  {quizQuestions.map((q, qIndex) => (
+                    <div key={q.id} className="p-4 bg-muted/30 rounded-lg space-y-3">
                       <div className="flex items-center justify-between">
-                        <h5 className="font-medium text-foreground">Add Resource</h5>
-                        <Button variant="ghost" size="sm" onClick={() => setShowAddResource(false)}>
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Resource Type</Label>
-                          <Select
-                            value={newResource.type}
-                            onValueChange={(v) => setNewResource({ ...newResource, type: v as any })}
+                        <Label className="text-sm font-medium">Question {qIndex + 1}</Label>
+                        {quizQuestions.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive"
+                            onClick={() => handleRemoveQuizQuestion(qIndex)}
                           >
-                            <SelectTrigger className="mt-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {resourceTypes.map(type => (
-                                <SelectItem key={type.id} value={type.id}>
-                                  {type.icon} {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <Input
+                        value={q.question}
+                        onChange={(e) => handleUpdateQuizQuestion(qIndex, 'question', e.target.value)}
+                        placeholder="Enter your question..."
+                      />
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Options (select correct answer)</Label>
+                        <RadioGroup
+                          value={q.correctAnswer.toString()}
+                          onValueChange={(v) => handleUpdateQuizQuestion(qIndex, 'correctAnswer', parseInt(v))}
+                        >
+                          {q.options.map((option, oIndex) => (
+                            <div key={oIndex} className="flex items-center gap-2">
+                              <RadioGroupItem value={oIndex.toString()} id={`q${qIndex}-o${oIndex}`} />
+                              <Input
+                                value={option}
+                                onChange={(e) => handleUpdateQuizOption(qIndex, oIndex, e.target.value)}
+                                placeholder={`Option ${oIndex + 1}`}
+                                className={`flex-1 ${
+                                  q.correctAnswer === oIndex && option.trim()
+                                    ? 'border-success bg-success/5'
+                                    : ''
+                                }`}
+                              />
+                              {q.correctAnswer === oIndex && option.trim() && (
+                                <CheckCircle className="w-4 h-4 text-success" />
+                              )}
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => setShowResourceCreator(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveResource}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Quiz
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Flashcard Form */}
+            {selectedResourceType === 'flashcard' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedResourceType(null)}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <h4 className="font-semibold text-foreground">🃏 Create Flashcards</h4>
+                </div>
+
+                <div>
+                  <Label>Flashcard Set Title</Label>
+                  <Input
+                    value={flashcardTitle}
+                    onChange={(e) => setFlashcardTitle(e.target.value)}
+                    placeholder="e.g., Vocabulary Set 1"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Cards</Label>
+                    <Button variant="outline" size="sm" onClick={handleAddFlashcard}>
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add Card
+                    </Button>
+                  </div>
+
+                  {flashcards.map((card, index) => (
+                    <div key={card.id} className="p-4 bg-muted/30 rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Card {index + 1}</Label>
+                        {flashcards.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive"
+                            onClick={() => handleRemoveFlashcard(index)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Front (Term)</Label>
+                          <Input
+                            value={card.front}
+                            onChange={(e) => handleUpdateFlashcard(index, 'front', e.target.value)}
+                            placeholder="Term or question"
+                            className="mt-1"
+                          />
                         </div>
                         <div>
-                          <Label>Resource Title</Label>
+                          <Label className="text-xs text-muted-foreground">Back (Definition)</Label>
                           <Input
-                            value={newResource.title}
-                            onChange={(e) => setNewResource({ ...newResource, title: e.target.value })}
-                            placeholder="e.g., Practice Quiz"
+                            value={card.back}
+                            onChange={(e) => handleUpdateFlashcard(index, 'back', e.target.value)}
+                            placeholder="Definition or answer"
                             className="mt-1"
                           />
                         </div>
                       </div>
+                    </div>
+                  ))}
+                </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Show after slide</Label>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={pptxData.totalSlides}
-                            value={newResource.showAfterSlide}
-                            onChange={(e) => setNewResource({ 
-                              ...newResource, 
-                              showAfterSlide: parseInt(e.target.value) || 1 
-                            })}
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label>Show before slide</Label>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={pptxData.totalSlides + 1}
-                            value={newResource.showBeforeSlide}
-                            onChange={(e) => setNewResource({ 
-                              ...newResource, 
-                              showBeforeSlide: parseInt(e.target.value) || 2 
-                            })}
-                            className="mt-1"
-                          />
-                        </div>
-                      </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => setShowResourceCreator(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveResource}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Flashcards
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddResource(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleAddResource}>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Resource
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Save Button */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSave} className="bg-gradient-accent">
-                  Save Presentation
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Unsaved Changes Dialog */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Would you like to save them before leaving?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowUnsavedDialog(false);
+              onOpenChange(false);
+              resetState();
+            }}>
+              Discard
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setShowUnsavedDialog(false);
+              handleSave();
+            }}>
+              Save Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

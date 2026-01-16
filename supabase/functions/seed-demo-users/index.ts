@@ -13,6 +13,7 @@ const demoUsers = [
   { email: 'teacher@liqlearns.com', password: 'teacher123', role: 'teacher', full_name: 'Demo Teacher', username: 'demo_teacher' },
   { email: 'support@liqlearns.com', password: 'support123', role: 'support', full_name: 'Demo Support', username: 'demo_support' },
   { email: 'parent@liqlearns.com', password: 'parent123', role: 'parent', full_name: 'Demo Parent', username: 'demo_parent' },
+  { email: 'enterprise@liqlearns.com', password: 'enterprise123', role: 'enterprise', full_name: 'Demo Enterprise', username: 'demo_enterprise' },
 ]
 
 serve(async (req) => {
