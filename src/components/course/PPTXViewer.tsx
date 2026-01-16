@@ -1,0 +1,338 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Presentation,
+  X,
+  Play,
+  Pause,
+  Maximize2,
+  Minimize2,
+  Volume2,
+  BookOpen,
+  HelpCircle
+} from 'lucide-react';
+
+interface SlideResource {
+  id: string;
+  type: 'video' | 'audio' | 'quiz' | 'flashcard';
+  title: string;
+  showAfterSlide: number;
+  showBeforeSlide: number;
+}
+
+interface PPTXViewerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  presentationName: string;
+  totalSlides: number;
+  resources: SlideResource[];
+  onComplete?: () => void;
+}
+
+const resourceIcons = {
+  video: '🎬',
+  audio: '🎧',
+  quiz: '📝',
+  flashcard: '🃏'
+};
+
+const PPTXViewer = ({ 
+  open, 
+  onOpenChange, 
+  presentationName, 
+  totalSlides, 
+  resources,
+  onComplete 
+}: PPTXViewerProps) => {
+  const [currentSlide, setCurrentSlide] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activeResource, setActiveResource] = useState<SlideResource | null>(null);
+  const [completedSlides, setCompletedSlides] = useState<number[]>([]);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const progressPercentage = (completedSlides.length / totalSlides) * 100;
+
+  const goToSlide = (slide: number) => {
+    if (slide < 1 || slide > totalSlides) return;
+    
+    // Mark current slide as completed if moving forward
+    if (slide > currentSlide && !completedSlides.includes(currentSlide)) {
+      setCompletedSlides([...completedSlides, currentSlide]);
+    }
+    
+    setCurrentSlide(slide);
+    
+    // Check for resources that should appear
+    const resourceToShow = resources.find(r => 
+      slide === r.showAfterSlide && !activeResource
+    );
+    if (resourceToShow) {
+      setActiveResource(resourceToShow);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentSlide < totalSlides) {
+      goToSlide(currentSlide + 1);
+    } else {
+      // Mark last slide as completed and call onComplete
+      if (!completedSlides.includes(totalSlides)) {
+        setCompletedSlides([...completedSlides, totalSlides]);
+      }
+      onComplete?.();
+    }
+  };
+
+  const handlePrevious = () => {
+    goToSlide(currentSlide - 1);
+  };
+
+  const handleDismissResource = () => {
+    setActiveResource(null);
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      handleNext();
+    } else if (e.key === 'ArrowLeft') {
+      handlePrevious();
+    } else if (e.key === 'Escape') {
+      onOpenChange(false);
+    }
+  };
+
+  const getCurrentSlideResources = () => {
+    return resources.filter(r => 
+      currentSlide >= r.showAfterSlide && 
+      currentSlide < r.showBeforeSlide
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent 
+        className={`${isFullscreen ? 'max-w-full h-screen m-0 rounded-none' : 'max-w-5xl'} p-0`}
+        onKeyDown={handleKeyDown}
+      >
+        {/* Top Bar */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+          <div className="flex items-center gap-3">
+            <Presentation className="w-5 h-5 text-accent" />
+            <span className="font-medium text-foreground">{presentationName}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
+              {isFullscreen ? (
+                <Minimize2 className="w-4 h-4" />
+              ) : (
+                <Maximize2 className="w-4 h-4" />
+              )}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="relative flex-1 bg-muted/30">
+          {/* Slide Display */}
+          <div className={`${isFullscreen ? 'h-[calc(100vh-140px)]' : 'aspect-video'} bg-card border-b border-border flex items-center justify-center relative`}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.2 }}
+                className="w-full h-full flex items-center justify-center"
+              >
+                {/* Mock slide content */}
+                <div className="text-center">
+                  <p className="text-8xl mb-6">📊</p>
+                  <p className="text-2xl font-bold text-foreground mb-2">Slide {currentSlide}</p>
+                  <p className="text-muted-foreground">
+                    {presentationName}
+                  </p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Navigation Arrows */}
+            <button
+              onClick={handlePrevious}
+              disabled={currentSlide === 1}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-card/80 hover:bg-card border border-border shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              onClick={handleNext}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-card/80 hover:bg-card border border-border shadow-lg transition-all"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+
+            {/* Slide Resources Indicator */}
+            {getCurrentSlideResources().length > 0 && (
+              <div className="absolute top-4 right-4 flex gap-2">
+                {getCurrentSlideResources().map(resource => (
+                  <Button
+                    key={resource.id}
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setActiveResource(resource)}
+                    className="gap-2"
+                  >
+                    <span>{resourceIcons[resource.type]}</span>
+                    {resource.title}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Controls */}
+          <div className="p-4 bg-card border-t border-border">
+            <div className="flex items-center gap-4 mb-3">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsPlaying(!isPlaying)}
+              >
+                {isPlaying ? (
+                  <Pause className="w-4 h-4" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+              </Button>
+              
+              <div className="flex-1">
+                <Progress value={progressPercentage} className="h-2" />
+              </div>
+              
+              <span className="text-sm font-medium text-foreground min-w-[80px] text-right">
+                {currentSlide} / {totalSlides}
+              </span>
+            </div>
+
+            {/* Slide Thumbnails */}
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {Array.from({ length: totalSlides }, (_, i) => i + 1).map(slide => {
+                const hasResource = resources.some(r => 
+                  slide >= r.showAfterSlide && slide < r.showBeforeSlide
+                );
+                return (
+                  <button
+                    key={slide}
+                    onClick={() => goToSlide(slide)}
+                    className={`flex-shrink-0 w-16 h-10 rounded border-2 transition-all relative ${
+                      slide === currentSlide
+                        ? 'border-accent bg-accent/10'
+                        : completedSlides.includes(slide)
+                          ? 'border-success/50 bg-success/10'
+                          : 'border-border hover:border-accent/50'
+                    }`}
+                  >
+                    <span className="text-xs font-medium">{slide}</span>
+                    {hasResource && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-gold rounded-full" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Resource Modal Overlay */}
+        <AnimatePresence>
+          {activeResource && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-8 z-50"
+              onClick={handleDismissResource}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-card rounded-xl border border-border shadow-xl max-w-2xl w-full p-6"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{resourceIcons[activeResource.type]}</span>
+                    <div>
+                      <p className="font-semibold text-foreground">{activeResource.title}</p>
+                      <Badge variant="secondary" className="capitalize mt-1">
+                        {activeResource.type}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={handleDismissResource}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Resource Content Preview */}
+                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-4">
+                  {activeResource.type === 'video' && (
+                    <div className="text-center">
+                      <Play className="w-16 h-16 text-muted-foreground mb-2 mx-auto" />
+                      <p className="text-muted-foreground">Video Player</p>
+                    </div>
+                  )}
+                  {activeResource.type === 'audio' && (
+                    <div className="text-center">
+                      <Volume2 className="w-16 h-16 text-muted-foreground mb-2 mx-auto" />
+                      <p className="text-muted-foreground">Audio Player</p>
+                    </div>
+                  )}
+                  {activeResource.type === 'quiz' && (
+                    <div className="text-center">
+                      <HelpCircle className="w-16 h-16 text-muted-foreground mb-2 mx-auto" />
+                      <p className="text-muted-foreground">Quiz Interface</p>
+                    </div>
+                  )}
+                  {activeResource.type === 'flashcard' && (
+                    <div className="text-center">
+                      <BookOpen className="w-16 h-16 text-muted-foreground mb-2 mx-auto" />
+                      <p className="text-muted-foreground">Flashcard Deck</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <Button variant="outline" onClick={handleDismissResource}>
+                    Skip
+                  </Button>
+                  <Button className="bg-gradient-accent">
+                    Start {activeResource.type}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default PPTXViewer;
