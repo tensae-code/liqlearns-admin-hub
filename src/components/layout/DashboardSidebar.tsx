@@ -110,6 +110,17 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
+    case 'enterprise':
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', description: 'Enterprise overview', path: '/enterprise' },
+        { icon: Users, label: 'Team', description: 'Manage members', path: '/enterprise/team' },
+        { icon: Library, label: 'Courses', description: 'Training content', path: '/courses' },
+        { icon: GraduationCap, label: 'Learning Paths', description: 'Training programs', path: '/enterprise/paths' },
+        { icon: BarChart3, label: 'Analytics', description: 'Reports & insights', path: '/enterprise/analytics' },
+        { icon: Mail, label: 'Messages', description: 'Team chat', path: '/messages' },
+        { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
+        { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
+      ];
     default: // student - max 10 items
       return [
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Your overview', path: '/dashboard' },
@@ -126,16 +137,9 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
   }
 };
 
-// Role hub names
+// Role hub names - all show Liqlearns now
 const getRoleHubName = (role: string | null): string => {
-  switch (role) {
-    case 'ceo': return 'CEO Hub';
-    case 'admin': return 'Admin Hub';
-    case 'support': return 'Support Hub';
-    case 'teacher': return 'Teacher Hub';
-    case 'parent': return 'Parent Hub';
-    default: return 'Learning Hub';
-  }
+  return 'Liqlearns';
 };
 
 const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
@@ -170,6 +174,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
       case 'admin': return 'Admin';
       case 'ceo': return 'CEO';
       case 'support': return 'Support';
+      case 'enterprise': return 'Enterprise';
       default: return 'Student';
     }
   };
@@ -181,6 +186,7 @@ const DashboardSidebar = ({ className, onCollapseChange }: SidebarProps) => {
       case 'admin': return 'bg-destructive/10 text-destructive';
       case 'ceo': return 'bg-gold/10 text-gold';
       case 'support': return 'bg-primary/10 text-primary';
+      case 'enterprise': return 'bg-blue-500/10 text-blue-500';
       default: return 'bg-muted text-muted-foreground';
     }
   };

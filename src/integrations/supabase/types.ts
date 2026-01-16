@@ -2179,6 +2179,82 @@ export type Database = {
           },
         ]
       }
+      student_enterprise_memberships: {
+        Row: {
+          created_at: string
+          enterprise_id: string
+          id: string
+          invited_at: string
+          joined_at: string | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enterprise_id: string
+          id?: string
+          invited_at?: string
+          joined_at?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enterprise_id?: string
+          id?: string
+          invited_at?: string
+          joined_at?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_enterprise_memberships_enterprise_id_fkey"
+            columns: ["enterprise_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_enterprise_memberships_enterprise_id_fkey"
+            columns: ["enterprise_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_enterprise_memberships_enterprise_id_fkey"
+            columns: ["enterprise_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_enterprise_memberships_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_enterprise_memberships_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_enterprise_memberships_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_room_participants: {
         Row: {
           id: string
