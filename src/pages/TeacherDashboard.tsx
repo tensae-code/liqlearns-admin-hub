@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import CreateCourseModal from '@/components/teacher/CreateCourseModal';
 import CreateAssignmentModal from '@/components/teacher/CreateAssignmentModal';
 import SubmissionReviewModal from '@/components/teacher/SubmissionReviewModal';
+import StudentSubmissionHistory from '@/components/teacher/StudentSubmissionHistory';
 import { 
   BookOpen, 
   Users, 
@@ -37,7 +38,9 @@ import {
   AlertTriangle,
   Trophy,
   Target,
-  Loader2
+  Loader2,
+  History,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -120,6 +123,38 @@ const TeacherDashboard = () => {
   const [submissionReviewOpen, setSubmissionReviewOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [currentGradingType, setCurrentGradingType] = useState<'pass_fail' | 'letter_grade'>('pass_fail');
+  const [submissionHistoryOpen, setSubmissionHistoryOpen] = useState(false);
+  const [studentForHistory, setStudentForHistory] = useState<{id: string; name: string; email: string; avatar?: string; course: string} | null>(null);
+
+  // Mock submission history per student
+  const getStudentSubmissions = (studentId: string) => [
+    { id: '1', assignmentTitle: 'Week 1: Basic Greetings Essay', assignmentId: 'a1', submittedAt: '2 days ago', fileType: 'text' as const, content: 'Sample text...', status: 'graded' as const, grade: 'Good Job! 🎉', feedback: 'Excellent work! Great use of vocabulary.' },
+    { id: '2', assignmentTitle: 'Pronunciation Practice', assignmentId: 'a2', submittedAt: '5 days ago', fileType: 'audio' as const, status: 'graded' as const, grade: 'B+', feedback: 'Good pronunciation, work on intonation.' },
+    { id: '3', assignmentTitle: 'Historical Analysis Report', assignmentId: 'a3', submittedAt: '1 week ago', fileType: 'pdf' as const, status: 'resubmit_requested' as const, resubmitReason: 'Missing bibliography section. Please add references.' },
+    { id: '4', assignmentTitle: 'Business Letter Writing', assignmentId: 'a4', submittedAt: '1 hour ago', fileType: 'text' as const, content: 'Dear Sir...', status: 'pending' as const },
+  ];
+
+  const handleViewStudentHistory = (student: Student) => {
+    setStudentForHistory({
+      id: student.id,
+      name: student.name,
+      email: student.email,
+      avatar: student.avatar,
+      course: student.course
+    });
+    setSubmissionHistoryOpen(true);
+  };
+
+  const handleRequestResubmit = (submissionId: string, reason: string) => {
+    // In real app, this would update the database
+    console.log('Request resubmit:', submissionId, reason);
+    toast.success('Resubmit request sent!');
+  };
+
+  const handleViewSubmissionFromHistory = (submission: any) => {
+    // Navigate to submission review or open preview
+    toast.info(`Viewing submission: ${submission.assignmentTitle}`);
+  };
 
   // Listen for custom event from navbar to open create course modal
   useEffect(() => {
@@ -618,6 +653,14 @@ const TeacherDashboard = () => {
                       </div>
                       <div className="hidden sm:block text-sm text-muted-foreground">{student.lastActive}</div>
                       <div className="flex gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleViewStudentHistory(student)}
+                          title="View Submission History"
+                        >
+                          <History className="w-4 h-4 mr-1" /> Submissions
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleViewStudent(student)}>
                           <Eye className="w-4 h-4 mr-1" /> View
                         </Button>
@@ -1083,6 +1126,16 @@ const TeacherDashboard = () => {
         }
         gradingType={currentGradingType}
         onGrade={handleGradeFromReview}
+      />
+
+      {/* Student Submission History Modal */}
+      <StudentSubmissionHistory
+        open={submissionHistoryOpen}
+        onOpenChange={setSubmissionHistoryOpen}
+        student={studentForHistory}
+        submissions={studentForHistory ? getStudentSubmissions(studentForHistory.id) : []}
+        onRequestResubmit={handleRequestResubmit}
+        onViewSubmission={handleViewSubmissionFromHistory}
       />
     </>
   );

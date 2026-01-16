@@ -6,6 +6,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import CourseCategoryManager from '@/components/ceo/CourseCategoryManager';
 import PlatformControls from '@/components/ceo/PlatformControls';
+import CEOSkillApproval from '@/components/ceo/CEOSkillApproval';
 import {
   Users,
   BookOpen,
@@ -24,7 +25,8 @@ import {
   Settings,
   Smile,
   FolderTree,
-  Shield
+  Shield,
+  Lightbulb
 } from 'lucide-react';
 
 import { STAT_GRADIENTS } from '@/lib/theme';
@@ -34,6 +36,7 @@ const CEODashboard = () => {
   const { profile } = useProfile();
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
   const [platformControlsOpen, setPlatformControlsOpen] = useState(false);
+  const [skillApprovalOpen, setSkillApprovalOpen] = useState(false);
   
   const stats = [
     { label: 'Total Revenue', value: '$2.4M', change: '+28%', isUp: true, icon: DollarSign, gradient: STAT_GRADIENTS[2] },
@@ -72,6 +75,10 @@ const CEODashboard = () => {
             <p className="text-muted-foreground text-sm md:text-base">Company overview and strategic metrics</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => setSkillApprovalOpen(true)}>
+              <Lightbulb className="w-4 h-4 mr-1 md:mr-2" /> 
+              <span className="hidden sm:inline">Skills</span>
+            </Button>
             <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => setPlatformControlsOpen(true)}>
               <Shield className="w-4 h-4 mr-1 md:mr-2" /> 
               <span className="hidden sm:inline">Controls</span>
@@ -261,6 +268,10 @@ const CEODashboard = () => {
       <PlatformControls
         open={platformControlsOpen}
         onOpenChange={setPlatformControlsOpen}
+      />
+      <CEOSkillApproval
+        open={skillApprovalOpen}
+        onOpenChange={setSkillApprovalOpen}
       />
     </DashboardLayout>
   );
