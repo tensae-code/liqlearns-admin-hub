@@ -460,7 +460,7 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Bulk Actions */}
-                {selectedIds.length > 0 && (
+{selectedIds.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-3">
                     <span className="text-sm text-muted-foreground">
                       {selectedIds.length} selected
@@ -477,20 +477,15 @@ const AdminDashboard = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="text-success border-success hover:bg-success/10"
-                        onClick={() => bulkUpdateStatus(selectedIds, 'approved')}
-                      >
-                        <Check className="w-4 h-4 mr-1" /> Approve
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
                         className="text-destructive border-destructive hover:bg-destructive/10"
                         onClick={() => bulkUpdateStatus(selectedIds, 'rejected')}
                       >
                         <X className="w-4 h-4 mr-1" /> Reject
                       </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground ml-2">
+                      💡 CEO approves skills after voting period
+                    </p>
                   </div>
                 )}
               </div>
@@ -649,7 +644,7 @@ const AdminDashboard = () => {
                               {getSkillStatusBadge(suggestion.status)}
                             </div>
                             <div className="col-span-2 flex justify-end gap-1">
-                              {suggestion.status === 'pending' && (
+{suggestion.status === 'pending' && (
                                 <>
                                   <Button 
                                     variant="ghost" 
@@ -659,15 +654,6 @@ const AdminDashboard = () => {
                                     title="Open for Voting"
                                   >
                                     <Vote className="w-4 h-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="text-success hover:text-success hover:bg-success/10"
-                                    onClick={() => updateStatus(suggestion.id, 'approved')}
-                                    title="Approve"
-                                  >
-                                    <CheckCircle2 className="w-4 h-4" />
                                   </Button>
                                   <Button 
                                     variant="ghost" 
@@ -690,11 +676,9 @@ const AdminDashboard = () => {
                                   <DropdownMenuItem onClick={() => updateStatus(suggestion.id, 'voting')}>
                                     <Vote className="w-4 h-4 mr-2" /> Open for Voting
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => updateStatus(suggestion.id, 'approved')}>
-                                    <Check className="w-4 h-4 mr-2" /> Approve
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => updateStatus(suggestion.id, 'in_development')}>
-                                    <Sparkles className="w-4 h-4 mr-2" /> Mark In Development
+                                  {/* Only show approve for CEO - admins can only send to voting */}
+                                  <DropdownMenuItem disabled className="text-muted-foreground">
+                                    <Check className="w-4 h-4 mr-2" /> Approve (CEO only)
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => updateStatus(suggestion.id, 'rejected')}>
