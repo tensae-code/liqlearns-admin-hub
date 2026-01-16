@@ -2729,7 +2729,14 @@ export type Database = {
       is_parent_of_profile: { Args: { profile_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "student" | "teacher" | "support" | "admin" | "ceo" | "parent"
+      app_role:
+        | "student"
+        | "teacher"
+        | "support"
+        | "admin"
+        | "ceo"
+        | "parent"
+        | "enterprise"
       channel_type: "text" | "announcement" | "voice"
       friendship_status: "pending" | "accepted" | "blocked"
       group_role: "owner" | "admin" | "member"
@@ -2867,7 +2874,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["student", "teacher", "support", "admin", "ceo", "parent"],
+      app_role: [
+        "student",
+        "teacher",
+        "support",
+        "admin",
+        "ceo",
+        "parent",
+        "enterprise",
+      ],
       channel_type: ["text", "announcement", "voice"],
       friendship_status: ["pending", "accepted", "blocked"],
       group_role: ["owner", "admin", "member"],
