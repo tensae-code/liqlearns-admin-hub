@@ -13,6 +13,8 @@ import CreateCourseModal from '@/components/teacher/CreateCourseModal';
 import CreateAssignmentModal from '@/components/teacher/CreateAssignmentModal';
 import SubmissionReviewModal from '@/components/teacher/SubmissionReviewModal';
 import StudentSubmissionHistory from '@/components/teacher/StudentSubmissionHistory';
+import ProfilePreviewModal from '@/components/messaging/ProfilePreviewModal';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   BookOpen, 
   Users, 
@@ -40,7 +42,8 @@ import {
   Target,
   Loader2,
   History,
-  RefreshCw
+  RefreshCw,
+  UserCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -125,8 +128,18 @@ const TeacherDashboard = () => {
   const [currentGradingType, setCurrentGradingType] = useState<'pass_fail' | 'letter_grade'>('pass_fail');
   const [submissionHistoryOpen, setSubmissionHistoryOpen] = useState(false);
   const [studentForHistory, setStudentForHistory] = useState<{id: string; name: string; email: string; avatar?: string; course: string} | null>(null);
+  const [profilePreviewOpen, setProfilePreviewOpen] = useState(false);
+  const [selectedProfileForPreview, setSelectedProfileForPreview] = useState<{
+    id: string;
+    user_id: string;
+    full_name: string;
+    username: string;
+    avatar_url?: string;
+    bio?: string;
+    xp_points?: number;
+    current_streak?: number;
+  } | null>(null);
 
-  // Mock submission history per student
   const getStudentSubmissions = (studentId: string) => [
     { id: '1', assignmentTitle: 'Week 1: Basic Greetings Essay', assignmentId: 'a1', submittedAt: '2 days ago', fileType: 'text' as const, content: 'Sample text...', status: 'graded' as const, grade: 'Good Job! 🎉', feedback: 'Excellent work! Great use of vocabulary.' },
     { id: '2', assignmentTitle: 'Pronunciation Practice', assignmentId: 'a2', submittedAt: '5 days ago', fileType: 'audio' as const, status: 'graded' as const, grade: 'B+', feedback: 'Good pronunciation, work on intonation.' },
@@ -265,6 +278,38 @@ const TeacherDashboard = () => {
   const handleViewStudent = (student: Student) => {
     setSelectedStudent(student);
     setStudentDetailOpen(true);
+  };
+
+  // View student public profile
+  const handleViewPublicProfile = async (student: Student) => {
+    try {
+      // Try to fetch real profile data
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, user_id, full_name, username, avatar_url, bio, xp_points, current_streak')
+        .or(`full_name.ilike.%${student.name}%,email.eq.${student.email}`)
+        .maybeSingle();
+
+      if (profile) {
+        setSelectedProfileForPreview(profile);
+      } else {
+        // Fallback for mock data
+        setSelectedProfileForPreview({
+          id: student.id,
+          user_id: student.id,
+          full_name: student.name,
+          username: student.name.toLowerCase().replace(/\s+/g, '_'),
+          avatar_url: student.avatar,
+          bio: `Student in ${student.course}`,
+          xp_points: student.quizScore * 10,
+          current_streak: 5,
+        });
+      }
+      setProfilePreviewOpen(true);
+    } catch (error) {
+      console.error('Error fetching student profile:', error);
+      toast.error('Failed to load student profile');
+    }
   };
 
   const handleGradeSubmission = (submission: Submission) => {
@@ -1016,19 +1061,31 @@ const TeacherDashboard = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStudentDetailOpen(false)}>
-                  Close
-                </Button>
+              <div className="flex flex-col gap-2">
                 <Button 
-                  className="flex-1 gap-2" 
+                  variant="outline" 
+                  className="w-full gap-2"
                   onClick={() => {
                     setStudentDetailOpen(false);
-                    handleOpenReview(selectedStudent);
+                    handleViewPublicProfile(selectedStudent);
                   }}
                 >
-                  <MessageSquare className="w-4 h-4" /> Send Review
+                  <UserCircle className="w-4 h-4" /> View Public Profile
                 </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setStudentDetailOpen(false)}>
+                    Close
+                  </Button>
+                  <Button 
+                    className="flex-1 gap-2" 
+                    onClick={() => {
+                      setStudentDetailOpen(false);
+                      handleOpenReview(selectedStudent);
+                    }}
+                  >
+                    <MessageSquare className="w-4 h-4" /> Send Review
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -1136,6 +1193,25 @@ const TeacherDashboard = () => {
         submissions={studentForHistory ? getStudentSubmissions(studentForHistory.id) : []}
         onRequestResubmit={handleRequestResubmit}
         onViewSubmission={handleViewSubmissionFromHistory}
+      />
+
+      {/* Student Public Profile Preview Modal */}
+      <ProfilePreviewModal
+        open={profilePreviewOpen}
+        onOpenChange={setProfilePreviewOpen}
+        profile={selectedProfileForPreview}
+        onStartChat={(userId) => {
+          navigate('/messages', { state: { startDmWith: userId } });
+        }}
+        onCall={(userId) => {
+          toast.info('Calling student...');
+        }}
+        onVideoCall={(userId) => {
+          toast.info('Starting video call...');
+        }}
+        onReport={(userId) => {
+          toast.info('Report submitted for review');
+        }}
       />
     </>
   );

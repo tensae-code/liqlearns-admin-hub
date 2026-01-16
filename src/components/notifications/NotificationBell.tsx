@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Bell, Trophy, BookOpen, Flame, Gift, Check, Gamepad2, Video, CheckCircle2, Star } from 'lucide-react';
+import { Bell, Trophy, BookOpen, Flame, Gift, Check, Gamepad2, Video, CheckCircle2, Star, FileText, Users, AlertCircle, HelpCircle, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRoleBasedConfig } from '@/hooks/useRoleBasedConfig';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -26,20 +27,62 @@ interface Notification {
   aura?: number;
 }
 
-// Mock activity data that will be merged with notifications
-const recentActivities: Notification[] = [
-  { id: 'act-1', type: 'lesson', title: 'Completed Amharic Lesson 5', message: 'Basic Greetings', xp: 50, aura: 10, read: false, created_at: new Date(Date.now() - 10 * 60000).toISOString(), data: null },
-  { id: 'act-2', type: 'game', title: 'Won Memory Match', message: 'Vocabulary Challenge', xp: 30, read: false, created_at: new Date(Date.now() - 25 * 60000).toISOString(), data: null },
-  { id: 'act-3', type: 'achievement', title: 'Earned Badge', message: 'First Week Champion', xp: 100, aura: 25, read: true, created_at: new Date(Date.now() - 60 * 60000).toISOString(), data: null },
-  { id: 'act-4', type: 'video', title: 'Watched Tutorial', message: 'Ethiopian Culture', xp: 20, read: true, created_at: new Date(Date.now() - 2 * 60 * 60000).toISOString(), data: null },
-  { id: 'act-5', type: 'streak', title: 'Streak Extended!', message: '7 days in a row', xp: 75, aura: 15, read: true, created_at: new Date(Date.now() - 3 * 60 * 60000).toISOString(), data: null },
-];
+// Role-based mock activity data generators
+const getRecentActivities = (role: string): Notification[] => {
+  const baseTime = Date.now();
+  
+  const roleActivities: Record<string, Notification[]> = {
+    student: [
+      { id: 'act-1', type: 'lesson', title: 'Completed Amharic Lesson 5', message: 'Basic Greetings', xp: 50, aura: 10, read: false, created_at: new Date(baseTime - 10 * 60000).toISOString(), data: null },
+      { id: 'act-2', type: 'game', title: 'Won Memory Match', message: 'Vocabulary Challenge', xp: 30, read: false, created_at: new Date(baseTime - 25 * 60000).toISOString(), data: null },
+      { id: 'act-3', type: 'achievement', title: 'Earned Badge', message: 'First Week Champion', xp: 100, aura: 25, read: true, created_at: new Date(baseTime - 60 * 60000).toISOString(), data: null },
+      { id: 'act-4', type: 'streak', title: 'Streak Extended!', message: '7 days in a row', xp: 75, aura: 15, read: true, created_at: new Date(baseTime - 3 * 60 * 60000).toISOString(), data: null },
+    ],
+    teacher: [
+      { id: 'act-t1', type: 'submission', title: 'New Assignment Submission', message: 'Alemayehu submitted Week 1 Essay', read: false, created_at: new Date(baseTime - 15 * 60000).toISOString(), data: null },
+      { id: 'act-t2', type: 'enrollment', title: 'New Student Enrolled', message: 'Sara T. joined Amharic for Beginners', read: false, created_at: new Date(baseTime - 45 * 60000).toISOString(), data: null },
+      { id: 'act-t3', type: 'review', title: 'New Course Review', message: '5 stars from Dawit B.', read: true, created_at: new Date(baseTime - 2 * 60 * 60000).toISOString(), data: null },
+      { id: 'act-t4', type: 'payment', title: 'Payment Received', message: '450 ETB from course sales', read: true, created_at: new Date(baseTime - 5 * 60 * 60000).toISOString(), data: null },
+    ],
+    parent: [
+      { id: 'act-p1', type: 'child_progress', title: "Child's Progress Update", message: 'Completed 3 lessons today', read: false, created_at: new Date(baseTime - 20 * 60000).toISOString(), data: null },
+      { id: 'act-p2', type: 'child_achievement', title: 'New Badge Earned', message: 'Quick Learner achievement', read: false, created_at: new Date(baseTime - 60 * 60000).toISOString(), data: null },
+      { id: 'act-p3', type: 'report', title: 'Weekly Report Ready', message: 'View learning summary', read: true, created_at: new Date(baseTime - 24 * 60 * 60000).toISOString(), data: null },
+    ],
+    admin: [
+      { id: 'act-a1', type: 'skill_suggestion', title: 'New Skill Suggestion', message: 'Advanced Grammar proposed', read: false, created_at: new Date(baseTime - 30 * 60000).toISOString(), data: null },
+      { id: 'act-a2', type: 'report', title: 'User Report Received', message: 'Review spam content', read: false, created_at: new Date(baseTime - 2 * 60 * 60000).toISOString(), data: null },
+      { id: 'act-a3', type: 'approval', title: 'Pending Approval', message: '3 skills waiting for vote', read: true, created_at: new Date(baseTime - 4 * 60 * 60000).toISOString(), data: null },
+    ],
+    support: [
+      { id: 'act-s1', type: 'ticket', title: 'New Support Ticket', message: 'Login issue reported', read: false, created_at: new Date(baseTime - 10 * 60000).toISOString(), data: null },
+      { id: 'act-s2', type: 'escalation', title: 'Escalated Ticket', message: 'Payment dispute needs review', read: false, created_at: new Date(baseTime - 45 * 60000).toISOString(), data: null },
+      { id: 'act-s3', type: 'resolution', title: 'Ticket Resolved', message: 'User thanked support team', read: true, created_at: new Date(baseTime - 3 * 60 * 60000).toISOString(), data: null },
+    ],
+    ceo: [
+      { id: 'act-c1', type: 'skill_approval', title: 'Skill Approval Required', message: '2 skills passed voting phase', read: false, created_at: new Date(baseTime - 20 * 60000).toISOString(), data: null },
+      { id: 'act-c2', type: 'analytics', title: 'Weekly Analytics Ready', message: 'Platform grew 15% this week', read: false, created_at: new Date(baseTime - 60 * 60000).toISOString(), data: null },
+      { id: 'act-c3', type: 'team', title: 'New Team Member', message: 'Demo Admin joined the team', read: true, created_at: new Date(baseTime - 24 * 60 * 60000).toISOString(), data: null },
+    ],
+    enterprise: [
+      { id: 'act-e1', type: 'member_progress', title: 'Team Progress Update', message: '5 members completed training', read: false, created_at: new Date(baseTime - 30 * 60000).toISOString(), data: null },
+      { id: 'act-e2', type: 'completion', title: 'Learning Path Completed', message: 'Marketing team finished onboarding', read: false, created_at: new Date(baseTime - 2 * 60 * 60000).toISOString(), data: null },
+      { id: 'act-e3', type: 'analytics', title: 'Monthly Report', message: 'Team engagement up 20%', read: true, created_at: new Date(baseTime - 24 * 60 * 60000).toISOString(), data: null },
+    ],
+  };
+  
+  return roleActivities[role] || roleActivities.student;
+};
 
 const NotificationBell = () => {
   const { user } = useAuth();
+  const { role } = useRoleBasedConfig();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Get role-based activities
+  const recentActivities = getRecentActivities(role);
 
   useEffect(() => {
     if (!user) return;
