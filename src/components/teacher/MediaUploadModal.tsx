@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCourseResources } from '@/hooks/useCourseResources';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MediaUploadModalProps {
   open: boolean;
@@ -114,15 +115,22 @@ const MediaUploadModal = ({
           showBeforeSlide,
           presentationId
         );
-      } else {
-        // For URL mode, we'd create a resource with the URL directly
-        // This would require a different hook method
-        toast.info('URL embedding coming soon!');
-        setIsUploading(false);
-        return;
+        toast.success(`${type === 'video' ? 'Video' : 'Audio'} uploaded successfully!`);
+      } else if (uploadMode === 'url') {
+        // Create resource with external URL
+        await createUrlResource(
+          externalUrl,
+          type,
+          title,
+          courseId,
+          moduleId,
+          showAfterSlide,
+          showBeforeSlide,
+          presentationId
+        );
+        toast.success(`${type === 'video' ? 'Video' : 'Audio'} link added successfully!`);
       }
 
-      toast.success(`${type === 'video' ? 'Video' : 'Audio'} uploaded successfully!`);
       onOpenChange(false);
       onSave?.();
       
@@ -136,6 +144,62 @@ const MediaUploadModal = ({
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const createUrlResource = async (
+    url: string,
+    type: 'video' | 'audio',
+    title: string,
+    courseId: string,
+    moduleId: string,
+    showAfterSlide: number,
+    showBeforeSlide: number,
+    presentationId?: string
+  ) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) throw new Error('Profile not found');
+
+    // Parse URL for embed support
+    let embedUrl = url;
+    
+    // Convert YouTube URLs to embed format
+    if (type === 'video') {
+      const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+      if (youtubeMatch) {
+        embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+      }
+      
+      // Convert Vimeo URLs to embed format
+      const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+      if (vimeoMatch) {
+        embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+      }
+    }
+
+    const { error } = await supabase
+      .from('course_resources')
+      .insert({
+        course_id: courseId,
+        module_id: moduleId,
+        presentation_id: presentationId,
+        type,
+        title,
+        file_url: embedUrl,
+        show_after_slide: showAfterSlide,
+        show_before_slide: showBeforeSlide,
+        content: { originalUrl: url },
+        created_by: profile.id,
+      });
+
+    if (error) throw error;
   };
 
   const Icon = type === 'video' ? Video : Music;

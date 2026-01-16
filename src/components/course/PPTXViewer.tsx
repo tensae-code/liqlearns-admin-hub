@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -25,6 +25,7 @@ import AudioResource from './resources/AudioResource';
 import QuizResource from './resources/QuizResource';
 import FlashcardResource from './resources/FlashcardResource';
 import { toast } from 'sonner';
+import { usePresentationProgress } from '@/hooks/useCourseResources';
 
 interface SlideResource {
   id: string;
@@ -36,6 +37,7 @@ interface SlideResource {
   audioUrl?: string;
   quizQuestions?: any[];
   flashcards?: any[];
+  passingScore?: number;
 }
 
 interface PPTXViewerProps {
@@ -47,6 +49,8 @@ interface PPTXViewerProps {
   onComplete?: () => void;
   slides?: ParsedSlide[]; // Real parsed slides
   isLoading?: boolean;
+  presentationId?: string;
+  courseId?: string;
 }
 
 const resourceIcons = {
@@ -64,13 +68,60 @@ const PPTXViewer = ({
   resources,
   onComplete,
   slides = [],
-  isLoading = false
+  isLoading = false,
+  presentationId,
+  courseId
 }: PPTXViewerProps) => {
   const [currentSlide, setCurrentSlide] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeResource, setActiveResource] = useState<SlideResource | null>(null);
   const [completedSlides, setCompletedSlides] = useState<number[]>([]);
+  const [completedResources, setCompletedResources] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const startTimeRef = useRef<Date>(new Date());
+  const slideStartRef = useRef<Date>(new Date());
+
+  // Track presentation progress
+  const { progress, updateProgress } = usePresentationProgress(presentationId, courseId);
+
+  // Initialize from saved progress
+  useEffect(() => {
+    if (progress) {
+      setCurrentSlide(progress.current_slide || 1);
+      setCompletedSlides(progress.slides_viewed || []);
+      setCompletedResources(progress.resources_completed || []);
+    }
+  }, [progress]);
+
+  // Save progress on slide change
+  useEffect(() => {
+    if (!open || !presentationId) return;
+    
+    const timeSpent = Math.floor((new Date().getTime() - slideStartRef.current.getTime()) / 1000);
+    slideStartRef.current = new Date();
+    
+    updateProgress({
+      currentSlide,
+      slideViewed: currentSlide,
+      timeSpent: timeSpent > 0 ? timeSpent : 0,
+    });
+  }, [currentSlide, open, presentationId]);
+
+  // Save on close
+  useEffect(() => {
+    if (!open && presentationId) {
+      const totalTime = Math.floor((new Date().getTime() - startTimeRef.current.getTime()) / 1000);
+      updateProgress({
+        currentSlide,
+        timeSpent: totalTime,
+        completed: completedSlides.length >= totalSlides,
+      });
+    }
+    if (open) {
+      startTimeRef.current = new Date();
+      slideStartRef.current = new Date();
+    }
+  }, [open]);
 
   const progressPercentage = (completedSlides.length / totalSlides) * 100;
   const currentSlideData = slides.find(s => s.index === currentSlide);
@@ -125,6 +176,15 @@ const PPTXViewer = ({
 
   const handlePrevious = () => {
     goToSlide(currentSlide - 1);
+  };
+
+  const handleResourceComplete = (resourceId: string) => {
+    if (!completedResources.includes(resourceId)) {
+      setCompletedResources([...completedResources, resourceId]);
+      if (presentationId) {
+        updateProgress({ resourceCompleted: resourceId });
+      }
+    }
   };
 
   const handleDismissResource = () => {
@@ -348,6 +408,7 @@ const PPTXViewer = ({
                     title={activeResource.title}
                     videoUrl={activeResource.videoUrl}
                     onComplete={() => {
+                      handleResourceComplete(activeResource.id);
                       toast.success('Video completed! +10 XP');
                       handleDismissResource();
                     }}
@@ -359,6 +420,7 @@ const PPTXViewer = ({
                     title={activeResource.title}
                     audioUrl={activeResource.audioUrl}
                     onComplete={() => {
+                      handleResourceComplete(activeResource.id);
                       toast.success('Audio completed! +10 XP');
                       handleDismissResource();
                     }}
@@ -369,7 +431,9 @@ const PPTXViewer = ({
                   <QuizResource
                     title={activeResource.title}
                     questions={activeResource.quizQuestions}
+                    passingScore={activeResource.passingScore}
                     onComplete={(score, passed) => {
+                      handleResourceComplete(activeResource.id);
                       if (passed) {
                         toast.success(`Quiz passed with ${score}%! +25 XP`);
                       } else {
@@ -385,6 +449,7 @@ const PPTXViewer = ({
                     title={activeResource.title}
                     cards={activeResource.flashcards}
                     onComplete={(known, total) => {
+                      handleResourceComplete(activeResource.id);
                       toast.success(`Flashcards reviewed! ${known}/${total} mastered. +15 XP`);
                       handleDismissResource();
                     }}
