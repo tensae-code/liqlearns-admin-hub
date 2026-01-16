@@ -35,7 +35,8 @@ import {
   Trophy,
   Flame,
   Lightbulb,
-  ClipboardCheck
+  ClipboardCheck,
+  FolderTree
 } from 'lucide-react';
 import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
 
@@ -58,10 +59,13 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     case 'ceo':
       return [
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & insights', path: '/ceo' },
+        { icon: Lightbulb, label: 'Skills', description: 'Skill approvals', path: '/ceo?tab=skills' },
+        { icon: Shield, label: 'Controls', description: 'Platform controls', path: '/ceo?tab=controls' },
+        { icon: FolderTree, label: 'Categories', description: 'Course categories', path: '/ceo?tab=categories' },
         { icon: BarChart3, label: 'Analytics', description: 'Platform metrics', path: '/ceo/analytics' },
         { icon: Users, label: 'Team', description: 'Manage staff', path: '/ceo/team' },
-        { icon: Library, label: 'Courses', description: 'Browse content', path: '/courses' },
         { icon: FileText, label: 'Reports', description: 'Business reports', path: '/ceo/reports' },
+        { icon: Library, label: 'Courses', description: 'Browse content', path: '/courses' },
         { icon: Mail, label: 'Messages', description: 'Team chat', path: '/messages' },
         { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },

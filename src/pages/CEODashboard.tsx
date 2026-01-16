@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
@@ -33,10 +33,41 @@ import { STAT_GRADIENTS } from '@/lib/theme';
 
 const CEODashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile } = useProfile();
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
   const [platformControlsOpen, setPlatformControlsOpen] = useState(false);
   const [skillApprovalOpen, setSkillApprovalOpen] = useState(false);
+
+  // Handle tab query params to open modals from sidebar navigation
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    
+    if (tab === 'skills') {
+      setSkillApprovalOpen(true);
+    } else if (tab === 'controls') {
+      setPlatformControlsOpen(true);
+    } else if (tab === 'categories') {
+      setCategoryManagerOpen(true);
+    }
+  }, [location.search]);
+
+  // Clear query param when modal closes
+  const handleSkillClose = (open: boolean) => {
+    setSkillApprovalOpen(open);
+    if (!open) navigate('/ceo', { replace: true });
+  };
+
+  const handleControlsClose = (open: boolean) => {
+    setPlatformControlsOpen(open);
+    if (!open) navigate('/ceo', { replace: true });
+  };
+
+  const handleCategoriesClose = (open: boolean) => {
+    setCategoryManagerOpen(open);
+    if (!open) navigate('/ceo', { replace: true });
+  };
   
   const stats = [
     { label: 'Total Revenue', value: '$2.4M', change: '+28%', isUp: true, icon: DollarSign, gradient: STAT_GRADIENTS[2] },
@@ -64,42 +95,13 @@ const CEODashboard = () => {
       <div className="space-y-4 md:space-y-6">
         {/* Header */}
         <motion.div
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div>
-            <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-              CEO Dashboard 👑
-            </h1>
-            <p className="text-muted-foreground text-sm md:text-base">Company overview and strategic metrics</p>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => setSkillApprovalOpen(true)}>
-              <Lightbulb className="w-4 h-4 mr-1 md:mr-2" /> 
-              <span className="hidden sm:inline">Skills</span>
-            </Button>
-            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => setPlatformControlsOpen(true)}>
-              <Shield className="w-4 h-4 mr-1 md:mr-2" /> 
-              <span className="hidden sm:inline">Controls</span>
-            </Button>
-            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => setCategoryManagerOpen(true)}>
-              <FolderTree className="w-4 h-4 mr-1 md:mr-2" /> 
-              <span className="hidden sm:inline">Categories</span>
-            </Button>
-            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => navigate('/ceo/reports')}>
-              <FileText className="w-4 h-4 mr-1 md:mr-2" /> 
-              <span className="hidden sm:inline">Reports</span>
-            </Button>
-            <Button size="sm" className="text-xs md:text-sm" onClick={() => navigate('/ceo/analytics')}>
-              <PieChart className="w-4 h-4 mr-1 md:mr-2" /> 
-              <span className="hidden sm:inline">Analytics</span>
-            </Button>
-            <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => navigate('/settings')}>
-              <Settings className="w-4 h-4 mr-1 md:mr-2" /> 
-              <span className="hidden sm:inline">Settings</span>
-            </Button>
-          </div>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
+            CEO Dashboard 👑
+          </h1>
+          <p className="text-muted-foreground text-sm md:text-base">Company overview and strategic metrics</p>
         </motion.div>
 
         {/* Stats Grid - Colorful Gradient Cards */}
@@ -263,15 +265,15 @@ const CEODashboard = () => {
       {/* Category Manager Modal */}
       <CourseCategoryManager 
         open={categoryManagerOpen} 
-        onOpenChange={setCategoryManagerOpen} 
+        onOpenChange={handleCategoriesClose} 
       />
       <PlatformControls
         open={platformControlsOpen}
-        onOpenChange={setPlatformControlsOpen}
+        onOpenChange={handleControlsClose}
       />
       <CEOSkillApproval
         open={skillApprovalOpen}
-        onOpenChange={setSkillApprovalOpen}
+        onOpenChange={handleSkillClose}
       />
     </DashboardLayout>
   );
