@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import UnderageDashboard from "./pages/UnderageDashboard";
 import Courses from "./pages/Courses";
 import EnterpriseDashboard from "./pages/EnterpriseDashboard";
+import EnterpriseAnalytics from "./pages/EnterpriseAnalytics";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import ParentDashboard from "./pages/ParentDashboard";
 import Marketplace from "./pages/Marketplace";
@@ -46,6 +47,7 @@ const AppRoutes = () => (
     <Route path="/dashboard/kids" element={<UnderageDashboard />} />
     <Route path="/courses" element={<Courses />} />
     <Route path="/enterprise" element={<EnterpriseDashboard />} />
+    <Route path="/enterprise/analytics" element={<EnterpriseAnalytics />} />
     <Route path="/marketplace" element={<Marketplace />} />
     <Route path="/business" element={<BusinessDashboard />} />
     <Route path="/quest" element={<Quest />} />

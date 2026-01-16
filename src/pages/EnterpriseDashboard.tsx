@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -20,18 +21,20 @@ import {
   BookOpen,
   Shield,
   Wallet,
-  Settings,
   BarChart3,
-  FileText
+  Route
 } from 'lucide-react';
 import { toast } from 'sonner';
 import EnterpriseMemberManager from '@/components/enterprise/EnterpriseMemberManager';
 import EnterpriseCourseManager from '@/components/enterprise/EnterpriseCourseManager';
+import LearningPathBuilder from '@/components/enterprise/LearningPathBuilder';
 
 const EnterpriseDashboard = () => {
+  const navigate = useNavigate();
   const [enterpriseCode] = useState('GUILD-PHOENIX-2026');
   const [memberManagerOpen, setMemberManagerOpen] = useState(false);
   const [courseManagerOpen, setCourseManagerOpen] = useState(false);
+  const [learningPathOpen, setLearningPathOpen] = useState(false);
 
   const copyEnterpriseCode = () => {
     navigator.clipboard.writeText(enterpriseCode);
@@ -101,9 +104,13 @@ const EnterpriseDashboard = () => {
               <BookOpen className="w-4 h-4 mr-1" />
               <span className="hidden md:inline">Courses</span>
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => navigate('/enterprise/analytics')}>
               <BarChart3 className="w-4 h-4 mr-1" />
               <span className="hidden md:inline">Analytics</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setLearningPathOpen(true)}>
+              <Route className="w-4 h-4 mr-1" />
+              <span className="hidden md:inline">Paths</span>
             </Button>
             <Badge className="bg-gold/10 text-gold border-gold/30 text-sm px-3 py-1">
               <Crown className="w-4 h-4 mr-1" />
@@ -264,6 +271,10 @@ const EnterpriseDashboard = () => {
       <EnterpriseCourseManager
         open={courseManagerOpen}
         onOpenChange={setCourseManagerOpen}
+      />
+      <LearningPathBuilder
+        open={learningPathOpen}
+        onOpenChange={setLearningPathOpen}
       />
     </DashboardLayout>
   );
