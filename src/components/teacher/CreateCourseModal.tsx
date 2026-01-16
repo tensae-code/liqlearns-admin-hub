@@ -30,13 +30,27 @@ import {
   Clock,
   Target,
   Save,
-  Eye
+  Eye,
+  Presentation,
+  Layers,
+  Trash2,
+  Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
+import ModulePPTXUploader from '@/components/course/ModulePPTXUploader';
 
 interface CreateCourseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface CourseModule {
+  id: string;
+  title: string;
+  description: string;
+  hasPPTX: boolean;
+  pptxFileName?: string;
+  totalSlides?: number;
 }
 
 const courseEmojis = ['📚', '🎯', '💡', '🌟', '🔥', '🚀', '💻', '🎨', '🎵', '📖', '✏️', '🧠'];
@@ -69,6 +83,10 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
     estimatedDuration: '',
     objectives: [''],
   });
+  const [modules, setModules] = useState<CourseModule[]>([]);
+  const [pptxUploaderOpen, setPptxUploaderOpen] = useState(false);
+  const [selectedModule, setSelectedModule] = useState<CourseModule | null>(null);
+  const [newModuleName, setNewModuleName] = useState('');
 
   const handleAddObjective = () => {
     setFormData({
@@ -88,6 +106,40 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
     const newObjectives = [...formData.objectives];
     newObjectives[index] = value;
     setFormData({ ...formData, objectives: newObjectives });
+  };
+
+  const handleAddModule = () => {
+    if (!newModuleName.trim()) {
+      toast.error('Please enter a module name');
+      return;
+    }
+    const newModule: CourseModule = {
+      id: `module-${Date.now()}`,
+      title: newModuleName,
+      description: '',
+      hasPPTX: false,
+    };
+    setModules([...modules, newModule]);
+    setNewModuleName('');
+  };
+
+  const handleRemoveModule = (id: string) => {
+    setModules(modules.filter(m => m.id !== id));
+  };
+
+  const handleOpenPPTXUploader = (module: CourseModule) => {
+    setSelectedModule(module);
+    setPptxUploaderOpen(true);
+  };
+
+  const handlePPTXSave = (pptxData: any) => {
+    if (!selectedModule) return;
+    setModules(modules.map(m => 
+      m.id === selectedModule.id 
+        ? { ...m, hasPPTX: true, pptxFileName: pptxData.fileName, totalSlides: pptxData.totalSlides }
+        : m
+    ));
+    setSelectedModule(null);
   };
 
   const handleSubmit = () => {
@@ -112,6 +164,7 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
       estimatedDuration: '',
       objectives: [''],
     });
+    setModules([]);
   };
 
   const handleSaveDraft = () => {
@@ -133,7 +186,7 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
 
         {/* Step Indicators */}
         <div className="flex items-center gap-2 mb-6">
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
             <button
               key={s}
               onClick={() => setStep(s)}
@@ -427,6 +480,107 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
                     <Save className="w-4 h-4 mr-2" />
                     Save as Draft
                   </Button>
+                  <Button onClick={() => setStep(4)}>
+                    Next: Add Modules
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-accent" />
+                  Course Modules
+                </h3>
+
+                <p className="text-sm text-muted-foreground">
+                  Add modules and upload presentations for each. You can add resources between slides.
+                </p>
+
+                {/* Add Module */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter module name (e.g., Introduction to Basics)"
+                    value={newModuleName}
+                    onChange={(e) => setNewModuleName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddModule()}
+                  />
+                  <Button onClick={handleAddModule}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add
+                  </Button>
+                </div>
+
+                {/* Modules List */}
+                <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                  {modules.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg">
+                      <Layers className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                      <p>No modules added yet</p>
+                      <p className="text-sm">Add your first module above</p>
+                    </div>
+                  ) : (
+                    modules.map((module, index) => (
+                      <div
+                        key={module.id}
+                        className="p-4 bg-card border border-border rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center font-bold text-accent">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{module.title}</p>
+                            {module.hasPPTX ? (
+                              <p className="text-xs text-success flex items-center gap-1">
+                                <Presentation className="w-3 h-3" />
+                                {module.pptxFileName} ({module.totalSlides} slides)
+                              </p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">No presentation uploaded</p>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenPPTXUploader(module)}
+                          >
+                            <Upload className="w-4 h-4 mr-2" />
+                            {module.hasPPTX ? 'Replace PPTX' : 'Upload PPTX'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveModule(module.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setStep(3)}>
+                  Back
+                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleSaveDraft}>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save as Draft
+                  </Button>
                   <Button onClick={handleSubmit} className="bg-gradient-accent">
                     <Sparkles className="w-4 h-4 mr-2" />
                     Create Course
@@ -436,6 +590,17 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* PPTX Uploader Modal */}
+        {selectedModule && (
+          <ModulePPTXUploader
+            open={pptxUploaderOpen}
+            onOpenChange={setPptxUploaderOpen}
+            moduleId={selectedModule.id}
+            moduleName={selectedModule.title}
+            onSave={handlePPTXSave}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
