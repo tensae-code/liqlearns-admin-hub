@@ -153,28 +153,35 @@ const Auth = () => {
 
     setSponsorStatus('checking');
     
+    const cleanUsername = sponsorUsername.replace('@', '').toLowerCase().trim();
+    
     // Get sponsor profile
-    const { data: sponsorProfile } = await supabase
+    const { data: sponsorProfile, error: profileError } = await supabase
       .from('profiles')
-      .select('user_id')
-      .eq('username', sponsorUsername.replace('@', ''))
+      .select('user_id, username')
+      .eq('username', cleanUsername)
       .maybeSingle();
     
-    if (!sponsorProfile) {
+    if (profileError || !sponsorProfile) {
       setSponsorStatus('invalid');
       return;
     }
 
     // Check sponsor's role
-    const { data: sponsorRole } = await supabase
+    const { data: sponsorRole, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', sponsorProfile.user_id)
       .maybeSingle();
     
+    if (roleError || !sponsorRole) {
+      setSponsorStatus('invalid');
+      return;
+    }
+    
     // Only CEO and students can be sponsors (not admin, support, teacher)
     const validSponsorRoles = ['student', 'ceo'];
-    if (sponsorRole && validSponsorRoles.includes(sponsorRole.role)) {
+    if (validSponsorRoles.includes(sponsorRole.role)) {
       setSponsorStatus('valid');
     } else {
       setSponsorStatus('invalid');
@@ -850,10 +857,10 @@ const Auth = () => {
           variant="glass" 
           size="sm" 
           className="mb-6"
-          onClick={() => navigate('/')}
+          onClick={() => isSignUp ? setIsSignUp(false) : navigate('/')}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to home
+          {isSignUp ? 'Back to login' : 'Back to home'}
         </Button>
 
         <div className="bg-card rounded-2xl shadow-floating p-8">

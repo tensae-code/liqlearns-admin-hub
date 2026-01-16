@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
+import { useTeacherCourses } from '@/hooks/useCourses';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -35,7 +36,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Trophy,
-  Target
+  Target,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -95,6 +97,7 @@ const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { profile } = useProfile();
+  const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   
   // Get active tab from URL query param, default to 'overview'
   const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'assignments' | 'earnings') || 'overview';
@@ -130,20 +133,36 @@ const TeacherDashboard = () => {
     };
   }, []);
 
+  // Calculate stats from real data
+  const totalStudents = teacherCourses.reduce((sum, c) => sum + (c.enrollment_count || 0), 0);
+  const publishedCourses = teacherCourses.filter(c => c.is_published).length;
+  const draftCourses = teacherCourses.filter(c => !c.is_published).length;
+
   const stats = [
-    { label: 'Total Students', value: '1,248', icon: Users, gradient: STAT_GRADIENTS[0], change: '+12%' },
-    { label: 'Active Courses', value: '8', icon: BookOpen, gradient: STAT_GRADIENTS[1] },
-    { label: 'Total Revenue', value: '45.2K', icon: DollarSign, gradient: STAT_GRADIENTS[2], change: '+23%' },
+    { label: 'Total Students', value: totalStudents.toLocaleString(), icon: Users, gradient: STAT_GRADIENTS[0], change: '+12%' },
+    { label: 'Active Courses', value: publishedCourses.toString(), icon: BookOpen, gradient: STAT_GRADIENTS[1] },
+    { label: 'Draft Courses', value: draftCourses.toString(), icon: FileText, gradient: STAT_GRADIENTS[2] },
     { label: 'Avg. Rating', value: '4.8', icon: Star, gradient: STAT_GRADIENTS[3] },
   ];
 
-  const courses = [
-    { id: '1', title: 'Amharic for Beginners', students: 450, rating: 4.9, revenue: 12500, status: 'published', lessons: 24 },
-    { id: '2', title: 'Ethiopian History', students: 320, rating: 4.8, revenue: 9800, status: 'published', lessons: 18 },
-    { id: '3', title: 'Business Amharic', students: 180, rating: 4.7, revenue: 8200, status: 'published', lessons: 20 },
-    { id: '4', title: 'Kids Amharic Fun', students: 298, rating: 4.9, revenue: 14700, status: 'published', lessons: 30 },
-    { id: '5', title: 'Advanced Grammar', students: 0, rating: 0, revenue: 0, status: 'draft', lessons: 12 },
-  ];
+  // Combine real courses with mock data for now
+  const courses = teacherCourses.length > 0 
+    ? teacherCourses.map(c => ({
+        id: c.id,
+        title: c.title,
+        students: c.enrollment_count || 0,
+        rating: 0,
+        revenue: (c.price || 0) * (c.enrollment_count || 0),
+        status: c.is_published ? 'published' : 'draft',
+        lessons: c.total_lessons || 0,
+      }))
+    : [
+        { id: '1', title: 'Amharic for Beginners', students: 450, rating: 4.9, revenue: 12500, status: 'published', lessons: 24 },
+        { id: '2', title: 'Ethiopian History', students: 320, rating: 4.8, revenue: 9800, status: 'published', lessons: 18 },
+        { id: '3', title: 'Business Amharic', students: 180, rating: 4.7, revenue: 8200, status: 'published', lessons: 20 },
+        { id: '4', title: 'Kids Amharic Fun', students: 298, rating: 4.9, revenue: 14700, status: 'published', lessons: 30 },
+        { id: '5', title: 'Advanced Grammar', students: 0, rating: 0, revenue: 0, status: 'draft', lessons: 12 },
+      ];
 
   const recentStudents: Student[] = [
     { id: '1', name: 'Alemayehu M.', course: 'Amharic for Beginners', progress: 78, joinedAt: '2 hours ago', email: 'alemayehu@example.com', lastActive: '5 min ago', quizScore: 85, assignmentsCompleted: 12, totalAssignments: 15 },

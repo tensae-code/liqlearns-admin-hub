@@ -34,9 +34,13 @@ import {
   Presentation,
   Layers,
   Trash2,
-  Upload
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 import ModulePPTXUploader from '@/components/course/ModulePPTXUploader';
 
 interface CreateCourseModalProps {
@@ -71,7 +75,10 @@ const difficulties = [
 ];
 
 const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -142,16 +149,90 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
     setSelectedModule(null);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.title || !formData.category) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    toast.success('Course created successfully!', {
-      description: 'Your course has been saved as a draft. Add lessons to publish it.',
-    });
-    onOpenChange(false);
+    if (!user) {
+      toast.error('You must be logged in to create a course');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Get the user's profile ID
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profileError || !profile) {
+        throw new Error('Could not find your profile');
+      }
+
+      // Create the course in the database
+      const { data: course, error: courseError } = await supabase
+        .from('courses')
+        .insert({
+          title: formData.title,
+          description: formData.description || null,
+          category: formData.category,
+          difficulty: formData.difficulty,
+          price: formData.isFree ? 0 : parseFloat(formData.price) || 0,
+          estimated_duration: parseInt(formData.estimatedDuration) || null,
+          instructor_id: profile.id,
+          is_published: false, // Start as draft
+          total_lessons: modules.length,
+        })
+        .select()
+        .single();
+
+      if (courseError) throw courseError;
+
+      // Create lessons/modules for the course
+      if (modules.length > 0 && course) {
+        const lessonsToCreate = modules.map((module, index) => ({
+          course_id: course.id,
+          title: module.title,
+          description: module.description || null,
+          order_index: index + 1,
+          is_published: false,
+        }));
+
+        const { error: lessonsError } = await supabase
+          .from('lessons')
+          .insert(lessonsToCreate);
+
+        if (lessonsError) {
+          console.error('Error creating lessons:', lessonsError);
+        }
+      }
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher-courses'] });
+
+      toast.success('Course created successfully!', {
+        description: 'Your course has been saved as a draft. Add content to publish it.',
+      });
+      
+      onOpenChange(false);
+      resetForm();
+    } catch (error: any) {
+      console.error('Error creating course:', error);
+      toast.error('Failed to create course', {
+        description: error.message || 'Please try again'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
     setStep(1);
     setFormData({
       title: '',
@@ -167,8 +248,12 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
     setModules([]);
   };
 
-  const handleSaveDraft = () => {
-    toast.success('Draft saved!');
+  const handleSaveDraft = async () => {
+    if (!formData.title) {
+      toast.error('Please enter a course title to save as draft');
+      return;
+    }
+    await handleSubmit();
   };
 
   return (
@@ -577,13 +662,17 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
                   Back
                 </Button>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleSaveDraft}>
+                  <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
                     <Save className="w-4 h-4 mr-2" />
                     Save as Draft
                   </Button>
-                  <Button onClick={handleSubmit} className="bg-gradient-accent">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Create Course
+                  <Button onClick={handleSubmit} className="bg-gradient-accent" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 mr-2" />
+                    )}
+                    {isSubmitting ? 'Creating...' : 'Create Course'}
                   </Button>
                 </div>
               </div>

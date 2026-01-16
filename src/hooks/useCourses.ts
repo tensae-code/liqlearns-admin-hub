@@ -273,3 +273,119 @@ export const useCategories = () => {
     },
   });
 };
+
+// Hook for teachers to get their own courses (including drafts)
+export const useTeacherCourses = () => {
+  const { user } = useAuth();
+  const { data: profileId } = useProfileId();
+
+  return useQuery({
+    queryKey: ['teacher-courses', profileId],
+    queryFn: async () => {
+      if (!profileId) return [];
+
+      const { data, error } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          instructor:profiles!courses_instructor_id_fkey(full_name, avatar_url)
+        `)
+        .eq('instructor_id', profileId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Get enrollment counts for each course
+      const courseIds = data?.map(c => c.id) || [];
+      const { data: enrollmentCounts } = await supabase
+        .from('enrollments')
+        .select('course_id')
+        .in('course_id', courseIds);
+
+      const countMap = enrollmentCounts?.reduce((acc, e) => {
+        acc[e.course_id] = (acc[e.course_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      return data?.map(course => ({
+        ...course,
+        enrollment_count: countMap[course.id] || 0,
+        thumbnail_emoji: getCategoryEmoji(course.category),
+      })) || [];
+    },
+    enabled: !!profileId,
+  });
+};
+
+// Hook to create a new course
+export const useCreateCourse = () => {
+  const queryClient = useQueryClient();
+  const { data: profileId } = useProfileId();
+
+  return useMutation({
+    mutationFn: async (courseData: {
+      title: string;
+      description?: string;
+      category: string;
+      difficulty: string;
+      price?: number;
+      estimated_duration?: number;
+      is_published?: boolean;
+    }) => {
+      if (!profileId) {
+        throw new Error('You must be logged in to create a course');
+      }
+
+      const { data, error } = await supabase
+        .from('courses')
+        .insert({
+          ...courseData,
+          instructor_id: profileId,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher-courses'] });
+      toast.success('Course created successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to create course');
+    },
+  });
+};
+
+// Hook to update a course
+export const useUpdateCourse = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ courseId, updates }: {
+      courseId: string;
+      updates: Partial<Course>;
+    }) => {
+      const { data, error } = await supabase
+        .from('courses')
+        .update(updates)
+        .eq('id', courseId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, { courseId }) => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['teacher-courses'] });
+      toast.success('Course updated successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update course');
+    },
+  });
+};
