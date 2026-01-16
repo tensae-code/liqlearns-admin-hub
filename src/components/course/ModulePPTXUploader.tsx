@@ -30,9 +30,12 @@ import {
   Layers,
   Eye,
   X,
-  GripVertical
+  GripVertical,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { parsePPTX, ParsedPresentation, ParsedSlide } from '@/lib/pptxParser';
+import SlideRenderer from './SlideRenderer';
 
 interface SlideResource {
   id: string;
@@ -48,6 +51,7 @@ interface UploadedPPTX {
   totalSlides: number;
   uploadedAt: string;
   resources: SlideResource[];
+  slides?: ParsedSlide[];
 }
 
 interface ModulePPTXUploaderProps {
@@ -68,8 +72,10 @@ const resourceTypes = [
 const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }: ModulePPTXUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [pptxData, setPptxData] = useState<UploadedPPTX | null>(null);
+  const [parsedPresentation, setParsedPresentation] = useState<ParsedPresentation | null>(null);
   const [currentPreviewSlide, setCurrentPreviewSlide] = useState(1);
   const [resources, setResources] = useState<SlideResource[]>([]);
   const [showAddResource, setShowAddResource] = useState(false);
@@ -95,39 +101,45 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
     }
 
     setIsUploading(true);
+    setIsParsing(true);
     setUploadProgress(0);
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 95) {
-          clearInterval(interval);
-          return prev;
-        }
-        return prev + Math.random() * 15;
-      });
-    }, 200);
+    try {
+      // Start progress animation
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 5, 90));
+      }, 100);
 
-    // Simulate processing
-    setTimeout(() => {
-      clearInterval(interval);
-      setUploadProgress(100);
+      // Parse the PPTX file
+      const parsed = await parsePPTX(file);
       
-      // Mock PPTX data (in real app, this would come from backend processing)
-      const mockPPTX: UploadedPPTX = {
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      setParsedPresentation(parsed);
+      
+      const pptx: UploadedPPTX = {
         id: `pptx-${Date.now()}`,
         fileName: file.name,
-        totalSlides: Math.floor(Math.random() * 20) + 10, // 10-30 slides
+        totalSlides: parsed.totalSlides,
         uploadedAt: new Date().toISOString(),
-        resources: []
+        resources: [],
+        slides: parsed.slides
       };
 
-      setPptxData(mockPPTX);
-      setIsUploading(false);
-      toast.success('PPTX uploaded successfully!', {
-        description: `${mockPPTX.totalSlides} slides detected`
+      setPptxData(pptx);
+      toast.success('PPTX parsed successfully!', {
+        description: `${parsed.totalSlides} slides extracted`
       });
-    }, 2000);
+    } catch (error) {
+      console.error('Parse error:', error);
+      toast.error('Failed to parse PPTX file', {
+        description: 'Please ensure the file is a valid PowerPoint presentation'
+      });
+    } finally {
+      setIsUploading(false);
+      setIsParsing(false);
+    }
   };
 
   const handleAddResource = () => {
@@ -297,15 +309,19 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
                   </div>
                 </div>
 
-                {/* Mock Slide Display */}
-                <div className="aspect-video bg-card border border-border rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-6xl mb-4">📊</p>
-                    <p className="text-muted-foreground">Slide {currentPreviewSlide}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      (Actual slide content would render here)
-                    </p>
-                  </div>
+                {/* Real Slide Display */}
+                <div className="aspect-video bg-card border border-border rounded-lg flex items-center justify-center overflow-hidden">
+                  {parsedPresentation && parsedPresentation.slides[currentPreviewSlide - 1] ? (
+                    <SlideRenderer 
+                      slide={parsedPresentation.slides[currentPreviewSlide - 1]}
+                      className="rounded-lg"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <p className="text-6xl mb-4">📊</p>
+                      <p className="text-muted-foreground">Slide {currentPreviewSlide}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Show resources for current slide */}

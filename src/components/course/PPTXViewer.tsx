@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -18,8 +18,11 @@ import {
   Minimize2,
   Volume2,
   BookOpen,
-  HelpCircle
+  HelpCircle,
+  Loader2
 } from 'lucide-react';
+import { ParsedSlide } from '@/lib/pptxParser';
+import SlideRenderer from './SlideRenderer';
 
 interface SlideResource {
   id: string;
@@ -36,6 +39,8 @@ interface PPTXViewerProps {
   totalSlides: number;
   resources: SlideResource[];
   onComplete?: () => void;
+  slides?: ParsedSlide[]; // Real parsed slides
+  isLoading?: boolean;
 }
 
 const resourceIcons = {
@@ -51,7 +56,9 @@ const PPTXViewer = ({
   presentationName, 
   totalSlides, 
   resources,
-  onComplete 
+  onComplete,
+  slides = [],
+  isLoading = false
 }: PPTXViewerProps) => {
   const [currentSlide, setCurrentSlide] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -60,6 +67,23 @@ const PPTXViewer = ({
   const [isPlaying, setIsPlaying] = useState(false);
 
   const progressPercentage = (completedSlides.length / totalSlides) * 100;
+  const currentSlideData = slides.find(s => s.index === currentSlide);
+  const hasRealSlides = slides.length > 0;
+
+  // Auto-play functionality
+  useEffect(() => {
+    if (!isPlaying) return;
+    
+    const timer = setInterval(() => {
+      if (currentSlide < totalSlides) {
+        goToSlide(currentSlide + 1);
+      } else {
+        setIsPlaying(false);
+      }
+    }, 5000); // 5 seconds per slide
+
+    return () => clearInterval(timer);
+  }, [isPlaying, currentSlide, totalSlides]);
 
   const goToSlide = (slide: number) => {
     if (slide < 1 || slide > totalSlides) return;
@@ -77,6 +101,7 @@ const PPTXViewer = ({
     );
     if (resourceToShow) {
       setActiveResource(resourceToShow);
+      setIsPlaying(false); // Pause auto-play when resource appears
     }
   };
 
@@ -106,8 +131,10 @@ const PPTXViewer = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
       handleNext();
     } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
       handlePrevious();
     } else if (e.key === 'Escape') {
       onOpenChange(false);
@@ -132,6 +159,9 @@ const PPTXViewer = ({
           <div className="flex items-center gap-3">
             <Presentation className="w-5 h-5 text-accent" />
             <span className="font-medium text-foreground">{presentationName}</span>
+            {isLoading && (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
@@ -150,38 +180,53 @@ const PPTXViewer = ({
         {/* Main Content */}
         <div className="relative flex-1 bg-muted/30">
           {/* Slide Display */}
-          <div className={`${isFullscreen ? 'h-[calc(100vh-140px)]' : 'aspect-video'} bg-card border-b border-border flex items-center justify-center relative`}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentSlide}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.2 }}
-                className="w-full h-full flex items-center justify-center"
-              >
-                {/* Mock slide content */}
-                <div className="text-center">
-                  <p className="text-8xl mb-6">📊</p>
-                  <p className="text-2xl font-bold text-foreground mb-2">Slide {currentSlide}</p>
-                  <p className="text-muted-foreground">
-                    {presentationName}
-                  </p>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+          <div className={`${isFullscreen ? 'h-[calc(100vh-140px)]' : 'aspect-video'} bg-card border-b border-border flex items-center justify-center relative overflow-hidden select-none`}>
+            {isLoading ? (
+              <div className="text-center">
+                <Loader2 className="w-12 h-12 animate-spin text-accent mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading presentation...</p>
+              </div>
+            ) : (
+              <AnimatePresence mode="wait">
+                {hasRealSlides && currentSlideData ? (
+                  <SlideRenderer 
+                    key={currentSlide}
+                    slide={currentSlideData}
+                  />
+                ) : (
+                  <motion.div
+                    key={currentSlide}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -50 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-full h-full flex items-center justify-center"
+                  >
+                    {/* Mock slide content */}
+                    <div className="text-center">
+                      <p className="text-8xl mb-6">📊</p>
+                      <p className="text-2xl font-bold text-foreground mb-2">Slide {currentSlide}</p>
+                      <p className="text-muted-foreground">
+                        {presentationName}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            )}
 
             {/* Navigation Arrows */}
             <button
               onClick={handlePrevious}
-              disabled={currentSlide === 1}
+              disabled={currentSlide === 1 || isLoading}
               className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-card/80 hover:bg-card border border-border shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
             <button
               onClick={handleNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-card/80 hover:bg-card border border-border shadow-lg transition-all"
+              disabled={isLoading}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-card/80 hover:bg-card border border-border shadow-lg disabled:opacity-50 transition-all"
             >
               <ChevronRight className="w-6 h-6" />
             </button>
@@ -203,6 +248,15 @@ const PPTXViewer = ({
                 ))}
               </div>
             )}
+
+            {/* Speaker Notes Indicator */}
+            {hasRealSlides && currentSlideData?.notes && (
+              <div className="absolute bottom-4 left-4">
+                <Badge variant="outline" className="bg-card/80">
+                  📝 Notes available
+                </Badge>
+              </div>
+            )}
           </div>
 
           {/* Bottom Controls */}
@@ -212,6 +266,7 @@ const PPTXViewer = ({
                 variant="outline"
                 size="icon"
                 onClick={() => setIsPlaying(!isPlaying)}
+                disabled={isLoading}
               >
                 {isPlaying ? (
                   <Pause className="w-4 h-4" />
@@ -235,11 +290,15 @@ const PPTXViewer = ({
                 const hasResource = resources.some(r => 
                   slide >= r.showAfterSlide && slide < r.showBeforeSlide
                 );
+                const slideData = slides.find(s => s.index === slide);
+                const hasThumbnail = slideData?.images?.[0];
+                
                 return (
                   <button
                     key={slide}
                     onClick={() => goToSlide(slide)}
-                    className={`flex-shrink-0 w-16 h-10 rounded border-2 transition-all relative ${
+                    disabled={isLoading}
+                    className={`flex-shrink-0 w-16 h-10 rounded border-2 transition-all relative overflow-hidden ${
                       slide === currentSlide
                         ? 'border-accent bg-accent/10'
                         : completedSlides.includes(slide)
@@ -247,7 +306,16 @@ const PPTXViewer = ({
                           : 'border-border hover:border-accent/50'
                     }`}
                   >
-                    <span className="text-xs font-medium">{slide}</span>
+                    {hasThumbnail ? (
+                      <img 
+                        src={hasThumbnail} 
+                        alt={`Slide ${slide}`} 
+                        className="w-full h-full object-cover"
+                        draggable={false}
+                      />
+                    ) : (
+                      <span className="text-xs font-medium">{slide}</span>
+                    )}
                     {hasResource && (
                       <span className="absolute -top-1 -right-1 w-3 h-3 bg-gold rounded-full" />
                     )}
