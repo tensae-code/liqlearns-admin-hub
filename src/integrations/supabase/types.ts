@@ -475,6 +475,81 @@ export type Database = {
           },
         ]
       }
+      course_resources: {
+        Row: {
+          content: Json | null
+          course_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          duration_seconds: number | null
+          file_path: string | null
+          file_url: string | null
+          id: string
+          module_id: string
+          order_index: number | null
+          presentation_id: string | null
+          show_after_slide: number
+          show_before_slide: number
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json | null
+          course_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          duration_seconds?: number | null
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          module_id: string
+          order_index?: number | null
+          presentation_id?: string | null
+          show_after_slide?: number
+          show_before_slide?: number
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json | null
+          course_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          duration_seconds?: number | null
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          module_id?: string
+          order_index?: number | null
+          presentation_id?: string | null
+          show_after_slide?: number
+          show_before_slide?: number
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_resources_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_resources_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "module_presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           category: string
@@ -1233,6 +1308,69 @@ export type Database = {
         }
         Relationships: []
       }
+      presentation_progress: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          course_id: string
+          created_at: string
+          current_slide: number
+          id: string
+          last_viewed_at: string | null
+          presentation_id: string
+          resources_completed: string[] | null
+          slides_viewed: number[] | null
+          total_time_seconds: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          course_id: string
+          created_at?: string
+          current_slide?: number
+          id?: string
+          last_viewed_at?: string | null
+          presentation_id: string
+          resources_completed?: string[] | null
+          slides_viewed?: number[] | null
+          total_time_seconds?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          course_id?: string
+          created_at?: string
+          current_slide?: number
+          id?: string
+          last_viewed_at?: string | null
+          presentation_id?: string
+          resources_completed?: string[] | null
+          slides_viewed?: number[] | null
+          total_time_seconds?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_progress_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentation_progress_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "module_presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1521,6 +1659,50 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "study_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resource_quiz_attempts: {
+        Row: {
+          answers: Json | null
+          attempt_number: number | null
+          completed_at: string
+          id: string
+          passed: boolean
+          resource_id: string
+          score: number
+          time_taken_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          attempt_number?: number | null
+          completed_at?: string
+          id?: string
+          passed?: boolean
+          resource_id: string
+          score: number
+          time_taken_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          attempt_number?: number | null
+          completed_at?: string
+          id?: string
+          passed?: boolean
+          resource_id?: string
+          score?: number
+          time_taken_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_quiz_attempts_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "course_resources"
             referencedColumns: ["id"]
           },
         ]
