@@ -104,7 +104,7 @@ const ParentNavbar = () => {
                     <BookOpen className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <span className="text-xl font-display font-bold text-white">Parent Hub</span>
+                    <span className="text-xl font-display font-bold text-white">Liqlearns</span>
                     <p className="text-xs text-orange-200">Family Portal</p>
                   </div>
                 </SheetTitle>
@@ -181,17 +181,17 @@ const ParentNavbar = () => {
             </SheetContent>
           </Sheet>
 
-          <Link to="/dashboard" className="flex items-center gap-2">
+          <Link to="/parent" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-white" />
             </div>
-            <span className="text-lg font-display font-bold text-white">Parent Hub</span>
+            <span className="text-lg font-display font-bold text-white">Liqlearns</span>
           </Link>
         </div>
 
         {/* Desktop - Hub Name */}
         <div className="hidden md:flex items-center">
-          <span className="text-lg font-display font-bold text-orange-800">Parent Hub</span>
+          <span className="text-lg font-display font-bold text-orange-800">Liqlearns</span>
         </div>
 
         {/* Search Bar - Desktop */}

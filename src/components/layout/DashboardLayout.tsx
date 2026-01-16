@@ -8,6 +8,7 @@ import SupportNavbar from './navbars/SupportNavbar';
 import TeacherNavbar from './navbars/TeacherNavbar';
 import ParentNavbar from './navbars/ParentNavbar';
 import StudentNavbar from './navbars/StudentNavbar';
+import EnterpriseNavbar from './navbars/EnterpriseNavbar';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -42,6 +43,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         return <TeacherNavbar />;
       case 'parent':
         return <ParentNavbar />;
+      case 'enterprise':
+        return <EnterpriseNavbar />;
       default:
         return <StudentNavbar />;
     }
