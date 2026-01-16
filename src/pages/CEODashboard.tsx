@@ -258,6 +258,10 @@ const CEODashboard = () => {
         open={categoryManagerOpen} 
         onOpenChange={setCategoryManagerOpen} 
       />
+      <PlatformControls
+        open={platformControlsOpen}
+        onOpenChange={setPlatformControlsOpen}
+      />
     </DashboardLayout>
   );
 };
