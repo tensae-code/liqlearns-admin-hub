@@ -106,9 +106,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, fullName: string, username: string, role: UserRole = 'student') => {
     const redirectUrl = `${window.location.origin}/`;
     
-    // Map 'parent' to 'student' for database since parent is not in the enum
-    const dbRole = role === 'parent' ? 'student' : role;
-    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -123,12 +120,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     
     if (!error && data.user) {
-      // Insert role into user_roles table
-      // Note: 'parent' role is stored in user metadata, but as 'student' in user_roles since it's not in the enum
-      const insertRole = dbRole as 'student' | 'teacher' | 'support' | 'admin' | 'ceo';
+      // Insert role into user_roles table - 'parent' is a valid enum value
       await supabase.from('user_roles').insert([{
         user_id: data.user.id,
-        role: insertRole,
+        role: role,
       }]);
       setUserRole(role);
     }
