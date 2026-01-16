@@ -403,3 +403,85 @@ export const usePresentationProgress = (presentationId?: string, courseId?: stri
     updateProgress,
   };
 };
+
+// Hook for recording quiz attempts
+export const useQuizAttempts = (resourceId?: string) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const recordAttempt = async (
+    score: number,
+    passed: boolean,
+    answers: Record<string, number>,
+    timeTakenSeconds: number
+  ) => {
+    if (!resourceId || !user) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) return;
+
+    // Get current attempt count
+    const { count } = await supabase
+      .from('resource_quiz_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('resource_id', resourceId)
+      .eq('user_id', profile.id);
+
+    const attemptNumber = (count || 0) + 1;
+
+    const { error } = await supabase
+      .from('resource_quiz_attempts')
+      .insert({
+        user_id: profile.id,
+        resource_id: resourceId,
+        score,
+        passed,
+        answers: JSON.parse(JSON.stringify(answers)),
+        time_taken_seconds: timeTakenSeconds,
+        attempt_number: attemptNumber,
+      });
+
+    if (error) throw error;
+
+    queryClient.invalidateQueries({ queryKey: ['quiz-attempts', resourceId] });
+  };
+
+  const { data: attempts, isLoading } = useQuery({
+    queryKey: ['quiz-attempts', resourceId],
+    queryFn: async () => {
+      if (!resourceId || !user) return [];
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) return [];
+
+      const { data, error } = await supabase
+        .from('resource_quiz_attempts')
+        .select('*')
+        .eq('resource_id', resourceId)
+        .eq('user_id', profile.id)
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!resourceId && !!user,
+  });
+
+  return {
+    attempts: attempts || [],
+    isLoading,
+    recordAttempt,
+    bestScore: attempts?.length ? Math.max(...attempts.map(a => a.score)) : 0,
+    attemptCount: attempts?.length || 0,
+  };
+};

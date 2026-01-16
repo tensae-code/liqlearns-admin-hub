@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCourses } from '@/hooks/useCourses';
+import { useCreateLearningPath } from '@/hooks/useLearningPaths';
 import { toast } from 'sonner';
 import {
   GripVertical,
@@ -63,6 +64,7 @@ interface PathMilestone {
 
 const LearningPathBuilder = ({ open, onOpenChange, editingPath }: LearningPathBuilderProps) => {
   const { data: availableCourses = [] } = useCourses();
+  const createLearningPath = useCreateLearningPath();
   const [step, setStep] = useState<'info' | 'courses' | 'milestones' | 'review'>('info');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -160,11 +162,46 @@ const LearningPathBuilder = ({ open, onOpenChange, editingPath }: LearningPathBu
 
     setIsSubmitting(true);
     try {
-      // TODO: Save to database
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(editingPath ? 'Learning path updated!' : 'Learning path created!');
+      // Map path courses to database format
+      const coursesData = pathCourses.map((c, index) => ({
+        course_id: c.courseId,
+        order_index: index,
+        is_required: c.isRequired,
+        prerequisite_course_ids: c.prerequisites,
+      }));
+
+      // Map milestones to database format
+      const milestonesData = milestones.map((m, index) => ({
+        title: m.title,
+        description: m.description || undefined,
+        trigger_after_course_id: m.triggerAfterCourseId || undefined,
+        xp_reward: m.xpReward,
+        order_index: index,
+      }));
+
+      await createLearningPath.mutateAsync({
+        title,
+        description: description || undefined,
+        difficulty,
+        estimated_duration: estimatedDuration ? parseInt(estimatedDuration) : undefined,
+        is_published: isPublished,
+        courses: coursesData,
+        milestones: milestonesData,
+      });
+
       onOpenChange(false);
+      
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setDifficulty('intermediate');
+      setEstimatedDuration('');
+      setIsPublished(false);
+      setPathCourses([]);
+      setMilestones([]);
+      setStep('info');
     } catch (error) {
+      console.error('Error saving learning path:', error);
       toast.error('Failed to save learning path');
     } finally {
       setIsSubmitting(false);
