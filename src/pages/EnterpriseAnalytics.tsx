@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   LineChart, 
   Line, 
@@ -40,32 +41,43 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { STAT_GRADIENTS } from '@/lib/theme';
+import { 
+  useEnterpriseAnalytics, 
+  useEnterpriseTopPerformers, 
+  useEnterpriseCoursePopularity 
+} from '@/hooks/useEnterpriseAnalytics';
 
 const EnterpriseAnalytics = () => {
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState('30d');
   const [departmentFilter, setDepartmentFilter] = useState('all');
 
-  // Mock data for charts
-  const completionTrends = [
-    { month: 'Jan', completions: 45, enrollments: 78, avgProgress: 62 },
-    { month: 'Feb', completions: 52, enrollments: 85, avgProgress: 65 },
-    { month: 'Mar', completions: 61, enrollments: 92, avgProgress: 68 },
-    { month: 'Apr', completions: 58, enrollments: 88, avgProgress: 71 },
-    { month: 'May', completions: 73, enrollments: 105, avgProgress: 74 },
-    { month: 'Jun', completions: 85, enrollments: 120, avgProgress: 78 },
+  // Fetch real analytics data
+  const { data: analyticsData, isLoading: analyticsLoading, refetch } = useEnterpriseAnalytics(timeRange);
+  const { data: topPerformers = [], isLoading: performersLoading } = useEnterpriseTopPerformers(5);
+  const { data: coursePopularity = [], isLoading: popularityLoading } = useEnterpriseCoursePopularity();
+
+  // Use real data with fallbacks
+  const completionTrends = analyticsData?.completionTrends || [
+    { month: 'Jan', completions: 0, enrollments: 0, avgProgress: 0 },
+    { month: 'Feb', completions: 0, enrollments: 0, avgProgress: 0 },
+    { month: 'Mar', completions: 0, enrollments: 0, avgProgress: 0 },
+    { month: 'Apr', completions: 0, enrollments: 0, avgProgress: 0 },
+    { month: 'May', completions: 0, enrollments: 0, avgProgress: 0 },
+    { month: 'Jun', completions: 0, enrollments: 0, avgProgress: 0 },
   ];
 
-  const engagementData = [
-    { day: 'Mon', activeUsers: 89, studyMinutes: 1245, lessons: 156 },
-    { day: 'Tue', activeUsers: 102, studyMinutes: 1456, lessons: 189 },
-    { day: 'Wed', activeUsers: 95, studyMinutes: 1320, lessons: 167 },
-    { day: 'Thu', activeUsers: 110, studyMinutes: 1578, lessons: 201 },
-    { day: 'Fri', activeUsers: 78, studyMinutes: 1089, lessons: 134 },
-    { day: 'Sat', activeUsers: 45, studyMinutes: 678, lessons: 89 },
-    { day: 'Sun', activeUsers: 38, studyMinutes: 534, lessons: 72 },
+  const engagementData = analyticsData?.engagementData || [
+    { day: 'Mon', activeUsers: 0, studyMinutes: 0, lessons: 0 },
+    { day: 'Tue', activeUsers: 0, studyMinutes: 0, lessons: 0 },
+    { day: 'Wed', activeUsers: 0, studyMinutes: 0, lessons: 0 },
+    { day: 'Thu', activeUsers: 0, studyMinutes: 0, lessons: 0 },
+    { day: 'Fri', activeUsers: 0, studyMinutes: 0, lessons: 0 },
+    { day: 'Sat', activeUsers: 0, studyMinutes: 0, lessons: 0 },
+    { day: 'Sun', activeUsers: 0, studyMinutes: 0, lessons: 0 },
   ];
 
+  // Department progress (would need department tracking in the future)
   const departmentProgress = [
     { name: 'Engineering', progress: 78, members: 45, color: '#8b5cf6' },
     { name: 'Marketing', progress: 65, members: 28, color: '#06b6d4' },
@@ -74,26 +86,50 @@ const EnterpriseAnalytics = () => {
     { name: 'Finance', progress: 68, members: 18, color: '#ef4444' },
   ];
 
-  const coursePopularity = [
-    { name: 'Amharic Basics', value: 35, color: 'hsl(var(--accent))' },
-    { name: 'Business Writing', value: 28, color: 'hsl(var(--primary))' },
-    { name: 'Ethiopian History', value: 22, color: 'hsl(var(--success))' },
-    { name: 'Leadership', value: 15, color: 'hsl(var(--gold))' },
+  // Fallback course popularity if no data
+  const displayCoursePopularity = coursePopularity.length > 0 ? coursePopularity : [
+    { name: 'No courses yet', value: 100, color: 'hsl(var(--muted))' },
   ];
 
-  const topPerformers = [
-    { name: 'Alemayehu M.', department: 'Engineering', coursesCompleted: 8, avgScore: 94, streak: 45 },
-    { name: 'Sara T.', department: 'Marketing', coursesCompleted: 7, avgScore: 91, streak: 32 },
-    { name: 'Dawit B.', department: 'Sales', coursesCompleted: 6, avgScore: 89, streak: 28 },
-    { name: 'Tigist K.', department: 'HR', coursesCompleted: 5, avgScore: 87, streak: 21 },
-    { name: 'Yonas G.', department: 'Engineering', coursesCompleted: 5, avgScore: 85, streak: 19 },
-  ];
-
-  const stats = [
-    { label: 'Active Learners', value: '145', change: '+12%', trend: 'up', icon: Users, gradient: STAT_GRADIENTS[0] },
-    { label: 'Courses Completed', value: '342', change: '+23%', trend: 'up', icon: BookOpen, gradient: STAT_GRADIENTS[1] },
-    { label: 'Avg. Study Time', value: '4.2h', change: '+8%', trend: 'up', icon: Clock, gradient: STAT_GRADIENTS[2] },
-    { label: 'Completion Rate', value: '78%', change: '-2%', trend: 'down', icon: Target, gradient: STAT_GRADIENTS[3] },
+  // Build stats from real data
+  const stats = analyticsData?.stats ? [
+    { 
+      label: 'Active Learners', 
+      value: analyticsData.stats.activeLearners.toString(), 
+      change: `+${analyticsData.stats.activeLearnersTrend}%`, 
+      trend: analyticsData.stats.activeLearnersTrend >= 0 ? 'up' : 'down', 
+      icon: Users, 
+      gradient: STAT_GRADIENTS[0] 
+    },
+    { 
+      label: 'Courses Completed', 
+      value: analyticsData.stats.coursesCompleted.toString(), 
+      change: `+${analyticsData.stats.coursesCompletedTrend}%`, 
+      trend: analyticsData.stats.coursesCompletedTrend >= 0 ? 'up' : 'down', 
+      icon: BookOpen, 
+      gradient: STAT_GRADIENTS[1] 
+    },
+    { 
+      label: 'Avg. Study Time', 
+      value: `${analyticsData.stats.avgStudyTime}h`, 
+      change: `+${analyticsData.stats.avgStudyTimeTrend}%`, 
+      trend: analyticsData.stats.avgStudyTimeTrend >= 0 ? 'up' : 'down', 
+      icon: Clock, 
+      gradient: STAT_GRADIENTS[2] 
+    },
+    { 
+      label: 'Completion Rate', 
+      value: `${analyticsData.stats.completionRate}%`, 
+      change: `${analyticsData.stats.completionRateTrend}%`, 
+      trend: analyticsData.stats.completionRateTrend >= 0 ? 'up' : 'down', 
+      icon: Target, 
+      gradient: STAT_GRADIENTS[3] 
+    },
+  ] : [
+    { label: 'Active Learners', value: '0', change: '+0%', trend: 'up', icon: Users, gradient: STAT_GRADIENTS[0] },
+    { label: 'Courses Completed', value: '0', change: '+0%', trend: 'up', icon: BookOpen, gradient: STAT_GRADIENTS[1] },
+    { label: 'Avg. Study Time', value: '0h', change: '+0%', trend: 'up', icon: Clock, gradient: STAT_GRADIENTS[2] },
+    { label: 'Completion Rate', value: '0%', change: '+0%', trend: 'up', icon: Target, gradient: STAT_GRADIENTS[3] },
   ];
 
   return (
@@ -143,8 +179,8 @@ const EnterpriseAnalytics = () => {
                 <SelectItem value="finance">Finance</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon">
-              <RefreshCw className="w-4 h-4" />
+            <Button variant="outline" size="icon" onClick={() => refetch()} disabled={analyticsLoading}>
+              <RefreshCw className={`w-4 h-4 ${analyticsLoading ? 'animate-spin' : ''}`} />
             </Button>
             <Button variant="outline">
               <Download className="w-4 h-4 mr-2" />
@@ -245,7 +281,7 @@ const EnterpriseAnalytics = () => {
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={coursePopularity}
+                      data={displayCoursePopularity}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -253,7 +289,7 @@ const EnterpriseAnalytics = () => {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {coursePopularity.map((entry, index) => (
+                      {displayCoursePopularity.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -409,43 +445,51 @@ const EnterpriseAnalytics = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {topPerformers.map((performer, index) => (
-                  <div 
-                    key={performer.name}
-                    className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
-                      index === 0 ? 'bg-gold' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-600' : 'bg-muted-foreground'
-                    }`}>
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-foreground">{performer.name}</p>
-                        <Badge variant="secondary" className="text-xs">{performer.department}</Badge>
+              {performersLoading ? (
+                <div className="space-y-4">
+                  {[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+                </div>
+              ) : topPerformers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No performer data yet</p>
+              ) : (
+                <div className="space-y-4">
+                  {topPerformers.map((performer, index) => (
+                    <div 
+                      key={performer.id || performer.name}
+                      className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
+                        index === 0 ? 'bg-gold' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-600' : 'bg-muted-foreground'
+                      }`}>
+                        {index + 1}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="w-3 h-3" />
-                          {performer.coursesCompleted} courses
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Target className="w-3 h-3" />
-                          {performer.avgScore}% avg
-                        </span>
-                        <span className="flex items-center gap-1">
-                          🔥 {performer.streak} day streak
-                        </span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-foreground">{performer.name}</p>
+                          <Badge variant="secondary" className="text-xs">{performer.department}</Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                          <span className="flex items-center gap-1">
+                            <BookOpen className="w-3 h-3" />
+                            {performer.coursesCompleted} courses
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Target className="w-3 h-3" />
+                            {performer.avgScore}% avg
+                          </span>
+                          <span className="flex items-center gap-1">
+                            🔥 {performer.streak} day streak
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-accent">{performer.avgScore}%</p>
+                        <p className="text-xs text-muted-foreground">Avg Score</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-accent">{performer.avgScore}%</p>
-                      <p className="text-xs text-muted-foreground">Avg Score</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -736,9 +736,9 @@ const Auth = () => {
           <p className="text-[10px] text-success mt-0.5">✓ Sponsor verified!</p>
         )}
         {sponsorStatus === 'invalid' && (
-          <p className="text-[10px] text-destructive mt-0.5">Sponsor not found or cannot be a sponsor</p>
+          <p className="text-[10px] text-destructive mt-0.5">User not found or is not eligible to be a sponsor (teachers/admins cannot sponsor)</p>
         )}
-        <p className="text-[10px] text-muted-foreground mt-1">Only CEO and Students can be sponsors</p>
+        <p className="text-[10px] text-muted-foreground mt-1">Only CEO and Students can sponsor new users</p>
       </div>
     </div>
   );
@@ -857,10 +857,17 @@ const Auth = () => {
           variant="glass" 
           size="sm" 
           className="mb-6"
-          onClick={() => isSignUp ? setIsSignUp(false) : navigate('/')}
+          onClick={() => {
+            if (isSignUp) {
+              setIsSignUp(false);
+              setCurrentStep(0);
+            } else {
+              navigate('/');
+            }
+          }}
         >
           <ArrowLeft className="w-4 h-4" />
-          {isSignUp ? 'Back to login' : 'Back to home'}
+          Back to {isSignUp ? 'login' : 'home'}
         </Button>
 
         <div className="bg-card rounded-2xl shadow-floating p-8">
