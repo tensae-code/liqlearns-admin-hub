@@ -1031,6 +1031,56 @@ export type Database = {
         }
         Relationships: []
       }
+      module_presentations: {
+        Row: {
+          course_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          module_id: string
+          resources: Json | null
+          slide_data: Json | null
+          total_slides: number
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          module_id: string
+          resources?: Json | null
+          slide_data?: Json | null
+          total_slides?: number
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          module_id?: string
+          resources?: Json | null
+          slide_data?: Json | null
+          total_slides?: number
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_presentations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
