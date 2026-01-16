@@ -15,17 +15,23 @@ import {
   ArrowUpRight,
   Crown,
   Star,
-  Zap,
   Building2,
   UserPlus,
   BookOpen,
   Shield,
-  Wallet
+  Wallet,
+  Settings,
+  BarChart3,
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
+import EnterpriseMemberManager from '@/components/enterprise/EnterpriseMemberManager';
+import EnterpriseCourseManager from '@/components/enterprise/EnterpriseCourseManager';
 
 const EnterpriseDashboard = () => {
   const [enterpriseCode] = useState('GUILD-PHOENIX-2026');
+  const [memberManagerOpen, setMemberManagerOpen] = useState(false);
+  const [courseManagerOpen, setCourseManagerOpen] = useState(false);
 
   const copyEnterpriseCode = () => {
     navigator.clipboard.writeText(enterpriseCode);
@@ -86,10 +92,24 @@ const EnterpriseDashboard = () => {
               <p className="text-muted-foreground">Enterprise Guild Dashboard</p>
             </div>
           </div>
-          <Badge className="bg-gold/10 text-gold border-gold/30 text-sm px-3 py-1">
-            <Crown className="w-4 h-4 mr-1" />
-            Rising Guild
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setMemberManagerOpen(true)}>
+              <Users className="w-4 h-4 mr-1" />
+              <span className="hidden md:inline">Members</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setCourseManagerOpen(true)}>
+              <BookOpen className="w-4 h-4 mr-1" />
+              <span className="hidden md:inline">Courses</span>
+            </Button>
+            <Button variant="outline" size="sm">
+              <BarChart3 className="w-4 h-4 mr-1" />
+              <span className="hidden md:inline">Analytics</span>
+            </Button>
+            <Badge className="bg-gold/10 text-gold border-gold/30 text-sm px-3 py-1">
+              <Crown className="w-4 h-4 mr-1" />
+              Rising Guild
+            </Badge>
+          </div>
         </div>
       </motion.div>
 
@@ -235,6 +255,16 @@ const EnterpriseDashboard = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Modals */}
+      <EnterpriseMemberManager
+        open={memberManagerOpen}
+        onOpenChange={setMemberManagerOpen}
+      />
+      <EnterpriseCourseManager
+        open={courseManagerOpen}
+        onOpenChange={setCourseManagerOpen}
+      />
     </DashboardLayout>
   );
 };
