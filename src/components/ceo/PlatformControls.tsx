@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import {
   Dialog,
@@ -24,20 +23,16 @@ import {
   Camera,
   Lock,
   Eye,
-  EyeOff,
   Smartphone,
-  Monitor,
-  Globe,
   Users,
   Coins,
   Gift,
-  Clock,
   AlertTriangle,
   CheckCircle,
   Save,
-  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePlatformSettings } from '@/contexts/PlatformSettingsContext';
 
 interface PlatformControlsProps {
   open: boolean;
@@ -45,33 +40,78 @@ interface PlatformControlsProps {
 }
 
 const PlatformControls = ({ open, onOpenChange }: PlatformControlsProps) => {
+  const { settings, updateSecuritySettings, updateContentSettings, updateEngagementSettings, saveSettings } = usePlatformSettings();
   const [activeTab, setActiveTab] = useState('security');
   
-  // Security Settings
-  const [screenshotProtection, setScreenshotProtection] = useState(true);
-  const [screenRecordingBlocked, setScreenRecordingBlocked] = useState(true);
-  const [watermarkEnabled, setWatermarkEnabled] = useState(true);
-  const [watermarkOpacity, setWatermarkOpacity] = useState([30]);
-  const [deviceLimit, setDeviceLimit] = useState(3);
-  const [sessionTimeout, setSessionTimeout] = useState(30);
+  // Local state synced with context
+  const [screenshotProtection, setScreenshotProtection] = useState(settings.security.screenshotProtection);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(settings.security.watermarkEnabled);
+  const [watermarkOpacity, setWatermarkOpacity] = useState([settings.security.watermarkOpacity]);
+  const [deviceLimit, setDeviceLimit] = useState(settings.security.maxDevices);
+  const [sessionTimeout, setSessionTimeout] = useState(settings.security.sessionTimeout);
   
-  // Content Settings
-  const [autoModeration, setAutoModeration] = useState(true);
-  const [profanityFilter, setProfanityFilter] = useState(true);
-  const [imageModeration, setImageModeration] = useState(true);
-  const [minAgeForDMs, setMinAgeForDMs] = useState(13);
+  const [autoModeration, setAutoModeration] = useState(settings.content.aiModeration);
+  const [profanityFilter, setProfanityFilter] = useState(settings.content.profanityFilter);
+  const [imageModeration, setImageModeration] = useState(settings.content.imageModeration);
+  const [minAgeForDMs, setMinAgeForDMs] = useState(settings.content.minDMAge);
   
-  // Engagement Settings
-  const [dailyBonusEnabled, setDailyBonusEnabled] = useState(true);
-  const [dailyBonusAmount, setDailyBonusAmount] = useState(10);
-  const [streakBonusEnabled, setStreakBonusEnabled] = useState(true);
-  const [referralBonusEnabled, setReferralBonusEnabled] = useState(true);
-  const [referralBonusAmount, setReferralBonusAmount] = useState(50);
+  const [dailyBonusEnabled, setDailyBonusEnabled] = useState(settings.engagement.dailyBonusEnabled);
+  const [dailyBonusAmount, setDailyBonusAmount] = useState(settings.engagement.dailyBonusAmount);
+  const [streakBonusEnabled, setStreakBonusEnabled] = useState(settings.engagement.streakBonusEnabled);
+  const [referralBonusEnabled, setReferralBonusEnabled] = useState(settings.engagement.referralEnabled);
+  const [referralBonusAmount, setReferralBonusAmount] = useState(settings.engagement.referralReward);
+
+  // Sync local state when settings change
+  useEffect(() => {
+    setScreenshotProtection(settings.security.screenshotProtection);
+    setWatermarkEnabled(settings.security.watermarkEnabled);
+    setWatermarkOpacity([settings.security.watermarkOpacity]);
+    setDeviceLimit(settings.security.maxDevices);
+    setSessionTimeout(settings.security.sessionTimeout);
+    
+    setAutoModeration(settings.content.aiModeration);
+    setProfanityFilter(settings.content.profanityFilter);
+    setImageModeration(settings.content.imageModeration);
+    setMinAgeForDMs(settings.content.minDMAge);
+    
+    setDailyBonusEnabled(settings.engagement.dailyBonusEnabled);
+    setDailyBonusAmount(settings.engagement.dailyBonusAmount);
+    setStreakBonusEnabled(settings.engagement.streakBonusEnabled);
+    setReferralBonusEnabled(settings.engagement.referralEnabled);
+    setReferralBonusAmount(settings.engagement.referralReward);
+  }, [settings]);
 
   const handleSave = () => {
+    updateSecuritySettings({
+      screenshotProtection,
+      watermarkEnabled,
+      watermarkOpacity: watermarkOpacity[0],
+      maxDevices: deviceLimit,
+      sessionTimeout,
+    });
+    
+    updateContentSettings({
+      aiModeration: autoModeration,
+      profanityFilter,
+      imageModeration,
+      minDMAge: minAgeForDMs,
+    });
+    
+    updateEngagementSettings({
+      dailyBonusEnabled,
+      dailyBonusAmount,
+      streakBonusEnabled,
+      referralEnabled: referralBonusEnabled,
+      referralReward: referralBonusAmount,
+    });
+    
+    saveSettings();
+    
     toast.success('Platform settings updated!', {
       description: 'Changes will take effect immediately.'
     });
+    
+    onOpenChange(false);
   };
 
   return (
@@ -125,19 +165,6 @@ const PlatformControls = ({ open, onOpenChange }: PlatformControlsProps) => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="font-medium">Block Screen Recording</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Prevent screen recording of video content
-                    </p>
-                  </div>
-                  <Switch
-                    checked={screenRecordingBlocked}
-                    onCheckedChange={setScreenRecordingBlocked}
-                  />
-                </div>
-
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
@@ -154,7 +181,7 @@ const PlatformControls = ({ open, onOpenChange }: PlatformControlsProps) => {
                   
                   {watermarkEnabled && (
                     <div className="pl-4 border-l-2 border-accent/30">
-                      <Label className="text-sm">Watermark Opacity: {watermarkOpacity}%</Label>
+                      <Label className="text-sm">Watermark Opacity: {watermarkOpacity[0]}%</Label>
                       <Slider
                         value={watermarkOpacity}
                         onValueChange={setWatermarkOpacity}
@@ -211,15 +238,16 @@ const PlatformControls = ({ open, onOpenChange }: PlatformControlsProps) => {
                 </div>
               </div>
 
-              {/* Status Summary */}
               <div className="p-4 bg-success/10 border border-success/30 rounded-lg">
                 <div className="flex items-center gap-2 text-success mb-2">
                   <CheckCircle className="w-4 h-4" />
-                  <span className="font-medium">Content Protection Active</span>
+                  <span className="font-medium">Content Protection {screenshotProtection ? 'Active' : 'Inactive'}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Screenshots, recordings, and unauthorized access are being blocked.
-                  Watermarks identify content if leaked.
+                  {screenshotProtection 
+                    ? 'Screenshots, recordings, and unauthorized access are being blocked.'
+                    : 'Screenshot protection is currently disabled.'}
+                  {watermarkEnabled && ' Watermarks identify content if leaked.'}
                 </p>
               </div>
             </div>
@@ -283,7 +311,7 @@ const PlatformControls = ({ open, onOpenChange }: PlatformControlsProps) => {
                 <div className="space-y-2">
                   <Label className="font-medium">Minimum Age for Direct Messages</Label>
                   <p className="text-sm text-muted-foreground">
-                    Users below this age cannot send or receive DMs (only group chats with parental approval)
+                    Users below this age cannot send or receive DMs
                   </p>
                   <div className="flex items-center gap-4">
                     <Input
@@ -398,7 +426,6 @@ const PlatformControls = ({ open, onOpenChange }: PlatformControlsProps) => {
                 )}
               </div>
 
-              {/* Summary Stats */}
               <div className="grid grid-cols-3 gap-4 pt-4">
                 <div className="p-4 bg-gold/10 rounded-lg text-center">
                   <p className="text-2xl font-bold text-gold">45K</p>
@@ -417,7 +444,6 @@ const PlatformControls = ({ open, onOpenChange }: PlatformControlsProps) => {
           </TabsContent>
         </Tabs>
 
-        {/* Save Button */}
         <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel

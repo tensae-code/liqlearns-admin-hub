@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { StudyRoomProvider } from "@/contexts/StudyRoomContext";
+import { PlatformSettingsProvider } from "@/contexts/PlatformSettingsContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import GlobalFloatingElements from "@/components/layout/GlobalFloatingElements";
@@ -118,11 +119,13 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <StudyRoomProvider>
-            <ScrollToTop />
-            <AppRoutes />
-            <GlobalFloatingElements />
-          </StudyRoomProvider>
+          <PlatformSettingsProvider>
+            <StudyRoomProvider>
+              <ScrollToTop />
+              <AppRoutes />
+              <GlobalFloatingElements />
+            </StudyRoomProvider>
+          </PlatformSettingsProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
