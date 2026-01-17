@@ -52,8 +52,8 @@ const features = [
 
 const Features = () => {
   return (
-    <section className="py-24 bg-background">
-      <div className="container">
+    <section className="py-16 sm:py-24 bg-background">
+      <div className="container px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center max-w-2xl mx-auto mb-16"
           initial={{ opacity: 0, y: 30 }}
@@ -65,7 +65,7 @@ const Features = () => {
             <Zap className="w-4 h-4" />
             Why LiqLearns?
           </span>
-          <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
             Everything You Need to{' '}
             <span className="text-gradient-accent">Succeed</span>
           </h2>
@@ -75,7 +75,7 @@ const Features = () => {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
@@ -100,39 +100,39 @@ const Features = () => {
 
         {/* Highlight Banner */}
         <motion.div
-          className="mt-16 p-8 md:p-12 rounded-3xl bg-gradient-hero text-primary-foreground relative overflow-hidden"
+          className="mt-12 sm:mt-16 p-6 sm:p-8 md:p-12 rounded-2xl sm:rounded-3xl bg-gradient-hero text-primary-foreground relative overflow-hidden"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-10" />
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="flex items-center gap-6">
-              <div className="w-20 h-20 rounded-2xl bg-gold/20 flex items-center justify-center">
-                <Award className="w-10 h-10 text-gold" />
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-gold/20 flex items-center justify-center flex-shrink-0">
+                <Award className="w-8 h-8 sm:w-10 sm:h-10 text-gold" />
               </div>
               <div>
-                <h3 className="text-2xl md:text-3xl font-display font-bold mb-2">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-display font-bold mb-1 sm:mb-2">
                   3-Day Free Trial
                 </h3>
-                <p className="text-primary-foreground/80">
+                <p className="text-primary-foreground/80 text-sm sm:text-base">
                   Experience full access to all courses with no commitment
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-8">
+            <div className="flex items-center justify-center gap-6 sm:gap-8">
               <div className="text-center">
-                <Video className="w-8 h-8 mx-auto mb-2 text-accent" />
-                <p className="text-sm text-primary-foreground/70">HD Video</p>
+                <Video className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1 sm:mb-2 text-accent" />
+                <p className="text-xs sm:text-sm text-primary-foreground/70">HD Video</p>
               </div>
               <div className="text-center">
-                <Trophy className="w-8 h-8 mx-auto mb-2 text-gold" />
-                <p className="text-sm text-primary-foreground/70">Certificates</p>
+                <Trophy className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1 sm:mb-2 text-gold" />
+                <p className="text-xs sm:text-sm text-primary-foreground/70">Certificates</p>
               </div>
               <div className="text-center">
-                <Users className="w-8 h-8 mx-auto mb-2 text-success" />
-                <p className="text-sm text-primary-foreground/70">Community</p>
+                <Users className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1 sm:mb-2 text-success" />
+                <p className="text-xs sm:text-sm text-primary-foreground/70">Community</p>
               </div>
             </div>
           </div>

@@ -56,8 +56,8 @@ const Pricing = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-24 bg-muted/30">
-      <div className="container">
+    <section className="py-16 sm:py-24 bg-muted/30">
+      <div className="container px-4 sm:px-6 lg:px-8">
         <motion.div
           className="text-center max-w-2xl mx-auto mb-16"
           initial={{ opacity: 0, y: 30 }}
@@ -69,7 +69,7 @@ const Pricing = () => {
             <Crown className="w-4 h-4" />
             Simple Pricing
           </span>
-          <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
             Choose Your{' '}
             <span className="text-gradient-gold">Learning Path</span>
           </h2>
@@ -78,13 +78,13 @@ const Pricing = () => {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 max-w-5xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}
-              className={`relative p-6 md:p-8 rounded-2xl bg-card border-2 ${
+              className={`relative p-5 sm:p-6 md:p-8 rounded-2xl bg-card border-2 ${
                 plan.popular 
-                  ? 'border-accent shadow-glow scale-105 z-10' 
+                  ? 'border-accent shadow-glow md:scale-105 z-10' 
                   : 'border-border hover:border-accent/30'
               } transition-all duration-300`}
               initial={{ opacity: 0, y: 30 }}

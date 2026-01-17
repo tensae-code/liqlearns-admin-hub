@@ -3,18 +3,18 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
-    <footer className="bg-primary text-primary-foreground py-16">
-      <div className="container">
-        <div className="grid md:grid-cols-4 gap-12 mb-12">
+    <footer className="bg-primary text-primary-foreground py-12 sm:py-16">
+      <div className="container px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12 mb-10 sm:mb-12">
           {/* Brand */}
-          <div className="md:col-span-2">
+          <div className="col-span-2">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-gradient-accent flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-accent-foreground" />
               </div>
-              <span className="text-2xl font-display font-bold">LiqLearns</span>
+              <span className="text-xl sm:text-2xl font-display font-bold">LiqLearns</span>
             </div>
-            <p className="text-primary-foreground/70 max-w-md mb-6">
+            <p className="text-primary-foreground/70 max-w-md mb-4 sm:mb-6 text-sm sm:text-base">
               Empowering learners worldwide with gamified education, expert instructors, 
               and a community that rewards your success.
             </p>

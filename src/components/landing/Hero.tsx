@@ -48,7 +48,7 @@ const Hero = () => {
       </motion.div>
 
       {/* Content */}
-      <div className="container relative z-10 pt-20">
+      <div className="container relative z-10 pt-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -62,7 +62,7 @@ const Hero = () => {
           </motion.div>
 
           <motion.h1
-            className="text-5xl md:text-6xl lg:text-7xl font-display font-bold text-primary-foreground leading-tight mb-6"
+            className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-display font-bold text-primary-foreground leading-tight mb-6"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
@@ -74,7 +74,7 @@ const Hero = () => {
           </motion.h1>
 
           <motion.p
-            className="text-xl text-primary-foreground/80 mb-8 max-w-xl leading-relaxed"
+            className="text-base sm:text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-xl leading-relaxed"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
@@ -122,36 +122,36 @@ const Hero = () => {
 
           {/* Stats */}
           <motion.div
-            className="flex flex-wrap gap-8"
+            className="flex flex-wrap gap-4 sm:gap-6 md:gap-8"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.6 }}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center">
-                <Users className="w-6 h-6 text-accent" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-primary-foreground">12.5K+</p>
-                <p className="text-sm text-primary-foreground/60">Active Students</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gold/20 flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-gold" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-primary-foreground">150+</p>
-                <p className="text-sm text-primary-foreground/60">Expert Courses</p>
+              <div className="min-w-0">
+                <p className="text-lg sm:text-2xl font-bold text-primary-foreground">12.5K+</p>
+                <p className="text-xs sm:text-sm text-primary-foreground/60">Active Students</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-success" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gold/20 flex items-center justify-center flex-shrink-0">
+                <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-gold" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-primary-foreground">875K</p>
-                <p className="text-sm text-primary-foreground/60">Lessons Completed</p>
+              <div className="min-w-0">
+                <p className="text-lg sm:text-2xl font-bold text-primary-foreground">150+</p>
+                <p className="text-xs sm:text-sm text-primary-foreground/60">Expert Courses</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-success/20 flex items-center justify-center flex-shrink-0">
+                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-success" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-lg sm:text-2xl font-bold text-primary-foreground">875K</p>
+                <p className="text-xs sm:text-sm text-primary-foreground/60">Lessons Completed</p>
               </div>
             </div>
           </motion.div>
