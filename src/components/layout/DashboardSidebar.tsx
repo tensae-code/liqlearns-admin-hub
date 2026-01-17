@@ -36,7 +36,9 @@ import {
   Flame,
   Lightbulb,
   ClipboardCheck,
-  FolderTree
+  FolderTree,
+  Bot,
+  Wallet
 } from 'lucide-react';
 import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
 
@@ -65,9 +67,10 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: BarChart3, label: 'Analytics', description: 'Platform metrics', path: '/ceo/analytics' },
         { icon: Users, label: 'Team', description: 'Manage staff', path: '/ceo/team' },
         { icon: FileText, label: 'Reports', description: 'Business reports', path: '/ceo/reports' },
-        { icon: Library, label: 'Courses', description: 'Browse content', path: '/courses' },
+        { icon: Bot, label: 'AI Management', description: 'Configure AI', path: '/ceo/ai' },
+        { icon: UserCheck, label: 'User Control', description: 'Manage users', path: '/ceo/users' },
+        { icon: Wallet, label: 'Finance', description: 'Revenue & expenses', path: '/ceo/finance' },
         { icon: Mail, label: 'Messages', description: 'Team chat', path: '/messages' },
-        { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
     case 'admin':

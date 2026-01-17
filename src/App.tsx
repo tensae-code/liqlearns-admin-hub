@@ -34,6 +34,9 @@ import CEODashboard from "./pages/CEODashboard";
 import CEOAnalytics from "./pages/CEOAnalytics";
 import CEOTeam from "./pages/CEOTeam";
 import CEOReports from "./pages/CEOReports";
+import CEOAIManagement from "./pages/CEOAIManagement";
+import CEOFinance from "./pages/CEOFinance";
+import CEOUsers from "./pages/CEOUsers";
 import SupportDashboard from "./pages/SupportDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -100,6 +103,21 @@ const AppRoutes = () => (
     <Route path="/ceo/reports" element={
       <ProtectedRoute allowedRoles={['ceo']}>
         <CEOReports />
+      </ProtectedRoute>
+    } />
+    <Route path="/ceo/ai" element={
+      <ProtectedRoute allowedRoles={['ceo']}>
+        <CEOAIManagement />
+      </ProtectedRoute>
+    } />
+    <Route path="/ceo/finance" element={
+      <ProtectedRoute allowedRoles={['ceo']}>
+        <CEOFinance />
+      </ProtectedRoute>
+    } />
+    <Route path="/ceo/users" element={
+      <ProtectedRoute allowedRoles={['ceo']}>
+        <CEOUsers />
       </ProtectedRoute>
     } />
     
