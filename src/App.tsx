@@ -9,6 +9,7 @@ import { PlatformSettingsProvider } from "@/contexts/PlatformSettingsContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import GlobalFloatingElements from "@/components/layout/GlobalFloatingElements";
+import IncomingCallHandler from "@/components/messaging/IncomingCallHandler";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -144,6 +145,7 @@ const App = () => (
               <ScrollToTop />
               <AppRoutes />
               <GlobalFloatingElements />
+              <IncomingCallHandler />
             </StudyRoomProvider>
           </PlatformSettingsProvider>
         </AuthProvider>

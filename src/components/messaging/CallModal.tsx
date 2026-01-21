@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -160,6 +162,9 @@ const CallModal = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 border-0 overflow-hidden max-w-md">
+        <VisuallyHidden>
+          <DialogTitle>{isIncoming ? 'Incoming Call' : 'Outgoing Call'}</DialogTitle>
+        </VisuallyHidden>
         <motion.div
           layout
           className="relative bg-gradient-to-b from-background via-background to-muted p-6"
