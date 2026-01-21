@@ -541,12 +541,12 @@ export const useMessaging = () => {
     }
   }, []);
 
-  // Real-time subscription for new messages
+  // Real-time subscription for new messages (DMs)
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel('messaging-updates')
+    const dmChannel = supabase
+      .channel('dm-updates')
       .on(
         'postgres_changes',
         {
@@ -555,22 +555,101 @@ export const useMessaging = () => {
           table: 'direct_messages',
           filter: `receiver_id=eq.${user.id}`,
         },
-        (payload) => {
-          // Refresh conversations without causing infinite loop
-          fetchConversations();
+        async (payload) => {
+          console.log('New DM received:', payload);
           
-          // If viewing this conversation, refresh messages
+          // If viewing this conversation, add message directly to UI
           if (currentConversation?.id === `dm_${payload.new.sender_id}`) {
-            fetchMessages(currentConversation.id);
+            // Fetch sender profile
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('full_name, avatar_url')
+              .eq('user_id', payload.new.sender_id)
+              .single();
+
+            const newMessage: Message = {
+              id: payload.new.id,
+              content: payload.new.content,
+              sender: {
+                id: payload.new.sender_id,
+                name: senderProfile?.full_name || 'Unknown',
+                avatar: senderProfile?.avatar_url,
+              },
+              timestamp: formatTime(payload.new.created_at),
+              isRead: false,
+            };
+            
+            setMessages(prev => {
+              // Check if message already exists (avoid duplicates from optimistic update)
+              if (prev.some(m => m.id === payload.new.id)) return prev;
+              return [...prev, newMessage];
+            });
           }
+          
+          // Refresh conversations to update last message
+          fetchConversations();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(dmChannel);
     };
-  }, [user]); // Remove fetchConversations and fetchMessages from dependencies
+  }, [user, currentConversation?.id]);
+
+  // Real-time subscription for group messages
+  useEffect(() => {
+    if (!profile || !currentConversation?.type) return;
+    if (currentConversation.type !== 'group') return;
+
+    const groupId = currentConversation.id.replace('group_', '');
+    
+    const groupChannel = supabase
+      .channel(`group-messages-${groupId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'group_messages',
+        },
+        async (payload) => {
+          console.log('New group message:', payload);
+          
+          // Don't add our own messages (already added optimistically)
+          if (payload.new.sender_id === profile.id) return;
+          
+          // Fetch sender profile
+          const { data: senderProfile } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', payload.new.sender_id)
+            .single();
+
+          const newMessage: Message = {
+            id: payload.new.id,
+            content: payload.new.content,
+            sender: {
+              id: payload.new.sender_id,
+              name: senderProfile?.full_name || 'Unknown',
+              avatar: senderProfile?.avatar_url,
+            },
+            timestamp: formatTime(payload.new.created_at),
+          };
+          
+          setMessages(prev => {
+            // Check if message already exists
+            if (prev.some(m => m.id === payload.new.id)) return prev;
+            return [...prev, newMessage];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(groupChannel);
+    };
+  }, [profile?.id, currentConversation?.id, currentConversation?.type]);
 
   // Initial fetch - run when both user AND profile are ready
   useEffect(() => {
