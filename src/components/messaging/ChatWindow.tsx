@@ -177,8 +177,14 @@ const ChatWindow = ({
   };
 
   const getPartnerId = () => {
-    if (conversation?.type === 'dm') {
-      return conversation.id.replace('dm_', '');
+    if (conversation?.type === 'dm' && conversation.id) {
+      // The conversation.id for DMs is the other user's profile id directly
+      // Check if it starts with 'dm_' prefix (legacy format) or is a UUID
+      if (conversation.id.startsWith('dm_')) {
+        return conversation.id.replace('dm_', '');
+      }
+      // If not prefixed, the id itself is the partner's user_id
+      return conversation.id;
     }
     return null;
   };
@@ -400,16 +406,18 @@ const ChatWindow = ({
       </div>
 
       {/* Call Modal */}
-      <CallModal
-        open={showCall}
-        onOpenChange={setShowCall}
-        callType={callType}
-        callee={{
-          id: conversation.id,
-          name: conversation.name,
-          avatar: conversation.avatar,
-        }}
-      />
+      {partnerId && (
+        <CallModal
+          open={showCall}
+          onOpenChange={setShowCall}
+          callType={callType}
+          callee={{
+            id: partnerId,
+            name: conversation.name,
+            avatar: conversation.avatar,
+          }}
+        />
+      )}
     </div>
   );
 };
