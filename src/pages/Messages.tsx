@@ -13,6 +13,7 @@ import ManageMemberModal from '@/components/messaging/ManageMemberModal';
 import AddMembersModal from '@/components/messaging/AddMembersModal';
 import ClubRoomView from '@/components/messaging/ClubRoomView';
 import useMessaging from '@/hooks/useMessaging';
+import usePresence from '@/hooks/usePresence';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +42,9 @@ const Messages = () => {
     switchChannel,
   } = useMessaging();
 
+  // Online presence tracking
+  const { isUserOnline, onlineUsers } = usePresence('messaging-presence');
+
   const [filter, setFilter] = useState<'all' | 'dms' | 'groups'>('all');
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -61,6 +65,15 @@ const Messages = () => {
   useEffect(() => {
     setLocalMessages(messages);
   }, [messages]);
+
+  // Update conversations with online status
+  const conversationsWithOnlineStatus = conversations.map(conv => {
+    if (conv.type === 'dm') {
+      const partnerId = conv.id.replace('dm_', '');
+      return { ...conv, isOnline: isUserOnline(partnerId) };
+    }
+    return conv;
+  });
 
   // Handle delete message
   const handleDeleteMessage = (messageId: string) => {
@@ -165,7 +178,7 @@ const Messages = () => {
         {(!isMobile || !showChat) && (
           <div className={`${isMobile ? 'w-full' : 'w-80 shrink-0'}`}>
             <ConversationList
-              conversations={conversations}
+              conversations={conversationsWithOnlineStatus}
               selectedId={currentConversation?.id}
               onSelect={handleSelectConversation}
               onCreateGroup={() => setShowCreateGroup(true)}

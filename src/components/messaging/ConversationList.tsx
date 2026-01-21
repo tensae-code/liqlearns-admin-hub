@@ -48,7 +48,7 @@ const ConversationList = ({
   onFilterChange
 }: ConversationListProps) => {
   const { user } = useAuth();
-  const { isUserOnline } = usePresence();
+  const { isUserOnline } = usePresence('messaging-presence');
   const [searchQuery, setSearchQuery] = useState('');
   const [requestCount, setRequestCount] = useState(0);
 
@@ -202,8 +202,8 @@ const ConversationList = ({
                     {conv.type === 'group' ? <Users className="w-5 h-5" /> : conv.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                {conv.type === 'dm' && isUserOnline(conv.id.replace('dm_', '')) && (
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card" />
+                {conv.type === 'dm' && (conv.isOnline || isUserOnline(conv.id.replace('dm_', ''))) && (
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card animate-pulse" />
                 )}
               </div>
               
