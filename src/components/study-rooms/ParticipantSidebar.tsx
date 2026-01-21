@@ -55,6 +55,7 @@ interface ParticipantSidebarProps {
   onUnpinUser: (userId: string) => void;
   onAddFriend: (userId: string) => void;
   onReport?: (userId: string) => void;
+  presentUserIds?: string[]; // Real-time presence
 }
 
 // Comprehensive countries list
@@ -92,6 +93,7 @@ const ParticipantSidebar = ({
   onUnpinUser,
   onAddFriend,
   onReport,
+  presentUserIds = [],
 }: ParticipantSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [countryFilter, setCountryFilter] = useState<string>('all');
@@ -226,7 +228,7 @@ const ParticipantSidebar = ({
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    {/* Avatar */}
+                    {/* Avatar with presence indicator */}
                     <div className="relative shrink-0">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={participant.profile?.avatar_url || undefined} />
@@ -234,9 +236,16 @@ const ParticipantSidebar = ({
                           {initials}
                         </AvatarFallback>
                       </Avatar>
+                      {/* Real-time presence indicator */}
+                      <span className={cn(
+                        "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card",
+                        (presentUserIds.includes(participant.user_id) || isMe)
+                          ? "bg-success"
+                          : "bg-muted-foreground"
+                      )} />
                       {(participant.is_mic_on) && (
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success rounded-full flex items-center justify-center">
-                          <Mic className="w-2.5 h-2.5 text-white" />
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full flex items-center justify-center">
+                          <Mic className="w-2.5 h-2.5 text-accent-foreground" />
                         </div>
                       )}
                     </div>

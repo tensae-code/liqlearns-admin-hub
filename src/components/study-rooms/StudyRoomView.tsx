@@ -22,6 +22,8 @@ import {
   PanelRightOpen,
   Zap,
   Flame,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,6 +33,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useVideoChat } from '@/hooks/useVideoChat';
+import { useStudyRoomPresence } from '@/hooks/useStudyRoomPresence';
 import ParticipantSidebar from './ParticipantSidebar';
 import RoomSettingsSheet from './RoomSettingsSheet';
 import type { RoomParticipant, StudyRoom } from '@/hooks/useStudyRooms';
@@ -103,6 +106,14 @@ const StudyRoomView = ({
     screenRef,
   } = useVideoChat();
 
+  // Real-time presence tracking
+  const {
+    presentUserIds,
+    isConnected,
+    isUserPresent,
+    updateMyPresence,
+  } = useStudyRoomPresence(room.id);
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
 
   // Check if screen share is allowed (not in public rooms)
@@ -114,6 +125,15 @@ const StudyRoomView = ({
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
+
+  // Sync my presence state when mic/video changes
+  useEffect(() => {
+    updateMyPresence({
+      isMicOn,
+      isVideoOn,
+      studyTitle: myStudyTitle,
+    });
+  }, [isMicOn, isVideoOn, myStudyTitle, updateMyPresence]);
 
   const updateDisplaySetting = (key: keyof DisplaySettings, value: boolean) => {
     setDisplaySettings(prev => {
@@ -157,7 +177,7 @@ const StudyRoomView = ({
             : 'bg-card'
         }`}>
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+            <div className="w-3 h-3 rounded-full bg-destructive animate-pulse" />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-display font-semibold text-foreground">{room.name}</h2>
@@ -166,10 +186,22 @@ const StudyRoomView = ({
                     Official
                   </Badge>
                 )}
+                {/* Connection status indicator */}
+                {isConnected ? (
+                  <Badge variant="outline" className="text-success border-success/30 text-xs">
+                    <Wifi className="w-3 h-3 mr-1" />
+                    Live
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-muted-foreground text-xs">
+                    <WifiOff className="w-3 h-3 mr-1" />
+                    Connecting...
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
                 {room.study_topic && `📚 ${room.study_topic} • `}
-                {participants.length} participant{participants.length !== 1 ? 's' : ''}
+                {presentUserIds.length} online • {participants.length} total
                 {room.is_always_muted && ' • 🔇 Muted Room'}
               </p>
             </div>
@@ -269,12 +301,21 @@ const StudyRoomView = ({
                           )}
                         />
                       ) : (
-                        <Avatar className="w-20 h-20 border-4 border-background shadow-lg">
-                          <AvatarImage src={participant.profile?.avatar_url || undefined} />
-                          <AvatarFallback className="text-2xl font-bold bg-accent text-accent-foreground">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar className="w-20 h-20 border-4 border-background shadow-lg">
+                            <AvatarImage src={participant.profile?.avatar_url || undefined} />
+                            <AvatarFallback className="text-2xl font-bold bg-accent text-accent-foreground">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          {/* Real-time presence indicator */}
+                          <span className={cn(
+                            "absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-background",
+                            isUserPresent(participant.user_id) || isMe
+                              ? "bg-success animate-pulse"
+                              : "bg-muted-foreground"
+                          )} />
+                        </div>
                       )}
                     </div>
 
@@ -496,6 +537,7 @@ const StudyRoomView = ({
             onPinUser={onPinUser}
             onUnpinUser={onUnpinUser}
             onAddFriend={onAddFriend}
+            presentUserIds={presentUserIds}
           />
         </div>
       )}
