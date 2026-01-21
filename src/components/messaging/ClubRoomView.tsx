@@ -17,15 +17,20 @@ import {
   X,
   Maximize2,
   Minimize2,
+  Camera,
+  Volume2,
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { GroupMember } from './GroupInfoSheet';
+import { useMediaDevices } from '@/hooks/useMediaDevices';
 
 interface ClubRoomViewProps {
   channelName: string;
@@ -53,11 +58,27 @@ const ClubRoomView = ({
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Request media permissions
+  const {
+    cameras,
+    microphones,
+    speakers,
+    selectedCamera,
+    selectedMicrophone,
+    selectedSpeaker,
+    setSelectedCamera,
+    setSelectedMicrophone,
+    setSelectedSpeaker,
+    getMediaConstraints,
+  } = useMediaDevices();
+
+  // Request media permissions with selected device
   const toggleMic = async () => {
     try {
       if (!isMicOn) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const constraints = selectedMicrophone 
+          ? { audio: { deviceId: { exact: selectedMicrophone } } }
+          : { audio: true };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         setLocalStream(prev => {
           if (prev) {
             stream.getAudioTracks().forEach(track => prev.addTrack(track));
@@ -80,7 +101,10 @@ const ClubRoomView = ({
   const toggleVideo = async () => {
     try {
       if (!isVideoOn) {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const constraints = selectedCamera
+          ? { video: { deviceId: { exact: selectedCamera } } }
+          : { video: true };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
@@ -103,6 +127,51 @@ const ClubRoomView = ({
       setIsVideoOn(!isVideoOn);
     } catch (error) {
       console.error('Error accessing camera:', error);
+    }
+  };
+
+  // Switch camera while streaming
+  const handleCameraChange = async (deviceId: string) => {
+    setSelectedCamera(deviceId);
+    if (isVideoOn && localStream) {
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: deviceId } },
+        });
+        localStream.getVideoTracks().forEach(track => {
+          track.stop();
+          localStream.removeTrack(track);
+        });
+        newStream.getVideoTracks().forEach(track => {
+          localStream.addTrack(track);
+        });
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = localStream;
+        }
+      } catch (error) {
+        console.error('Error switching camera:', error);
+      }
+    }
+  };
+
+  // Switch microphone while streaming
+  const handleMicChange = async (deviceId: string) => {
+    setSelectedMicrophone(deviceId);
+    if (isMicOn && localStream) {
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          audio: { deviceId: { exact: deviceId } },
+        });
+        localStream.getAudioTracks().forEach(track => {
+          track.stop();
+          localStream.removeTrack(track);
+        });
+        newStream.getAudioTracks().forEach(track => {
+          localStream.addTrack(track);
+        });
+      } catch (error) {
+        console.error('Error switching microphone:', error);
+      }
     }
   };
 
@@ -297,6 +366,78 @@ const ClubRoomView = ({
           >
             <Hand className="w-6 h-6" />
           </Button>
+
+          {/* Settings Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="lg"
+                className="rounded-full w-14 h-14"
+              >
+                <Settings className="w-6 h-6" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-64 bg-popover z-50">
+              {/* Camera Selection */}
+              <DropdownMenuLabel className="flex items-center gap-2">
+                <Camera className="w-4 h-4" />
+                Camera
+              </DropdownMenuLabel>
+              {cameras.map((camera) => (
+                <DropdownMenuItem
+                  key={camera.deviceId}
+                  onClick={() => handleCameraChange(camera.deviceId)}
+                  className={cn(selectedCamera === camera.deviceId && "bg-accent")}
+                >
+                  {camera.label}
+                </DropdownMenuItem>
+              ))}
+              {cameras.length === 0 && (
+                <DropdownMenuItem disabled>No cameras found</DropdownMenuItem>
+              )}
+              
+              <DropdownMenuSeparator />
+              
+              {/* Microphone Selection */}
+              <DropdownMenuLabel className="flex items-center gap-2">
+                <Mic className="w-4 h-4" />
+                Microphone
+              </DropdownMenuLabel>
+              {microphones.map((mic) => (
+                <DropdownMenuItem
+                  key={mic.deviceId}
+                  onClick={() => handleMicChange(mic.deviceId)}
+                  className={cn(selectedMicrophone === mic.deviceId && "bg-accent")}
+                >
+                  {mic.label}
+                </DropdownMenuItem>
+              ))}
+              {microphones.length === 0 && (
+                <DropdownMenuItem disabled>No microphones found</DropdownMenuItem>
+              )}
+              
+              <DropdownMenuSeparator />
+              
+              {/* Speaker Selection */}
+              <DropdownMenuLabel className="flex items-center gap-2">
+                <Volume2 className="w-4 h-4" />
+                Speaker
+              </DropdownMenuLabel>
+              {speakers.map((speaker) => (
+                <DropdownMenuItem
+                  key={speaker.deviceId}
+                  onClick={() => setSelectedSpeaker(speaker.deviceId)}
+                  className={cn(selectedSpeaker === speaker.deviceId && "bg-accent")}
+                >
+                  {speaker.label}
+                </DropdownMenuItem>
+              ))}
+              {speakers.length === 0 && (
+                <DropdownMenuItem disabled>No speakers found</DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Leave */}
           <Button
