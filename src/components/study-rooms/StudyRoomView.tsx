@@ -169,42 +169,42 @@ const StudyRoomView = ({
     : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
 
   return (
-    <div className="flex h-[calc(100vh-120px)]">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-140px)] md:h-[calc(100vh-120px)] overflow-hidden">
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <div className={`flex items-center justify-between p-4 border-b border-border ${
+        <div className={`flex items-center justify-between p-2 md:p-4 border-b border-border ${
           room.is_system_room 
             ? 'bg-gradient-to-r from-accent/10 to-primary/10' 
             : 'bg-card'
         }`}>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-destructive animate-pulse" />
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-display font-semibold text-foreground">{room.name}</h2>
+          <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+            <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-destructive animate-pulse shrink-0" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1 md:gap-2 flex-wrap">
+                <h2 className="font-display font-semibold text-foreground text-sm md:text-base truncate">{room.name}</h2>
                 {room.is_system_room && (
-                  <Badge className="bg-gradient-to-r from-accent to-primary text-white text-xs">
+                  <Badge className="bg-gradient-to-r from-accent to-primary text-white text-[10px] md:text-xs">
                     Official
                   </Badge>
                 )}
                 {/* Connection status indicator */}
                 {isConnected ? (
-                  <Badge variant="outline" className="text-success border-success/30 text-xs">
-                    <Wifi className="w-3 h-3 mr-1" />
-                    Live
+                  <Badge variant="outline" className="text-success border-success/30 text-[10px] md:text-xs">
+                    <Wifi className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 md:mr-1" />
+                    <span className="hidden sm:inline">Live</span>
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-muted-foreground text-xs">
-                    <WifiOff className="w-3 h-3 mr-1" />
-                    Connecting...
+                  <Badge variant="outline" className="text-muted-foreground text-[10px] md:text-xs">
+                    <WifiOff className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 md:mr-1" />
+                    <span className="hidden sm:inline">Connecting...</span>
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm text-muted-foreground truncate">
                 {room.study_topic && `📚 ${room.study_topic} • `}
                 {presentUserIds.length} online • {participants.length} total
-                {room.is_always_muted && ' • 🔇 Muted Room'}
+                {room.is_always_muted && ' • 🔇'}
               </p>
             </div>
           </div>
@@ -244,8 +244,8 @@ const StudyRoomView = ({
         </div>
 
         {/* Participants Grid */}
-        <div className="flex-1 overflow-auto p-4">
-          <div className={cn('grid gap-4', gridCols)}>
+        <div className="flex-1 overflow-auto p-2 md:p-4">
+          <div className={cn('grid gap-2 md:gap-4', gridCols)}>
             {/* Screen Share (if active) */}
             {isScreenSharing && screenStream && (
               <motion.div
@@ -279,7 +279,7 @@ const StudyRoomView = ({
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: index * 0.05 }}
                   className={cn(
-                    'relative rounded-xl border-2 overflow-hidden transition-all aspect-video',
+                    'relative rounded-lg md:rounded-xl border overflow-hidden transition-all aspect-video',
                     participant.is_pinned_by_me
                       ? 'border-gold bg-gold/5'
                       : 'border-border bg-card'
@@ -304,9 +304,9 @@ const StudyRoomView = ({
                         />
                       ) : (
                         <div className="relative">
-                          <Avatar className="w-20 h-20 border-4 border-background shadow-lg">
+                          <Avatar className="w-12 h-12 md:w-20 md:h-20 border-2 md:border-4 border-background shadow-lg">
                             <AvatarImage src={participant.profile?.avatar_url || undefined} />
-                            <AvatarFallback className="text-2xl font-bold bg-accent text-accent-foreground">
+                            <AvatarFallback className="text-lg md:text-2xl font-bold bg-accent text-accent-foreground">
                               {initials}
                             </AvatarFallback>
                           </Avatar>
@@ -322,41 +322,43 @@ const StudyRoomView = ({
                     </div>
 
                     {/* Bottom info bar */}
-                    <div className="p-3 bg-background/80 backdrop-blur-sm">
+                    <div className="p-1.5 md:p-3 bg-background/80 backdrop-blur-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
                           {participant.is_mic_on || (isMe && isMicOn) ? (
-                            <Mic className="w-4 h-4 text-success shrink-0" />
+                            <Mic className="w-3 h-3 md:w-4 md:h-4 text-success shrink-0" />
                           ) : (
-                            <MicOff className="w-4 h-4 text-muted-foreground shrink-0" />
+                            <MicOff className="w-3 h-3 md:w-4 md:h-4 text-muted-foreground shrink-0" />
                           )}
-                          <span className="font-medium text-sm truncate">
+                          <span className="font-medium text-xs md:text-sm truncate">
                             {participant.profile?.full_name || 'Unknown'}
                             {isMe && ' (You)'}
                           </span>
                         </div>
 
                         {/* Right Side - Stats & Actions */}
-                        <div className="flex items-center gap-1">
-                          {/* Enabled Stats on right side */}
-                          {displaySettings.showPinCount && (participant.pin_count || 0) > 0 && (
-                            <Badge variant="secondary" className="text-xs">
-                              <Pin className="w-3 h-3 mr-1" />
-                              {participant.pin_count}
-                            </Badge>
-                          )}
-                          {displaySettings.showXP && participant.profile?.xp_points && (
-                            <Badge variant="secondary" className="text-xs">
-                              <Zap className="w-3 h-3 mr-1 text-gold" />
-                              {participant.profile.xp_points}
-                            </Badge>
-                          )}
-                          {displaySettings.showStreak && participant.profile?.current_streak && (
-                            <Badge variant="secondary" className="text-xs">
-                              <Flame className="w-3 h-3 mr-1 text-streak" />
-                              {participant.profile.current_streak}
-                            </Badge>
-                          )}
+                        <div className="flex items-center gap-0.5 md:gap-1">
+                          {/* Enabled Stats on right side - hidden on mobile */}
+                          <div className="hidden md:flex items-center gap-1">
+                            {displaySettings.showPinCount && (participant.pin_count || 0) > 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Pin className="w-3 h-3 mr-1" />
+                                {participant.pin_count}
+                              </Badge>
+                            )}
+                            {displaySettings.showXP && participant.profile?.xp_points && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Zap className="w-3 h-3 mr-1 text-gold" />
+                                {participant.profile.xp_points}
+                              </Badge>
+                            )}
+                            {displaySettings.showStreak && participant.profile?.current_streak && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Flame className="w-3 h-3 mr-1 text-streak" />
+                                {participant.profile.current_streak}
+                              </Badge>
+                            )}
+                          </div>
 
                           {!isMe && (
                             <>
@@ -365,7 +367,7 @@ const StudyRoomView = ({
                                 variant={participant.is_pinned_by_me ? "default" : "ghost"}
                                 size="icon"
                                 className={cn(
-                                  "h-7 w-7",
+                                  "h-5 w-5 md:h-7 md:w-7",
                                   participant.is_pinned_by_me && "bg-gold hover:bg-gold/90"
                                 )}
                                 onClick={() => 
@@ -374,27 +376,33 @@ const StudyRoomView = ({
                                     : onPinUser(participant.user_id)
                                 }
                               >
-                                <Pin className={cn("w-3.5 h-3.5", participant.is_pinned_by_me && "fill-current")} />
+                                <Pin className={cn("w-2.5 h-2.5 md:w-3.5 md:h-3.5", participant.is_pinned_by_me && "fill-current")} />
                               </Button>
 
-                              {/* Quick Add Friend Button */}
+                              {/* Quick Add Friend Button - Hidden on mobile */}
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-5 w-5 md:h-7 md:w-7 hidden sm:flex"
                                 onClick={() => onAddFriend(participant.user_id)}
                               >
-                                <UserPlus className="w-3.5 h-3.5" />
+                                <UserPlus className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
                               </Button>
 
                               {/* More Options */}
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                                    <MoreVertical className="w-4 h-4" />
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 md:h-7 md:w-7">
+                                    <MoreVertical className="w-3 h-3 md:w-4 md:h-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={() => onAddFriend(participant.user_id)}
+                                    className="sm:hidden"
+                                  >
+                                    <UserPlus className="w-4 h-4 mr-2" /> Add Friend
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem 
                                     onClick={() => onReport(participant.user_id)}
                                     className="text-destructive"
@@ -440,31 +448,31 @@ const StudyRoomView = ({
         </div>
 
         {/* Bottom Controls */}
-        <div className="p-4 border-t border-border bg-card">
-          <div className="flex items-center justify-center gap-3">
+        <div className="p-2 md:p-4 border-t border-border bg-card shrink-0">
+          <div className="flex items-center justify-center gap-1.5 md:gap-3">
             {/* Mic Button */}
             {room.is_always_muted ? (
               <Button
                 variant="outline"
                 size="lg"
-                className="rounded-full w-14 h-14 opacity-50 cursor-not-allowed"
+                className="rounded-full w-10 h-10 md:w-14 md:h-14 opacity-50 cursor-not-allowed"
                 disabled
                 title="Microphones are disabled in this room"
               >
-                <MicOff className="w-6 h-6" />
+                <MicOff className="w-4 h-4 md:w-6 md:h-6" />
               </Button>
             ) : (
               <Button
                 variant={isMicOn ? "default" : "outline"}
                 size="lg"
                 className={cn(
-                  "rounded-full w-14 h-14",
+                  "rounded-full w-10 h-10 md:w-14 md:h-14",
                   isMicOn && "bg-accent hover:bg-accent/90"
                 )}
                 onClick={handleMicToggle}
                 title={isMicOn ? "Turn off microphone" : "Turn on microphone"}
               >
-                {isMicOn ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+                {isMicOn ? <Mic className="w-4 h-4 md:w-6 md:h-6" /> : <MicOff className="w-4 h-4 md:w-6 md:h-6" />}
               </Button>
             )}
 
@@ -473,21 +481,21 @@ const StudyRoomView = ({
               variant={isVideoOn ? "default" : "outline"}
               size="lg"
               className={cn(
-                "rounded-full w-14 h-14",
+                "rounded-full w-10 h-10 md:w-14 md:h-14",
                 isVideoOn && "bg-accent hover:bg-accent/90"
               )}
               onClick={toggleVideo}
               title={isVideoOn ? "Turn off camera" : "Turn on camera"}
             >
-              {isVideoOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
+              {isVideoOn ? <Video className="w-4 h-4 md:w-6 md:h-6" /> : <VideoOff className="w-4 h-4 md:w-6 md:h-6" />}
             </Button>
 
-            {/* Screen Share Button - Disabled in public rooms */}
+            {/* Screen Share Button - Hidden on mobile, disabled in public rooms */}
             <Button
               variant={isScreenSharing ? "default" : "outline"}
               size="lg"
               className={cn(
-                "rounded-full w-14 h-14",
+                "rounded-full w-10 h-10 md:w-14 md:h-14 hidden sm:flex",
                 isScreenSharing && "bg-accent hover:bg-accent/90",
                 !isScreenShareAllowed && "opacity-50 cursor-not-allowed"
               )}
@@ -495,18 +503,18 @@ const StudyRoomView = ({
               disabled={!isScreenShareAllowed}
               title={!isScreenShareAllowed ? "Screen sharing not allowed in public rooms" : isScreenSharing ? "Stop sharing screen" : "Share screen"}
             >
-              {isScreenSharing ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
+              {isScreenSharing ? <MonitorOff className="w-4 h-4 md:w-6 md:h-6" /> : <Monitor className="w-4 h-4 md:w-6 md:h-6" />}
             </Button>
 
-            {/* Chat Button (Coming Soon) */}
+            {/* Chat Button (Coming Soon) - Hidden on mobile */}
             <Button
               variant="outline"
               size="lg"
-              className="rounded-full w-14 h-14"
+              className="rounded-full w-10 h-10 md:w-14 md:h-14 hidden sm:flex"
               disabled
               title="Chat coming soon"
             >
-              <MessageSquare className="w-6 h-6" />
+              <MessageSquare className="w-4 h-4 md:w-6 md:h-6" />
             </Button>
 
             {/* Settings Button - Now opens sheet */}
@@ -521,11 +529,11 @@ const StudyRoomView = ({
             <Button
               variant="destructive"
               size="lg"
-              className="rounded-full w-14 h-14"
+              className="rounded-full w-10 h-10 md:w-14 md:h-14"
               onClick={onLeaveRoom}
               title="Leave room"
             >
-              <PhoneOff className="w-6 h-6" />
+              <PhoneOff className="w-4 h-4 md:w-6 md:h-6" />
             </Button>
           </div>
         </div>
