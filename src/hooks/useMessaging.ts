@@ -603,21 +603,31 @@ export const useMessaging = () => {
     if (currentConversation.type !== 'group') return;
 
     const groupId = currentConversation.id.replace('group_', '');
+    const activeChannelId = currentChannel.channelId;
+    
+    // If no channel selected yet, don't subscribe
+    if (!activeChannelId) return;
+    
+    console.log('Setting up group message subscription for channel:', activeChannelId);
     
     const groupChannel = supabase
-      .channel(`group-messages-${groupId}`)
+      .channel(`group-messages-${groupId}-${activeChannelId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'group_messages',
+          filter: `channel_id=eq.${activeChannelId}`,
         },
         async (payload) => {
           console.log('New group message:', payload);
           
           // Don't add our own messages (already added optimistically)
           if (payload.new.sender_id === profile.id) return;
+          
+          // Verify message is for current channel
+          if (payload.new.channel_id !== activeChannelId) return;
           
           // Fetch sender profile
           const { data: senderProfile } = await supabase
@@ -649,7 +659,7 @@ export const useMessaging = () => {
     return () => {
       supabase.removeChannel(groupChannel);
     };
-  }, [profile?.id, currentConversation?.id, currentConversation?.type]);
+  }, [profile?.id, currentConversation?.id, currentConversation?.type, currentChannel.channelId]);
 
   // Initial fetch - run when both user AND profile are ready
   useEffect(() => {

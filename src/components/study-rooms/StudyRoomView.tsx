@@ -34,6 +34,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useVideoChat } from '@/hooks/useVideoChat';
 import { useStudyRoomPresence } from '@/hooks/useStudyRoomPresence';
+import { useWebRTC } from '@/hooks/useWebRTC';
 import ParticipantSidebar from './ParticipantSidebar';
 import RoomSettingsSheet from './RoomSettingsSheet';
 import type { RoomParticipant, StudyRoom } from '@/hooks/useStudyRooms';
@@ -116,7 +117,11 @@ const StudyRoomView = ({
     updateMyPresence,
   } = useStudyRoomPresence(room.id);
 
+  // WebRTC for peer-to-peer video sharing
+  const { remoteStreams } = useWebRTC(room.id, localStream);
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
 
   // Check if screen share is allowed (not in public rooms)
   const isScreenShareAllowed = room.room_type !== 'public';
@@ -127,6 +132,16 @@ const StudyRoomView = ({
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
+
+  // Update remote video elements when remote streams change
+  useEffect(() => {
+    remoteStreams.forEach((stream, peerId) => {
+      const videoEl = remoteVideoRefs.current.get(peerId);
+      if (videoEl && videoEl.srcObject !== stream) {
+        videoEl.srcObject = stream;
+      }
+    });
+  }, [remoteStreams]);
 
   // Sync my presence state when mic/video changes
   useEffect(() => {
@@ -271,6 +286,8 @@ const StudyRoomView = ({
               const isMe = participant.user_id === currentUserId;
               const initials = participant.profile?.full_name?.split(' ').map(n => n[0]).join('') || '?';
               const showLocalVideo = isMe && isVideoOn && localStream;
+              const remoteStream = !isMe ? remoteStreams.get(participant.user_id) : null;
+              const showRemoteVideo = !isMe && remoteStream;
 
               return (
                 <motion.div
@@ -289,7 +306,7 @@ const StudyRoomView = ({
                     {/* Video / Avatar */}
                     <div className={cn(
                       "flex-1 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 relative",
-                      displaySettings.blurBackground && showLocalVideo && "backdrop-blur-md"
+                      displaySettings.blurBackground && (showLocalVideo || showRemoteVideo) && "backdrop-blur-md"
                     )}>
                       {showLocalVideo ? (
                         <video
@@ -297,6 +314,23 @@ const StudyRoomView = ({
                           autoPlay
                           playsInline
                           muted
+                          className={cn(
+                            "absolute inset-0 w-full h-full object-cover",
+                            displaySettings.blurBackground && "filter blur-sm"
+                          )}
+                        />
+                      ) : showRemoteVideo ? (
+                        <video
+                          ref={(el) => {
+                            if (el) {
+                              remoteVideoRefs.current.set(participant.user_id, el);
+                              if (remoteStream && el.srcObject !== remoteStream) {
+                                el.srcObject = remoteStream;
+                              }
+                            }
+                          }}
+                          autoPlay
+                          playsInline
                           className={cn(
                             "absolute inset-0 w-full h-full object-cover",
                             displaySettings.blurBackground && "filter blur-sm"

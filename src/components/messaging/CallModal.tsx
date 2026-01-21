@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,13 +12,12 @@ import {
   VideoOff, 
   Mic, 
   MicOff,
-  Volume2,
-  VolumeX,
   Maximize2,
   Minimize2,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useCallWebRTC } from '@/hooks/useCallWebRTC';
 
 interface CallModalProps {
   open: boolean;
@@ -43,45 +42,76 @@ const CallModal = ({
   onAccept,
   onDecline,
 }: CallModalProps) => {
-  const [callStatus, setCallStatus] = useState<'ringing' | 'connecting' | 'connected' | 'ended'>('ringing');
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOn, setIsVideoOn] = useState(callType === 'video');
-  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
-  const [callDuration, setCallDuration] = useState(0);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const {
+    callState,
+    localStream,
+    remoteStream,
+    isMuted,
+    isVideoOn,
+    startCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+    toggleMute,
+    toggleVideo,
+    resetCall,
+  } = useCallWebRTC();
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const callDurationRef = useRef<number>(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Outgoing calls stay in ringing state - don't auto-connect
-  // In a real app, connection would happen when the other person answers
+  // Start outgoing call when modal opens
   useEffect(() => {
-    if (open && !isIncoming) {
-      // Keep ringing indefinitely until user cancels
-      // Real implementation would wait for WebRTC signaling from the callee
-      setCallStatus('ringing');
+    if (open && !isIncoming && callState.status === 'idle') {
+      startCall(callee.id, callType);
     }
-  }, [open, isIncoming]);
+  }, [open, isIncoming, callee.id, callType, callState.status, startCall]);
 
-  // Call duration timer
+  // Update local video element
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (callStatus === 'connected') {
-      interval = setInterval(() => {
-        setCallDuration(prev => prev + 1);
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  // Update remote video element
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
+  // Timer for call duration
+  useEffect(() => {
+    if (callState.status === 'connected' && callState.startTime) {
+      timerRef.current = setInterval(() => {
+        callDurationRef.current = Math.floor((Date.now() - callState.startTime!) / 1000);
       }, 1000);
     }
-    return () => clearInterval(interval);
-  }, [callStatus]);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [callState.status, callState.startTime]);
 
-  // Reset on close
+  // Handle modal close
   useEffect(() => {
     if (!open) {
-      setCallStatus('ringing');
-      setCallDuration(0);
-      setIsMuted(false);
-      setIsVideoOn(callType === 'video');
+      resetCall();
+      callDurationRef.current = 0;
     }
-  }, [open, callType]);
+  }, [open, resetCall]);
+
+  // Auto-close on call end
+  useEffect(() => {
+    if (callState.status === 'ended' || callState.status === 'rejected' || callState.status === 'no-answer') {
+      const timeout = setTimeout(() => {
+        onOpenChange(false);
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [callState.status, onOpenChange]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -89,94 +119,91 @@ const CallModal = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleEndCall = () => {
-    setCallStatus('ended');
-    setTimeout(() => {
-      onOpenChange(false);
-    }, 1000);
-  };
-
   const handleAccept = () => {
-    setCallStatus('connecting');
-    setTimeout(() => {
-      setCallStatus('connected');
-    }, 1500);
+    acceptCall();
     onAccept?.();
   };
 
   const handleDecline = () => {
+    rejectCall();
     onDecline?.();
-    onOpenChange(false);
+  };
+
+  const handleEndCall = () => {
+    endCall();
   };
 
   const getStatusText = () => {
-    switch (callStatus) {
+    switch (callState.status) {
+      case 'idle':
       case 'ringing':
         return isIncoming ? 'Incoming call...' : 'Ringing...';
       case 'connecting':
         return 'Connecting...';
       case 'connected':
-        return formatDuration(callDuration);
+        return formatDuration(callDurationRef.current);
       case 'ended':
         return 'Call ended';
+      case 'rejected':
+        return 'Call declined';
+      case 'no-answer':
+        return 'No answer';
+      default:
+        return '';
     }
   };
 
+  const showIncomingControls = isIncoming && callState.status === 'ringing';
+  const showInCallControls = ['connecting', 'connected', 'ringing'].includes(callState.status) && !showIncomingControls;
+  const isCallActive = callState.status === 'connected';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className={cn(
-          "p-0 border-0 overflow-hidden",
-          isMinimized ? "max-w-[200px]" : "max-w-md"
-        )}
-      >
+      <DialogContent className="p-0 border-0 overflow-hidden max-w-md">
         <motion.div
           layout
-          className={cn(
-            "relative bg-gradient-to-b from-background via-background to-muted",
-            isMinimized ? "p-3" : "p-6"
-          )}
+          className="relative bg-gradient-to-b from-background via-background to-muted p-6"
         >
-          {/* Minimize button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 z-10"
-            onClick={() => setIsMinimized(!isMinimized)}
-          >
-            {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-          </Button>
-
           {/* Video display area */}
-          {callType === 'video' && callStatus === 'connected' && !isMinimized && (
+          {callType === 'video' && isCallActive && (
             <div className="relative aspect-video bg-muted rounded-xl overflow-hidden mb-4">
-              {/* Remote video (placeholder) */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={callee.avatar} />
-                  <AvatarFallback className="text-3xl bg-gradient-accent text-accent-foreground">
-                    {callee.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
+              {/* Remote video */}
+              {remoteStream ? (
+                <video
+                  ref={remoteVideoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={callee.avatar} />
+                    <AvatarFallback className="text-3xl bg-gradient-accent text-accent-foreground">
+                      {callee.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              )}
               
               {/* Local video (small preview) */}
-              {isVideoOn && (
+              {localStream && isVideoOn && (
                 <div className="absolute bottom-3 right-3 w-24 h-32 bg-muted-foreground/20 rounded-lg overflow-hidden border-2 border-background">
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                    You
-                  </div>
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               )}
             </div>
           )}
 
           {/* Callee info */}
-          <div className={cn(
-            "flex flex-col items-center text-center",
-            isMinimized ? "flex-row gap-3" : "gap-4"
-          )}>
-            {!isMinimized && (
+          <div className="flex flex-col items-center text-center gap-4">
+            {!isCallActive && (
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -190,7 +217,7 @@ const CallModal = ({
                 </Avatar>
                 
                 {/* Ringing animation */}
-                {callStatus === 'ringing' && (
+                {callState.status === 'ringing' && (
                   <>
                     <motion.div
                       className="absolute inset-0 rounded-full border-2 border-accent"
@@ -207,110 +234,72 @@ const CallModal = ({
               </motion.div>
             )}
 
-            {isMinimized ? (
-              <Avatar className="h-10 w-10 shrink-0">
-                <AvatarImage src={callee.avatar} />
-                <AvatarFallback className="bg-gradient-accent text-accent-foreground">
-                  {callee.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-            ) : null}
-
-            <div className={isMinimized ? "flex-1 text-left" : ""}>
-              <h3 className={cn(
-                "font-semibold text-foreground",
-                isMinimized ? "text-sm" : "text-xl"
-              )}>
+            <div>
+              <h3 className="font-semibold text-foreground text-xl">
                 {callee.name}
               </h3>
-              <p className={cn(
-                "text-muted-foreground",
-                isMinimized ? "text-xs" : "text-sm"
-              )}>
+              <p className="text-muted-foreground text-sm">
                 {getStatusText()}
               </p>
             </div>
           </div>
 
           {/* Controls */}
-          {!isMinimized && (
-            <div className="mt-8">
-              {/* Incoming call controls */}
-              {isIncoming && callStatus === 'ringing' && (
-                <div className="flex justify-center gap-8">
-                  <Button
-                    size="lg"
-                    className="h-16 w-16 rounded-full bg-destructive hover:bg-destructive/90"
-                    onClick={handleDecline}
-                  >
-                    <PhoneOff className="w-6 h-6" />
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="h-16 w-16 rounded-full bg-success hover:bg-success/90"
-                    onClick={handleAccept}
-                  >
-                    {callType === 'video' ? <Video className="w-6 h-6" /> : <Phone className="w-6 h-6" />}
-                  </Button>
-                </div>
-              )}
+          <div className="mt-8">
+            {/* Incoming call controls */}
+            {showIncomingControls && (
+              <div className="flex justify-center gap-8">
+                <Button
+                  size="lg"
+                  className="h-16 w-16 rounded-full bg-destructive hover:bg-destructive/90"
+                  onClick={handleDecline}
+                >
+                  <PhoneOff className="w-6 h-6" />
+                </Button>
+                <Button
+                  size="lg"
+                  className="h-16 w-16 rounded-full bg-success hover:bg-success/90"
+                  onClick={handleAccept}
+                >
+                  {callType === 'video' ? <Video className="w-6 h-6" /> : <Phone className="w-6 h-6" />}
+                </Button>
+              </div>
+            )}
 
-              {/* In-call controls */}
-              {(callStatus === 'connecting' || callStatus === 'connected' || (!isIncoming && callStatus === 'ringing')) && (
-                <div className="flex justify-center gap-4">
-                  <Button
-                    variant={isMuted ? "destructive" : "secondary"}
-                    size="lg"
-                    className="h-14 w-14 rounded-full"
-                    onClick={() => setIsMuted(!isMuted)}
-                  >
-                    {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                  </Button>
+            {/* In-call controls */}
+            {showInCallControls && (
+              <div className="flex justify-center gap-4">
+                <Button
+                  variant={isMuted ? "destructive" : "secondary"}
+                  size="lg"
+                  className="h-14 w-14 rounded-full"
+                  onClick={toggleMute}
+                >
+                  {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </Button>
 
-                  {callType === 'video' && (
-                    <Button
-                      variant={!isVideoOn ? "destructive" : "secondary"}
-                      size="lg"
-                      className="h-14 w-14 rounded-full"
-                      onClick={() => setIsVideoOn(!isVideoOn)}
-                    >
-                      {isVideoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-                    </Button>
-                  )}
-
+                {callType === 'video' && (
                   <Button
-                    variant="destructive"
+                    variant={!isVideoOn ? "destructive" : "secondary"}
                     size="lg"
                     className="h-14 w-14 rounded-full"
-                    onClick={handleEndCall}
+                    onClick={toggleVideo}
                   >
-                    <PhoneOff className="w-5 h-5" />
+                    {isVideoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
                   </Button>
+                )}
 
-                  <Button
-                    variant={!isSpeakerOn ? "destructive" : "secondary"}
-                    size="lg"
-                    className="h-14 w-14 rounded-full"
-                    onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-                  >
-                    {isSpeakerOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Minimized end call button */}
-          {isMinimized && callStatus !== 'ended' && (
-            <Button
-              variant="destructive"
-              size="icon"
-              className="h-8 w-8 rounded-full shrink-0"
-              onClick={handleEndCall}
-            >
-              <PhoneOff className="w-4 h-4" />
-            </Button>
-          )}
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  className="h-14 w-14 rounded-full"
+                  onClick={handleEndCall}
+                >
+                  <PhoneOff className="w-5 h-5" />
+                </Button>
+              </div>
+            )}
+          </div>
         </motion.div>
       </DialogContent>
     </Dialog>
