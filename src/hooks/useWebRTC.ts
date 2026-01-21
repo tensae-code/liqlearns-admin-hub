@@ -20,48 +20,73 @@ const ICE_SERVERS: RTCConfiguration = {
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
   ],
 };
 
 export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
   const { user } = useAuth();
-  const [peerConnections, setPeerConnections] = useState<Map<string, PeerConnection>>(new Map());
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  const localStreamRef = useRef<MediaStream | null>(null);
+
+  // Keep local stream ref up to date
+  useEffect(() => {
+    localStreamRef.current = localStream;
+    
+    // Update existing peer connections with new local stream
+    if (localStream) {
+      peerConnectionsRef.current.forEach((pc, peerId) => {
+        const senders = pc.getSenders();
+        
+        localStream.getTracks().forEach((track) => {
+          const sender = senders.find((s) => s.track?.kind === track.kind);
+          if (sender) {
+            sender.replaceTrack(track).catch(console.error);
+          } else if (pc.connectionState !== 'closed') {
+            pc.addTrack(track, localStream);
+          }
+        });
+      });
+    }
+  }, [localStream]);
 
   // Create a new peer connection
   const createPeerConnection = useCallback((peerId: string): RTCPeerConnection => {
     console.log(`[WebRTC] Creating peer connection for ${peerId}`);
     
+    // Close existing connection if any
+    const existingPc = peerConnectionsRef.current.get(peerId);
+    if (existingPc) {
+      existingPc.close();
+      peerConnectionsRef.current.delete(peerId);
+    }
+    
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
-    // Add local tracks to connection
-    if (localStream) {
-      localStream.getTracks().forEach((track) => {
-        pc.addTrack(track, localStream);
+    // Add local tracks to connection immediately if available
+    if (localStreamRef.current) {
+      console.log(`[WebRTC] Adding ${localStreamRef.current.getTracks().length} local tracks to peer ${peerId}`);
+      localStreamRef.current.getTracks().forEach((track) => {
+        pc.addTrack(track, localStreamRef.current!);
       });
     }
 
     // Handle incoming remote tracks
     pc.ontrack = (event) => {
-      console.log(`[WebRTC] Received remote track from ${peerId}`);
+      console.log(`[WebRTC] Received remote track from ${peerId}:`, event.track.kind);
       const [remoteStream] = event.streams;
       
-      setRemoteStreams((prev) => {
-        const updated = new Map(prev);
-        updated.set(peerId, remoteStream);
-        return updated;
-      });
-
-      setPeerConnections((prev) => {
-        const updated = new Map(prev);
-        const existing = updated.get(peerId);
-        if (existing) {
-          existing.remoteStream = remoteStream;
-        }
-        return updated;
-      });
+      if (remoteStream) {
+        setRemoteStreams((prev) => {
+          const updated = new Map(prev);
+          updated.set(peerId, remoteStream);
+          return updated;
+        });
+      }
     };
 
     // Handle ICE candidates
@@ -85,8 +110,13 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
       console.log(`[WebRTC] Connection state with ${peerId}: ${pc.connectionState}`);
       
       if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-        // Cleanup failed connection
-        cleanupPeerConnection(peerId);
+        // Attempt to reconnect after a short delay
+        setTimeout(() => {
+          if (peerConnectionsRef.current.has(peerId)) {
+            console.log(`[WebRTC] Attempting to reconnect to ${peerId}`);
+            cleanupPeerConnection(peerId);
+          }
+        }, 2000);
       }
     };
 
@@ -95,28 +125,20 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
     };
 
     // Store connection
-    setPeerConnections((prev) => {
-      const updated = new Map(prev);
-      updated.set(peerId, { peerId, connection: pc, remoteStream: null });
-      return updated;
-    });
+    peerConnectionsRef.current.set(peerId, pc);
 
     return pc;
-  }, [localStream, user]);
+  }, [user]);
 
   // Cleanup a peer connection
   const cleanupPeerConnection = useCallback((peerId: string) => {
     console.log(`[WebRTC] Cleaning up connection for ${peerId}`);
     
-    setPeerConnections((prev) => {
-      const updated = new Map(prev);
-      const peer = updated.get(peerId);
-      if (peer) {
-        peer.connection.close();
-        updated.delete(peerId);
-      }
-      return updated;
-    });
+    const pc = peerConnectionsRef.current.get(peerId);
+    if (pc) {
+      pc.close();
+      peerConnectionsRef.current.delete(peerId);
+    }
 
     setRemoteStreams((prev) => {
       const updated = new Map(prev);
@@ -133,20 +155,24 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
     
     console.log(`[WebRTC] Initiating connection to ${peerId}`);
     
-    // Don't recreate if already connected
-    const existing = peerConnections.get(peerId);
-    if (existing && existing.connection.connectionState === 'connected') {
-      console.log(`[WebRTC] Already connected to ${peerId}`);
+    // Check if we have a working connection
+    const existing = peerConnectionsRef.current.get(peerId);
+    if (existing && (existing.connectionState === 'connected' || existing.connectionState === 'connecting')) {
+      console.log(`[WebRTC] Already connected/connecting to ${peerId}`);
       return;
     }
 
     const pc = createPeerConnection(peerId);
 
     try {
-      const offer = await pc.createOffer();
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
       await pc.setLocalDescription(offer);
 
       if (channelRef.current) {
+        console.log(`[WebRTC] Sending offer to ${peerId}`);
         channelRef.current.send({
           type: 'broadcast',
           event: 'webrtc-signal',
@@ -160,8 +186,9 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
       }
     } catch (error) {
       console.error(`[WebRTC] Error creating offer for ${peerId}:`, error);
+      cleanupPeerConnection(peerId);
     }
-  }, [user, peerConnections, createPeerConnection]);
+  }, [user, createPeerConnection, cleanupPeerConnection]);
 
   // Handle incoming signaling messages
   const handleSignalingMessage = useCallback(async (message: SignalingMessage) => {
@@ -169,13 +196,11 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
 
     console.log(`[WebRTC] Received ${message.type} from ${message.from}`);
 
-    let pc = peerConnections.get(message.from)?.connection;
+    let pc = peerConnectionsRef.current.get(message.from);
 
     if (message.type === 'offer') {
       // Create new connection if receiving an offer
-      if (!pc || pc.connectionState === 'closed') {
-        pc = createPeerConnection(message.from);
-      }
+      pc = createPeerConnection(message.from);
 
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(message.payload));
@@ -183,8 +208,13 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
         // Apply any pending ICE candidates
         const pending = pendingCandidatesRef.current.get(message.from);
         if (pending) {
+          console.log(`[WebRTC] Applying ${pending.length} pending candidates for ${message.from}`);
           for (const candidate of pending) {
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (e) {
+              console.warn('[WebRTC] Error adding pending candidate:', e);
+            }
           }
           pendingCandidatesRef.current.delete(message.from);
         }
@@ -193,6 +223,7 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
         await pc.setLocalDescription(answer);
 
         if (channelRef.current) {
+          console.log(`[WebRTC] Sending answer to ${message.from}`);
           channelRef.current.send({
             type: 'broadcast',
             event: 'webrtc-signal',
@@ -214,15 +245,24 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
       }
 
       try {
-        await pc.setRemoteDescription(new RTCSessionDescription(message.payload));
-        
-        // Apply any pending ICE candidates
-        const pending = pendingCandidatesRef.current.get(message.from);
-        if (pending) {
-          for (const candidate of pending) {
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        if (pc.signalingState === 'have-local-offer') {
+          await pc.setRemoteDescription(new RTCSessionDescription(message.payload));
+          
+          // Apply any pending ICE candidates
+          const pending = pendingCandidatesRef.current.get(message.from);
+          if (pending) {
+            console.log(`[WebRTC] Applying ${pending.length} pending candidates for ${message.from}`);
+            for (const candidate of pending) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              } catch (e) {
+                console.warn('[WebRTC] Error adding pending candidate:', e);
+              }
+            }
+            pendingCandidatesRef.current.delete(message.from);
           }
-          pendingCandidatesRef.current.delete(message.from);
+        } else {
+          console.warn(`[WebRTC] Unexpected signaling state for answer: ${pc.signalingState}`);
         }
       } catch (error) {
         console.error(`[WebRTC] Error handling answer from ${message.from}:`, error);
@@ -230,6 +270,7 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
     } else if (message.type === 'ice-candidate') {
       if (!pc || !pc.remoteDescription) {
         // Queue candidate if connection isn't ready
+        console.log(`[WebRTC] Queueing ICE candidate from ${message.from}`);
         const pending = pendingCandidatesRef.current.get(message.from) || [];
         pending.push(message.payload);
         pendingCandidatesRef.current.set(message.from, pending);
@@ -242,7 +283,7 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
         console.error(`[WebRTC] Error adding ICE candidate from ${message.from}:`, error);
       }
     }
-  }, [user, peerConnections, createPeerConnection]);
+  }, [user, createPeerConnection]);
 
   // Initialize signaling channel
   useEffect(() => {
@@ -262,87 +303,95 @@ export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
         handleSignalingMessage(payload as SignalingMessage);
       })
       .on('broadcast', { event: 'peer-joined' }, ({ payload }) => {
-        console.log(`[WebRTC] Peer joined: ${payload.peerId}`);
-        // When a new peer joins, initiate connection to them
-        if (payload.peerId !== user.id && localStream) {
-          connectToPeer(payload.peerId);
+        console.log(`[WebRTC] Peer joined: ${payload.peerId}, hasStream: ${payload.hasStream}`);
+        // When a peer with a stream joins, connect to them
+        if (payload.peerId !== user.id && payload.hasStream) {
+          // Small delay to let them set up
+          setTimeout(() => connectToPeer(payload.peerId), 500);
         }
       })
       .on('broadcast', { event: 'peer-left' }, ({ payload }) => {
         console.log(`[WebRTC] Peer left: ${payload.peerId}`);
         cleanupPeerConnection(payload.peerId);
       })
+      .on('broadcast', { event: 'request-connection' }, ({ payload }) => {
+        console.log(`[WebRTC] Connection requested from: ${payload.peerId}`);
+        if (payload.peerId !== user.id && localStreamRef.current) {
+          connectToPeer(payload.peerId);
+        }
+      })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log(`[WebRTC] Signaling channel subscribed`);
-          // Announce our presence
+          channelRef.current = channel;
+          
+          // Announce our presence with stream status
           channel.send({
             type: 'broadcast',
             event: 'peer-joined',
-            payload: { peerId: user.id },
+            payload: { 
+              peerId: user.id,
+              hasStream: !!localStreamRef.current 
+            },
           });
         }
       });
 
-    channelRef.current = channel;
-
     return () => {
       console.log(`[WebRTC] Leaving signaling channel`);
       // Announce departure
-      channel.send({
-        type: 'broadcast',
-        event: 'peer-left',
-        payload: { peerId: user.id },
-      });
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'peer-left',
+          payload: { peerId: user.id },
+        });
+      }
       supabase.removeChannel(channel);
       channelRef.current = null;
-    };
-  }, [roomId, user, localStream, handleSignalingMessage, connectToPeer, cleanupPeerConnection]);
-
-  // Connect to all existing peers when local stream becomes available
-  useEffect(() => {
-    if (!localStream || !channelRef.current) return;
-    
-    // Re-announce ourselves to trigger connections
-    if (user && channelRef.current) {
-      channelRef.current.send({
-        type: 'broadcast',
-        event: 'peer-joined',
-        payload: { peerId: user.id },
-      });
-    }
-  }, [localStream, user]);
-
-  // Update local stream in existing connections
-  useEffect(() => {
-    if (!localStream) return;
-
-    peerConnections.forEach(({ connection }) => {
-      const senders = connection.getSenders();
       
-      localStream.getTracks().forEach((track) => {
-        const sender = senders.find((s) => s.track?.kind === track.kind);
-        if (sender) {
-          sender.replaceTrack(track);
-        } else {
-          connection.addTrack(track, localStream);
-        }
-      });
+      // Cleanup all connections
+      peerConnectionsRef.current.forEach((pc) => pc.close());
+      peerConnectionsRef.current.clear();
+      setRemoteStreams(new Map());
+    };
+  }, [roomId, user, handleSignalingMessage, connectToPeer, cleanupPeerConnection]);
+
+  // When local stream becomes available, announce and request connections
+  useEffect(() => {
+    if (!localStream || !channelRef.current || !user) return;
+    
+    console.log(`[WebRTC] Local stream available, announcing presence`);
+    
+    // Re-announce ourselves with stream
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'peer-joined',
+      payload: { 
+        peerId: user.id,
+        hasStream: true 
+      },
     });
-  }, [localStream, peerConnections]);
+    
+    // Request others to connect to us
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'request-connection',
+      payload: { peerId: user.id },
+    });
+  }, [localStream, user]);
 
   // Cleanup all connections on unmount
   useEffect(() => {
     return () => {
-      peerConnections.forEach(({ connection }) => {
-        connection.close();
-      });
+      peerConnectionsRef.current.forEach((pc) => pc.close());
+      peerConnectionsRef.current.clear();
     };
   }, []);
 
   return {
     remoteStreams,
-    peerConnections,
+    peerConnections: peerConnectionsRef.current,
     connectToPeer,
     cleanupPeerConnection,
   };

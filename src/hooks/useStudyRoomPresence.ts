@@ -11,6 +11,7 @@ export interface StudyRoomPresenceUser {
   studyTitle?: string;
   isMicOn?: boolean;
   isVideoOn?: boolean;
+  isHandRaised?: boolean;
   joinedAt: string;
   lastActiveAt: string;
 }
@@ -57,6 +58,7 @@ export const useStudyRoomPresence = (roomId: string | null) => {
               studyTitle: presence.studyTitle,
               isMicOn: presence.isMicOn,
               isVideoOn: presence.isVideoOn,
+              isHandRaised: presence.isHandRaised,
               joinedAt: presence.joinedAt,
               lastActiveAt: presence.lastActiveAt,
             });
@@ -78,6 +80,7 @@ export const useStudyRoomPresence = (roomId: string | null) => {
               studyTitle: presence.studyTitle,
               isMicOn: presence.isMicOn,
               isVideoOn: presence.isVideoOn,
+              isHandRaised: presence.isHandRaised,
               joinedAt: presence.joinedAt,
               lastActiveAt: presence.lastActiveAt,
             });
@@ -102,6 +105,7 @@ export const useStudyRoomPresence = (roomId: string | null) => {
             studyTitle: '',
             isMicOn: false,
             isVideoOn: false,
+            isHandRaised: false,
             joinedAt: new Date().toISOString(),
             lastActiveAt: new Date().toISOString(),
           });
@@ -128,6 +132,7 @@ export const useStudyRoomPresence = (roomId: string | null) => {
       studyTitle: updates.studyTitle ?? currentPresence?.studyTitle ?? '',
       isMicOn: updates.isMicOn ?? currentPresence?.isMicOn ?? false,
       isVideoOn: updates.isVideoOn ?? currentPresence?.isVideoOn ?? false,
+      isHandRaised: updates.isHandRaised ?? currentPresence?.isHandRaised ?? false,
       joinedAt: currentPresence?.joinedAt ?? new Date().toISOString(),
       lastActiveAt: new Date().toISOString(),
     });

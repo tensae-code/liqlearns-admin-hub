@@ -26,6 +26,8 @@ interface ChatBubbleProps {
   messageId?: string;
 }
 
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
+
 const ChatBubble = ({ 
   message, 
   sender, 
@@ -39,6 +41,15 @@ const ChatBubble = ({
   messageId,
 }: ChatBubbleProps) => {
   const [showOptions, setShowOptions] = useState(false);
+
+  // Determine message status
+  const getMessageStatus = (): MessageStatus => {
+    if (isRead === true) return 'read';
+    if (isRead === false) return 'delivered';
+    return 'sent';
+  };
+
+  const status = getMessageStatus();
 
   // iPhone-style bubble corners
   const getBubbleRadius = () => {
@@ -58,6 +69,20 @@ const ChatBubble = ({
   const handleDelete = () => {
     if (onDelete) {
       onDelete();
+    }
+  };
+
+  // Status icon and color
+  const renderStatusIcon = () => {
+    switch (status) {
+      case 'sending':
+        return <div className="w-3 h-3 border-2 border-muted-foreground/50 border-t-transparent rounded-full animate-spin" />;
+      case 'sent':
+        return <Check className="w-3 h-3 text-muted-foreground/70" />;
+      case 'delivered':
+        return <CheckCheck className="w-3 h-3 text-muted-foreground/70" />;
+      case 'read':
+        return <CheckCheck className="w-3 h-3 text-blue-400" />;
     }
   };
 
@@ -138,13 +163,7 @@ const ChatBubble = ({
             {isSender && isLastInGroup && (
               <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-1">
                 <span className="text-[10px] opacity-70">{timestamp}</span>
-                {isRead !== undefined && (
-                  isRead ? (
-                    <CheckCheck className="w-3 h-3 text-blue-400" />
-                  ) : (
-                    <Check className="w-3 h-3 opacity-70" />
-                  )
-                )}
+                {renderStatusIcon()}
               </span>
             )}
           </div>

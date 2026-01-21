@@ -24,6 +24,7 @@ import {
   Flame,
   Wifi,
   WifiOff,
+  Hand,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -91,6 +92,7 @@ const StudyRoomView = ({
   onPopout,
 }: StudyRoomViewProps) => {
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isHandRaised, setIsHandRaised] = useState(false);
   const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(() => {
     const saved = localStorage.getItem('studyRoomDisplaySettings');
     return saved ? { ...defaultDisplaySettings, ...JSON.parse(saved) } : defaultDisplaySettings;
@@ -114,6 +116,7 @@ const StudyRoomView = ({
     presentUserIds,
     isConnected,
     isUserPresent,
+    getUserPresence,
     updateMyPresence,
   } = useStudyRoomPresence(room.id);
 
@@ -143,14 +146,15 @@ const StudyRoomView = ({
     });
   }, [remoteStreams]);
 
-  // Sync my presence state when mic/video changes
+  // Sync my presence state when mic/video/hand changes
   useEffect(() => {
     updateMyPresence({
       isMicOn,
       isVideoOn,
+      isHandRaised,
       studyTitle: myStudyTitle,
     });
-  }, [isMicOn, isVideoOn, myStudyTitle, updateMyPresence]);
+  }, [isMicOn, isVideoOn, isHandRaised, myStudyTitle, updateMyPresence]);
 
   const updateDisplaySetting = (key: keyof DisplaySettings, value: boolean) => {
     setDisplaySettings(prev => {
@@ -359,6 +363,10 @@ const StudyRoomView = ({
                     <div className="p-1.5 md:p-3 bg-background/80 backdrop-blur-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
+                          {/* Hand raised indicator */}
+                          {(isMe ? isHandRaised : getUserPresence(participant.user_id)?.isHandRaised) && (
+                            <Hand className="w-3 h-3 md:w-4 md:h-4 text-gold animate-bounce shrink-0" />
+                          )}
                           {participant.is_mic_on || (isMe && isMicOn) ? (
                             <Mic className="w-3 h-3 md:w-4 md:h-4 text-success shrink-0" />
                           ) : (
@@ -538,6 +546,20 @@ const StudyRoomView = ({
               title={!isScreenShareAllowed ? "Screen sharing not allowed in public rooms" : isScreenSharing ? "Stop sharing screen" : "Share screen"}
             >
               {isScreenSharing ? <MonitorOff className="w-4 h-4 md:w-6 md:h-6" /> : <Monitor className="w-4 h-4 md:w-6 md:h-6" />}
+            </Button>
+
+            {/* Raise Hand Button */}
+            <Button
+              variant={isHandRaised ? "default" : "outline"}
+              size="lg"
+              className={cn(
+                "rounded-full w-10 h-10 md:w-14 md:h-14",
+                isHandRaised && "bg-gold hover:bg-gold/90"
+              )}
+              onClick={() => setIsHandRaised(!isHandRaised)}
+              title={isHandRaised ? "Lower hand" : "Raise hand"}
+            >
+              <Hand className="w-4 h-4 md:w-6 md:h-6" />
             </Button>
 
             {/* Chat Button (Coming Soon) - Hidden on mobile */}
