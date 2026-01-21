@@ -10,6 +10,13 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Settings,
   Zap,
   Flame,
@@ -18,7 +25,11 @@ import {
   BookOpen,
   Pin,
   Eye,
+  Camera,
+  Mic,
+  Volume2,
 } from 'lucide-react';
+import { useMediaDevices } from '@/hooks/useMediaDevices';
 
 interface DisplaySettings {
   showXP: boolean;
@@ -33,14 +44,40 @@ interface DisplaySettings {
 interface RoomSettingsSheetProps {
   displaySettings: DisplaySettings;
   onUpdateDisplaySetting: (key: keyof DisplaySettings, value: boolean) => void;
+  onCameraChange?: (deviceId: string) => void;
+  onMicrophoneChange?: (deviceId: string) => void;
   trigger?: React.ReactNode;
 }
 
 const RoomSettingsSheet = ({
   displaySettings,
   onUpdateDisplaySetting,
+  onCameraChange,
+  onMicrophoneChange,
   trigger,
 }: RoomSettingsSheetProps) => {
+  const {
+    cameras,
+    microphones,
+    speakers,
+    selectedCamera,
+    selectedMicrophone,
+    selectedSpeaker,
+    setSelectedCamera,
+    setSelectedMicrophone,
+    setSelectedSpeaker,
+  } = useMediaDevices();
+
+  const handleCameraChange = (deviceId: string) => {
+    setSelectedCamera(deviceId);
+    onCameraChange?.(deviceId);
+  };
+
+  const handleMicrophoneChange = (deviceId: string) => {
+    setSelectedMicrophone(deviceId);
+    onMicrophoneChange?.(deviceId);
+  };
+
   const displayToggles = [
     { key: 'showXP' as const, label: 'XP Points', icon: Zap, description: 'Show XP points on participant cards' },
     { key: 'showStreak' as const, label: 'Streak', icon: Flame, description: 'Show streak count' },
@@ -64,7 +101,7 @@ const RoomSettingsSheet = ({
           </Button>
         )}
       </SheetTrigger>
-      <SheetContent side="right" className="w-80 sm:w-96">
+      <SheetContent side="right" className="w-80 sm:w-96 overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
@@ -73,6 +110,89 @@ const RoomSettingsSheet = ({
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
+          {/* Device Settings */}
+          <div>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Camera className="w-4 h-4" />
+              Input Devices
+            </h3>
+            <div className="space-y-4">
+              {/* Camera Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="camera-select" className="text-sm font-medium flex items-center gap-2">
+                  <Camera className="w-3.5 h-3.5 text-muted-foreground" />
+                  Camera
+                </Label>
+                <Select value={selectedCamera} onValueChange={handleCameraChange}>
+                  <SelectTrigger id="camera-select" className="w-full bg-background">
+                    <SelectValue placeholder="Select camera" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {cameras.length === 0 ? (
+                      <SelectItem value="none" disabled>No cameras found</SelectItem>
+                    ) : (
+                      cameras.map((camera) => (
+                        <SelectItem key={camera.deviceId} value={camera.deviceId}>
+                          {camera.label}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Microphone Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="mic-select" className="text-sm font-medium flex items-center gap-2">
+                  <Mic className="w-3.5 h-3.5 text-muted-foreground" />
+                  Microphone
+                </Label>
+                <Select value={selectedMicrophone} onValueChange={handleMicrophoneChange}>
+                  <SelectTrigger id="mic-select" className="w-full bg-background">
+                    <SelectValue placeholder="Select microphone" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {microphones.length === 0 ? (
+                      <SelectItem value="none" disabled>No microphones found</SelectItem>
+                    ) : (
+                      microphones.map((mic) => (
+                        <SelectItem key={mic.deviceId} value={mic.deviceId}>
+                          {mic.label}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Speaker Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="speaker-select" className="text-sm font-medium flex items-center gap-2">
+                  <Volume2 className="w-3.5 h-3.5 text-muted-foreground" />
+                  Speaker
+                </Label>
+                <Select value={selectedSpeaker} onValueChange={setSelectedSpeaker}>
+                  <SelectTrigger id="speaker-select" className="w-full bg-background">
+                    <SelectValue placeholder="Select speaker" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {speakers.length === 0 ? (
+                      <SelectItem value="none" disabled>No speakers found</SelectItem>
+                    ) : (
+                      speakers.map((speaker) => (
+                        <SelectItem key={speaker.deviceId} value={speaker.deviceId}>
+                          {speaker.label}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
           {/* Video Settings */}
           <div>
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">

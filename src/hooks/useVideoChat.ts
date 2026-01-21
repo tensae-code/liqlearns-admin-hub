@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useMediaDevices } from '@/hooks/useMediaDevices';
 
 export interface VideoState {
   isVideoOn: boolean;
@@ -11,6 +12,8 @@ export interface VideoState {
 
 export const useVideoChat = () => {
   const { toast } = useToast();
+  const { getMediaConstraints, selectedCamera, selectedMicrophone } = useMediaDevices();
+  
   const [videoState, setVideoState] = useState<VideoState>({
     isVideoOn: false,
     isMicOn: false,
@@ -22,13 +25,11 @@ export const useVideoChat = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const screenRef = useRef<HTMLVideoElement | null>(null);
 
-  // Start camera
+  // Start camera with selected device
   const startCamera = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: 'user' },
-        audio: true,
-      });
+      const constraints = getMediaConstraints(true, true);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
       setVideoState(prev => ({
         ...prev,
@@ -52,7 +53,75 @@ export const useVideoChat = () => {
       });
       return null;
     }
-  }, [toast]);
+  }, [toast, getMediaConstraints]);
+
+  // Switch camera while streaming
+  const switchCamera = useCallback(async (deviceId: string) => {
+    if (!videoState.localStream) return;
+
+    try {
+      // Get new video stream with selected camera
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: deviceId }, width: 640, height: 480 },
+      });
+
+      // Stop old video track
+      videoState.localStream.getVideoTracks().forEach(track => track.stop());
+      
+      // Remove old video track and add new one
+      videoState.localStream.getVideoTracks().forEach(track => {
+        videoState.localStream?.removeTrack(track);
+      });
+      newStream.getVideoTracks().forEach(track => {
+        videoState.localStream?.addTrack(track);
+      });
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = videoState.localStream;
+      }
+
+      toast({ title: 'Camera Switched' });
+    } catch (error: any) {
+      console.error('Error switching camera:', error);
+      toast({ 
+        title: 'Camera Switch Error', 
+        description: error.message || 'Could not switch camera', 
+        variant: 'destructive' 
+      });
+    }
+  }, [videoState.localStream, toast]);
+
+  // Switch microphone while streaming
+  const switchMicrophone = useCallback(async (deviceId: string) => {
+    if (!videoState.localStream) return;
+
+    try {
+      // Get new audio stream with selected microphone
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId: { exact: deviceId } },
+      });
+
+      // Stop old audio track
+      videoState.localStream.getAudioTracks().forEach(track => track.stop());
+      
+      // Remove old audio track and add new one
+      videoState.localStream.getAudioTracks().forEach(track => {
+        videoState.localStream?.removeTrack(track);
+      });
+      newStream.getAudioTracks().forEach(track => {
+        videoState.localStream?.addTrack(track);
+      });
+
+      toast({ title: 'Microphone Switched' });
+    } catch (error: any) {
+      console.error('Error switching microphone:', error);
+      toast({ 
+        title: 'Microphone Switch Error', 
+        description: error.message || 'Could not switch microphone', 
+        variant: 'destructive' 
+      });
+    }
+  }, [videoState.localStream, toast]);
 
   // Stop camera
   const stopCamera = useCallback(() => {
@@ -175,6 +244,8 @@ export const useVideoChat = () => {
     stopCamera,
     toggleVideo,
     toggleMic,
+    switchCamera,
+    switchMicrophone,
     startScreenShare,
     stopScreenShare,
     toggleScreenShare,

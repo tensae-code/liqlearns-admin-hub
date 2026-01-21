@@ -104,6 +104,8 @@ const StudyRoomView = ({
     toggleMic: toggleLocalMic,
     toggleScreenShare,
     screenRef,
+    switchCamera,
+    switchMicrophone,
   } = useVideoChat();
 
   // Real-time presence tracking
@@ -511,6 +513,8 @@ const StudyRoomView = ({
             <RoomSettingsSheet
               displaySettings={displaySettings}
               onUpdateDisplaySetting={updateDisplaySetting}
+              onCameraChange={switchCamera}
+              onMicrophoneChange={switchMicrophone}
             />
 
             {/* Leave Button */}
