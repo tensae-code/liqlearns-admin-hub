@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -23,35 +23,38 @@ import { cn } from '@/lib/utils';
 import { useVideoChat } from '@/hooks/useVideoChat';
 import { useOptionalStudyRoomContext } from '@/contexts/StudyRoomContext';
 
-const FloatingStudyRoom = () => {
+const FloatingStudyRoom = forwardRef<HTMLDivElement>((_, ref) => {
   const context = useOptionalStudyRoomContext();
   
-  // If no context or no active room, don't render
-  if (!context || !context.activeRoom || !context.isPopout) {
-    return null;
-  }
-
-  const {
-    activeRoom: room,
-    activeParticipants: participants,
-    pinnedUsers,
-    isMicOn,
-    setIsMicOn,
-    isMinimized,
-    setIsMinimized,
-    leaveActiveRoom,
-    setIsPopout,
-    sessionStartTime,
-  } = context;
-
+  // All hooks must be called before any conditional returns
   const [showPinnedList, setShowPinnedList] = useState(true);
-  const [position, setPosition] = useState({ x: window.innerWidth - 360, y: window.innerHeight - 500 });
+  const [position, setPosition] = useState({ x: typeof window !== 'undefined' ? window.innerWidth - 360 : 0, y: typeof window !== 'undefined' ? window.innerHeight - 500 : 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
-  
-  // Calculate elapsed time
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   
+  const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  
+  const {
+    isVideoOn,
+    localStream,
+    toggleVideo,
+    toggleMic: toggleLocalMic,
+  } = useVideoChat();
+
+  // Get context values safely
+  const room = context?.activeRoom;
+  const participants = context?.activeParticipants || [];
+  const pinnedUsers = context?.pinnedUsers || [];
+  const isMicOn = context?.isMicOn ?? false;
+  const setIsMicOn = context?.setIsMicOn;
+  const isMinimized = context?.isMinimized ?? false;
+  const setIsMinimized = context?.setIsMinimized;
+  const leaveActiveRoom = context?.leaveActiveRoom;
+  const setIsPopout = context?.setIsPopout;
+  const sessionStartTime = context?.sessionStartTime;
+
+  // Calculate elapsed time
   useEffect(() => {
     if (!sessionStartTime) {
       setElapsedSeconds(0);
@@ -65,46 +68,14 @@ const FloatingStudyRoom = () => {
     return () => clearInterval(interval);
   }, [sessionStartTime]);
 
-  const formatTime = (seconds: number) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    if (hrs > 0) {
-      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const isStreakEligible = elapsedSeconds >= 1800; // 30 minutes
-  
-  const {
-    isVideoOn,
-    localStream,
-    toggleVideo,
-    toggleMic: toggleLocalMic,
-  } = useVideoChat();
-
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-
-  // Get pinned participants
-  const pinnedParticipants = participants.filter(p => pinnedUsers.includes(p.user_id));
-
+  // Attach local stream to video element
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      startPosX: position.x,
-      startPosY: position.y,
-    };
-  };
-
+  // Handle drag events
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging || !dragRef.current) return;
@@ -134,23 +105,53 @@ const FloatingStudyRoom = () => {
     };
   }, [isDragging]);
 
+  // If no context or no active room, don't render
+  if (!context || !room || !context.isPopout) {
+    return null;
+  }
+
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const isStreakEligible = elapsedSeconds >= 1800; // 30 minutes
+
+  // Get pinned participants
+  const pinnedParticipants = participants.filter(p => pinnedUsers.includes(p.user_id));
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startPosX: position.x,
+      startPosY: position.y,
+    };
+  };
+
   const handleMicToggle = () => {
-    setIsMicOn(!isMicOn);
+    setIsMicOn?.(!isMicOn);
     if (localStream) {
       toggleLocalMic();
     }
   };
 
   const handleLeave = async () => {
-    await leaveActiveRoom();
+    await leaveActiveRoom?.();
   };
 
   const handleExpand = () => {
-    setIsPopout(false);
-    setIsMinimized(false);
+    setIsPopout?.(false);
+    setIsMinimized?.(false);
   };
 
-  const currentParticipant = participants.find(p => p.user_id === context.activeRoom?.host_id);
+  const currentParticipant = participants.find(p => p.user_id === room?.host_id);
 
   // Minimized state - position above quick access button (bottom-right, but higher)
   if (isMinimized) {
@@ -161,7 +162,7 @@ const FloatingStudyRoom = () => {
         className="fixed z-[60] bottom-24 right-6"
       >
         <Button
-          onClick={() => setIsMinimized(false)}
+          onClick={() => setIsMinimized?.(false)}
           className="rounded-full h-14 w-14 bg-gradient-to-br from-accent to-primary shadow-xl relative"
         >
           <div className="relative">
@@ -207,7 +208,7 @@ const FloatingStudyRoom = () => {
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleExpand}>
             <Maximize2 className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsMinimized(true)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsMinimized?.(true)}>
             <Minimize2 className="w-3.5 h-3.5" />
           </Button>
         </div>
@@ -354,6 +355,8 @@ const FloatingStudyRoom = () => {
       </div>
     </motion.div>
   );
-};
+});
+
+FloatingStudyRoom.displayName = 'FloatingStudyRoom';
 
 export default FloatingStudyRoom;
