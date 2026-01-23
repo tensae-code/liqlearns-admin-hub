@@ -33,10 +33,11 @@ interface SendMessageOptions {
 
 export const useMessaging = () => {
   const { user } = useAuth();
-  const { profile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [groupChannels, setGroupChannels] = useState<GroupChannel[]>([]);
@@ -45,6 +46,7 @@ export const useMessaging = () => {
     channelName: 'general',
     channelType: 'text',
   });
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Fetch all conversations (DMs and Groups)
   const fetchConversations = useCallback(async () => {
@@ -145,11 +147,22 @@ export const useMessaging = () => {
 
   // Fetch messages for a conversation (including call logs)
   const fetchMessages = useCallback(async (conversationId: string) => {
-    if (!user || !profile) return;
+    if (!user) {
+      console.log('fetchMessages: no user yet');
+      return;
+    }
 
+    // For DMs we only need user.id, for groups we need profile
+    const [type, id] = conversationId.split('_');
+    
+    if (type === 'group' && !profile) {
+      console.log('fetchMessages: waiting for profile for group messages');
+      return;
+    }
+
+    setMessagesLoading(true);
+    
     try {
-      const [type, id] = conversationId.split('_');
-
       if (type === 'dm') {
         // Fetch regular DM messages
         const { data, error } = await supabase
@@ -289,6 +302,8 @@ export const useMessaging = () => {
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
+    } finally {
+      setMessagesLoading(false);
     }
   }, [user, profile]);
 
@@ -775,15 +790,28 @@ export const useMessaging = () => {
 
   // Initial fetch - run when both user AND profile are ready
   useEffect(() => {
-    if (user && profile) {
+    if (user && profile && !isInitialized) {
+      console.log('Initializing messaging with user and profile ready');
+      setIsInitialized(true);
       fetchConversations();
     }
-  }, [user?.id, profile?.id]); // Depend on both user.id and profile.id
+  }, [user?.id, profile?.id, isInitialized, fetchConversations]);
+
+  // Reset initialization when user changes
+  useEffect(() => {
+    if (!user) {
+      setIsInitialized(false);
+      setConversations([]);
+      setMessages([]);
+      setCurrentConversation(null);
+    }
+  }, [user?.id]);
 
   return {
     conversations,
     messages,
     loading,
+    messagesLoading,
     currentConversation,
     setCurrentConversation,
     groupMembers,
