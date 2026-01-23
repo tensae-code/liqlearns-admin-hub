@@ -56,41 +56,72 @@ export const useStudyRooms = () => {
   const [loading, setLoading] = useState(true);
   const [currentRoom, setCurrentRoom] = useState<StudyRoom | null>(null);
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Fetch all active rooms
   const fetchRooms = useCallback(async () => {
+    console.log('fetchRooms called');
+    setLoading(true);
+    setFetchError(null);
+    
     try {
+      // Simpler query - RLS will filter
       const { data, error } = await supabase
         .from('study_rooms')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching study rooms:', error);
+        setFetchError(error.message);
+        throw error;
+      }
 
-      // Get participant counts and host info for each room
+      console.log('Fetched rooms:', data?.length || 0);
+
+      if (!data || data.length === 0) {
+        setRooms([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get participant counts and host info for each room in parallel
       const roomsWithDetails = await Promise.all(
-        (data || []).map(async (room) => {
-          const { count } = await supabase
-            .from('study_room_participants')
-            .select('*', { count: 'exact', head: true })
-            .eq('room_id', room.id);
-          
-          // Get host profile
-          const { data: hostData } = await supabase
-            .from('public_profiles')
-            .select('full_name, avatar_url')
-            .eq('id', room.host_id)
-            .single();
+        data.map(async (room) => {
+          try {
+            const [participantResult, hostResult] = await Promise.all([
+              supabase
+                .from('study_room_participants')
+                .select('*', { count: 'exact', head: true })
+                .eq('room_id', room.id),
+              supabase
+                .from('public_profiles')
+                .select('full_name, avatar_url')
+                .eq('id', room.host_id)
+                .maybeSingle()
+            ]);
 
-          return {
-            ...room,
-            room_type: room.room_type as 'public' | 'private' | 'kids',
-            is_system_room: (room as any).is_system_room || false,
-            is_always_muted: (room as any).is_always_muted || false,
-            participant_count: count || 0,
-            host: hostData || { full_name: 'Unknown', avatar_url: null },
-          };
+            return {
+              ...room,
+              room_type: room.room_type as 'public' | 'private' | 'kids',
+              is_system_room: (room as any).is_system_room || false,
+              is_always_muted: (room as any).is_always_muted || false,
+              participant_count: participantResult.count || 0,
+              host: hostResult.data || { full_name: 'Unknown', avatar_url: null },
+            };
+          } catch (err) {
+            console.error('Error enriching room:', room.id, err);
+            return {
+              ...room,
+              room_type: room.room_type as 'public' | 'private' | 'kids',
+              is_system_room: false,
+              is_always_muted: false,
+              participant_count: 0,
+              host: { full_name: 'Unknown', avatar_url: null },
+            };
+          }
         })
       );
 
@@ -101,9 +132,11 @@ export const useStudyRooms = () => {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
 
+      console.log('Setting rooms:', sortedRooms.length);
       setRooms(sortedRooms);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching rooms:', error);
+      setFetchError(error?.message || 'Failed to load rooms');
     } finally {
       setLoading(false);
     }
@@ -407,8 +440,11 @@ export const useStudyRooms = () => {
     }
   };
 
+  // Initial fetch on mount
   useEffect(() => {
+    console.log('useStudyRooms mount effect');
     fetchRooms();
+    setIsInitialized(true);
   }, [fetchRooms]);
 
   // Real-time subscription for participants
@@ -439,6 +475,8 @@ export const useStudyRooms = () => {
   return {
     rooms,
     loading,
+    fetchError,
+    isInitialized,
     currentRoom,
     setCurrentRoom,
     participants,

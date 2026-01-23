@@ -43,6 +43,7 @@ const StudyRooms = () => {
   const {
     rooms,
     loading,
+    fetchError,
     currentRoom,
     setCurrentRoom,
     participants,
@@ -54,6 +55,7 @@ const StudyRooms = () => {
     pinUser,
     unpinUser,
     fetchParticipants,
+    fetchRooms,
   } = useStudyRooms();
   
   const { profile } = useProfile();
@@ -392,8 +394,17 @@ const StudyRooms = () => {
         transition={{ delay: 0.3 }}
       >
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
             <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full" />
+            <p className="text-muted-foreground">Loading study rooms...</p>
+          </div>
+        ) : fetchError ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
+            <p className="text-destructive font-medium">Failed to load rooms</p>
+            <p className="text-muted-foreground text-sm">{fetchError}</p>
+            <Button onClick={() => fetchRooms()} variant="outline">
+              Try Again
+            </Button>
           </div>
         ) : filteredRooms.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

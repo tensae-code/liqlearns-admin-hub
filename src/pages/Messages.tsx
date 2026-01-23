@@ -28,6 +28,7 @@ const Messages = () => {
     conversations,
     messages,
     loading,
+    messagesLoading,
     currentConversation,
     setCurrentConversation,
     groupMembers,
