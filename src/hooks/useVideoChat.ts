@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useMediaDevices } from '@/hooks/useMediaDevices';
 
 export interface VideoState {
   isVideoOn: boolean;
@@ -12,7 +11,6 @@ export interface VideoState {
 
 export const useVideoChat = () => {
   const { toast } = useToast();
-  const { getMediaConstraints, selectedCamera, selectedMicrophone } = useMediaDevices();
   
   const [videoState, setVideoState] = useState<VideoState>({
     isVideoOn: false,
@@ -25,11 +23,13 @@ export const useVideoChat = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const screenRef = useRef<HTMLVideoElement | null>(null);
 
-  // Start camera with selected device
+  // Start camera - only when explicitly called by user action
   const startCamera = useCallback(async () => {
     try {
-      const constraints = getMediaConstraints(true, true);
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+        audio: true,
+      });
 
       setVideoState(prev => ({
         ...prev,
@@ -53,7 +53,7 @@ export const useVideoChat = () => {
       });
       return null;
     }
-  }, [toast, getMediaConstraints]);
+  }, [toast]);
 
   // Switch camera while streaming
   const switchCamera = useCallback(async (deviceId: string) => {
