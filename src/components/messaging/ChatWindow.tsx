@@ -26,7 +26,6 @@ import {
   Loader2
 } from 'lucide-react';
 import ChatBubble from './ChatBubble';
-import CallModal from './CallModal';
 import EmojiPicker from './EmojiPicker';
 import TypingIndicator from './TypingIndicator';
 import VoiceRecorder from './VoiceRecorder';
@@ -37,6 +36,7 @@ import usePresence from '@/hooks/usePresence';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCall } from '@/contexts/CallContext';
 
 export interface Message {
   id: string;
@@ -128,9 +128,8 @@ const ChatWindow = ({
   currentChannelName,
 }: ChatWindowProps) => {
   const { user } = useAuth();
+  const { startCall } = useCall();
   const [newMessage, setNewMessage] = useState('');
-  const [showCall, setShowCall] = useState(false);
-  const [callType, setCallType] = useState<'voice' | 'video'>('voice');
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -206,8 +205,10 @@ const ChatWindow = ({
 
   const handleVoiceCall = () => {
     if (conversation?.type === 'dm') {
-      setCallType('voice');
-      setShowCall(true);
+      const partnerId = getPartnerId();
+      if (partnerId) {
+        startCall(partnerId, conversation.name, conversation.avatar, 'voice');
+      }
     } else {
       toast.info('Voice calls coming soon for groups!');
     }
@@ -215,8 +216,10 @@ const ChatWindow = ({
 
   const handleVideoCall = () => {
     if (conversation?.type === 'dm') {
-      setCallType('video');
-      setShowCall(true);
+      const partnerId = getPartnerId();
+      if (partnerId) {
+        startCall(partnerId, conversation.name, conversation.avatar, 'video');
+      }
     } else {
       toast.info('Video calls coming soon for groups!');
     }
@@ -745,20 +748,6 @@ const ChatWindow = ({
             </Button>
           </div>
         </div>
-      )}
-
-      {/* Call Modal */}
-      {partnerId && (
-        <CallModal
-          open={showCall}
-          onOpenChange={setShowCall}
-          callType={callType}
-          callee={{
-            id: partnerId,
-            name: conversation.name,
-            avatar: conversation.avatar,
-          }}
-        />
       )}
     </div>
   );

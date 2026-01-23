@@ -6,10 +6,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { StudyRoomProvider } from "@/contexts/StudyRoomContext";
 import { PlatformSettingsProvider } from "@/contexts/PlatformSettingsContext";
+import { CallProvider } from "@/contexts/CallContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import GlobalFloatingElements from "@/components/layout/GlobalFloatingElements";
-import IncomingCallHandler from "@/components/messaging/IncomingCallHandler";
+import GlobalCallUI from "@/components/messaging/GlobalCallUI";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -141,12 +142,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <PlatformSettingsProvider>
-            <StudyRoomProvider>
-              <ScrollToTop />
-              <AppRoutes />
-              <GlobalFloatingElements />
-              <IncomingCallHandler />
-            </StudyRoomProvider>
+            <CallProvider>
+              <StudyRoomProvider>
+                <ScrollToTop />
+                <AppRoutes />
+                <GlobalFloatingElements />
+                <GlobalCallUI />
+              </StudyRoomProvider>
+            </CallProvider>
           </PlatformSettingsProvider>
         </AuthProvider>
       </BrowserRouter>
