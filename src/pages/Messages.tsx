@@ -197,11 +197,12 @@ const Messages = () => {
             conversation={currentConversation}
             messages={localMessages}
             currentUserId={user?.id || ''}
-            onSendMessage={sendMessage}
+            onSendMessage={(content, options) => sendMessage(content, options)}
             onBack={isMobile ? () => setShowChat(false) : undefined}
             onViewInfo={currentConversation?.type === 'group' ? () => setShowGroupInfo(true) : undefined}
             isMobile={isMobile}
             onDeleteMessage={handleDeleteMessage}
+            currentChannelName={currentConversation?.type === 'group' ? currentChannel.channelName : undefined}
           />
         )}
       </motion.div>

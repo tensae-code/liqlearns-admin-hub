@@ -22,6 +22,15 @@ interface ProfileData {
   avatar_url?: string;
 }
 
+// Send message options for files/voice
+interface SendMessageOptions {
+  type?: 'text' | 'voice' | 'file' | 'image';
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  durationSeconds?: number;
+}
+
 export const useMessaging = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -134,14 +143,15 @@ export const useMessaging = () => {
     }
   }, [user, profile]);
 
-  // Fetch messages for a conversation
+  // Fetch messages for a conversation (including call logs)
   const fetchMessages = useCallback(async (conversationId: string) => {
-    if (!user) return;
+    if (!user || !profile) return;
 
     try {
       const [type, id] = conversationId.split('_');
 
       if (type === 'dm') {
+        // Fetch regular DM messages
         const { data, error } = await supabase
           .from('direct_messages')
           .select('*')
@@ -157,22 +167,71 @@ export const useMessaging = () => {
           .select('id, user_id, full_name, avatar_url')
           .in('user_id', senderIds);
 
+        // Get partner's profile.id for call logs (id is user_id, call_logs uses profile.id)
+        const { data: partnerProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', id)
+          .single();
+
+        // Fetch call logs for this conversation using profile.id
+        let callLogs: any[] = [];
+        if (partnerProfile) {
+          const { data: logs } = await supabase
+            .from('call_logs')
+            .select('*')
+            .or(`and(caller_id.eq.${profile.id},receiver_id.eq.${partnerProfile.id}),and(caller_id.eq.${partnerProfile.id},receiver_id.eq.${profile.id})`)
+            .order('started_at', { ascending: true });
+          callLogs = logs || [];
+        }
+
+        // Format regular messages
         const formattedMessages: Message[] = (data || []).map(msg => {
-          const profile = profiles?.find(p => p.user_id === msg.sender_id);
+          const msgProfile = profiles?.find(p => p.user_id === msg.sender_id);
+          const msgType = msg.message_type || 'text';
+          
           return {
             id: msg.id,
             content: msg.content,
             sender: {
               id: msg.sender_id,
-              name: profile?.full_name || 'Unknown',
-              avatar: profile?.avatar_url,
+              name: msgProfile?.full_name || 'Unknown',
+              avatar: msgProfile?.avatar_url,
             },
-            timestamp: formatTime(msg.created_at),
+            timestamp: msg.created_at,
             isRead: msg.is_read,
+            type: msgType === 'text' ? 'message' : msgType as Message['type'],
+            fileUrl: msg.file_url,
+            fileName: msg.file_name,
+            fileSize: msg.file_size,
+            durationSeconds: msg.duration_seconds,
           };
         });
 
-        setMessages(formattedMessages);
+        // Format call logs as messages
+        const callMessages: Message[] = (callLogs || []).map(call => {
+          const isCaller = call.caller_id === profile.id;
+          return {
+            id: `call_${call.id}`,
+            content: '',
+            sender: {
+              id: call.caller_id,
+              name: isCaller ? 'You' : 'Partner',
+            },
+            timestamp: call.started_at,
+            type: 'call' as const,
+            callType: call.call_type as 'voice' | 'video',
+            callStatus: call.status as 'missed' | 'answered' | 'ended',
+            callDuration: call.duration_seconds || 0,
+          };
+        });
+
+        // Merge and sort by timestamp
+        const allMessages = [...formattedMessages, ...callMessages].sort(
+          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+
+        setMessages(allMessages);
 
         // Mark messages as read
         await supabase
@@ -205,16 +264,23 @@ export const useMessaging = () => {
             .in('user_id', senderIds);
 
           const formattedMessages: Message[] = (data || []).map(msg => {
-            const profile = profiles?.find(p => p.user_id === msg.sender_id);
+            const msgProfile = profiles?.find(p => p.id === msg.sender_id);
+            const msgType = msg.message_type || 'text';
+            
             return {
               id: msg.id,
               content: msg.content,
               sender: {
                 id: msg.sender_id,
-                name: profile?.full_name || 'Unknown',
-                avatar: profile?.avatar_url,
+                name: msgProfile?.full_name || 'Unknown',
+                avatar: msgProfile?.avatar_url,
               },
-              timestamp: formatTime(msg.created_at),
+              timestamp: msg.created_at,
+              type: msgType === 'text' ? 'message' : msgType as Message['type'],
+              fileUrl: msg.file_url,
+              fileName: msg.file_name,
+              fileSize: msg.file_size,
+              durationSeconds: msg.duration_seconds,
             };
           });
 
@@ -224,10 +290,10 @@ export const useMessaging = () => {
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
-  }, [user]);
+  }, [user, profile]);
 
-  // Send a message
-  const sendMessage = useCallback(async (content: string) => {
+  // Send a message (with support for files/voice)
+  const sendMessage = useCallback(async (content: string, options?: SendMessageOptions) => {
     if (!user || !profile || !currentConversation) {
       console.error('Cannot send message: missing requirements', { user: !!user, profile: !!profile, conv: !!currentConversation });
       toast.error('Unable to send message');
@@ -236,7 +302,9 @@ export const useMessaging = () => {
 
     try {
       const [type, id] = currentConversation.id.split('_');
-      console.log('Sending message:', { type, id, profileId: profile.id, content: content.substring(0, 20) });
+      const messageType = options?.type || 'text';
+      
+      console.log('Sending message:', { type, id, messageType, content: content.substring(0, 20) });
 
       if (type === 'dm') {
         const { data, error } = await supabase
@@ -245,6 +313,11 @@ export const useMessaging = () => {
             sender_id: user.id,
             receiver_id: id,
             content,
+            message_type: messageType,
+            file_url: options?.fileUrl,
+            file_name: options?.fileName,
+            file_size: options?.fileSize,
+            duration_seconds: options?.durationSeconds,
           })
           .select()
           .single();
@@ -264,33 +337,49 @@ export const useMessaging = () => {
             id: user.id,
             name: 'You',
           },
-          timestamp: 'Just now',
+          timestamp: new Date().toISOString(),
           isRead: false,
+          type: messageType === 'text' ? 'message' : messageType as Message['type'],
+          fileUrl: options?.fileUrl,
+          fileName: options?.fileName,
+          fileSize: options?.fileSize,
+          durationSeconds: options?.durationSeconds,
         };
         setMessages(prev => [...prev, newMessage]);
         
       } else if (type === 'group') {
-        // Get default channel
-        const { data: channel, error: channelError } = await supabase
-          .from('group_channels')
-          .select('id')
-          .eq('group_id', id)
-          .eq('is_default', true)
-          .single();
+        // Get default channel or current channel
+        const channelId = currentChannel.channelId;
+        let targetChannelId = channelId;
+        
+        if (!targetChannelId) {
+          const { data: channel, error: channelError } = await supabase
+            .from('group_channels')
+            .select('id')
+            .eq('group_id', id)
+            .eq('is_default', true)
+            .single();
 
-        if (channelError) {
-          console.error('Channel fetch error:', channelError);
-          throw new Error('Could not find group channel');
+          if (channelError) {
+            console.error('Channel fetch error:', channelError);
+            throw new Error('Could not find group channel');
+          }
+          targetChannelId = channel?.id;
         }
 
-        if (channel) {
+        if (targetChannelId) {
           // Use profile.id for group messages (RLS requires it)
           const { data, error } = await supabase
             .from('group_messages')
             .insert({
-              channel_id: channel.id,
+              channel_id: targetChannelId,
               sender_id: profile.id,
               content,
+              message_type: messageType,
+              file_url: options?.fileUrl,
+              file_name: options?.fileName,
+              file_size: options?.fileSize,
+              duration_seconds: options?.durationSeconds,
             })
             .select()
             .single();
@@ -310,7 +399,12 @@ export const useMessaging = () => {
               id: profile.id,
               name: 'You',
             },
-            timestamp: 'Just now',
+            timestamp: new Date().toISOString(),
+            type: messageType === 'text' ? 'message' : messageType as Message['type'],
+            fileUrl: options?.fileUrl,
+            fileName: options?.fileName,
+            fileSize: options?.fileSize,
+            durationSeconds: options?.durationSeconds,
           };
           setMessages(prev => [...prev, newMessage]);
         }
@@ -320,7 +414,7 @@ export const useMessaging = () => {
       const errorMessage = error?.message || 'Failed to send message';
       toast.error(errorMessage);
     }
-  }, [user, profile, currentConversation]);
+  }, [user, profile, currentConversation, currentChannel.channelId]);
 
   // Create a new group
   const createGroup = useCallback(async (data: {
@@ -523,6 +617,7 @@ export const useMessaging = () => {
 
       const formattedMessages: Message[] = (data || []).map(msg => {
         const senderProfile = profiles?.find(p => p.id === msg.sender_id);
+        const msgType = msg.message_type || 'text';
         return {
           id: msg.id,
           content: msg.content,
@@ -531,7 +626,12 @@ export const useMessaging = () => {
             name: senderProfile?.full_name || 'Unknown',
             avatar: senderProfile?.avatar_url,
           },
-          timestamp: formatTime(msg.created_at),
+          timestamp: msg.created_at,
+          type: msgType === 'text' ? 'message' : msgType as Message['type'],
+          fileUrl: msg.file_url,
+          fileName: msg.file_name,
+          fileSize: msg.file_size,
+          durationSeconds: msg.duration_seconds,
         };
       });
 
@@ -567,6 +667,7 @@ export const useMessaging = () => {
               .eq('user_id', payload.new.sender_id)
               .single();
 
+            const msgType = payload.new.message_type || 'text';
             const newMessage: Message = {
               id: payload.new.id,
               content: payload.new.content,
@@ -575,8 +676,13 @@ export const useMessaging = () => {
                 name: senderProfile?.full_name || 'Unknown',
                 avatar: senderProfile?.avatar_url,
               },
-              timestamp: formatTime(payload.new.created_at),
+              timestamp: payload.new.created_at,
               isRead: false,
+              type: msgType === 'text' ? 'message' : msgType as Message['type'],
+              fileUrl: payload.new.file_url,
+              fileName: payload.new.file_name,
+              fileSize: payload.new.file_size,
+              durationSeconds: payload.new.duration_seconds,
             };
             
             setMessages(prev => {
@@ -636,6 +742,7 @@ export const useMessaging = () => {
             .eq('id', payload.new.sender_id)
             .single();
 
+          const msgType = payload.new.message_type || 'text';
           const newMessage: Message = {
             id: payload.new.id,
             content: payload.new.content,
@@ -644,7 +751,12 @@ export const useMessaging = () => {
               name: senderProfile?.full_name || 'Unknown',
               avatar: senderProfile?.avatar_url,
             },
-            timestamp: formatTime(payload.new.created_at),
+            timestamp: payload.new.created_at,
+            type: msgType === 'text' ? 'message' : msgType as Message['type'],
+            fileUrl: payload.new.file_url,
+            fileName: payload.new.file_name,
+            fileSize: payload.new.file_size,
+            durationSeconds: payload.new.duration_seconds,
           };
           
           setMessages(prev => {
