@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface MediaDevice {
   deviceId: string;
@@ -18,7 +18,9 @@ export const useMediaDevices = () => {
   const [cameras, setCameras] = useState<MediaDevice[]>([]);
   const [microphones, setMicrophones] = useState<MediaDevice[]>([]);
   const [speakers, setSpeakers] = useState<MediaDevice[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [hasPermission, setHasPermission] = useState(false);
+  const hasEnumeratedRef = useRef(false);
   
   // Load saved settings from localStorage
   const [settings, setSettings] = useState<MediaDeviceSettings>(() => {
@@ -30,19 +32,9 @@ export const useMediaDevices = () => {
     };
   });
 
-  // Request permission and enumerate devices
-  const enumerateDevices = useCallback(async () => {
+  // Enumerate devices WITHOUT requesting permission (labels may be empty)
+  const enumerateDevicesOnly = useCallback(async () => {
     try {
-      // Request permission first to get device labels
-      await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(stream => {
-          // Stop tracks immediately - we just needed permission
-          stream.getTracks().forEach(track => track.stop());
-        })
-        .catch(() => {
-          // User denied permission, we can still enumerate but labels will be empty
-        });
-
       const devices = await navigator.mediaDevices.enumerateDevices();
       
       const videoInputs = devices
@@ -73,6 +65,10 @@ export const useMediaDevices = () => {
       setMicrophones(audioInputs);
       setSpeakers(audioOutputs);
 
+      // Check if we have labels (indicates permission was already granted)
+      const hasLabels = devices.some(d => d.label && d.label.length > 0);
+      setHasPermission(hasLabels);
+
       // Set defaults if not already set
       setSettings(prev => {
         const updated = { ...prev };
@@ -89,24 +85,56 @@ export const useMediaDevices = () => {
       });
     } catch (error) {
       console.error('Error enumerating devices:', error);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
-  // Listen for device changes (plugging in/out devices)
+  // Request permission and enumerate devices - ONLY call this when user initiates a call or opens settings
+  const requestPermissionAndEnumerate = useCallback(async () => {
+    if (hasPermission) {
+      // Already have permission, just refresh the list
+      await enumerateDevicesOnly();
+      return true;
+    }
+
+    setLoading(true);
+    try {
+      // Request permission
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      // Stop tracks immediately - we just needed permission for labels
+      stream.getTracks().forEach(track => track.stop());
+      
+      setHasPermission(true);
+      
+      // Now enumerate to get full labels
+      await enumerateDevicesOnly();
+      return true;
+    } catch (error) {
+      console.error('Error requesting media permission:', error);
+      // Still enumerate even without permission (labels will be generic)
+      await enumerateDevicesOnly();
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [hasPermission, enumerateDevicesOnly]);
+
+  // Listen for device changes (plugging in/out devices) - no permission request
   useEffect(() => {
-    enumerateDevices();
+    // Initial enumeration without permission request
+    if (!hasEnumeratedRef.current) {
+      hasEnumeratedRef.current = true;
+      enumerateDevicesOnly();
+    }
 
     const handleDeviceChange = () => {
-      enumerateDevices();
+      enumerateDevicesOnly();
     };
 
     navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
     return () => {
       navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
     };
-  }, [enumerateDevices]);
+  }, [enumerateDevicesOnly]);
 
   // Save settings to localStorage when they change
   useEffect(() => {
@@ -130,9 +158,9 @@ export const useMediaDevices = () => {
     const constraints: MediaStreamConstraints = {};
     
     if (video) {
-      constraints.video = settings.selectedCamera 
+      constraints.video = settings.selectedCamera
         ? { deviceId: { exact: settings.selectedCamera }, width: 640, height: 480 }
-        : { width: 640, height: 480, facingMode: 'user' };
+        : { width: 640, height: 480 };
     }
     
     if (audio) {
@@ -149,6 +177,7 @@ export const useMediaDevices = () => {
     microphones,
     speakers,
     loading,
+    hasPermission,
     selectedCamera: settings.selectedCamera,
     selectedMicrophone: settings.selectedMicrophone,
     selectedSpeaker: settings.selectedSpeaker,
@@ -156,6 +185,7 @@ export const useMediaDevices = () => {
     setSelectedMicrophone,
     setSelectedSpeaker,
     getMediaConstraints,
-    refreshDevices: enumerateDevices,
+    refreshDevices: enumerateDevicesOnly,
+    requestPermissionAndEnumerate,
   };
 };
