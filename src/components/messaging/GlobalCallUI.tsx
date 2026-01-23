@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { forwardRef } from 'react';
 import { useCall } from '@/contexts/CallContext';
 import {
   Dialog,
@@ -20,7 +20,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
-const GlobalCallUI = () => {
+const GlobalCallUI = forwardRef<HTMLDivElement>((_, ref) => {
   const {
     callState,
     localStream,
@@ -333,6 +333,8 @@ const GlobalCallUI = () => {
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+GlobalCallUI.displayName = 'GlobalCallUI';
 
 export default GlobalCallUI;
