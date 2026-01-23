@@ -16,16 +16,27 @@ import {
   PhoneIncoming,
   PhoneOutgoing,
   PhoneMissed,
-  VideoIcon
+  VideoIcon,
+  Mic,
+  X,
+  Play,
+  Pause,
+  FileIcon,
+  Download,
+  Loader2
 } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import CallModal from './CallModal';
 import EmojiPicker from './EmojiPicker';
 import TypingIndicator from './TypingIndicator';
+import VoiceRecorder from './VoiceRecorder';
+import FileAttachmentPreview from './FileAttachmentPreview';
 import { Conversation } from './ConversationList';
 import { toast } from 'sonner';
 import usePresence from '@/hooks/usePresence';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface Message {
   id: string;
@@ -37,17 +48,27 @@ export interface Message {
   };
   timestamp: string;
   isRead?: boolean;
-  type?: 'message' | 'call';
+  type?: 'message' | 'call' | 'voice' | 'file' | 'image';
   callType?: 'voice' | 'video';
   callStatus?: 'missed' | 'answered' | 'rejected' | 'ended';
   callDuration?: number;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  durationSeconds?: number;
 }
 
 interface ChatWindowProps {
   conversation: Conversation | null;
   messages: Message[];
   currentUserId: string;
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, options?: { 
+    type?: 'text' | 'voice' | 'file' | 'image';
+    fileUrl?: string;
+    fileName?: string;
+    fileSize?: number;
+    durationSeconds?: number;
+  }) => void;
   onBack?: () => void;
   onViewInfo?: () => void;
   isMobile?: boolean;
@@ -57,9 +78,8 @@ interface ChatWindowProps {
 
 // Format date for date separator - handles invalid dates gracefully
 const formatDateSeparator = (date: Date): string => {
-  // Check if the date is valid
   if (isNaN(date.getTime())) {
-    return 'Today'; // Fallback for invalid dates
+    return 'Today';
   }
   if (isToday(date)) return 'Today';
   if (isYesterday(date)) return 'Yesterday';
@@ -68,12 +88,10 @@ const formatDateSeparator = (date: Date): string => {
 
 // Safe date parser - returns a valid Date or current date as fallback
 const parseMessageDate = (timestamp: string): Date => {
-  // If it's already a valid ISO string or timestamp
   const parsed = new Date(timestamp);
   if (!isNaN(parsed.getTime())) {
     return parsed;
   }
-  // Fallback to current date for display strings like "Just now", "5:30 PM"
   return new Date();
 };
 
@@ -82,6 +100,20 @@ const formatCallDuration = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+};
+
+// Format voice message duration
+const formatVoiceDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+// Format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
 const ChatWindow = ({
@@ -95,12 +127,20 @@ const ChatWindow = ({
   onDeleteMessage,
   currentChannelName,
 }: ChatWindowProps) => {
+  const { user } = useAuth();
   const [newMessage, setNewMessage] = useState('');
   const [showCall, setShowCall] = useState(false);
   const [callType, setCallType] = useState<'voice' | 'video'>('voice');
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   
   const { isUserOnline, getTypingUsersForConversation, sendTypingIndicator } = usePresence();
 
@@ -126,14 +166,20 @@ const ChatWindow = ({
     }, 2000);
   }, [conversation, sendTypingIndicator]);
 
-  const handleSend = () => {
-    if (!newMessage.trim()) return;
+  const handleSend = async () => {
+    if (!newMessage.trim() && !pendingFile) return;
     
     if (conversation) {
       sendTypingIndicator(conversation.id, false);
     }
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Handle file upload first
+    if (pendingFile) {
+      await handleFileUpload(pendingFile);
+      return;
     }
     
     onSendMessage(newMessage);
@@ -176,14 +222,122 @@ const ChatWindow = ({
     }
   };
 
+  // File upload handler
+  const handleFileUpload = async (file: File) => {
+    if (!user) return;
+    
+    setIsUploading(true);
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('message-attachments')
+        .upload(fileName, file);
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('message-attachments')
+        .getPublicUrl(fileName);
+      
+      const isImage = file.type.startsWith('image/');
+      
+      onSendMessage(file.name, {
+        type: isImage ? 'image' : 'file',
+        fileUrl: urlData.publicUrl,
+        fileName: file.name,
+        fileSize: file.size,
+      });
+      
+      setPendingFile(null);
+      toast.success('File sent!');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Failed to upload file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Voice message handler
+  const handleVoiceSend = async (audioBlob: Blob, durationSeconds: number) => {
+    if (!user) return;
+    
+    setIsUploading(true);
+    
+    try {
+      const fileName = `${user.id}/${Date.now()}.webm`;
+      
+      const { data, error } = await supabase.storage
+        .from('message-attachments')
+        .upload(fileName, audioBlob, { contentType: 'audio/webm' });
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('message-attachments')
+        .getPublicUrl(fileName);
+      
+      onSendMessage('Voice message', {
+        type: 'voice',
+        fileUrl: urlData.publicUrl,
+        durationSeconds,
+      });
+      
+      setShowVoiceRecorder(false);
+      toast.success('Voice message sent!');
+    } catch (error) {
+      console.error('Error uploading voice message:', error);
+      toast.error('Failed to send voice message');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // File selection handler
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        toast.error('File too large', { description: 'Maximum file size is 10MB' });
+        return;
+      }
+      setPendingFile(file);
+    }
+    e.target.value = ''; // Reset input
+  };
+
+  // Audio playback
+  const toggleAudioPlayback = (messageId: string, audioUrl: string) => {
+    let audio = audioRefs.current.get(messageId);
+    
+    if (!audio) {
+      audio = new Audio(audioUrl);
+      audio.onended = () => setPlayingAudioId(null);
+      audioRefs.current.set(messageId, audio);
+    }
+    
+    if (playingAudioId === messageId) {
+      audio.pause();
+      setPlayingAudioId(null);
+    } else {
+      // Stop any currently playing audio
+      if (playingAudioId) {
+        const currentAudio = audioRefs.current.get(playingAudioId);
+        currentAudio?.pause();
+      }
+      audio.play();
+      setPlayingAudioId(messageId);
+    }
+  };
+
   const getPartnerId = () => {
     if (conversation?.type === 'dm' && conversation.id) {
-      // The conversation.id for DMs is the other user's profile id directly
-      // Check if it starts with 'dm_' prefix (legacy format) or is a UUID
       if (conversation.id.startsWith('dm_')) {
         return conversation.id.replace('dm_', '');
       }
-      // If not prefixed, the id itself is the partner's user_id
       return conversation.id;
     }
     return null;
@@ -214,7 +368,6 @@ const ChatWindow = ({
     const prevMsg = messages[i - 1];
     const prevMsgDate = prevMsg ? parseMessageDate(prevMsg.timestamp) : null;
     
-    // Check if we need a new date group
     if (!prevMsgDate || !isSameDay(msgDate, prevMsgDate)) {
       groupedMessages.push({ date: msgDate, groups: [] });
     }
@@ -222,7 +375,8 @@ const ChatWindow = ({
     const currentDateGroup = groupedMessages[groupedMessages.length - 1];
     const isNewSenderGroup = !prevMsg || 
       prevMsg.sender.id !== msg.sender.id || 
-      !isSameDay(msgDate, parseMessageDate(prevMsg.timestamp));
+      !isSameDay(msgDate, parseMessageDate(prevMsg.timestamp)) ||
+      msg.type === 'call';
     
     if (isNewSenderGroup) {
       currentDateGroup.groups.push({ messages: [msg], senderId: msg.sender.id });
@@ -263,6 +417,131 @@ const ChatWindow = ({
               return !isNaN(callDate.getTime()) ? format(callDate, 'h:mm a') : msg.timestamp;
             })()}
           </span>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Render voice message bubble
+  const renderVoiceMessage = (msg: Message, isSender: boolean) => {
+    const isPlaying = playingAudioId === msg.id;
+    
+    return (
+      <motion.div
+        key={msg.id}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2`}
+      >
+        <div 
+          className={`flex items-center gap-3 px-4 py-3 rounded-2xl max-w-[280px] ${
+            isSender 
+              ? 'bg-[hsl(var(--accent))] text-accent-foreground' 
+              : 'bg-muted text-foreground'
+          }`}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-full shrink-0"
+            onClick={() => msg.fileUrl && toggleAudioPlayback(msg.id, msg.fileUrl)}
+          >
+            {isPlaying ? (
+              <Pause className="w-5 h-5" />
+            ) : (
+              <Play className="w-5 h-5" />
+            )}
+          </Button>
+          
+          <div className="flex-1">
+            <div className="flex items-center gap-1">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-1 rounded-full ${isSender ? 'bg-accent-foreground/50' : 'bg-foreground/30'}`}
+                  style={{ height: `${Math.random() * 16 + 4}px` }}
+                />
+              ))}
+            </div>
+          </div>
+          
+          <span className={`text-xs ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
+            {msg.durationSeconds ? formatVoiceDuration(msg.durationSeconds) : '0:00'}
+          </span>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Render file message
+  const renderFileMessage = (msg: Message, isSender: boolean) => {
+    const isImage = msg.type === 'image';
+    
+    if (isImage && msg.fileUrl) {
+      return (
+        <motion.div
+          key={msg.id}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2`}
+        >
+          <div className="max-w-[280px] rounded-2xl overflow-hidden">
+            <img 
+              src={msg.fileUrl} 
+              alt={msg.fileName || 'Image'} 
+              className="w-full h-auto"
+            />
+            <div className={`px-3 py-2 text-xs ${
+              isSender 
+                ? 'bg-[hsl(var(--accent))] text-accent-foreground/70' 
+                : 'bg-muted text-muted-foreground'
+            }`}>
+              {(() => {
+                const msgDate = parseMessageDate(msg.timestamp);
+                return !isNaN(msgDate.getTime()) ? format(msgDate, 'h:mm a') : msg.timestamp;
+              })()}
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+    
+    return (
+      <motion.div
+        key={msg.id}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2`}
+      >
+        <div 
+          className={`flex items-center gap-3 px-4 py-3 rounded-2xl max-w-[280px] ${
+            isSender 
+              ? 'bg-[hsl(var(--accent))] text-accent-foreground' 
+              : 'bg-muted text-foreground'
+          }`}
+        >
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+            isSender ? 'bg-accent-foreground/20' : 'bg-foreground/10'
+          }`}>
+            <FileIcon className="w-5 h-5" />
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{msg.fileName || 'File'}</p>
+            <p className={`text-xs ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
+              {msg.fileSize ? formatFileSize(msg.fileSize) : ''}
+            </p>
+          </div>
+          
+          {msg.fileUrl && (
+            <a 
+              href={msg.fileUrl} 
+              download={msg.fileName}
+              className="shrink-0"
+            >
+              <Download className={`w-4 h-4 ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`} />
+            </a>
+          )}
         </div>
       </motion.div>
     );
@@ -318,9 +597,11 @@ const ChatWindow = ({
           <Button variant="ghost" size="icon" title="Video Call" onClick={handleVideoCall}>
             <Video className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={onViewInfo} title="Info">
-            <Info className="w-4 h-4" />
-          </Button>
+          {onViewInfo && (
+            <Button variant="ghost" size="icon" onClick={onViewInfo} title="Info">
+              <Info className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -337,25 +618,37 @@ const ChatWindow = ({
 
             {dateGroup.groups.map((group, groupIndex) => (
               <div key={groupIndex}>
-                {group.messages.map((msg, msgIndex) => (
-                  msg.type === 'call' ? (
-                    renderCallMessage(msg)
-                  ) : (
+                {group.messages.map((msg, msgIndex) => {
+                  const isSender = msg.sender.id === currentUserId;
+                  
+                  if (msg.type === 'call') {
+                    return renderCallMessage(msg);
+                  }
+                  
+                  if (msg.type === 'voice') {
+                    return renderVoiceMessage(msg, isSender);
+                  }
+                  
+                  if (msg.type === 'file' || msg.type === 'image') {
+                    return renderFileMessage(msg, isSender);
+                  }
+                  
+                  return (
                     <ChatBubble
                       key={msg.id}
                       messageId={msg.id}
                       message={msg.content}
                       sender={msg.sender}
                       timestamp={msg.timestamp}
-                      isSender={msg.sender.id === currentUserId}
+                      isSender={isSender}
                       showAvatar={msgIndex === group.messages.length - 1}
                       isRead={msg.isRead}
                       isFirstInGroup={msgIndex === 0}
                       isLastInGroup={msgIndex === group.messages.length - 1}
                       onDelete={onDeleteMessage ? () => onDeleteMessage(msg.id) : undefined}
                     />
-                  )
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>
@@ -370,40 +663,89 @@ const ChatWindow = ({
         </AnimatePresence>
       </div>
 
-      {/* Input */}
-      <div className="p-4 border-t border-border bg-card">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="shrink-0">
-            <Paperclip className="w-5 h-5 text-muted-foreground" />
-          </Button>
-          <Button variant="ghost" size="icon" className="shrink-0">
-            <Image className="w-5 h-5 text-muted-foreground" />
-          </Button>
-          
-          <div className="flex-1 relative">
-            <Input
-              ref={inputRef}
-              placeholder="Type a message..."
-              value={newMessage}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              className="pr-10 bg-muted/50"
+      {/* File attachment preview */}
+      <AnimatePresence>
+        {pendingFile && (
+          <div className="p-3 border-t border-border bg-card">
+            <FileAttachmentPreview
+              file={pendingFile}
+              onRemove={() => setPendingFile(null)}
+              isUploading={isUploading}
             />
-            <div className="absolute right-1 top-1/2 -translate-y-1/2">
-              <EmojiPicker onEmojiSelect={handleEmojiSelect} />
-            </div>
           </div>
-          
-          <Button 
-            size="icon" 
-            className="bg-gradient-accent text-accent-foreground shrink-0"
-            onClick={handleSend}
-            disabled={!newMessage.trim()}
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+        )}
+      </AnimatePresence>
+
+      {/* Voice recorder */}
+      <AnimatePresence>
+        {showVoiceRecorder && (
+          <div className="p-4 border-t border-border bg-card">
+            <VoiceRecorder
+              onSend={handleVoiceSend}
+              onCancel={() => setShowVoiceRecorder(false)}
+              isUploading={isUploading}
+            />
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Input */}
+      {!showVoiceRecorder && (
+        <div className="p-4 border-t border-border bg-card">
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
+            />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="w-5 h-5 text-muted-foreground" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="shrink-0"
+              onClick={() => setShowVoiceRecorder(true)}
+            >
+              <Mic className="w-5 h-5 text-muted-foreground" />
+            </Button>
+            
+            <div className="flex-1 relative">
+              <Input
+                ref={inputRef}
+                placeholder="Type a message..."
+                value={newMessage}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                className="pr-10 bg-muted/50"
+              />
+              <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+              </div>
+            </div>
+            
+            <Button 
+              size="icon" 
+              className="bg-gradient-accent text-accent-foreground shrink-0"
+              onClick={handleSend}
+              disabled={(!newMessage.trim() && !pendingFile) || isUploading}
+            >
+              {isUploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Call Modal */}
       {partnerId && (
