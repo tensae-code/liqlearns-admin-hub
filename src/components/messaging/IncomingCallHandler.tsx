@@ -250,14 +250,15 @@ const IncomingCallHandler = () => {
     }
   }, [remoteStream]);
 
-  // Listen for incoming calls
+  // Listen for incoming calls - MUST use same channel as caller (calls-global)
   useEffect(() => {
     if (!user) return;
 
     const channelName = `calls-global`;
     console.log('[IncomingCallHandler] Listening on:', channelName);
     
-    const channel = supabase.channel(`incoming-calls-${user.id}`, {
+    // Use the exact same channel name that callers broadcast to
+    const channel = supabase.channel(channelName, {
       config: { broadcast: { self: false } },
     });
 
@@ -266,14 +267,14 @@ const IncomingCallHandler = () => {
         // Only handle messages directed at this user
         if (payload.to !== user.id) return;
 
-        console.log('[IncomingCallHandler] Received:', payload.type);
+        console.log('[IncomingCallHandler] Received:', payload.type, 'from:', payload.from);
 
         if (payload.type === 'call-offer' && callStatus === 'idle') {
-          // Fetch caller profile
+          // Fetch caller profile using user_id
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name, avatar_url')
-            .eq('id', payload.from)
+            .eq('user_id', payload.from)
             .single();
 
           setIncomingCall({
@@ -287,7 +288,11 @@ const IncomingCallHandler = () => {
         } else if (payload.type === 'ice-candidate') {
           const pc = peerConnectionRef.current;
           if (pc && pc.remoteDescription) {
-            await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+            } catch (e) {
+              console.warn('[IncomingCallHandler] Error adding ICE candidate:', e);
+            }
           } else {
             pendingCandidatesRef.current.push(payload.candidate);
           }

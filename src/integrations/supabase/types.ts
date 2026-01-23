@@ -657,24 +657,39 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          duration_seconds: number | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string | null
           id: string
           is_read: boolean | null
+          message_type: string | null
           receiver_id: string
           sender_id: string
         }
         Insert: {
           content: string
           created_at?: string
+          duration_seconds?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
           id?: string
           is_read?: boolean | null
+          message_type?: string | null
           receiver_id: string
           sender_id: string
         }
         Update: {
           content?: string
           created_at?: string
+          duration_seconds?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
           id?: string
           is_read?: boolean | null
+          message_type?: string | null
           receiver_id?: string
           sender_id?: string
         }
@@ -961,8 +976,13 @@ export type Database = {
           channel_id: string
           content: string
           created_at: string
+          duration_seconds: number | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string | null
           id: string
           is_edited: boolean | null
+          message_type: string | null
           reply_to_id: string | null
           sender_id: string
           updated_at: string
@@ -971,8 +991,13 @@ export type Database = {
           channel_id: string
           content: string
           created_at?: string
+          duration_seconds?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
           id?: string
           is_edited?: boolean | null
+          message_type?: string | null
           reply_to_id?: string | null
           sender_id: string
           updated_at?: string
@@ -981,8 +1006,13 @@ export type Database = {
           channel_id?: string
           content?: string
           created_at?: string
+          duration_seconds?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
           id?: string
           is_edited?: boolean | null
+          message_type?: string | null
           reply_to_id?: string | null
           sender_id?: string
           updated_at?: string

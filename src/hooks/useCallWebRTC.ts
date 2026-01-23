@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCallLogging } from '@/hooks/useCallLogging';
 
 export type CallStatus = 'idle' | 'ringing' | 'connecting' | 'connected' | 'ended' | 'rejected' | 'no-answer';
 
@@ -32,6 +33,7 @@ const ICE_SERVERS: RTCConfiguration = {
 
 export const useCallWebRTC = () => {
   const { user } = useAuth();
+  const { logCall } = useCallLogging();
   const [callState, setCallState] = useState<CallState>({
     status: 'idle',
     isIncoming: false,
@@ -53,11 +55,16 @@ export const useCallWebRTC = () => {
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const ringTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const callStateRef = useRef<CallState>(callState);
 
-  // Keep localStreamRef in sync
+  // Keep refs in sync with state
   useEffect(() => {
     localStreamRef.current = localStream;
   }, [localStream]);
+
+  useEffect(() => {
+    callStateRef.current = callState;
+  }, [callState]);
 
   // Cleanup resources - defined first so it can be used by other callbacks
   const cleanup = useCallback(() => {
@@ -275,13 +282,14 @@ export const useCallWebRTC = () => {
     setCallState(prev => ({ ...prev, status: 'ended' }));
   }, [user, callState.callerId, cleanup]);
 
-  // End call
-  const endCall = useCallback(() => {
+  // End call and log it
+  const endCall = useCallback(async () => {
     if (!user) return;
     
     console.log('[Call] Ending call');
     
-    const targetId = callState.isIncoming ? callState.callerId : callState.calleeId;
+    const currentState = callStateRef.current;
+    const targetId = currentState.isIncoming ? currentState.callerId : currentState.calleeId;
     
     if (channelRef.current && targetId) {
       channelRef.current.send({
@@ -295,9 +303,25 @@ export const useCallWebRTC = () => {
       });
     }
 
+    // Calculate duration and log the call
+    const duration = currentState.startTime 
+      ? Math.floor((Date.now() - currentState.startTime) / 1000) 
+      : 0;
+    
+    // Log the call
+    if (targetId && currentState.status === 'connected') {
+      await logCall({
+        callerId: currentState.isIncoming ? targetId : user.id,
+        receiverId: currentState.isIncoming ? user.id : targetId,
+        callType: currentState.callType,
+        status: duration > 0 ? 'answered' : 'ended',
+        durationSeconds: duration,
+      });
+    }
+
     cleanup();
     setCallState(prev => ({ ...prev, status: 'ended' }));
-  }, [user, callState.isIncoming, callState.callerId, callState.calleeId, cleanup]);
+  }, [user, cleanup, logCall]);
 
   // Toggle mute
   const toggleMute = useCallback(() => {
