@@ -36,7 +36,7 @@ import usePresence from '@/hooks/usePresence';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLiveKitContext } from '@/contexts/LiveKitContext';
+import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
 
 export interface Message {
   id: string;
@@ -128,7 +128,9 @@ const ChatWindow = ({
   currentChannelName,
 }: ChatWindowProps) => {
   const { user } = useAuth();
-  const { startDMCall, startGroupCall } = useLiveKitContext();
+  const liveKitContext = useOptionalLiveKitContext();
+  const startDMCall = liveKitContext?.startDMCall;
+  const startGroupCall = liveKitContext?.startGroupCall;
   const [newMessage, setNewMessage] = useState('');
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -204,6 +206,10 @@ const ChatWindow = ({
   };
 
   const handleVoiceCall = () => {
+    if (!startDMCall || !startGroupCall) {
+      toast.error('Call feature not available');
+      return;
+    }
     if (conversation?.type === 'dm') {
       // CRITICAL: Use partnerProfileId (profile.id) for call signaling, NOT the auth user_id
       const partnerProfileId = conversation.partnerProfileId;
@@ -219,6 +225,10 @@ const ChatWindow = ({
   };
 
   const handleVideoCall = () => {
+    if (!startDMCall || !startGroupCall) {
+      toast.error('Call feature not available');
+      return;
+    }
     if (conversation?.type === 'dm') {
       // CRITICAL: Use partnerProfileId (profile.id) for call signaling, NOT the auth user_id
       const partnerProfileId = conversation.partnerProfileId;

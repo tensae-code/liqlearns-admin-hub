@@ -14,10 +14,43 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { useLiveKitContext } from '@/contexts/LiveKitContext';
+import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
 import { cn } from '@/lib/utils';
 
 const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
+  const context = useOptionalLiveKitContext();
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Extract values from context (or use defaults for hooks that run before early return)
+  const isVideoOn = context?.isVideoOn ?? false;
+  const localParticipant = context?.localParticipant;
+  const remoteParticipants = context?.remoteParticipants ?? [];
+  const attachVideoToElement = context?.attachVideoToElement;
+  const attachLocalVideoToElement = context?.attachLocalVideoToElement;
+
+  // Attach local video - MUST be before early return (hooks can't be conditional)
+  useEffect(() => {
+    if (localVideoRef.current && isVideoOn && attachLocalVideoToElement) {
+      attachLocalVideoToElement(localVideoRef.current);
+    }
+  }, [isVideoOn, attachLocalVideoToElement, localParticipant]);
+
+  // Attach remote video - MUST be before early return
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteParticipants.length > 0 && attachVideoToElement) {
+      const firstRemote = remoteParticipants[0];
+      if (firstRemote.isVideoOn) {
+        attachVideoToElement(firstRemote.id, remoteVideoRef.current, 'camera');
+      }
+    }
+  }, [remoteParticipants, attachVideoToElement]);
+
+  // Early return if no context available
+  if (!context) {
+    return null;
+  }
+
   const {
     callState,
     callDuration,
@@ -28,34 +61,9 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     rejectIncomingCall,
     incomingCall,
     isMuted,
-    isVideoOn,
     toggleMute,
     toggleVideo,
-    localParticipant,
-    remoteParticipants,
-    attachVideoToElement,
-    attachLocalVideoToElement,
-  } = useLiveKitContext();
-
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
-
-  // Attach local video
-  useEffect(() => {
-    if (localVideoRef.current && isVideoOn) {
-      attachLocalVideoToElement(localVideoRef.current);
-    }
-  }, [isVideoOn, attachLocalVideoToElement, localParticipant]);
-
-  // Attach remote video
-  useEffect(() => {
-    if (remoteVideoRef.current && remoteParticipants.length > 0) {
-      const firstRemote = remoteParticipants[0];
-      if (firstRemote.isVideoOn) {
-        attachVideoToElement(firstRemote.id, remoteVideoRef.current, 'camera');
-      }
-    }
-  }, [remoteParticipants, attachVideoToElement]);
+  } = context;
 
   // Format duration
   const formatDuration = (seconds: number) => {
