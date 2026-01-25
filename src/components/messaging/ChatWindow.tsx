@@ -619,7 +619,7 @@ const ChatWindow = ({
             <Video className="w-4 h-4" />
           </Button>
           {onViewInfo && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:flex" onClick={onViewInfo} title="Info">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onViewInfo} title="Info">
               <Info className="w-4 h-4" />
             </Button>
           )}

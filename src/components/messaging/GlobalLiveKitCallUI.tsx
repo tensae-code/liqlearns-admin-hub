@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef, useEffect } from 'react';
+import React, { forwardRef, useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Phone, 
@@ -11,18 +11,27 @@ import {
   Minimize2,
   X,
   User,
-  SwitchCamera,
+  Camera,
+  ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
   const context = useOptionalLiveKitContext();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
 
   // Extract values from context (or use defaults for hooks that run before early return)
   const isVideoOn = context?.isVideoOn ?? false;
@@ -56,6 +65,26 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
       attachRemoteAudio(firstRemote.id, remoteAudioRef.current);
     }
   }, [remoteParticipants, attachRemoteAudio]);
+
+  // Enumerate cameras when video is on
+  useEffect(() => {
+    const enumerateCameras = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        setCameras(videoDevices);
+        if (videoDevices.length > 0 && !selectedCameraId) {
+          setSelectedCameraId(videoDevices[0].deviceId);
+        }
+      } catch (err) {
+        console.error('[GlobalLiveKitCallUI] Failed to enumerate cameras:', err);
+      }
+    };
+    
+    if (isVideoOn) {
+      enumerateCameras();
+    }
+  }, [isVideoOn, selectedCameraId]);
 
   // Early return if no context available
   if (!context) {
@@ -424,16 +453,50 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
                 {isVideoOn ? <Video className="h-4 w-4 md:h-5 md:w-5" /> : <VideoOff className="h-4 w-4 md:h-5 md:w-5" />}
               </Button>
               
-              {/* Switch Camera Button */}
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-10 w-10 md:h-11 md:w-11 rounded-full"
-                onClick={switchCamera}
-                title="Switch camera"
-              >
-                <SwitchCamera className="h-4 w-4 md:h-5 md:w-5" />
-              </Button>
+              {/* Camera Selection Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="h-10 w-10 md:h-11 md:w-11 rounded-full"
+                    title="Switch camera"
+                  >
+                    <Camera className="h-4 w-4 md:h-5 md:w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" side="top" className="mb-2">
+                  {cameras.length > 0 ? (
+                    cameras.map((camera) => (
+                      <DropdownMenuItem
+                        key={camera.deviceId}
+                        onClick={() => {
+                          setSelectedCameraId(camera.deviceId);
+                          switchCamera?.();
+                        }}
+                        className={cn(
+                          "cursor-pointer",
+                          selectedCameraId === camera.deviceId && "bg-accent"
+                        )}
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        {camera.label || `Camera ${cameras.indexOf(camera) + 1}`}
+                      </DropdownMenuItem>
+                    ))
+                  ) : (
+                    <>
+                      <DropdownMenuItem onClick={() => switchCamera?.()}>
+                        <Camera className="h-4 w-4 mr-2" />
+                        Front Camera
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => switchCamera?.()}>
+                        <Camera className="h-4 w-4 mr-2" />
+                        Back Camera
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
 
