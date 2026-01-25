@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef, ReactN
 import { ConnectionState } from 'livekit-client';
 import { useLiveKit, type LiveKitParticipant, type UseLiveKitReturn } from '@/hooks/useLiveKit';
 import { useCallNotification } from '@/hooks/useCallNotification';
+import { useIncomingCallSubscription } from '@/hooks/useIncomingCallSubscription';
 import { useProfile } from '@/hooks/useProfile';
 import { useCallLogging } from '@/hooks/useCallLogging';
 import { useAuth } from '@/contexts/AuthContext';
@@ -107,9 +108,54 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [isMinimized, setIsMinimized] = useState(false);
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [isHandRaised, setIsHandRaised] = useState(false);
+  const [currentInviteId, setCurrentInviteId] = useState<string | null>(null);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const ringTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Incoming call subscription - handles real-time call invites from other users
+  const handleIncomingCall = useCallback((invite: {
+    id: string;
+    call_type: string;
+    room_name: string;
+    inviter_id: string;
+    inviter_name: string;
+    inviter_avatar: string | null;
+    context_type: string;
+    context_id: string;
+  }) => {
+    console.log('[LiveKitProvider] Incoming call received:', invite);
+    
+    // Don't show incoming call if we're already in a call
+    if (callState.status !== 'idle') {
+      console.log('[LiveKitProvider] Ignoring incoming call - already in call');
+      return;
+    }
+    
+    setCurrentInviteId(invite.id);
+    setIncomingCall({
+      roomName: invite.room_name,
+      contextType: invite.context_type as RoomContext,
+      contextId: invite.context_id,
+      callerId: invite.inviter_id,
+      callerName: invite.inviter_name,
+      callerAvatar: invite.inviter_avatar || undefined,
+      callType: invite.call_type as 'voice' | 'video',
+    });
+  }, [callState.status]);
+
+  const handleCallCancelled = useCallback((inviteId: string) => {
+    console.log('[LiveKitProvider] Call cancelled:', inviteId);
+    if (currentInviteId === inviteId) {
+      setIncomingCall(null);
+      setCurrentInviteId(null);
+    }
+  }, [currentInviteId]);
+
+  const { sendCallInvite, cancelCallInvite, respondToInvite } = useIncomingCallSubscription({
+    onIncomingCall: handleIncomingCall,
+    onCallCancelled: handleCallCancelled,
+  });
 
   // Play/stop ringtone based on incoming call state
   useEffect(() => {
@@ -189,7 +235,7 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     peerAvatar?: string,
     callType: 'voice' | 'video' = 'voice'
   ) => {
-    if (!profile?.id) {
+    if (!profile?.id || !user?.id) {
       console.error('Cannot start call: profile not loaded');
       return;
     }
@@ -207,11 +253,32 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
       startTime: null,
     });
 
+    // Send call invite to the other user via real-time
+    const sessionId = crypto.randomUUID();
+    const invite = await sendCallInvite(
+      peerId, // invitee is the peer
+      sessionId,
+      roomName,
+      callType,
+      profile.full_name || 'Unknown',
+      profile.avatar_url || null,
+      'dm',
+      peerId
+    );
+    
+    if (invite) {
+      setCurrentInviteId(invite.id);
+    }
+
     // Auto-timeout after 30s
-    ringTimeoutRef.current = setTimeout(() => {
+    ringTimeoutRef.current = setTimeout(async () => {
       setCallState(prev => {
         if (prev.status === 'ringing') {
           livekit.disconnect();
+          // Cancel the invite
+          if (invite?.id) {
+            cancelCallInvite(invite.id);
+          }
           return { ...prev, status: 'no-answer' };
         }
         return prev;
@@ -223,6 +290,9 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     
     if (!success) {
       if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+      if (invite?.id) {
+        cancelCallInvite(invite.id);
+      }
       setCallState(prev => ({ ...prev, status: 'ended' }));
     }
     
@@ -230,7 +300,7 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (success && callType === 'video') {
       await livekit.toggleVideo();
     }
-  }, [livekit, profile?.id]);
+  }, [livekit, profile?.id, profile?.full_name, profile?.avatar_url, user?.id, sendCallInvite, cancelCallInvite]);
 
   // Start group call
   const startGroupCall = useCallback(async (
@@ -280,6 +350,11 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
   const endCall = useCallback(async () => {
     if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
     
+    // Cancel any pending invite
+    if (currentInviteId && callState.status === 'ringing' && !callState.isIncoming) {
+      cancelCallInvite(currentInviteId);
+    }
+    
     // Log the call if it was a DM call (peer.id is the auth user_id of the other person)
     if (callState.roomContext === 'dm' && callState.peer?.id && user?.id) {
       const wasAnswered = callState.status === 'connected';
@@ -302,6 +377,7 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     // Set to ended briefly, then reset to idle
     setCallState(prev => ({ ...prev, status: 'ended' }));
     setIsHandRaised(false);
+    setCurrentInviteId(null);
     
     // Reset after a brief moment (allows call end sound to play)
     setTimeout(() => {
@@ -315,11 +391,16 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
         startTime: null,
       });
     }, 500);
-  }, [livekit, callState, user, logCall]);
+  }, [livekit, callState, user, logCall, currentInviteId, cancelCallInvite]);
 
   // Accept incoming call
   const acceptIncomingCall = useCallback(async () => {
     if (!incomingCall) return;
+
+    // Respond to the invite
+    if (currentInviteId) {
+      respondToInvite(currentInviteId, true);
+    }
 
     setCallState({
       status: 'connecting',
@@ -347,11 +428,18 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
 
     setIncomingCall(null);
-  }, [incomingCall, livekit]);
+    setCurrentInviteId(null);
+  }, [incomingCall, livekit, currentInviteId, respondToInvite]);
 
   // Reject incoming call
   const rejectIncomingCall = useCallback(() => {
+    // Respond to the invite as rejected
+    if (currentInviteId) {
+      respondToInvite(currentInviteId, false);
+    }
+    
     setIncomingCall(null);
+    setCurrentInviteId(null);
     setCallState({
       status: 'idle',
       isIncoming: false,
@@ -361,7 +449,7 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
       contextId: null,
       startTime: null,
     });
-  }, []);
+  }, [currentInviteId, respondToInvite]);
 
   // Toggle minimize
   const toggleMinimize = useCallback(() => {
