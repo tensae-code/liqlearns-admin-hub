@@ -733,10 +733,10 @@ const ChatWindow = ({
         )}
       </AnimatePresence>
 
-      {/* Voice recorder - shrink-0 */}
+      {/* Voice recorder - shrink-0, full width container with proper padding */}
       <AnimatePresence>
         {showVoiceRecorder && (
-          <div className="p-3 md:p-4 border-t border-border bg-card shrink-0">
+          <div className="p-2 md:p-4 border-t border-border bg-card shrink-0 pb-safe">
             <VoiceRecorder
               onSend={handleVoiceSend}
               onCancel={() => setShowVoiceRecorder(false)}
