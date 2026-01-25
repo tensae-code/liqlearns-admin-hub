@@ -1436,29 +1436,47 @@ export type Database = {
       }
       livekit_session_invites: {
         Row: {
+          call_type: string | null
+          context_id: string | null
+          context_type: string | null
           created_at: string
           id: string
           invitee_id: string
+          inviter_avatar: string | null
           inviter_id: string
+          inviter_name: string | null
           responded_at: string | null
+          room_name: string | null
           session_id: string
           status: string
         }
         Insert: {
+          call_type?: string | null
+          context_id?: string | null
+          context_type?: string | null
           created_at?: string
           id?: string
           invitee_id: string
+          inviter_avatar?: string | null
           inviter_id: string
+          inviter_name?: string | null
           responded_at?: string | null
+          room_name?: string | null
           session_id: string
           status?: string
         }
         Update: {
+          call_type?: string | null
+          context_id?: string | null
+          context_type?: string | null
           created_at?: string
           id?: string
           invitee_id?: string
+          inviter_avatar?: string | null
           inviter_id?: string
+          inviter_name?: string | null
           responded_at?: string | null
+          room_name?: string | null
           session_id?: string
           status?: string
         }
