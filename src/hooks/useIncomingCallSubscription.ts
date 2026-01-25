@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js';
 
 interface CallInvite {
@@ -32,27 +33,33 @@ export const useIncomingCallSubscription = ({
   onCallCancelled,
 }: UseIncomingCallSubscriptionProps) => {
   const { user } = useAuth();
+  const { profile } = useProfile();
 
   useEffect(() => {
-    if (!user?.id) return;
+    // CRITICAL: Use profile.id (the invitee_id in the DB) not user.id (auth uid)
+    if (!profile?.id) {
+      console.log('[IncomingCallSubscription] Waiting for profile to load...');
+      return;
+    }
 
-    console.log('[IncomingCallSubscription] Setting up subscription for user:', user.id);
+    console.log('[IncomingCallSubscription] Setting up subscription for profile:', profile.id);
 
-    // Subscribe to new call invites for this user
+    // Subscribe to new call invites for this user using their PROFILE ID
     const channel = supabase
-      .channel(`call-invites-${user.id}`)
+      .channel(`call-invites-${profile.id}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'livekit_session_invites',
-          filter: `invitee_id=eq.${user.id}`,
+          filter: `invitee_id=eq.${profile.id}`,
         },
         (payload: RealtimePostgresInsertPayload<CallInvite>) => {
-          console.log('[IncomingCallSubscription] New call invite:', payload.new);
+          console.log('[IncomingCallSubscription] 🔔 NEW CALL INVITE RECEIVED:', payload.new);
           const invite = payload.new;
           if (invite.status === 'pending') {
+            console.log('[IncomingCallSubscription] ✅ Triggering incoming call UI for:', invite.inviter_name);
             onIncomingCall(invite);
           }
         }
@@ -63,7 +70,7 @@ export const useIncomingCallSubscription = ({
           event: 'UPDATE',
           schema: 'public',
           table: 'livekit_session_invites',
-          filter: `invitee_id=eq.${user.id}`,
+          filter: `invitee_id=eq.${profile.id}`,
         },
         (payload) => {
           console.log('[IncomingCallSubscription] Call invite updated:', payload.new);
@@ -80,7 +87,7 @@ export const useIncomingCallSubscription = ({
           event: 'DELETE',
           schema: 'public',
           table: 'livekit_session_invites',
-          filter: `invitee_id=eq.${user.id}`,
+          filter: `invitee_id=eq.${profile.id}`,
         },
         (payload) => {
           console.log('[IncomingCallSubscription] Call invite deleted:', payload.old);
@@ -90,13 +97,16 @@ export const useIncomingCallSubscription = ({
       )
       .subscribe((status) => {
         console.log('[IncomingCallSubscription] Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[IncomingCallSubscription] ✅ Successfully subscribed to incoming calls for profile:', profile.id);
+        }
       });
 
     return () => {
       console.log('[IncomingCallSubscription] Cleaning up subscription');
       supabase.removeChannel(channel);
     };
-  }, [user?.id, onIncomingCall, onCallCancelled]);
+  }, [profile?.id, onIncomingCall, onCallCancelled]);
 
   // Function to create a call invite
   const sendCallInvite = useCallback(async (
@@ -109,14 +119,25 @@ export const useIncomingCallSubscription = ({
     contextType: string,
     contextId: string
   ) => {
-    if (!user?.id) return null;
+    // CRITICAL: Use profile.id (not user.id) as inviter_id to match RLS policy
+    if (!profile?.id) {
+      console.error('[IncomingCallSubscription] Cannot send invite: profile not loaded');
+      return null;
+    }
+
+    console.log('[IncomingCallSubscription] 📞 Creating call invite:', {
+      inviter: profile.id,
+      invitee: inviteeId,
+      roomName,
+      callType
+    });
 
     try {
       const { data, error } = await supabase
         .from('livekit_session_invites')
         .insert({
           session_id: sessionId,
-          inviter_id: user.id,
+          inviter_id: profile.id, // Use profile ID, not auth user ID
           invitee_id: inviteeId,
           status: 'pending',
           call_type: callType,
@@ -130,17 +151,17 @@ export const useIncomingCallSubscription = ({
         .single();
 
       if (error) {
-        console.error('[IncomingCallSubscription] Failed to create invite:', error);
+        console.error('[IncomingCallSubscription] ❌ Failed to create invite:', error);
         return null;
       }
 
-      console.log('[IncomingCallSubscription] Created call invite:', data);
+      console.log('[IncomingCallSubscription] ✅ Created call invite:', data);
       return data;
     } catch (err) {
       console.error('[IncomingCallSubscription] Error creating invite:', err);
       return null;
     }
-  }, [user?.id]);
+  }, [profile?.id]);
 
   // Function to cancel a call invite
   const cancelCallInvite = useCallback(async (inviteId: string) => {
