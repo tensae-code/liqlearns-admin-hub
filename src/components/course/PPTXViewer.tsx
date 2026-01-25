@@ -357,7 +357,7 @@ const PPTXViewer = ({
                   slide >= r.showAfterSlide && slide < r.showBeforeSlide
                 );
                 const slideData = slides.find(s => s.index === slide);
-                const hasThumbnail = slideData?.images?.[0];
+                const hasThumbnail = slideData?.images?.[0] || slideData?.backgroundImage;
                 
                 return (
                   <button
