@@ -301,13 +301,6 @@ const BlankLayout = ({ slide }: { slide: ParsedSlide }) => (
 
 const SlideRenderer = ({ slide, className = '' }: SlideRendererProps) => {
   const hasShapes = slide.shapes && slide.shapes.length > 0;
-  const backgroundStyles: React.CSSProperties = {
-    backgroundColor: slide.backgroundColor,
-    backgroundImage: slide.backgroundImage ? `url(${slide.backgroundImage})` : undefined,
-    backgroundSize: slide.backgroundImage ? 'cover' : undefined,
-    backgroundPosition: slide.backgroundImage ? 'center' : undefined,
-    backgroundRepeat: slide.backgroundImage ? 'no-repeat' : undefined,
-  };
   
   // If we have positioned shapes, render them absolutely
   if (hasShapes) {
@@ -319,7 +312,7 @@ const SlideRenderer = ({ slide, className = '' }: SlideRendererProps) => {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
         className={`w-full h-full relative ${className}`}
-        style={backgroundStyles}
+        style={{ backgroundColor: slide.backgroundColor }}
       >
         {/* Title */}
         {slide.title && slide.title !== 'Untitled Slide' && (
@@ -354,7 +347,7 @@ const SlideRenderer = ({ slide, className = '' }: SlideRendererProps) => {
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.2 }}
       className={`w-full h-full relative ${className}`}
-      style={backgroundStyles}
+      style={{ backgroundColor: slide.backgroundColor }}
     >
       {slide.layout === 'title' && <TitleSlideLayout slide={slide} />}
       {slide.layout === 'titleContent' && <TitleContentLayout slide={slide} />}
