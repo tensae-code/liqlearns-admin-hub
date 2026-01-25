@@ -320,10 +320,14 @@ const QuickAccessButton = () => {
       {/* Quick Access Button with Glow and Bounce - positioned higher to not overlap message input */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
+        drag
+        dragConstraints={{ left: -200, right: 0, top: -300, bottom: 0 }}
+        dragElastic={0.1}
+        whileDrag={{ scale: 1.1 }}
         className={cn(
-          'fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 w-12 h-12 md:w-14 md:h-14 rounded-full shadow-lg',
+          'fixed bottom-28 md:bottom-6 right-4 md:right-6 z-40 w-12 h-12 md:w-14 md:h-14 rounded-full shadow-lg cursor-grab active:cursor-grabbing',
           'bg-gradient-to-br from-accent to-orange-500 flex items-center justify-center',
-          'hover:scale-110 transition-transform'
+          'hover:scale-110 transition-transform touch-none'
         )}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
