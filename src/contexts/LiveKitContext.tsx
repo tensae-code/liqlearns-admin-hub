@@ -62,6 +62,9 @@ interface LiveKitContextType extends UseLiveKitReturn {
   raiseHand: () => void;
   lowerHand: () => void;
   isHandRaised: boolean;
+  
+  // Expose isVideoOn separately (alias for compatibility)
+  isVideoOn: boolean;
 }
 
 const LiveKitContext = createContext<LiveKitContextType | null>(null);
@@ -344,6 +347,8 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
         raiseHand,
         lowerHand,
         isHandRaised,
+        // Alias isVideoOn from livekit hook for easier access
+        isVideoOn: livekit.isVideoOn,
       }}
     >
       {children}
