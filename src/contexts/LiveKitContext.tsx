@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef, ReactN
 import { ConnectionState } from 'livekit-client';
 import { useLiveKit, type LiveKitParticipant, type UseLiveKitReturn } from '@/hooks/useLiveKit';
 import { useCallNotification } from '@/hooks/useCallNotification';
+import { useProfile } from '@/hooks/useProfile';
 import { 
   getDMRoomName, 
   getGroupRoomName, 
@@ -85,6 +86,7 @@ export const useOptionalLiveKitContext = () => {
 
 export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const livekit = useLiveKit();
+  const { profile } = useProfile();
   const { playRingtone, stopRingtone, playRingback, stopRingback, playCallEnd } = useCallNotification();
   
   const [callState, setCallState] = useState<CallState>({
@@ -183,7 +185,13 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     peerAvatar?: string,
     callType: 'voice' | 'video' = 'voice'
   ) => {
-    const roomName = getDMRoomName(livekit.localParticipant?.id || '', peerId);
+    if (!profile?.id) {
+      console.error('Cannot start call: profile not loaded');
+      return;
+    }
+    
+    // Use profile.id (our user's profile ID) for room naming
+    const roomName = getDMRoomName(profile.id, peerId);
     
     setCallState({
       status: 'ringing',
@@ -229,7 +237,7 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
         await livekit.toggleVideo();
       }
     }
-  }, [livekit, callState.status]);
+  }, [livekit, callState.status, profile?.id]);
 
   // Start group call
   const startGroupCall = useCallback(async (
