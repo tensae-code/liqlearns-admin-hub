@@ -20,11 +20,12 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useVideoChat } from '@/hooks/useVideoChat';
+import { useLiveKitContext } from '@/contexts/LiveKitContext';
 import { useOptionalStudyRoomContext } from '@/contexts/StudyRoomContext';
 
 const FloatingStudyRoom = forwardRef<HTMLDivElement>((_, ref) => {
   const context = useOptionalStudyRoomContext();
+  const livekit = useLiveKitContext();
   
   // All hooks must be called before any conditional returns
   const [showPinnedList, setShowPinnedList] = useState(true);
@@ -34,13 +35,6 @@ const FloatingStudyRoom = forwardRef<HTMLDivElement>((_, ref) => {
   
   const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  
-  const {
-    isVideoOn,
-    localStream,
-    toggleVideo,
-    toggleMic: toggleLocalMic,
-  } = useVideoChat();
 
   // Get context values safely
   const room = context?.activeRoom;
@@ -68,12 +62,12 @@ const FloatingStudyRoom = forwardRef<HTMLDivElement>((_, ref) => {
     return () => clearInterval(interval);
   }, [sessionStartTime]);
 
-  // Attach local stream to video element
+  // Attach local video when available
   useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
+    if (localVideoRef.current && livekit.isVideoOn) {
+      livekit.attachLocalVideoToElement(localVideoRef.current);
     }
-  }, [localStream]);
+  }, [livekit.isVideoOn, livekit.attachLocalVideoToElement]);
 
   // Handle drag events
   useEffect(() => {
@@ -137,12 +131,15 @@ const FloatingStudyRoom = forwardRef<HTMLDivElement>((_, ref) => {
 
   const handleMicToggle = () => {
     setIsMicOn?.(!isMicOn);
-    if (localStream) {
-      toggleLocalMic();
-    }
+    livekit.toggleMute();
+  };
+
+  const handleVideoToggle = () => {
+    livekit.toggleVideo();
   };
 
   const handleLeave = async () => {
+    livekit.endCall();
     await leaveActiveRoom?.();
   };
 
@@ -216,7 +213,7 @@ const FloatingStudyRoom = forwardRef<HTMLDivElement>((_, ref) => {
 
       {/* Video Preview */}
       <div className="relative aspect-video bg-muted">
-        {isVideoOn && localStream ? (
+        {livekit.isVideoOn ? (
           <video
             ref={localVideoRef}
             autoPlay
@@ -336,12 +333,12 @@ const FloatingStudyRoom = forwardRef<HTMLDivElement>((_, ref) => {
         </Button>
 
         <Button
-          variant={isVideoOn ? "default" : "outline"}
+          variant={livekit.isVideoOn ? "default" : "outline"}
           size="icon"
-          className={cn("rounded-full h-9 w-9", isVideoOn && "bg-accent")}
-          onClick={toggleVideo}
+          className={cn("rounded-full h-9 w-9", livekit.isVideoOn && "bg-accent")}
+          onClick={handleVideoToggle}
         >
-          {isVideoOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+          {livekit.isVideoOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
         </Button>
 
         <Button

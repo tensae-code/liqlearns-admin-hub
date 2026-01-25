@@ -33,9 +33,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { useVideoChat } from '@/hooks/useVideoChat';
+import { useLiveKitContext } from '@/contexts/LiveKitContext';
 import { useStudyRoomPresence } from '@/hooks/useStudyRoomPresence';
-import { useWebRTC } from '@/hooks/useWebRTC';
 import ParticipantSidebar from './ParticipantSidebar';
 import RoomSettingsSheet from './RoomSettingsSheet';
 import type { RoomParticipant, StudyRoom } from '@/hooks/useStudyRooms';
@@ -98,63 +97,61 @@ const StudyRoomView = ({
     return saved ? { ...defaultDisplaySettings, ...JSON.parse(saved) } : defaultDisplaySettings;
   });
 
+  // LiveKit for video/audio
   const {
+    isConnected: isLiveKitConnected,
+    isMuted,
     isVideoOn,
     isScreenSharing,
-    localStream,
-    screenStream,
+    remoteParticipants: liveKitParticipants,
+    toggleMute,
     toggleVideo,
-    toggleMic: toggleLocalMic,
     toggleScreenShare,
-    screenRef,
-    switchCamera,
-    switchMicrophone,
-  } = useVideoChat();
+    raiseHand,
+    lowerHand,
+    isHandRaised: liveKitHandRaised,
+    attachLocalVideoToElement,
+    attachVideoToElement,
+  } = useLiveKitContext();
 
-  // Real-time presence tracking
+  // Real-time presence tracking (Supabase)
   const {
     presentUserIds,
-    isConnected,
+    isConnected: isPresenceConnected,
     isUserPresent,
     getUserPresence,
     updateMyPresence,
   } = useStudyRoomPresence(room.id);
 
-  // WebRTC for peer-to-peer video sharing
-  const { remoteStreams } = useWebRTC(room.id, localStream);
-
+  // Video refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
+  const screenRef = useRef<HTMLVideoElement>(null);
+
+  // Use LiveKit's hand raised state combined with local state
+  const effectiveHandRaised = liveKitHandRaised || isHandRaised;
 
   // Check if screen share is allowed (not in public rooms)
   const isScreenShareAllowed = room.room_type !== 'public';
 
-  // Update local video element when stream changes
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [localStream]);
+  // Connection status - combine LiveKit and presence
+  const isConnected = isLiveKitConnected || isPresenceConnected;
 
-  // Update remote video elements when remote streams change
+  // Attach local video when LiveKit connects
   useEffect(() => {
-    remoteStreams.forEach((stream, peerId) => {
-      const videoEl = remoteVideoRefs.current.get(peerId);
-      if (videoEl && videoEl.srcObject !== stream) {
-        videoEl.srcObject = stream;
-      }
-    });
-  }, [remoteStreams]);
+    if (localVideoRef.current && isLiveKitConnected) {
+      attachLocalVideoToElement(localVideoRef.current);
+    }
+  }, [isLiveKitConnected, isVideoOn, attachLocalVideoToElement]);
 
   // Sync my presence state when mic/video/hand changes
   useEffect(() => {
     updateMyPresence({
-      isMicOn,
+      isMicOn: !isMuted,
       isVideoOn,
-      isHandRaised,
+      isHandRaised: effectiveHandRaised,
       studyTitle: myStudyTitle,
     });
-  }, [isMicOn, isVideoOn, isHandRaised, myStudyTitle, updateMyPresence]);
+  }, [isMuted, isVideoOn, effectiveHandRaised, myStudyTitle, updateMyPresence]);
 
   const updateDisplaySetting = (key: keyof DisplaySettings, value: boolean) => {
     setDisplaySettings(prev => {
@@ -173,9 +170,7 @@ const StudyRoomView = ({
 
   const handleMicToggle = () => {
     onToggleMic();
-    if (localStream) {
-      toggleLocalMic();
-    }
+    toggleMute();
   };
 
   const totalGridItems = sortedParticipants.length + (isScreenSharing ? 1 : 0);
@@ -266,7 +261,7 @@ const StudyRoomView = ({
         <div className="flex-1 overflow-auto p-2 md:p-4">
           <div className={cn('grid gap-2 md:gap-4', gridCols)}>
             {/* Screen Share (if active) */}
-            {isScreenSharing && screenStream && (
+            {isScreenSharing && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -289,9 +284,10 @@ const StudyRoomView = ({
             {sortedParticipants.map((participant, index) => {
               const isMe = participant.user_id === currentUserId;
               const initials = participant.profile?.full_name?.split(' ').map(n => n[0]).join('') || '?';
-              const showLocalVideo = isMe && isVideoOn && localStream;
-              const remoteStream = !isMe ? remoteStreams.get(participant.user_id) : null;
-              const showRemoteVideo = !isMe && remoteStream;
+              const showLocalVideo = isMe && isVideoOn;
+              // Check if remote participant has video via LiveKit
+              const remoteLiveKitParticipant = liveKitParticipants.find(p => p.id === participant.user_id);
+              const showRemoteVideo = !isMe && remoteLiveKitParticipant?.isVideoOn;
 
               return (
                 <motion.div
@@ -327,10 +323,7 @@ const StudyRoomView = ({
                         <video
                           ref={(el) => {
                             if (el) {
-                              remoteVideoRefs.current.set(participant.user_id, el);
-                              if (remoteStream && el.srcObject !== remoteStream) {
-                                el.srcObject = remoteStream;
-                              }
+                              attachVideoToElement(participant.user_id, el);
                             }
                           }}
                           autoPlay
@@ -577,8 +570,6 @@ const StudyRoomView = ({
             <RoomSettingsSheet
               displaySettings={displaySettings}
               onUpdateDisplaySetting={updateDisplaySetting}
-              onCameraChange={switchCamera}
-              onMicrophoneChange={switchMicrophone}
             />
 
             {/* Leave Button */}
