@@ -171,7 +171,7 @@ const Messages = () => {
   return (
     <DashboardLayout>
       <motion.div
-        className="h-[calc(100vh-8rem)] flex overflow-hidden rounded-xl border border-border bg-card"
+        className="h-[calc(100dvh-8rem)] md:h-[calc(100vh-8rem)] flex overflow-hidden rounded-xl border border-border bg-card"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >

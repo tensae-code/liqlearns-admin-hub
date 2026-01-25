@@ -3,6 +3,8 @@ import { ConnectionState } from 'livekit-client';
 import { useLiveKit, type LiveKitParticipant, type UseLiveKitReturn } from '@/hooks/useLiveKit';
 import { useCallNotification } from '@/hooks/useCallNotification';
 import { useProfile } from '@/hooks/useProfile';
+import { useCallLogging } from '@/hooks/useCallLogging';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   getDMRoomName, 
   getGroupRoomName, 
@@ -86,8 +88,10 @@ export const useOptionalLiveKitContext = () => {
 
 export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const livekit = useLiveKit();
+  const { user } = useAuth();
   const { profile } = useProfile();
   const { playRingtone, stopRingtone, playRingback, stopRingback, playCallEnd } = useCallNotification();
+  const { logCall } = useCallLogging();
   
   const [callState, setCallState] = useState<CallState>({
     status: 'idle',
@@ -283,27 +287,43 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     await livekit.connect(roomName, 'study_room', studyRoomId, role);
   }, [livekit]);
 
-  // End call
-  const endCall = useCallback(() => {
+  // End call with logging
+  const endCall = useCallback(async () => {
     if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+    
+    // Log the call if it was a DM call (peer.id is the auth user_id of the other person)
+    if (callState.roomContext === 'dm' && callState.peer?.id && user?.id) {
+      const wasAnswered = callState.status === 'connected';
+      const durationSecs = wasAnswered && callState.startTime 
+        ? Math.floor((Date.now() - callState.startTime) / 1000)
+        : 0;
+      
+      // Log the call - callerId/receiverId are auth user_ids
+      await logCall({
+        callerId: callState.isIncoming ? callState.peer.id : user.id,
+        receiverId: callState.isIncoming ? user.id : callState.peer.id,
+        callType: callState.callType,
+        status: wasAnswered ? 'ended' : (callState.isIncoming ? 'rejected' : 'missed'),
+        durationSeconds: durationSecs,
+      });
+    }
     
     livekit.disconnect();
     
     setCallState(prev => ({ ...prev, status: 'ended' }));
     setIsHandRaised(false);
     
-    setTimeout(() => {
-      setCallState({
-        status: 'idle',
-        isIncoming: false,
-        callType: 'voice',
-        peer: null,
-        roomContext: null,
-        contextId: null,
-        startTime: null,
-      });
-    }, 2000);
-  }, [livekit]);
+    // Immediately reset instead of showing "Call ended"
+    setCallState({
+      status: 'idle',
+      isIncoming: false,
+      callType: 'voice',
+      peer: null,
+      roomContext: null,
+      contextId: null,
+      startTime: null,
+    });
+  }, [livekit, callState, user, logCall]);
 
   // Accept incoming call
   const acceptIncomingCall = useCallback(async () => {

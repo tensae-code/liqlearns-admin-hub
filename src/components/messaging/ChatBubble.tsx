@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Check, CheckCheck, Trash2, MoreVertical } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,14 +125,12 @@ const ChatBubble = ({
           {isSender && showOptions && onDelete && (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button 
+                <button 
                   type="button"
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6 opacity-60 hover:opacity-100"
+                  className="h-6 w-6 opacity-60 hover:opacity-100 inline-flex items-center justify-center rounded-md hover:bg-accent"
                 >
                   <MoreVertical className="w-3 h-3" />
-                </Button>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="z-50 bg-popover border border-border shadow-lg">
                 <DropdownMenuItem 
@@ -172,14 +169,12 @@ const ChatBubble = ({
           {!isSender && showOptions && onDelete && (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button 
+                <button 
                   type="button"
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6 opacity-60 hover:opacity-100"
+                  className="h-6 w-6 opacity-60 hover:opacity-100 inline-flex items-center justify-center rounded-md hover:bg-accent"
                 >
                   <MoreVertical className="w-3 h-3" />
-                </Button>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="z-50 bg-popover border border-border shadow-lg">
                 <DropdownMenuItem 
