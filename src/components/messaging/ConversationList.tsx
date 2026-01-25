@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Search, Users, User, Plus, Settings, Compass, Inbox, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ interface ConversationListProps {
   onMessageRequests?: () => void;
   filter: 'all' | 'dms' | 'groups';
   onFilterChange: (filter: 'all' | 'dms' | 'groups') => void;
+  isLoading?: boolean;
 }
 
 const ConversationList = ({
@@ -45,7 +47,8 @@ const ConversationList = ({
   onFindGroups,
   onMessageRequests,
   filter,
-  onFilterChange
+  onFilterChange,
+  isLoading = false
 }: ConversationListProps) => {
   const { user } = useAuth();
   const { isUserOnline } = usePresence('messaging-presence');
@@ -169,7 +172,26 @@ const ConversationList = ({
 
       {/* Conversation List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredConversations.length === 0 ? (
+        {isLoading ? (
+          // Loading skeleton
+          <div className="space-y-1">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-3 p-3 border-b border-border/50">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredConversations.length === 0 && searchQuery ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4">
+            <Search className="w-12 h-12 mb-2 opacity-50" />
+            <p className="text-sm text-center">No results found</p>
+            <p className="text-xs text-center mt-1">Try a different search term</p>
+          </div>
+        ) : filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4">
             <Users className="w-12 h-12 mb-2 opacity-50" />
             <p className="text-sm text-center">No conversations yet</p>
@@ -215,7 +237,7 @@ const ConversationList = ({
                     {/* Message status indicator */}
                     {conv.type === 'dm' && conv.lastMessageIsMine && (
                       conv.lastMessageStatus === 'seen' ? (
-                        <CheckCheck className="w-3 h-3 text-blue-500" />
+                        <CheckCheck className="w-3 h-3 text-primary" />
                       ) : (
                         <Check className="w-3 h-3 text-muted-foreground" />
                       )
