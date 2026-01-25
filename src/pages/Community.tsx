@@ -12,6 +12,7 @@ import { useCommunityPosts } from '@/hooks/useCommunityPosts';
 import { useSkillSuggestions } from '@/hooks/useSkillSuggestions';
 import { formatDistanceToNow, differenceInDays } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import QuestBoardTab from '@/components/community/QuestBoardTab';
 import {
   MessageSquare,
   Heart,
@@ -37,14 +38,9 @@ import {
   X,
   Loader2,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  Target
 } from 'lucide-react';
-
-const brainBankQuestions = [
-  { id: 1, question: 'How do you conjugate verbs in the past tense?', answers: 15, views: 234 },
-  { id: 2, question: 'What are the most common greeting phrases?', answers: 23, views: 456 },
-  { id: 3, question: 'Difference between formal and informal speech?', answers: 8, views: 189 },
-];
 
 const topContributors = [
   { name: 'Sara M.', points: 2450, badge: '🏆' },
@@ -202,8 +198,8 @@ const Community = () => {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Lightbulb className="w-4 h-4" />
-            Brain Bank
+            <Target className="w-4 h-4" />
+            Quest Board
           </button>
           <button
             onClick={() => setActiveTab('skills')}
@@ -432,50 +428,8 @@ const Community = () => {
             </>
           )}
 
-          {/* Brain Bank Tab */}
-          {activeTab === 'brainbank' && (
-            <motion.div
-              className="space-y-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Questions & Answers</h2>
-                <Button className="bg-gradient-accent text-accent-foreground">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Ask Question
-                </Button>
-              </div>
-              {brainBankQuestions.map((q, i) => (
-                <motion.div
-                  key={q.id}
-                  className="p-4 rounded-xl bg-card border border-border hover:border-accent/30 transition-all"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-accent/10">
-                      <HelpCircle className="w-5 h-5 text-accent" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-foreground mb-2">{q.question}</h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <MessageCircle className="w-4 h-4" />
-                          {q.answers} answers
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="w-4 h-4" />
-                          {q.views} views
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
+          {/* Quest Board Tab */}
+          {activeTab === 'brainbank' && <QuestBoardTab />}
 
           {/* Skills Voting Tab */}
           {activeTab === 'skills' && (
