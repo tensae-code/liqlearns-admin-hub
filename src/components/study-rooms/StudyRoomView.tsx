@@ -296,173 +296,171 @@ const StudyRoomView = ({
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: index * 0.05 }}
                   className={cn(
-                    'relative rounded-lg md:rounded-xl border overflow-hidden transition-all aspect-video',
+                    'relative rounded-lg md:rounded-xl border overflow-hidden transition-all flex flex-col',
                     participant.is_pinned_by_me
                       ? 'border-gold bg-gold/5'
                       : 'border-border bg-card'
                   )}
                 >
-                  <div className="absolute inset-0 flex flex-col">
-                    {/* Video / Avatar */}
-                    <div className={cn(
-                      "flex-1 flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 relative",
-                      displaySettings.blurBackground && (showLocalVideo || showRemoteVideo) && "backdrop-blur-md"
-                    )}>
-                      {showLocalVideo ? (
-                        <video
-                          ref={localVideoRef}
-                          autoPlay
-                          playsInline
-                          muted
-                          className={cn(
-                            "absolute inset-0 w-full h-full object-cover",
-                            displaySettings.blurBackground && "filter blur-sm"
-                          )}
-                        />
-                      ) : showRemoteVideo ? (
-                        <video
-                          ref={(el) => {
-                            if (el) {
-                              attachVideoToElement(participant.user_id, el);
-                            }
-                          }}
-                          autoPlay
-                          playsInline
-                          className={cn(
-                            "absolute inset-0 w-full h-full object-cover",
-                            displaySettings.blurBackground && "filter blur-sm"
-                          )}
-                        />
-                      ) : (
-                        <div className="relative">
-                          <Avatar className="w-12 h-12 md:w-20 md:h-20 border-2 md:border-4 border-background shadow-lg">
-                            <AvatarImage src={participant.profile?.avatar_url || undefined} />
-                            <AvatarFallback className="text-lg md:text-2xl font-bold bg-accent text-accent-foreground">
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          {/* Real-time presence indicator */}
-                          <span className={cn(
-                            "absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-background",
-                            isUserPresent(participant.user_id) || isMe
-                              ? "bg-success animate-pulse"
-                              : "bg-muted-foreground"
-                          )} />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Bottom info bar */}
-                    <div className="p-1.5 md:p-3 bg-background/80 backdrop-blur-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {/* Hand raised indicator */}
-                          {(isMe ? isHandRaised : getUserPresence(participant.user_id)?.isHandRaised) && (
-                            <Hand className="w-3 h-3 md:w-4 md:h-4 text-gold animate-bounce shrink-0" />
-                          )}
-                          {participant.is_mic_on || (isMe && isMicOn) ? (
-                            <Mic className="w-3 h-3 md:w-4 md:h-4 text-success shrink-0" />
-                          ) : (
-                            <MicOff className="w-3 h-3 md:w-4 md:h-4 text-muted-foreground shrink-0" />
-                          )}
-                          <span className="font-medium text-xs md:text-sm truncate">
-                            {participant.profile?.full_name || 'Unknown'}
-                            {isMe && ' (You)'}
-                          </span>
-                        </div>
-
-                        {/* Right Side - Stats & Actions */}
-                        <div className="flex items-center gap-0.5 md:gap-1">
-                          {/* Enabled Stats on right side - hidden on mobile */}
-                          <div className="hidden md:flex items-center gap-1">
-                            {displaySettings.showPinCount && (participant.pin_count || 0) > 0 && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Pin className="w-3 h-3 mr-1" />
-                                {participant.pin_count}
-                              </Badge>
-                            )}
-                            {displaySettings.showXP && participant.profile?.xp_points && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Zap className="w-3 h-3 mr-1 text-gold" />
-                                {participant.profile.xp_points}
-                              </Badge>
-                            )}
-                            {displaySettings.showStreak && participant.profile?.current_streak && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Flame className="w-3 h-3 mr-1 text-streak" />
-                                {participant.profile.current_streak}
-                              </Badge>
-                            )}
-                          </div>
-
-                          {!isMe && (
-                            <>
-                              {/* Quick Pin Button */}
-                              <Button
-                                variant={participant.is_pinned_by_me ? "default" : "ghost"}
-                                size="icon"
-                                className={cn(
-                                  "h-5 w-5 md:h-7 md:w-7",
-                                  participant.is_pinned_by_me && "bg-gold hover:bg-gold/90"
-                                )}
-                                onClick={() => 
-                                  participant.is_pinned_by_me 
-                                    ? onUnpinUser(participant.user_id)
-                                    : onPinUser(participant.user_id)
-                                }
-                              >
-                                <Pin className={cn("w-2.5 h-2.5 md:w-3.5 md:h-3.5", participant.is_pinned_by_me && "fill-current")} />
-                              </Button>
-
-                              {/* Quick Add Friend Button - Hidden on mobile */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 md:h-7 md:w-7 hidden sm:flex"
-                                onClick={() => onAddFriend(participant.user_id)}
-                              >
-                                <UserPlus className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
-                              </Button>
-
-                              {/* More Options */}
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-5 w-5 md:h-7 md:w-7">
-                                    <MoreVertical className="w-3 h-3 md:w-4 md:h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem 
-                                    onClick={() => onAddFriend(participant.user_id)}
-                                    className="sm:hidden"
-                                  >
-                                    <UserPlus className="w-4 h-4 mr-2" /> Add Friend
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => onReport(participant.user_id)}
-                                    className="text-destructive"
-                                  >
-                                    <Flag className="w-4 h-4 mr-2" /> Report
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </>
-                          )}
-                        </div>
+                  {/* Video / Avatar Container - aspect ratio maintained here */}
+                  <div className={cn(
+                    "relative aspect-video flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 overflow-hidden",
+                    displaySettings.blurBackground && (showLocalVideo || showRemoteVideo) && "backdrop-blur-md"
+                  )}>
+                    {showLocalVideo ? (
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className={cn(
+                          "w-full h-full object-cover",
+                          displaySettings.blurBackground && "filter blur-sm"
+                        )}
+                      />
+                    ) : showRemoteVideo ? (
+                      <video
+                        ref={(el) => {
+                          if (el) {
+                            attachVideoToElement(participant.user_id, el);
+                          }
+                        }}
+                        autoPlay
+                        playsInline
+                        className={cn(
+                          "w-full h-full object-cover",
+                          displaySettings.blurBackground && "filter blur-sm"
+                        )}
+                      />
+                    ) : (
+                      <div className="relative">
+                        <Avatar className="w-12 h-12 md:w-20 md:h-20 border-2 md:border-4 border-background shadow-lg">
+                          <AvatarImage src={participant.profile?.avatar_url || undefined} />
+                          <AvatarFallback className="text-lg md:text-2xl font-bold bg-accent text-accent-foreground">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        {/* Real-time presence indicator */}
+                        <span className={cn(
+                          "absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-background",
+                          isUserPresent(participant.user_id) || isMe
+                            ? "bg-success animate-pulse"
+                            : "bg-muted-foreground"
+                        )} />
                       </div>
+                    )}
 
-                      {displaySettings.showStudyTitle && participant.study_title && (
-                        <p className="text-xs text-muted-foreground mt-1 truncate">
-                          📚 {participant.study_title}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Pin indicator */}
+                    {/* Pin indicator - inside video area */}
                     {participant.is_pinned_by_me && (
                       <div className="absolute top-2 right-2">
                         <Pin className="w-5 h-5 text-gold fill-gold" />
                       </div>
+                    )}
+                  </div>
+
+                  {/* Bottom info bar - separate from video */}
+                  <div className="p-1.5 md:p-2 bg-card border-t border-border shrink-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 md:gap-2 min-w-0 flex-1">
+                        {/* Hand raised indicator */}
+                        {(isMe ? isHandRaised : getUserPresence(participant.user_id)?.isHandRaised) && (
+                          <Hand className="w-3 h-3 md:w-4 md:h-4 text-gold animate-bounce shrink-0" />
+                        )}
+                        {participant.is_mic_on || (isMe && isMicOn) ? (
+                          <Mic className="w-3 h-3 md:w-4 md:h-4 text-success shrink-0" />
+                        ) : (
+                          <MicOff className="w-3 h-3 md:w-4 md:h-4 text-muted-foreground shrink-0" />
+                        )}
+                        <span className="font-medium text-xs md:text-sm truncate">
+                          {participant.profile?.full_name || 'Unknown'}
+                          {isMe && ' (You)'}
+                        </span>
+                      </div>
+
+                      {/* Right Side - Stats & Actions */}
+                      <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
+                        {/* Enabled Stats on right side - hidden on mobile */}
+                        <div className="hidden md:flex items-center gap-1">
+                          {displaySettings.showPinCount && (participant.pin_count || 0) > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Pin className="w-3 h-3 mr-1" />
+                              {participant.pin_count}
+                            </Badge>
+                          )}
+                          {displaySettings.showXP && participant.profile?.xp_points && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Zap className="w-3 h-3 mr-1 text-gold" />
+                              {participant.profile.xp_points}
+                            </Badge>
+                          )}
+                          {displaySettings.showStreak && participant.profile?.current_streak && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Flame className="w-3 h-3 mr-1 text-streak" />
+                              {participant.profile.current_streak}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {!isMe && (
+                          <>
+                            {/* Quick Pin Button */}
+                            <Button
+                              variant={participant.is_pinned_by_me ? "default" : "ghost"}
+                              size="icon"
+                              className={cn(
+                                "h-5 w-5 md:h-7 md:w-7",
+                                participant.is_pinned_by_me && "bg-gold hover:bg-gold/90"
+                              )}
+                              onClick={() => 
+                                participant.is_pinned_by_me 
+                                  ? onUnpinUser(participant.user_id)
+                                  : onPinUser(participant.user_id)
+                              }
+                            >
+                              <Pin className={cn("w-2.5 h-2.5 md:w-3.5 md:h-3.5", participant.is_pinned_by_me && "fill-current")} />
+                            </Button>
+
+                            {/* Quick Add Friend Button - Hidden on mobile */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 md:h-7 md:w-7 hidden sm:flex"
+                              onClick={() => onAddFriend(participant.user_id)}
+                            >
+                              <UserPlus className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
+                            </Button>
+
+                            {/* More Options */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-5 w-5 md:h-7 md:w-7">
+                                  <MoreVertical className="w-3 h-3 md:w-4 md:h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  onClick={() => onAddFriend(participant.user_id)}
+                                  className="sm:hidden"
+                                >
+                                  <UserPlus className="w-4 h-4 mr-2" /> Add Friend
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => onReport(participant.user_id)}
+                                  className="text-destructive"
+                                >
+                                  <Flag className="w-4 h-4 mr-2" /> Report
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {displaySettings.showStudyTitle && participant.study_title && (
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        📚 {participant.study_title}
+                      </p>
                     )}
                   </div>
                 </motion.div>
