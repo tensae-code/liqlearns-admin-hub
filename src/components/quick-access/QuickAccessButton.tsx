@@ -317,11 +317,11 @@ const QuickAccessButton = () => {
 
   return (
     <>
-      {/* Quick Access Button with Glow and Bounce */}
+      {/* Quick Access Button with Glow and Bounce - positioned higher to not overlap message input */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg',
+          'fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 w-12 h-12 md:w-14 md:h-14 rounded-full shadow-lg',
           'bg-gradient-to-br from-accent to-orange-500 flex items-center justify-center',
           'hover:scale-110 transition-transform'
         )}
@@ -376,7 +376,7 @@ const QuickAccessButton = () => {
               initial={{ opacity: 0, scale: 0.8, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.8, y: 20 }}
-              className="fixed bottom-24 right-6 z-50 flex flex-col gap-2 max-h-[70vh] overflow-hidden"
+              className="fixed bottom-36 md:bottom-24 right-4 md:right-6 z-50 flex flex-col gap-2 max-h-[60vh] md:max-h-[70vh] overflow-hidden"
             >
               {/* Header with Edit & View Mode */}
               <div className="flex items-center gap-2 justify-end">
