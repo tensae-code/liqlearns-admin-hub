@@ -508,20 +508,24 @@ export const useMessaging = () => {
       return;
     }
 
-    // Fetch user profile
-    const { data: profile } = await supabase
+    // Fetch user profile - MUST include profile.id for call signaling
+    const { data: partnerProfile } = await supabase
       .from('profiles')
-      .select('full_name, avatar_url')
+      .select('id, full_name, avatar_url')
       .eq('user_id', userId)
       .single();
 
     const newConv: Conversation = {
       id: `dm_${userId}`,
       type: 'dm',
-      name: profile?.full_name || 'Unknown User',
-      avatar: profile?.avatar_url,
+      name: partnerProfile?.full_name || 'Unknown User',
+      avatar: partnerProfile?.avatar_url,
       isOnline: false,
+      // CRITICAL: Include the profile.id for call signaling (not the auth user_id)
+      partnerProfileId: partnerProfile?.id,
     };
+
+    console.log('Created new DM conversation with partnerProfileId:', partnerProfile?.id);
 
     setConversations(prev => [newConv, ...prev]);
     setCurrentConversation(newConv);

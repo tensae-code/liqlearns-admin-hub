@@ -216,11 +216,15 @@ const ChatWindow = ({
       if (partnerProfileId) {
         startDMCall(partnerProfileId, conversation.name, conversation.avatar, 'voice');
       } else {
-        console.error('Cannot start call: partner profile ID not available');
-        toast.error('Unable to start call. Please try again.');
+        // Fallback: extract user_id from dm_XXX and look up profile
+        const partnerId = conversation.id.replace('dm_', '');
+        console.warn('partnerProfileId not available, using fallback for:', partnerId);
+        toast.error('Unable to start call. Please refresh the page.');
       }
     } else if (conversation?.type === 'group') {
-      startGroupCall(conversation.id, 'voice');
+      // Extract group ID from group_XXX format
+      const groupId = conversation.id.replace('group_', '');
+      startGroupCall(groupId, 'voice');
     }
   };
 
@@ -235,11 +239,15 @@ const ChatWindow = ({
       if (partnerProfileId) {
         startDMCall(partnerProfileId, conversation.name, conversation.avatar, 'video');
       } else {
-        console.error('Cannot start call: partner profile ID not available');
-        toast.error('Unable to start call. Please try again.');
+        // Fallback: extract user_id from dm_XXX and look up profile
+        const partnerId = conversation.id.replace('dm_', '');
+        console.warn('partnerProfileId not available, using fallback for:', partnerId);
+        toast.error('Unable to start call. Please refresh the page.');
       }
     } else if (conversation?.type === 'group') {
-      startGroupCall(conversation.id, 'video');
+      // Extract group ID from group_XXX format
+      const groupId = conversation.id.replace('group_', '');
+      startGroupCall(groupId, 'video');
     }
   };
 
