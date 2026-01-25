@@ -264,6 +264,17 @@ export const useLiveKit = (): UseLiveKitReturn => {
       // Connect to room
       await newRoom.connect(url, token);
       
+      // Enable microphone by default for calls (speaker role)
+      if (effectiveRole === 'speaker' || effectiveRole === 'host' || effectiveRole === 'moderator') {
+        try {
+          await newRoom.localParticipant.setMicrophoneEnabled(true);
+          setIsMuted(false);
+          console.log('[LiveKit] Microphone enabled');
+        } catch (micError) {
+          console.error('[LiveKit] Failed to enable microphone:', micError);
+        }
+      }
+      
       updateParticipants();
       setIsConnecting(false);
       
