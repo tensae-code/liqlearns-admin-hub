@@ -113,6 +113,9 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const ringTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Track processed invite IDs to prevent duplicate notifications
+  const processedInvitesRef = useRef<Set<string>>(new Set());
+
   // Incoming call subscription - handles real-time call invites from other users
   const handleIncomingCall = useCallback((invite: {
     id: string;
@@ -126,11 +129,25 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
   }) => {
     console.log('[LiveKitProvider] Incoming call received:', invite);
     
+    // Deduplicate - don't process same invite twice
+    if (processedInvitesRef.current.has(invite.id)) {
+      console.log('[LiveKitProvider] Ignoring duplicate invite:', invite.id);
+      return;
+    }
+    
     // Don't show incoming call if we're already in a call
     if (callState.status !== 'idle') {
       console.log('[LiveKitProvider] Ignoring incoming call - already in call');
       return;
     }
+    
+    // Mark as processed
+    processedInvitesRef.current.add(invite.id);
+    
+    // Clean up old entries after 60 seconds
+    setTimeout(() => {
+      processedInvitesRef.current.delete(invite.id);
+    }, 60000);
     
     setCurrentInviteId(invite.id);
     setIncomingCall({
