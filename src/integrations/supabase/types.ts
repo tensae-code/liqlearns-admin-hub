@@ -2951,6 +2951,7 @@ export type Database = {
       }
       get_follower_count: { Args: { profile_id: string }; Returns: number }
       get_following_count: { Args: { profile_id: string }; Returns: number }
+      get_my_profile_id: { Args: never; Returns: string }
       get_pending_request_count: {
         Args: { receiver: string; sender: string }
         Returns: number
@@ -2975,6 +2976,14 @@ export type Database = {
         Returns: boolean
       }
       is_parent_of_profile: { Args: { profile_id: string }; Returns: boolean }
+      is_session_host: {
+        Args: { p_session_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_session_participant: {
+        Args: { p_session_id: string; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
