@@ -127,18 +127,18 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Verify user
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getUser(token);
+    // Verify user - getUser uses the Authorization header we passed to the client
+    const { data: userData, error: userError } = await supabase.auth.getUser();
     
-    if (claimsError || !claimsData?.user) {
+    if (userError || !userData?.user) {
+      console.error('Token validation error:', userError);
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const userId = claimsData.user.id;
+    const userId = userData.user.id;
 
     // Get user's profile
     const { data: profile, error: profileError } = await supabase
