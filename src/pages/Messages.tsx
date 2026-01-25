@@ -188,6 +188,7 @@ const Messages = () => {
               onMessageRequests={() => setShowMessageRequests(true)}
               filter={filter}
               onFilterChange={setFilter}
+              isLoading={loading}
             />
           </div>
         )}
