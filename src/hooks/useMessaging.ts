@@ -113,18 +113,34 @@ export const useMessaging = () => {
       if (profile?.id) {
         const { data: groupData } = await supabase
           .from('group_members')
-          .select(`group_id, groups:group_id (id, name, username, avatar_url, member_count, description)`)
+          .select(`group_id, groups:group_id (id, name, username, avatar_url, description)`)
           .eq('user_id', profile.id);
 
-        groupConversations = (groupData || []).map((membership: any) => ({
-          id: `group_${membership.groups?.id}`,
-          type: 'group' as const,
-          name: membership.groups?.name || 'Unknown Group',
-          avatar: membership.groups?.avatar_url,
-          lastMessage: '',
-          lastMessageTime: '',
-          members: membership.groups?.member_count || 0,
-        }));
+        // For each group, get the actual member count
+        const groupsWithCounts = await Promise.all(
+          (groupData || []).map(async (membership: any) => {
+            const groupId = membership.groups?.id;
+            if (!groupId) return null;
+            
+            // Get actual member count
+            const { count } = await supabase
+              .from('group_members')
+              .select('*', { count: 'exact', head: true })
+              .eq('group_id', groupId);
+            
+            return {
+              id: `group_${groupId}`,
+              type: 'group' as const,
+              name: membership.groups?.name || 'Unknown Group',
+              avatar: membership.groups?.avatar_url,
+              lastMessage: '',
+              lastMessageTime: '',
+              members: count || 0,
+            };
+          })
+        );
+
+        groupConversations = groupsWithCounts.filter(Boolean) as Conversation[];
       }
 
       setConversations([...dmConversations, ...groupConversations]);
