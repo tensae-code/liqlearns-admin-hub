@@ -209,25 +209,16 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     // Auto-timeout after 30s
     ringTimeoutRef.current = setTimeout(() => {
-      if (callState.status === 'ringing') {
-        setCallState(prev => ({ ...prev, status: 'no-answer' }));
-        livekit.disconnect();
-        setTimeout(() => {
-          setCallState({
-            status: 'idle',
-            isIncoming: false,
-            callType: 'voice',
-            peer: null,
-            roomContext: null,
-            contextId: null,
-            startTime: null,
-          });
-        }, 2000);
-      }
+      setCallState(prev => {
+        if (prev.status === 'ringing') {
+          livekit.disconnect();
+          return { ...prev, status: 'no-answer' };
+        }
+        return prev;
+      });
     }, 30000);
 
-    setCallState(prev => ({ ...prev, status: 'connecting' }));
-    
+    // Connect to room (call will show as ringing until remote participant joins)
     const success = await livekit.connect(roomName, 'dm', peerId, 'speaker');
     
     if (!success) {
@@ -236,12 +227,10 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
     
     // Enable media based on call type
-    if (success) {
-      if (callType === 'video') {
-        await livekit.toggleVideo();
-      }
+    if (success && callType === 'video') {
+      await livekit.toggleVideo();
     }
-  }, [livekit, callState.status, profile?.id]);
+  }, [livekit, profile?.id]);
 
   // Start group call
   const startGroupCall = useCallback(async (
@@ -310,19 +299,22 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     
     livekit.disconnect();
     
+    // Set to ended briefly, then reset to idle
     setCallState(prev => ({ ...prev, status: 'ended' }));
     setIsHandRaised(false);
     
-    // Immediately reset instead of showing "Call ended"
-    setCallState({
-      status: 'idle',
-      isIncoming: false,
-      callType: 'voice',
-      peer: null,
-      roomContext: null,
-      contextId: null,
-      startTime: null,
-    });
+    // Reset after a brief moment (allows call end sound to play)
+    setTimeout(() => {
+      setCallState({
+        status: 'idle',
+        isIncoming: false,
+        callType: 'voice',
+        peer: null,
+        roomContext: null,
+        contextId: null,
+        startTime: null,
+      });
+    }, 500);
   }, [livekit, callState, user, logCall]);
 
   // Accept incoming call
