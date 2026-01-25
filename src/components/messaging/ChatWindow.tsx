@@ -31,9 +31,13 @@ import TypingIndicator from './TypingIndicator';
 import VoiceRecorder from './VoiceRecorder';
 import FileAttachmentPreview from './FileAttachmentPreview';
 import SharedMediaSheet from './SharedMediaSheet';
+import PinnedMessagesBar from './PinnedMessagesBar';
+import MediaOptionsModal, { MediaOptions } from './MediaOptionsModal';
+import ViewOnceMedia from './ViewOnceMedia';
 import { Conversation } from './ConversationList';
 import { toast } from 'sonner';
 import usePresence from '@/hooks/usePresence';
+import { usePinnedMessages } from '@/hooks/usePinnedMessages';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -61,6 +65,7 @@ export interface Message {
     content: string;
     senderName: string;
   };
+  mediaOptions?: MediaOptions;
 }
 
 interface ChatWindowProps {
@@ -75,12 +80,14 @@ interface ChatWindowProps {
     fileSize?: number;
     durationSeconds?: number;
     replyToId?: string;
+    mediaOptions?: MediaOptions;
   }) => void;
   onBack?: () => void;
   onViewInfo?: () => void;
   isMobile?: boolean;
   onDeleteMessage?: (messageId: string) => void;
   currentChannelName?: string;
+  currentChannelId?: string | null;
 }
 
 // Format date for date separator - handles invalid dates gracefully
@@ -134,6 +141,7 @@ const ChatWindow = ({
   isMobile,
   onDeleteMessage,
   currentChannelName,
+  currentChannelId,
 }: ChatWindowProps) => {
   const { user } = useAuth();
   const liveKitContext = useOptionalLiveKitContext();
@@ -146,6 +154,9 @@ const ChatWindow = ({
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [showSharedMedia, setShowSharedMedia] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [showMediaOptions, setShowMediaOptions] = useState(false);
+  const [pendingMediaFile, setPendingMediaFile] = useState<File | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -155,6 +166,15 @@ const ChatWindow = ({
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   
   const { isUserOnline, getTypingUsersForConversation, sendTypingIndicator } = usePresence();
+  
+  // Pinned messages hook
+  const conversationIdForPins = conversation?.type === 'dm' ? conversation.id : null;
+  const { 
+    pinnedMessages, 
+    pinMessage, 
+    unpinMessage, 
+    isMessagePinned 
+  } = usePinnedMessages(currentChannelId, conversationIdForPins);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -344,12 +364,73 @@ const ChatWindow = ({
     if (file) {
       if (file.size > 10 * 1024 * 1024) { // 10MB limit
         toast.error('File too large', { description: 'Maximum file size is 10MB' });
+        e.target.value = '';
         return;
       }
-      setPendingFile(file);
+      
+      // Check if it's an image or video for media options
+      const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/');
+      if (isMedia) {
+        setPendingMediaFile(file);
+        setShowMediaOptions(true);
+      } else {
+        setPendingFile(file);
+      }
     }
     e.target.value = ''; // Reset input
   };
+
+  // Handle media options confirmation
+  const handleMediaOptionsConfirm = async (options: MediaOptions) => {
+    if (!pendingMediaFile || !user) return;
+    
+    setShowMediaOptions(false);
+    setIsUploading(true);
+    
+    try {
+      const fileExt = pendingMediaFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error } = await supabase.storage
+        .from('message-attachments')
+        .upload(fileName, pendingMediaFile);
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('message-attachments')
+        .getPublicUrl(fileName);
+      
+      const isImage = pendingMediaFile.type.startsWith('image/');
+      
+      onSendMessage(pendingMediaFile.name, {
+        type: isImage ? 'image' : 'file',
+        fileUrl: urlData.publicUrl,
+        fileName: pendingMediaFile.name,
+        fileSize: pendingMediaFile.size,
+        mediaOptions: options,
+      });
+      
+      toast.success('Media sent!');
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      toast.error('Failed to upload media');
+    } finally {
+      setIsUploading(false);
+      setPendingMediaFile(null);
+    }
+  };
+
+  // Navigate to a specific message
+  const navigateToMessage = useCallback((messageId: string) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMessageId(messageId);
+      // Clear highlight after animation
+      setTimeout(() => setHighlightedMessageId(null), 2000);
+    }
+  }, []);
 
   // Audio playback
   const toggleAudioPlayback = (messageId: string, audioUrl: string) => {
@@ -653,6 +734,26 @@ const ChatWindow = ({
         </div>
       </div>
 
+      {/* Pinned Messages Bar */}
+      <AnimatePresence>
+        {pinnedMessages.length > 0 && (
+          <PinnedMessagesBar
+            pinnedMessages={pinnedMessages.map(pm => {
+              const msg = messages.find(m => m.id === pm.message_id);
+              return {
+                id: pm.id,
+                message_id: pm.message_id,
+                content: msg?.content,
+                senderName: msg?.sender.name,
+              };
+            })}
+            onNavigateToMessage={navigateToMessage}
+            onUnpin={unpinMessage}
+            canUnpin={true}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Messages with date separators - independent scroll container */}
       <div 
         ref={messagesContainerRef}
@@ -702,7 +803,11 @@ const ChatWindow = ({
                       isLastInGroup={msgIndex === group.messages.length - 1}
                       onDelete={onDeleteMessage ? () => onDeleteMessage(msg.id) : undefined}
                       onReply={() => setReplyingTo(msg)}
+                      onPin={() => pinMessage(msg.id)}
+                      onUnpin={() => unpinMessage(msg.id)}
+                      isPinned={isMessagePinned(msg.id)}
                       replyTo={msg.replyTo}
+                      highlightId={highlightedMessageId || undefined}
                     />
                   );
                 })}
@@ -837,6 +942,19 @@ const ChatWindow = ({
         onOpenChange={setShowSharedMedia}
         conversation={conversation}
         messages={messages}
+      />
+
+      {/* Media Options Modal */}
+      <MediaOptionsModal
+        open={showMediaOptions}
+        onOpenChange={(open) => {
+          setShowMediaOptions(open);
+          if (!open) setPendingMediaFile(null);
+        }}
+        onConfirm={handleMediaOptionsConfirm}
+        fileName={pendingMediaFile?.name}
+        isImage={pendingMediaFile?.type.startsWith('image/') || false}
+        isVideo={pendingMediaFile?.type.startsWith('video/') || false}
       />
     </div>
   );

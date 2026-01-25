@@ -729,6 +729,7 @@ export type Database = {
           file_url: string | null
           id: string
           is_read: boolean | null
+          media_options: Json | null
           message_type: string | null
           receiver_id: string
           sender_id: string
@@ -742,6 +743,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_read?: boolean | null
+          media_options?: Json | null
           message_type?: string | null
           receiver_id: string
           sender_id: string
@@ -755,6 +757,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_read?: boolean | null
+          media_options?: Json | null
           message_type?: string | null
           receiver_id?: string
           sender_id?: string
@@ -971,6 +974,7 @@ export type Database = {
           is_default: boolean | null
           name: string
           order_index: number | null
+          pinned_message_ids: string[] | null
         }
         Insert: {
           channel_type?: Database["public"]["Enums"]["channel_type"]
@@ -981,6 +985,7 @@ export type Database = {
           is_default?: boolean | null
           name: string
           order_index?: number | null
+          pinned_message_ids?: string[] | null
         }
         Update: {
           channel_type?: Database["public"]["Enums"]["channel_type"]
@@ -991,6 +996,7 @@ export type Database = {
           is_default?: boolean | null
           name?: string
           order_index?: number | null
+          pinned_message_ids?: string[] | null
         }
         Relationships: [
           {
@@ -1048,6 +1054,7 @@ export type Database = {
           file_url: string | null
           id: string
           is_edited: boolean | null
+          media_options: Json | null
           message_type: string | null
           reply_to_id: string | null
           sender_id: string
@@ -1063,6 +1070,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_edited?: boolean | null
+          media_options?: Json | null
           message_type?: string | null
           reply_to_id?: string | null
           sender_id: string
@@ -1078,6 +1086,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_edited?: boolean | null
+          media_options?: Json | null
           message_type?: string | null
           reply_to_id?: string | null
           sender_id?: string
@@ -1832,6 +1841,41 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pinned_messages: {
+        Row: {
+          channel_id: string | null
+          conversation_id: string | null
+          id: string
+          message_id: string
+          pinned_at: string
+          pinned_by: string
+        }
+        Insert: {
+          channel_id?: string | null
+          conversation_id?: string | null
+          id?: string
+          message_id: string
+          pinned_at?: string
+          pinned_by: string
+        }
+        Update: {
+          channel_id?: string | null
+          conversation_id?: string | null
+          id?: string
+          message_id?: string
+          pinned_at?: string
+          pinned_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinned_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "group_channels"
             referencedColumns: ["id"]
           },
         ]
