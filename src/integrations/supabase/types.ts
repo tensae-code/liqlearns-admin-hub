@@ -1447,7 +1447,7 @@ export type Database = {
           inviter_name: string | null
           responded_at: string | null
           room_name: string | null
-          session_id: string
+          session_id: string | null
           status: string
         }
         Insert: {
@@ -1462,7 +1462,7 @@ export type Database = {
           inviter_name?: string | null
           responded_at?: string | null
           room_name?: string | null
-          session_id: string
+          session_id?: string | null
           status?: string
         }
         Update: {
@@ -1477,18 +1477,10 @@ export type Database = {
           inviter_name?: string | null
           responded_at?: string | null
           room_name?: string | null
-          session_id?: string
+          session_id?: string | null
           status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "livekit_session_invites_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "livekit_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       livekit_session_participants: {
         Row: {

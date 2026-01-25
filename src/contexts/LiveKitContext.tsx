@@ -254,10 +254,10 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
 
     // Send call invite to the other user via real-time
-    const sessionId = crypto.randomUUID();
+    // Note: session_id is null since session is created when connecting to LiveKit
     const invite = await sendCallInvite(
       peerId, // invitee is the peer
-      sessionId,
+      null, // No session ID yet - created when connection is established
       roomName,
       callType,
       profile.full_name || 'Unknown',
