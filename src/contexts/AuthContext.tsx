@@ -132,6 +132,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
+    // First, sign out any existing session globally to terminate other devices
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (err) {
+      // Ignore errors - user might not be signed in
+      console.log('[Auth] No existing session to sign out');
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,

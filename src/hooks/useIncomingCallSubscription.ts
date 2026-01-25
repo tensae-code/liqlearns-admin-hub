@@ -22,6 +22,7 @@ interface CallInvite {
 interface UseIncomingCallSubscriptionProps {
   onIncomingCall: (invite: CallInvite) => void;
   onCallCancelled: (inviteId: string) => void;
+  onCallAccepted?: (inviteId: string) => void;
 }
 
 /**
@@ -31,6 +32,7 @@ interface UseIncomingCallSubscriptionProps {
 export const useIncomingCallSubscription = ({
   onIncomingCall,
   onCallCancelled,
+  onCallAccepted,
 }: UseIncomingCallSubscriptionProps) => {
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -113,11 +115,17 @@ export const useIncomingCallSubscription = ({
             }
           } else if (payload.eventType === 'UPDATE') {
             const invite = payload.new as CallInvite;
-            // Handle cancellation/decline
+            // Handle cancellation/decline for receiver
             if (invite.invitee_id === myProfileId && 
                 (invite.status === 'cancelled' || invite.status === 'declined')) {
               console.log('[IncomingCallSubscription] 📞 Call cancelled/declined');
               onCallCancelled(invite.id);
+            }
+            // Handle acceptance notification for caller (inviter)
+            // This tells the caller that the receiver has accepted
+            if (invite.inviter_id === myProfileId && invite.status === 'accepted') {
+              console.log('[IncomingCallSubscription] 📞 Call accepted by receiver');
+              onCallAccepted?.(invite.id);
             }
           } else if (payload.eventType === 'DELETE') {
             const oldInvite = payload.old as { id: string; invitee_id?: string };

@@ -163,15 +163,39 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const handleCallCancelled = useCallback((inviteId: string) => {
     console.log('[LiveKitProvider] Call cancelled:', inviteId);
+    // Stop all ringing sounds immediately
+    stopRingtone();
+    stopRingback();
+    
     if (currentInviteId === inviteId) {
       setIncomingCall(null);
       setCurrentInviteId(null);
+      // Also reset call state if we were waiting
+      if (callState.status === 'idle' || callState.status === 'ringing') {
+        setCallState({
+          status: 'idle',
+          isIncoming: false,
+          callType: 'voice',
+          peer: null,
+          roomContext: null,
+          contextId: null,
+          startTime: null,
+        });
+      }
     }
-  }, [currentInviteId]);
+  }, [currentInviteId, callState.status, stopRingtone, stopRingback]);
+
+  // Handle when the receiver accepts (for caller to know)
+  const handleCallAccepted = useCallback((inviteId: string) => {
+    console.log('[LiveKitProvider] Call accepted by receiver:', inviteId);
+    // The connection state change will handle the transition to 'connected'
+    // This is just for logging/awareness
+  }, []);
 
   const { sendCallInvite, cancelCallInvite, respondToInvite } = useIncomingCallSubscription({
     onIncomingCall: handleIncomingCall,
     onCallCancelled: handleCallCancelled,
+    onCallAccepted: handleCallAccepted,
   });
 
   // Play/stop ringtone based on incoming call state
@@ -228,6 +252,7 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     // Handle outgoing call: transition when remote participant joins
     if (callState.status === 'ringing' && !callState.isIncoming && livekit.remoteParticipants.length > 0) {
       if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+      console.log('[LiveKitContext] Remote participant joined - starting call');
       setCallState(prev => ({
         ...prev,
         status: 'connected',
@@ -236,14 +261,26 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
     // Handle incoming call / direct connection: transition when we connect
     else if (livekit.isConnected && callState.status === 'connecting') {
+      console.log('[LiveKitContext] Connected - starting call');
       setCallState(prev => ({
         ...prev,
         status: 'connected',
         startTime: Date.now(),
       }));
     } 
-    // Handle disconnect
-    else if (livekit.connectionState === ConnectionState.Disconnected && callState.status === 'connected') {
+    // Handle remote participant leaving during active DM call - end for both sides
+    else if (
+      callState.status === 'connected' && 
+      callState.roomContext === 'dm' && 
+      livekit.isConnected && 
+      livekit.remoteParticipants.length === 0
+    ) {
+      console.log('[LiveKitContext] Remote participant left DM call - ending call');
+      // Stop all sounds immediately
+      stopRingtone();
+      stopRingback();
+      // Disconnect and clean up
+      livekit.disconnect();
       setCallState(prev => ({ ...prev, status: 'ended' }));
       setTimeout(() => {
         setCallState({
@@ -257,7 +294,25 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
         });
       }, 500);
     }
-  }, [livekit.isConnected, livekit.connectionState, livekit.remoteParticipants.length, callState.status, callState.isIncoming]);
+    // Handle disconnect from LiveKit side
+    else if (livekit.connectionState === ConnectionState.Disconnected && callState.status === 'connected') {
+      console.log('[LiveKitContext] Disconnected from LiveKit');
+      stopRingtone();
+      stopRingback();
+      setCallState(prev => ({ ...prev, status: 'ended' }));
+      setTimeout(() => {
+        setCallState({
+          status: 'idle',
+          isIncoming: false,
+          callType: 'voice',
+          peer: null,
+          roomContext: null,
+          contextId: null,
+          startTime: null,
+        });
+      }, 500);
+    }
+  }, [livekit.isConnected, livekit.connectionState, livekit.remoteParticipants.length, callState.status, callState.isIncoming, callState.roomContext, stopRingtone, stopRingback, livekit]);
 
   // Start DM call
   const startDMCall = useCallback(async (
@@ -381,9 +436,19 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
   const endCall = useCallback(async () => {
     if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
     
-    // Cancel any pending invite
-    if (currentInviteId && callState.status === 'ringing' && !callState.isIncoming) {
-      cancelCallInvite(currentInviteId);
+    // Stop all sounds IMMEDIATELY
+    stopRingtone();
+    stopRingback();
+    
+    // Cancel any pending invite (for outgoing calls)
+    if (currentInviteId) {
+      if (callState.status === 'ringing' && !callState.isIncoming) {
+        // Caller ending before receiver picks up
+        cancelCallInvite(currentInviteId);
+      } else if (callState.status === 'connected' && callState.isIncoming) {
+        // Receiver ending during connected call - mark as cancelled so caller knows
+        cancelCallInvite(currentInviteId);
+      }
     }
     
     // Log the call if it was a DM call (peer.id is the auth user_id of the other person)
@@ -405,6 +470,9 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
     
     livekit.disconnect();
     
+    // Clear incoming call state if any
+    setIncomingCall(null);
+    
     // Set to ended briefly, then reset to idle
     setCallState(prev => ({ ...prev, status: 'ended' }));
     setIsHandRaised(false);
@@ -422,7 +490,7 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
         startTime: null,
       });
     }, 500);
-  }, [livekit, callState, user, logCall, currentInviteId, cancelCallInvite]);
+  }, [livekit, callState, user, logCall, currentInviteId, cancelCallInvite, stopRingtone, stopRingback]);
 
   // Accept incoming call
   const acceptIncomingCall = useCallback(async () => {
