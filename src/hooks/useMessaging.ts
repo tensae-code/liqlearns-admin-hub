@@ -786,7 +786,10 @@ export const useMessaging = () => {
         return;
       }
 
-      console.log('Loading conversations for user:', user.id);
+      // Get the current profile at the time of execution (not stale closure value)
+      const currentProfile = profile;
+      
+      console.log('Loading conversations for user:', user.id, 'profile:', currentProfile?.id);
       setLoading(true);
 
       try {
@@ -853,8 +856,9 @@ export const useMessaging = () => {
         // Fetch groups if profile is ready
         let groupConversations: Conversation[] = [];
         
-        if (profile?.id) {
-          const { data: groupData } = await supabase
+        if (currentProfile?.id) {
+          console.log('Fetching groups for profile:', currentProfile.id);
+          const { data: groupData, error: groupError } = await supabase
             .from('group_members')
             .select(`
               group_id,
@@ -867,17 +871,24 @@ export const useMessaging = () => {
                 description
               )
             `)
-            .eq('user_id', profile.id);
+            .eq('user_id', currentProfile.id);
 
-          groupConversations = (groupData || []).map((membership: any) => ({
-            id: `group_${membership.groups?.id}`,
-            type: 'group' as const,
-            name: membership.groups?.name || 'Unknown Group',
-            avatar: membership.groups?.avatar_url,
-            lastMessage: '',
-            lastMessageTime: '',
-            members: membership.groups?.member_count || 0,
-          }));
+          if (groupError) {
+            console.error('Error fetching groups:', groupError);
+          } else {
+            groupConversations = (groupData || []).map((membership: any) => ({
+              id: `group_${membership.groups?.id}`,
+              type: 'group' as const,
+              name: membership.groups?.name || 'Unknown Group',
+              avatar: membership.groups?.avatar_url,
+              lastMessage: '',
+              lastMessageTime: '',
+              members: membership.groups?.member_count || 0,
+            }));
+            console.log('Got groups:', groupConversations.length);
+          }
+        } else {
+          console.log('Profile not yet loaded, skipping groups');
         }
 
         const allConversations = [...dmConversations, ...groupConversations];
