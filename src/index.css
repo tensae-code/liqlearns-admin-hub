@@ -368,3 +368,8 @@
 .compact .mb-6 {
   margin-bottom: 0.75rem !important;
 }
+
+/* Safe area padding for iOS devices */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}

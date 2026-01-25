@@ -551,7 +551,7 @@ const ChatWindow = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-background h-full min-h-0 overflow-hidden">
+    <div className="flex-1 flex flex-col bg-background h-full max-h-full overflow-hidden">
       {/* Header - Fixed height, shrink-0 */}
       <div className="flex items-center gap-2 p-2 md:p-4 border-b border-border bg-card shrink-0">
         {isMobile && onBack && (
@@ -608,8 +608,8 @@ const ChatWindow = ({
         </div>
       </div>
 
-      {/* Messages with date separators - flex-1 with min-h-0 for proper shrinking */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 md:p-4 bg-gradient-to-b from-background to-muted/20">
+      {/* Messages with date separators - flex-1 with overflow */}
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 bg-gradient-to-b from-background to-muted/20" style={{ minHeight: 0 }}>
         {groupedMessages.map((dateGroup, dateIndex) => (
           <div key={dateIndex}>
             {/* Date Separator */}
@@ -692,9 +692,9 @@ const ChatWindow = ({
         )}
       </AnimatePresence>
 
-      {/* Input - shrink-0 */}
+      {/* Input - always visible at bottom */}
       {!showVoiceRecorder && (
-        <div className="p-2 md:p-4 border-t border-border bg-card shrink-0">
+        <div className="p-2 md:p-4 border-t border-border bg-card flex-shrink-0 pb-safe">
           <div className="flex items-center gap-1 md:gap-2">
             <input
               type="file"
