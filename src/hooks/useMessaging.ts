@@ -29,6 +29,7 @@ interface SendMessageOptions {
   fileName?: string;
   fileSize?: number;
   durationSeconds?: number;
+  replyToId?: string;
 }
 
 export const useMessaging = () => {
@@ -270,21 +271,33 @@ export const useMessaging = () => {
         if (channels) {
           const { data, error } = await supabase
             .from('group_messages')
-            .select('*')
+            .select('*, reply_to:reply_to_id(id, content, sender_id)')
             .eq('channel_id', channels.id)
             .order('created_at', { ascending: true });
 
           if (error) throw error;
 
+          // Group messages use profile.id as sender_id, so lookup by id not user_id
           const senderIds = [...new Set(data?.map(m => m.sender_id) || [])];
           const { data: profiles } = await supabase
             .from('profiles')
             .select('id, user_id, full_name, avatar_url')
-            .in('user_id', senderIds);
+            .in('id', senderIds);
 
           const formattedMessages: Message[] = (data || []).map(msg => {
             const msgProfile = profiles?.find(p => p.id === msg.sender_id);
             const msgType = msg.message_type || 'text';
+            
+            // Handle reply info
+            let replyTo: Message['replyTo'] = undefined;
+            if (msg.reply_to && typeof msg.reply_to === 'object') {
+              const replyData = msg.reply_to as { id: string; content: string; sender_id: string };
+              const replyProfile = profiles?.find(p => p.id === replyData.sender_id);
+              replyTo = {
+                content: replyData.content,
+                senderName: replyProfile?.full_name || 'Unknown',
+              };
+            }
             
             return {
               id: msg.id,
@@ -300,6 +313,7 @@ export const useMessaging = () => {
               fileName: msg.file_name,
               fileSize: msg.file_size,
               durationSeconds: msg.duration_seconds,
+              replyTo,
             };
           });
 
@@ -401,6 +415,7 @@ export const useMessaging = () => {
               file_name: options?.fileName,
               file_size: options?.fileSize,
               duration_seconds: options?.durationSeconds,
+              reply_to_id: options?.replyToId,
             })
             .select()
             .single();
