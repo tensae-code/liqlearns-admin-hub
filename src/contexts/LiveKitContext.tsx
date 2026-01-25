@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode, useEffect } from 'react';
 import { ConnectionState } from 'livekit-client';
 import { useLiveKit, type LiveKitParticipant, type UseLiveKitReturn } from '@/hooks/useLiveKit';
+import { useCallNotification } from '@/hooks/useCallNotification';
 import { 
   getDMRoomName, 
   getGroupRoomName, 
@@ -84,6 +85,7 @@ export const useOptionalLiveKitContext = () => {
 
 export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const livekit = useLiveKit();
+  const { playRingtone, stopRingtone, playRingback, stopRingback, playCallEnd } = useCallNotification();
   
   const [callState, setCallState] = useState<CallState>({
     status: 'idle',
@@ -102,6 +104,33 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const ringTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Play/stop ringtone based on incoming call state
+  useEffect(() => {
+    if (incomingCall && callState.status === 'idle') {
+      playRingtone();
+    } else {
+      stopRingtone();
+    }
+    return () => stopRingtone();
+  }, [incomingCall, callState.status, playRingtone, stopRingtone]);
+
+  // Play/stop ringback when making outgoing call
+  useEffect(() => {
+    if (callState.status === 'ringing' && !callState.isIncoming) {
+      playRingback();
+    } else {
+      stopRingback();
+    }
+    return () => stopRingback();
+  }, [callState.status, callState.isIncoming, playRingback, stopRingback]);
+
+  // Play call end sound
+  useEffect(() => {
+    if (callState.status === 'ended') {
+      playCallEnd();
+    }
+  }, [callState.status, playCallEnd]);
 
   // Duration timer
   React.useEffect(() => {

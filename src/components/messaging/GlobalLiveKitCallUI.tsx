@@ -96,54 +96,99 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     return null;
   }
 
-  // Handle incoming call
+  // Handle incoming call - enhanced with visual effects
   if (incomingCall && callState.status === 'idle') {
     return (
       <Dialog open={true} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-primary/50 shadow-2xl shadow-primary/20">
           <div className="flex flex-col items-center gap-4 py-6">
-            <div className="relative">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={incomingCall.callerAvatar} />
-                <AvatarFallback className="text-2xl">
-                  {incomingCall.callerName.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
+            {/* Pulsing background effect */}
+            <div className="absolute inset-0 overflow-hidden rounded-lg">
               <motion.div
-                className="absolute inset-0 rounded-full border-4 border-primary"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+                className="absolute inset-0 bg-primary/5"
+                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
               />
             </div>
             
-            <div className="text-center">
-              <h3 className="text-lg font-semibold">{incomingCall.callerName}</h3>
-              <p className="text-sm text-muted-foreground">
-                Incoming {incomingCall.callType} call...
-              </p>
-            </div>
-
-            <div className="flex gap-4 mt-4">
-              <Button
-                variant="destructive"
-                size="lg"
-                className="rounded-full h-14 w-14"
-                onClick={rejectIncomingCall}
-              >
-                <PhoneOff className="h-6 w-6" />
-              </Button>
-              <Button
-                variant="default"
-                size="lg"
-                className="rounded-full h-14 w-14 bg-emerald-500 hover:bg-emerald-600"
-                onClick={acceptIncomingCall}
+            <div className="relative">
+              <Avatar className="h-24 w-24 ring-4 ring-primary/30">
+                <AvatarImage src={incomingCall.callerAvatar} />
+                <AvatarFallback className="text-2xl bg-primary/10">
+                  {incomingCall.callerName.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              
+              {/* Multiple ripple effects */}
+              <motion.div
+                className="absolute inset-0 rounded-full border-4 border-primary"
+                animate={{ scale: [1, 1.4, 1.4], opacity: [0.6, 0, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+              <motion.div
+                className="absolute inset-0 rounded-full border-4 border-primary"
+                animate={{ scale: [1, 1.6, 1.6], opacity: [0.4, 0, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+              />
+              
+              {/* Phone icon indicator */}
+              <motion.div
+                className="absolute -top-2 -right-2 bg-success rounded-full p-2 shadow-lg"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 0.5, repeat: Infinity }}
               >
                 {incomingCall.callType === 'video' ? (
-                  <Video className="h-6 w-6" />
+                  <Video className="h-4 w-4 text-success-foreground" />
                 ) : (
-                  <Phone className="h-6 w-6" />
+                  <Phone className="h-4 w-4 text-success-foreground" />
                 )}
-              </Button>
+              </motion.div>
+            </div>
+            
+            <div className="text-center relative z-10">
+              <h3 className="text-lg font-semibold">{incomingCall.callerName}</h3>
+              <motion.p 
+                className="text-sm text-muted-foreground"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                Incoming {incomingCall.callType} call...
+              </motion.p>
+            </div>
+
+            <div className="flex gap-6 mt-4 relative z-10">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  className="rounded-full h-16 w-16 shadow-lg"
+                  onClick={rejectIncomingCall}
+                >
+                  <PhoneOff className="h-7 w-7" />
+                </Button>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              >
+                <Button
+                  variant="default"
+                  size="lg"
+                  className="rounded-full h-16 w-16 bg-success hover:bg-success/90 shadow-lg shadow-success/30"
+                  onClick={acceptIncomingCall}
+                >
+                  {incomingCall.callType === 'video' ? (
+                    <Video className="h-7 w-7 text-success-foreground" />
+                  ) : (
+                    <Phone className="h-7 w-7 text-success-foreground" />
+                  )}
+                </Button>
+              </motion.div>
             </div>
           </div>
         </DialogContent>
@@ -309,10 +354,10 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
               <Button
                 variant="default"
                 size="lg"
-                className="rounded-full h-14 w-14 bg-emerald-500 hover:bg-emerald-600"
+                className="rounded-full h-14 w-14 bg-success hover:bg-success/90"
                 onClick={acceptIncomingCall}
               >
-                <Phone className="h-6 w-6" />
+                <Phone className="h-6 w-6 text-success-foreground" />
               </Button>
             </>
           )}
