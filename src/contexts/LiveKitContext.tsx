@@ -222,14 +222,28 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [callState.status, callState.startTime]);
 
   // Sync connection state to call state
+  // For outgoing calls: transition from 'ringing' to 'connected' when remote participant joins
+  // For incoming calls: transition from 'connecting' to 'connected' when we connect
   React.useEffect(() => {
-    if (livekit.isConnected && callState.status === 'connecting') {
+    // Handle outgoing call: transition when remote participant joins
+    if (callState.status === 'ringing' && !callState.isIncoming && livekit.remoteParticipants.length > 0) {
+      if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
       setCallState(prev => ({
         ...prev,
         status: 'connected',
         startTime: Date.now(),
       }));
-    } else if (livekit.connectionState === ConnectionState.Disconnected && callState.status === 'connected') {
+    }
+    // Handle incoming call / direct connection: transition when we connect
+    else if (livekit.isConnected && callState.status === 'connecting') {
+      setCallState(prev => ({
+        ...prev,
+        status: 'connected',
+        startTime: Date.now(),
+      }));
+    } 
+    // Handle disconnect
+    else if (livekit.connectionState === ConnectionState.Disconnected && callState.status === 'connected') {
       setCallState(prev => ({ ...prev, status: 'ended' }));
       setTimeout(() => {
         setCallState({
@@ -241,9 +255,9 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
           contextId: null,
           startTime: null,
         });
-      }, 2000);
+      }, 500);
     }
-  }, [livekit.isConnected, livekit.connectionState, callState.status]);
+  }, [livekit.isConnected, livekit.connectionState, livekit.remoteParticipants.length, callState.status, callState.isIncoming]);
 
   // Start DM call
   const startDMCall = useCallback(async (

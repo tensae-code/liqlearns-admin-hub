@@ -110,27 +110,31 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
   const isRinging = callState.status === 'ringing';
   const hasRemoteVideo = remoteParticipants[0]?.isVideoOn;
 
-  // ============ INCOMING CALL POPUP ============
+  // ============ INCOMING CALL POPUP (Swipe to dismiss) ============
   if (incomingCall && callState.status === 'idle') {
     return (
       <motion.div
         ref={ref}
         initial={{ opacity: 0, y: -100, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -50, scale: 0.9 }}
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-sm"
+        exit={{ opacity: 0, y: -100, scale: 0.9 }}
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.3}
+        onDragEnd={(_, info) => {
+          // Swipe up to dismiss
+          if (info.offset.y < -80 || info.velocity.y < -500) {
+            rejectIncomingCall();
+          }
+        }}
+        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-sm cursor-grab active:cursor-grabbing touch-none"
       >
+        {/* Swipe indicator */}
+        <div className="flex justify-center mb-2">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+        </div>
+        
         <div className="bg-card border rounded-2xl shadow-2xl overflow-hidden">
-          {/* Close button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 h-8 w-8 rounded-full z-10"
-            onClick={rejectIncomingCall}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-
           <div className="p-5 flex items-center gap-4">
             {/* Avatar with pulse */}
             <div className="relative flex-shrink-0">
@@ -183,6 +187,11 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
               </Button>
             </div>
           </div>
+          
+          {/* Swipe hint text for mobile */}
+          <p className="text-xs text-center text-muted-foreground pb-2 sm:hidden">
+            Swipe up to dismiss
+          </p>
         </div>
       </motion.div>
     );
