@@ -111,7 +111,7 @@ export const useIncomingCallSubscription = ({
   // Function to create a call invite
   const sendCallInvite = useCallback(async (
     inviteeId: string,
-    sessionId: string,
+    sessionId: string | null, // Session ID is optional - may not exist yet
     roomName: string,
     callType: 'voice' | 'video',
     inviterName: string,
@@ -136,7 +136,7 @@ export const useIncomingCallSubscription = ({
       const { data, error } = await supabase
         .from('livekit_session_invites')
         .insert({
-          session_id: sessionId,
+          session_id: sessionId || undefined, // Optional - may not exist yet
           inviter_id: profile.id, // Use profile ID, not auth user ID
           invitee_id: inviteeId,
           status: 'pending',
