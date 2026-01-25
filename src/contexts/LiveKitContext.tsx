@@ -496,6 +496,10 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
   const acceptIncomingCall = useCallback(async () => {
     if (!incomingCall) return;
 
+    // CRITICAL: Stop ringtone IMMEDIATELY when accepting
+    stopRingtone();
+    stopRingback();
+
     // Respond to the invite
     if (currentInviteId) {
       respondToInvite(currentInviteId, true);
@@ -515,6 +519,9 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
       startTime: null,
     });
 
+    // Clear incoming call state immediately to prevent ringtone restart
+    setIncomingCall(null);
+
     const success = await livekit.connect(
       incomingCall.roomName,
       incomingCall.contextType,
@@ -526,7 +533,6 @@ export const LiveKitProvider: React.FC<{ children: ReactNode }> = ({ children })
       await livekit.toggleVideo();
     }
 
-    setIncomingCall(null);
     setCurrentInviteId(null);
   }, [incomingCall, livekit, currentInviteId, respondToInvite]);
 
