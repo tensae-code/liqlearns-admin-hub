@@ -199,6 +199,7 @@ const Messages = () => {
             conversation={currentConversation}
             messages={localMessages}
             currentUserId={user?.id || ''}
+            currentProfileId={profile?.id || ''}
             onSendMessage={(content, options) => sendMessage(content, options)}
             onBack={isMobile ? () => setShowChat(false) : undefined}
             onViewInfo={currentConversation?.type === 'group' ? () => setShowGroupInfo(true) : undefined}

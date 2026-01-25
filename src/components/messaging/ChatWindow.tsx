@@ -57,18 +57,24 @@ export interface Message {
   fileName?: string;
   fileSize?: number;
   durationSeconds?: number;
+  replyTo?: {
+    content: string;
+    senderName: string;
+  };
 }
 
 interface ChatWindowProps {
   conversation: Conversation | null;
   messages: Message[];
   currentUserId: string;
+  currentProfileId?: string;
   onSendMessage: (content: string, options?: { 
     type?: 'text' | 'voice' | 'file' | 'image';
     fileUrl?: string;
     fileName?: string;
     fileSize?: number;
     durationSeconds?: number;
+    replyToId?: string;
   }) => void;
   onBack?: () => void;
   onViewInfo?: () => void;
@@ -121,6 +127,7 @@ const ChatWindow = ({
   conversation,
   messages,
   currentUserId,
+  currentProfileId,
   onSendMessage,
   onBack,
   onViewInfo,
@@ -187,8 +194,10 @@ const ChatWindow = ({
       return;
     }
     
-    onSendMessage(newMessage);
+    // Include reply info if replying
+    onSendMessage(newMessage, replyingTo ? { replyToId: replyingTo.id } : undefined);
     setNewMessage('');
+    setReplyingTo(null);
     inputRef.current?.focus();
   };
 
@@ -662,7 +671,10 @@ const ChatWindow = ({
             {dateGroup.groups.map((group, groupIndex) => (
               <div key={groupIndex}>
                 {group.messages.map((msg, msgIndex) => {
-                  const isSender = msg.sender.id === currentUserId;
+                  // For groups, use profileId (sender_id is profile.id), for DMs use userId (sender_id is auth user.id)
+                  const isSender = conversation?.type === 'group' 
+                    ? msg.sender.id === currentProfileId 
+                    : msg.sender.id === currentUserId;
                   
                   if (msg.type === 'call') {
                     return renderCallMessage(msg);
@@ -690,7 +702,7 @@ const ChatWindow = ({
                       isLastInGroup={msgIndex === group.messages.length - 1}
                       onDelete={onDeleteMessage ? () => onDeleteMessage(msg.id) : undefined}
                       onReply={() => setReplyingTo(msg)}
-                      replyTo={undefined} // TODO: Add reply-to support in Message type
+                      replyTo={msg.replyTo}
                     />
                   );
                 })}
