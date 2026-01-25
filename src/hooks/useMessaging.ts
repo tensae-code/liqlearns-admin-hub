@@ -844,6 +844,8 @@ export const useMessaging = () => {
               unreadCount,
               isOnline: false,
               lastMessageIsMine: lastDm?.sender_id === user.id,
+              // CRITICAL: Include the profile.id for call signaling (not the auth user_id)
+              partnerProfileId: partnerProfile?.id,
             };
           });
         }

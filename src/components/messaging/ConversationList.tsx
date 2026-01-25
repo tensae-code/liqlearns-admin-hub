@@ -23,6 +23,8 @@ export interface Conversation {
   members?: number;
   lastMessageIsMine?: boolean;
   lastMessageStatus?: 'sent' | 'delivered' | 'seen';
+  // For DM calls - the partner's profile.id (NOT their auth user_id)
+  partnerProfileId?: string;
 }
 
 interface ConversationListProps {
