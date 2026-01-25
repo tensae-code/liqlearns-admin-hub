@@ -112,33 +112,33 @@ const VoiceRecorder = ({ onSend, onCancel, isUploading }: VoiceRecorderProps) =>
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="flex items-center gap-3 p-3 bg-muted rounded-lg"
+      className="flex items-center gap-2 p-3 bg-muted rounded-lg w-full"
     >
       <Button
         variant="ghost"
         size="icon"
-        className="shrink-0 text-destructive hover:text-destructive"
+        className="shrink-0 h-8 w-8 text-destructive hover:text-destructive"
         onClick={handleCancel}
       >
-        <X className="w-5 h-5" />
+        <X className="w-4 h-4" />
       </Button>
 
-      <div className="flex-1 flex items-center gap-3">
+      <div className="flex-1 flex items-center gap-2 min-w-0 overflow-hidden">
         {isRecording ? (
           <>
             <motion.div
-              className="w-3 h-3 rounded-full bg-destructive"
+              className="w-2.5 h-2.5 rounded-full bg-destructive shrink-0"
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
             />
-            <span className="text-sm font-medium">{formatDuration(duration)}</span>
-            <div className="flex-1 flex items-center gap-0.5">
-              {Array.from({ length: 20 }).map((_, i) => (
+            <span className="text-sm font-medium shrink-0">{formatDuration(duration)}</span>
+            <div className="flex-1 flex items-center gap-0.5 overflow-hidden">
+              {Array.from({ length: 12 }).map((_, i) => (
                 <motion.div
                   key={i}
-                  className="w-1 bg-primary rounded-full"
+                  className="w-1 bg-primary rounded-full shrink-0"
                   animate={{
-                    height: [4, Math.random() * 16 + 4, 4],
+                    height: [4, Math.random() * 12 + 4, 4],
                   }}
                   transition={{
                     duration: 0.5,
@@ -151,11 +151,11 @@ const VoiceRecorder = ({ onSend, onCancel, isUploading }: VoiceRecorderProps) =>
           </>
         ) : audioBlob ? (
           <>
-            <span className="text-sm font-medium">{formatDuration(duration)}</span>
-            <audio src={audioUrl || undefined} controls className="flex-1 h-8" />
+            <span className="text-sm font-medium shrink-0">{formatDuration(duration)}</span>
+            <audio src={audioUrl || undefined} controls className="flex-1 h-8 min-w-0 max-w-full" />
           </>
         ) : (
-          <span className="text-sm text-muted-foreground">Tap to start recording</span>
+          <span className="text-sm text-muted-foreground">Tap mic to record</span>
         )}
       </div>
 
@@ -163,10 +163,10 @@ const VoiceRecorder = ({ onSend, onCancel, isUploading }: VoiceRecorderProps) =>
         <Button
           variant="ghost"
           size="icon"
-          className="shrink-0"
+          className="shrink-0 h-8 w-8"
           onClick={startRecording}
         >
-          <Mic className="w-5 h-5 text-primary" />
+          <Mic className="w-4 h-4 text-primary" />
         </Button>
       )}
 
@@ -174,17 +174,17 @@ const VoiceRecorder = ({ onSend, onCancel, isUploading }: VoiceRecorderProps) =>
         <Button
           variant="ghost"
           size="icon"
-          className="shrink-0"
+          className="shrink-0 h-8 w-8"
           onClick={stopRecording}
         >
-          <Square className="w-5 h-5 text-destructive" />
+          <Square className="w-4 h-4 text-destructive" />
         </Button>
       )}
 
       {audioBlob && (
         <Button
           size="icon"
-          className="shrink-0 bg-gradient-accent text-accent-foreground"
+          className="shrink-0 h-8 w-8 bg-gradient-accent text-accent-foreground"
           onClick={handleSend}
           disabled={isUploading}
         >

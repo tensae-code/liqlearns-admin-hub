@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
+import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Check, CheckCheck, Trash2, MoreVertical, Reply } from 'lucide-react';
@@ -50,13 +50,16 @@ const SwipeableChatBubble = ({
 }: SwipeableChatBubbleProps) => {
   const [showOptions, setShowOptions] = useState(false);
   const x = useMotionValue(0);
+  const controls = useAnimation();
   const replyOpacity = useTransform(x, [-60, -30, 0], [1, 0.5, 0]);
   const constraintRef = useRef(null);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x < -50 && onReply) {
       onReply();
     }
+    // Always snap back to original position
+    await controls.start({ x: 0, transition: { type: 'spring', stiffness: 500, damping: 30 } });
   };
 
   // Determine message status
@@ -146,6 +149,7 @@ const SwipeableChatBubble = ({
         dragConstraints={{ left: -60, right: 0 }}
         dragElastic={0.1}
         onDragEnd={handleDragEnd}
+        animate={controls}
         style={{ x }}
         className={cn(
           "max-w-[75%] flex flex-col relative touch-pan-y",
