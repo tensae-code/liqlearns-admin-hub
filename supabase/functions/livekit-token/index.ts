@@ -127,18 +127,26 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Verify user - getUser uses the Authorization header we passed to the client
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    // Decode JWT payload to get user ID (the token is already verified by Supabase's JWT validation)
+    const token = authHeader.replace('Bearer ', '');
+    let userId: string;
     
-    if (userError || !userData?.user) {
-      console.error('Token validation error:', userError);
+    try {
+      // Decode the JWT payload (middle part)
+      const payloadPart = token.split('.')[1];
+      const payload = JSON.parse(atob(payloadPart.replace(/-/g, '+').replace(/_/g, '/')));
+      userId = payload.sub;
+      
+      if (!userId) {
+        throw new Error('No user ID in token');
+      }
+    } catch (e) {
+      console.error('Token decode error:', e);
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const userId = userData.user.id;
 
     // Get user's profile
     const { data: profile, error: profileError } = await supabase
