@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useAdminPrivileges, PrivilegeType } from '@/hooks/useAdminPrivileges';
 import {
   Shield,
@@ -21,6 +26,11 @@ import {
   ChevronUp,
 } from 'lucide-react';
 
+interface AdminPrivilegeManagerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 const privilegeIcons: Record<PrivilegeType, React.ElementType> = {
   delete_users: UserX,
   temporary_hold_users: Clock,
@@ -32,7 +42,7 @@ const privilegeIcons: Record<PrivilegeType, React.ElementType> = {
   manage_admins: UserCog,
 };
 
-const AdminPrivilegeManager = () => {
+const AdminPrivilegeManager = ({ open, onOpenChange }: AdminPrivilegeManagerProps) => {
   const {
     admins,
     loading,
@@ -43,26 +53,6 @@ const AdminPrivilegeManager = () => {
 
   const [expandedAdmin, setExpandedAdmin] = useState<string | null>(null);
 
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
-            Admin Privileges
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-20 w-full" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   const handleTogglePrivilege = async (adminUserId: string, privilegeType: PrivilegeType, currentlyGranted: boolean) => {
     if (currentlyGranted) {
       await revokePrivilege(adminUserId, privilegeType);
@@ -72,18 +62,26 @@ const AdminPrivilegeManager = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" />
-          Admin Privilege Management
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {admins.length === 0 ? (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-primary" />
+            Admin Privilege Management
+          </DialogTitle>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </div>
+        ) : admins.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <UserCog className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>No admins found</p>
+            <p className="text-sm">Add users with the admin role to manage their privileges here.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -165,8 +163,8 @@ const AdminPrivilegeManager = () => {
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 };
 
