@@ -11,6 +11,7 @@ import {
   Minimize2,
   X,
   User,
+  SwitchCamera,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -21,6 +22,7 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
   const context = useOptionalLiveKitContext();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
 
   // Extract values from context (or use defaults for hooks that run before early return)
   const isVideoOn = context?.isVideoOn ?? false;
@@ -28,6 +30,7 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
   const remoteParticipants = context?.remoteParticipants ?? [];
   const attachVideoToElement = context?.attachVideoToElement;
   const attachLocalVideoToElement = context?.attachLocalVideoToElement;
+  const attachRemoteAudio = context?.attachRemoteAudio;
 
   // Attach local video - MUST be before early return (hooks can't be conditional)
   useEffect(() => {
@@ -46,6 +49,14 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     }
   }, [remoteParticipants, attachVideoToElement]);
 
+  // Attach remote audio for incoming call sound - MUST be before early return
+  useEffect(() => {
+    if (remoteAudioRef.current && remoteParticipants.length > 0 && attachRemoteAudio) {
+      const firstRemote = remoteParticipants[0];
+      attachRemoteAudio(firstRemote.id, remoteAudioRef.current);
+    }
+  }, [remoteParticipants, attachRemoteAudio]);
+
   // Early return if no context available
   if (!context) {
     return null;
@@ -63,6 +74,7 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     isMuted,
     toggleMute,
     toggleVideo,
+    switchCamera,
   } = context;
 
   // Format duration
@@ -291,7 +303,7 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
       ref={ref}
       initial={{ opacity: 0, y: 50, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="fixed bottom-4 right-4 z-50 w-[320px] sm:w-[360px]"
+      className="fixed bottom-24 md:bottom-4 right-2 md:right-4 left-2 md:left-auto z-50 md:w-[360px]"
     >
       <div className="bg-card border rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
@@ -336,7 +348,7 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain bg-black"
             />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
@@ -380,43 +392,59 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain bg-black"
                 style={{ transform: 'scaleX(-1)' }}
               />
             </motion.div>
           )}
         </div>
 
+        {/* Hidden audio element for remote audio */}
+        <audio ref={remoteAudioRef} autoPlay className="hidden" />
+
         {/* Controls */}
-        <div className="p-3 flex items-center justify-center gap-3 bg-muted/30">
+        <div className="p-3 flex items-center justify-center gap-2 md:gap-3 bg-muted/30">
           <Button
             variant={isMuted ? 'destructive' : 'secondary'}
             size="icon"
-            className="h-11 w-11 rounded-full"
+            className="h-10 w-10 md:h-11 md:w-11 rounded-full"
             onClick={toggleMute}
           >
-            {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            {isMuted ? <MicOff className="h-4 w-4 md:h-5 md:w-5" /> : <Mic className="h-4 w-4 md:h-5 md:w-5" />}
           </Button>
 
           {callState.callType === 'video' && (
-            <Button
-              variant={!isVideoOn ? 'destructive' : 'secondary'}
-              size="icon"
-              className="h-11 w-11 rounded-full"
-              onClick={toggleVideo}
-            >
-              {isVideoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-            </Button>
+            <>
+              <Button
+                variant={!isVideoOn ? 'destructive' : 'secondary'}
+                size="icon"
+                className="h-10 w-10 md:h-11 md:w-11 rounded-full"
+                onClick={toggleVideo}
+              >
+                {isVideoOn ? <Video className="h-4 w-4 md:h-5 md:w-5" /> : <VideoOff className="h-4 w-4 md:h-5 md:w-5" />}
+              </Button>
+              
+              {/* Switch Camera Button */}
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-10 w-10 md:h-11 md:w-11 rounded-full"
+                onClick={switchCamera}
+                title="Switch camera"
+              >
+                <SwitchCamera className="h-4 w-4 md:h-5 md:w-5" />
+              </Button>
+            </>
           )}
 
           {/* END CALL BUTTON */}
           <Button
             variant="destructive"
             size="icon"
-            className="h-11 w-11 rounded-full"
+            className="h-10 w-10 md:h-11 md:w-11 rounded-full"
             onClick={endCall}
           >
-            <PhoneOff className="h-5 w-5" />
+            <PhoneOff className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
         </div>
       </div>

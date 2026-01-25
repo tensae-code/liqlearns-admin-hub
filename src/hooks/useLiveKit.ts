@@ -14,6 +14,7 @@ import {
   createLocalTracks,
   LocalVideoTrack,
   LocalAudioTrack,
+  facingModeFromLocalTrack,
 } from 'livekit-client';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,6 +56,7 @@ export interface UseLiveKitReturn {
   isMuted: boolean;
   isVideoOn: boolean;
   isScreenSharing: boolean;
+  facingMode: 'user' | 'environment';
   
   // Actions
   connect: (roomName: string, contextType: RoomContext, contextId: string, role?: ParticipantRole) => Promise<boolean>;
@@ -62,6 +64,8 @@ export interface UseLiveKitReturn {
   toggleMute: () => void;
   toggleVideo: () => Promise<void>;
   toggleScreenShare: () => Promise<void>;
+  switchCamera: () => Promise<void>;
+  attachRemoteAudio: (participantId: string, element: HTMLAudioElement | null) => void;
   setRole: (role: ParticipantRole) => void;
   
   // Room reference for advanced usage
@@ -89,6 +93,7 @@ export const useLiveKit = (): UseLiveKitReturn => {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   
   const [currentRole, setCurrentRole] = useState<ParticipantRole>('listener');
   
@@ -365,6 +370,45 @@ export const useLiveKit = (): UseLiveKitReturn => {
     updateParticipants();
   }, [updateParticipants]);
 
+  // Switch camera (front/back)
+  const switchCamera = useCallback(async () => {
+    const currentRoom = roomRef.current;
+    if (!currentRoom?.localParticipant) return;
+
+    try {
+      const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+      
+      // Disable current camera
+      await currentRoom.localParticipant.setCameraEnabled(false);
+      
+      // Enable camera with new facing mode
+      await currentRoom.localParticipant.setCameraEnabled(true, {
+        facingMode: newFacingMode,
+      });
+      
+      setFacingMode(newFacingMode);
+      updateParticipants();
+      
+      console.log('[LiveKit] Switched camera to:', newFacingMode);
+    } catch (error) {
+      console.error('[LiveKit] Failed to switch camera:', error);
+    }
+  }, [facingMode, updateParticipants]);
+
+  // Attach remote audio to ensure it plays
+  const attachRemoteAudio = useCallback((participantId: string, element: HTMLAudioElement | null) => {
+    const currentRoom = roomRef.current;
+    if (!currentRoom || !element) return;
+
+    const participant = currentRoom.remoteParticipants.get(participantId);
+    if (!participant) return;
+
+    const publication = participant.getTrackPublication(Track.Source.Microphone);
+    if (publication?.track) {
+      publication.track.attach(element);
+    }
+  }, []);
+
   // Set role (for host to change participant roles)
   const setRole = useCallback((role: ParticipantRole) => {
     setCurrentRole(role);
@@ -424,11 +468,14 @@ export const useLiveKit = (): UseLiveKitReturn => {
     isMuted,
     isVideoOn,
     isScreenSharing,
+    facingMode,
     connect,
     disconnect,
     toggleMute,
     toggleVideo,
     toggleScreenShare,
+    switchCamera,
+    attachRemoteAudio,
     setRole,
     room,
     attachVideoToElement,
