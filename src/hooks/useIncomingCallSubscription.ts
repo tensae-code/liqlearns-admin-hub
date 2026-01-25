@@ -38,70 +38,85 @@ export const useIncomingCallSubscription = ({
   useEffect(() => {
     // CRITICAL: Use profile.id (the invitee_id in the DB) not user.id (auth uid)
     if (!profile?.id) {
-      console.log('[IncomingCallSubscription] Waiting for profile to load...');
+      console.log('[IncomingCallSubscription] ⏳ Waiting for profile to load...');
       return;
     }
 
     const myProfileId = profile.id;
-    console.log('[IncomingCallSubscription] Setting up subscription for profile:', myProfileId);
+    console.log('[IncomingCallSubscription] 🔔 ACTIVE for profile:', myProfileId);
 
-    // Also poll for pending invites on mount and periodically as fallback
+    // Track already-notified invites to prevent duplicates
+    const notifiedInvites = new Set<string>();
+
+    // Poll for pending invites - more reliable than realtime alone
     const checkPendingInvites = async () => {
-      const { data: pendingInvites, error } = await supabase
-        .from('livekit_session_invites')
-        .select('*')
-        .eq('invitee_id', myProfileId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(1);
+      try {
+        const { data: pendingInvites, error } = await supabase
+          .from('livekit_session_invites')
+          .select('*')
+          .eq('invitee_id', myProfileId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(5);
 
-      if (error) {
-        console.error('[IncomingCallSubscription] Error checking pending invites:', error);
-        return;
-      }
-
-      if (pendingInvites && pendingInvites.length > 0) {
-        const invite = pendingInvites[0] as CallInvite;
-        // Only notify if invite is recent (within last 30 seconds)
-        const inviteAge = Date.now() - new Date(invite.created_at).getTime();
-        if (inviteAge < 30000) {
-          console.log('[IncomingCallSubscription] 📞 Found pending invite via polling:', invite);
-          onIncomingCall(invite);
+        if (error) {
+          console.error('[IncomingCallSubscription] Poll error:', error);
+          return;
         }
+
+        if (pendingInvites && pendingInvites.length > 0) {
+          for (const invite of pendingInvites) {
+            const typedInvite = invite as CallInvite;
+            // Only notify if invite is recent (within last 60 seconds) and not already notified
+            const inviteAge = Date.now() - new Date(typedInvite.created_at).getTime();
+            if (inviteAge < 60000 && !notifiedInvites.has(typedInvite.id)) {
+              console.log('[IncomingCallSubscription] 📞 INCOMING CALL via poll:', typedInvite.inviter_name);
+              notifiedInvites.add(typedInvite.id);
+              onIncomingCall(typedInvite);
+              break; // Only handle one at a time
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[IncomingCallSubscription] Poll exception:', err);
       }
     };
 
     // Check immediately on mount
     checkPendingInvites();
 
-    // Poll every 3 seconds as fallback
-    const pollInterval = setInterval(checkPendingInvites, 3000);
+    // Poll every 2 seconds for faster response
+    const pollInterval = setInterval(checkPendingInvites, 2000);
 
     // Subscribe to ALL changes on the table, filter in callback
-    // This is more reliable than server-side filters which can be buggy
     const channel = supabase
-      .channel(`call-invites-global-${myProfileId}`)
+      .channel(`call-invites-${myProfileId}-${Date.now()}`) // Unique channel name
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all events
+          event: '*',
           schema: 'public',
           table: 'livekit_session_invites',
         },
         (payload) => {
-          console.log('[IncomingCallSubscription] 🔔 Realtime event:', payload.eventType, payload);
+          console.log('[IncomingCallSubscription] 📡 Realtime:', payload.eventType);
           
           if (payload.eventType === 'INSERT') {
             const invite = payload.new as CallInvite;
-            // Only handle if this invite is for ME
+            // Only handle if this invite is for ME and pending
             if (invite.invitee_id === myProfileId && invite.status === 'pending') {
-              console.log('[IncomingCallSubscription] ✅ NEW CALL FOR ME:', invite.inviter_name);
-              onIncomingCall(invite);
+              if (!notifiedInvites.has(invite.id)) {
+                console.log('[IncomingCallSubscription] 📞 INCOMING CALL via realtime:', invite.inviter_name);
+                notifiedInvites.add(invite.id);
+                onIncomingCall(invite);
+              }
             }
           } else if (payload.eventType === 'UPDATE') {
             const invite = payload.new as CallInvite;
-            // Handle if I'm the invitee and it was cancelled or declined
-            if (invite.invitee_id === myProfileId && (invite.status === 'cancelled' || invite.status === 'declined')) {
+            // Handle cancellation/decline
+            if (invite.invitee_id === myProfileId && 
+                (invite.status === 'cancelled' || invite.status === 'declined')) {
+              console.log('[IncomingCallSubscription] 📞 Call cancelled/declined');
               onCallCancelled(invite.id);
             }
           } else if (payload.eventType === 'DELETE') {
@@ -113,16 +128,15 @@ export const useIncomingCallSubscription = ({
         }
       )
       .subscribe((status, err) => {
-        console.log('[IncomingCallSubscription] Subscription status:', status, err || '');
         if (status === 'SUBSCRIBED') {
-          console.log('[IncomingCallSubscription] ✅ Successfully subscribed to incoming calls for profile:', myProfileId);
+          console.log('[IncomingCallSubscription] ✅ Realtime ACTIVE for:', myProfileId);
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('[IncomingCallSubscription] ❌ Channel error - relying on polling');
+          console.error('[IncomingCallSubscription] ❌ Realtime error - using polling only');
         }
       });
 
     return () => {
-      console.log('[IncomingCallSubscription] Cleaning up subscription');
+      console.log('[IncomingCallSubscription] 🔌 Cleanup');
       clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
