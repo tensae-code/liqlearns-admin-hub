@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useLiveKitContext } from '@/contexts/LiveKitContext';
 import { cn } from '@/lib/utils';
 
@@ -101,16 +102,14 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     return null;
   }
 
-  // Auto-dismiss when call ends - don't show "Call ended" popup
-  if (callState.status === 'ended' || callState.status === 'rejected' || callState.status === 'no-answer') {
-    return null;
-  }
-
   // Handle incoming call - enhanced with visual effects
   if (incomingCall && callState.status === 'idle') {
     return (
       <Dialog open={true} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md border-primary/50 shadow-2xl shadow-primary/20">
+        <DialogContent className="sm:max-w-md border-primary/50 shadow-2xl shadow-primary/20" aria-describedby={undefined}>
+          <VisuallyHidden>
+            <DialogTitle>Incoming call from {incomingCall.callerName}</DialogTitle>
+          </VisuallyHidden>
           <div className="flex flex-col items-center gap-4 py-6">
             {/* Pulsing background effect */}
             <div className="absolute inset-0 overflow-hidden rounded-lg">
@@ -274,7 +273,10 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
   // Full dialog
   return (
     <Dialog open={true} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden" aria-describedby={undefined}>
+        <VisuallyHidden>
+          <DialogTitle>{callState.status === 'ringing' ? 'Calling' : 'In call with'} {peer?.name || 'Unknown'}</DialogTitle>
+        </VisuallyHidden>
         {/* Header with minimize */}
         <div className="absolute top-2 right-2 z-10 flex gap-2">
           {isCallActive && (
