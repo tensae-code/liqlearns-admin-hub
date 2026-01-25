@@ -215,21 +215,65 @@ const extractBackgroundColor = (xmlString: string): string => {
   return '#ffffff';
 };
 
-const extractBackgroundImage = (
+/**
+ * Parse XML with DOMParser and find the background image embedded via r:embed in the slide
+ * and resolve the corresponding Target from the slide rels XML.
+ *
+ * This is more robust than regex and handles namespace prefixes by checking localName and attribute localName.
+ *
+ * Returns data URL string from mediaFiles map if found, or undefined.
+ */
+export const extractBackgroundImage = (
   slideXml: string,
   relsXml: string,
   mediaFiles: Record<string, string>
 ): string | undefined => {
-  const bgMatch = slideXml.match(/<p:bg[\s\S]*?<a:blip[^>]*r:embed="([^"]+)"[\s\S]*?<\/p:bg>/);
-  if (!bgMatch) return undefined;
-
-  const relId = bgMatch[1];
-  const relPattern = new RegExp(`Id="${relId}"[^>]*Target="([^"]+)"`);
-  const relMatch = relsXml.match(relPattern);
-  if (!relMatch) return undefined;
-
-  const targetPath = relMatch[1].replace('../', 'ppt/');
-  return mediaFiles[targetPath];
+  try {
+    if (!slideXml || !relsXml) return undefined;
+    
+    // DOMParser exists in browser; in test environment the test runner should set jsdom
+    const parser = new DOMParser();
+    const slideDoc = parser.parseFromString(slideXml, 'application/xml');
+    
+    // find <p:bg> (namespace-insensitive)
+    const allNodes = Array.from(slideDoc.getElementsByTagName('*'));
+    const bgNode = allNodes.find(n => n.localName === 'bg' || n.nodeName.toLowerCase().endsWith(':bg'));
+    if (!bgNode) return undefined;
+    
+    // search for any element under bgNode that carries an 'embed' attribute (r:embed)
+    let relId: string | undefined;
+    const bgChildren = Array.from(bgNode.getElementsByTagName('*'));
+    for (const c of [bgNode, ...bgChildren]) {
+      for (let i = 0; i < c.attributes.length; i++) {
+        const attr = c.attributes[i];
+        if (attr && attr.localName === 'embed') {
+          relId = attr.value;
+          break;
+        }
+      }
+      if (relId) break;
+    }
+    if (!relId) return undefined;
+    
+    // parse rels XML
+    const relsDoc = parser.parseFromString(relsXml, 'application/xml');
+    const relNodes = Array.from(relsDoc.getElementsByTagName('*'));
+    const relNode = relNodes.find(n => {
+      const id = n.getAttribute('Id') || n.getAttribute('id');
+      return id === relId;
+    });
+    if (!relNode) return undefined;
+    
+    const target = relNode.getAttribute('Target') || relNode.getAttribute('target');
+    if (!target) return undefined;
+    
+    // convert ../media/xxx to ppt/media/xxx
+    const targetPath = target.replace(/^\.\.\//, 'ppt/');
+    return mediaFiles[targetPath];
+  } catch (err) {
+    console.warn('[pptxParser] extractBackgroundImage failed with error:', err);
+    return undefined;
+  }
 };
 
 // Convert image to base64 data URL
