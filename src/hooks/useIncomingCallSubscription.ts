@@ -100,8 +100,8 @@ export const useIncomingCallSubscription = ({
             }
           } else if (payload.eventType === 'UPDATE') {
             const invite = payload.new as CallInvite;
-            // Handle if I'm the invitee and it was cancelled
-            if (invite.invitee_id === myProfileId && (invite.status === 'cancelled' || invite.status === 'rejected')) {
+            // Handle if I'm the invitee and it was cancelled or declined
+            if (invite.invitee_id === myProfileId && (invite.status === 'cancelled' || invite.status === 'declined')) {
               onCallCancelled(invite.id);
             }
           } else if (payload.eventType === 'DELETE') {
@@ -201,7 +201,7 @@ export const useIncomingCallSubscription = ({
       await supabase
         .from('livekit_session_invites')
         .update({ 
-          status: accept ? 'accepted' : 'rejected',
+          status: accept ? 'accepted' : 'declined', // Use 'declined' to match DB constraint
           responded_at: new Date().toISOString()
         })
         .eq('id', inviteId);
