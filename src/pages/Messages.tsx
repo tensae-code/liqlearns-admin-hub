@@ -171,7 +171,7 @@ const Messages = () => {
   return (
     <DashboardLayout>
       <motion.div
-        className="h-[calc(100dvh-8rem)] md:h-[calc(100vh-8rem)] flex overflow-hidden rounded-xl border border-border bg-card"
+        className="h-[calc(100dvh-10rem)] md:h-[calc(100vh-8rem)] flex overflow-hidden rounded-xl border border-border bg-card mt-2"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -335,6 +335,7 @@ const Messages = () => {
             participants={groupMembers}
             currentUserId={profile?.id || ''}
             currentUserRole={getCurrentUserRole()}
+            activeParticipantIds={[]} // Start empty - participants join when they connect
             onLeave={() => {
               setShowClubRoom(false);
               toast.info('Left the room');

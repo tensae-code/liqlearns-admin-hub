@@ -40,6 +40,7 @@ interface ClubRoomViewProps {
   currentUserRole: 'owner' | 'admin' | 'member';
   onLeave: () => void;
   onClose: () => void;
+  activeParticipantIds?: string[]; // Only show participants who are actually in the room
 }
 
 const ClubRoomView = ({
@@ -50,7 +51,12 @@ const ClubRoomView = ({
   currentUserRole,
   onLeave,
   onClose,
+  activeParticipantIds = [],
 }: ClubRoomViewProps) => {
+  // Only show participants who are actually in the room (or just current user if empty)
+  const activeParticipants = activeParticipantIds.length > 0
+    ? participants.filter(p => activeParticipantIds.includes(p.id) || p.id === currentUserId)
+    : []; // Start with no participants - they join when they actually connect
   const [isMicOn, setIsMicOn] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
@@ -191,11 +197,13 @@ const ClubRoomView = ({
     };
   }, [localStream]);
 
-  const gridCols = participants.length <= 2
+  // Use activeParticipants count for grid (plus current user)
+  const participantCount = activeParticipants.length + 1;
+  const gridCols = participantCount <= 2
     ? 'grid-cols-1 md:grid-cols-2'
-    : participants.length <= 4
+    : participantCount <= 4
     ? 'grid-cols-2'
-    : participants.length <= 9
+    : participantCount <= 9
     ? 'grid-cols-2 md:grid-cols-3'
     : 'grid-cols-3 md:grid-cols-4';
 
@@ -220,7 +228,7 @@ const ClubRoomView = ({
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="gap-1">
             <Users className="w-3 h-3" />
-            {participants.length}
+            {participantCount}
           </Badge>
           <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(!isFullscreen)}>
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -277,8 +285,8 @@ const ClubRoomView = ({
             </div>
           </motion.div>
 
-          {/* Other participants */}
-          {participants
+          {/* Other active participants only */}
+          {activeParticipants
             .filter(p => p.id !== currentUserId)
             .map((participant, index) => (
               <motion.div
@@ -313,12 +321,12 @@ const ClubRoomView = ({
               </motion.div>
             ))}
 
-          {/* Empty state */}
-          {participants.length <= 1 && (
+          {/* Empty state - show when only current user */}
+          {activeParticipants.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-8 text-center">
               <Users className="w-12 h-12 text-muted-foreground mb-3" />
               <p className="text-sm text-muted-foreground">
-                Waiting for others to join the room...
+                You're the first one here! Waiting for others to join...
               </p>
             </div>
           )}

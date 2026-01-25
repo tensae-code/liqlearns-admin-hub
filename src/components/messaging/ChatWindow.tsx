@@ -25,11 +25,12 @@ import {
   Download,
   Loader2
 } from 'lucide-react';
-import ChatBubble from './ChatBubble';
+import SwipeableChatBubble from './SwipeableChatBubble';
 import EmojiPicker from './EmojiPicker';
 import TypingIndicator from './TypingIndicator';
 import VoiceRecorder from './VoiceRecorder';
 import FileAttachmentPreview from './FileAttachmentPreview';
+import SharedMediaSheet from './SharedMediaSheet';
 import { Conversation } from './ConversationList';
 import { toast } from 'sonner';
 import usePresence from '@/hooks/usePresence';
@@ -136,8 +137,11 @@ const ChatWindow = ({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const [showSharedMedia, setShowSharedMedia] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -586,38 +590,44 @@ const ChatWindow = ({
           </Button>
         )}
         
-        <Avatar className="h-8 w-8 md:h-10 md:w-10 shrink-0">
-          <AvatarImage src={conversation.avatar} />
-          <AvatarFallback className={
-            conversation.type === 'group' 
-              ? "bg-primary/20 text-primary" 
-              : "bg-gradient-accent text-accent-foreground"
-          }>
-            {conversation.type === 'group' ? <Users className="w-4 h-4" /> : conversation.name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium text-foreground text-sm md:text-base truncate">{conversation.name}</h3>
-            {currentChannelName && (
-              <Badge variant="secondary" className="text-[10px] shrink-0">
-                #{currentChannelName}
-              </Badge>
-            )}
+        {/* Clickable header to open shared media */}
+        <button 
+          className="flex items-center gap-2 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+          onClick={() => setShowSharedMedia(true)}
+        >
+          <Avatar className="h-8 w-8 md:h-10 md:w-10 shrink-0">
+            <AvatarImage src={conversation.avatar} />
+            <AvatarFallback className={
+              conversation.type === 'group' 
+                ? "bg-primary/20 text-primary" 
+                : "bg-gradient-accent text-accent-foreground"
+            }>
+              {conversation.type === 'group' ? <Users className="w-4 h-4" /> : conversation.name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-medium text-foreground text-sm md:text-base truncate">{conversation.name}</h3>
+              {currentChannelName && (
+                <Badge variant="secondary" className="text-[10px] shrink-0">
+                  #{currentChannelName}
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              {conversation.type === 'group' 
+                ? `${conversation.members || 0} members`
+                : (
+                  <>
+                    <span className={`w-2 h-2 rounded-full ${isPartnerOnline ? 'bg-success' : 'bg-muted-foreground'}`} />
+                    {isPartnerOnline ? 'Online' : 'Offline'}
+                  </>
+                )
+              }
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            {conversation.type === 'group' 
-              ? `${conversation.members} members`
-              : (
-                <>
-                  <span className={`w-2 h-2 rounded-full ${isPartnerOnline ? 'bg-success' : 'bg-muted-foreground'}`} />
-                  {isPartnerOnline ? 'Online' : 'Offline'}
-                </>
-              )
-            }
-          </p>
-        </div>
+        </button>
 
         <div className="flex gap-0.5 shrink-0">
           <Button variant="ghost" size="icon" className="h-8 w-8" title="Voice Call" onClick={handleVoiceCall}>
@@ -634,8 +644,12 @@ const ChatWindow = ({
         </div>
       </div>
 
-      {/* Messages with date separators - flex-1 with overflow */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-4 bg-gradient-to-b from-background to-muted/20" style={{ minHeight: 0 }}>
+      {/* Messages with date separators - independent scroll container */}
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-3 md:p-4 bg-gradient-to-b from-background to-muted/20"
+        style={{ minHeight: 0, overscrollBehavior: 'contain' }}
+      >
         {groupedMessages.map((dateGroup, dateIndex) => (
           <div key={dateIndex}>
             {/* Date Separator */}
@@ -663,7 +677,7 @@ const ChatWindow = ({
                   }
                   
                   return (
-                    <ChatBubble
+                    <SwipeableChatBubble
                       key={msg.id}
                       messageId={msg.id}
                       message={msg.content}
@@ -675,6 +689,8 @@ const ChatWindow = ({
                       isFirstInGroup={msgIndex === 0}
                       isLastInGroup={msgIndex === group.messages.length - 1}
                       onDelete={onDeleteMessage ? () => onDeleteMessage(msg.id) : undefined}
+                      onReply={() => setReplyingTo(msg)}
+                      replyTo={undefined} // TODO: Add reply-to support in Message type
                     />
                   );
                 })}
@@ -718,6 +734,32 @@ const ChatWindow = ({
         )}
       </AnimatePresence>
 
+      {/* Reply preview */}
+      <AnimatePresence>
+        {replyingTo && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="px-3 py-2 border-t border-border bg-muted/50 flex items-center gap-2"
+          >
+            <div className="w-1 h-10 bg-accent rounded-full" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-accent">{replyingTo.sender.name}</p>
+              <p className="text-sm text-muted-foreground truncate">{replyingTo.content}</p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="shrink-0 h-6 w-6"
+              onClick={() => setReplyingTo(null)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Input - always visible at bottom */}
       {!showVoiceRecorder && (
         <div className="p-2 md:p-4 border-t border-border bg-card flex-shrink-0 pb-safe">
@@ -737,10 +779,11 @@ const ChatWindow = ({
             >
               <Paperclip className="w-4 h-4 text-muted-foreground" />
             </Button>
+            {/* Voice recorder button - visible on all screens */}
             <Button 
               variant="ghost" 
               size="icon" 
-              className="shrink-0 h-8 w-8 hidden md:flex"
+              className="shrink-0 h-8 w-8"
               onClick={() => setShowVoiceRecorder(true)}
             >
               <Mic className="w-4 h-4 text-muted-foreground" />
@@ -749,7 +792,7 @@ const ChatWindow = ({
             <div className="flex-1 relative min-w-0">
               <Input
                 ref={inputRef}
-                placeholder="Type a message..."
+                placeholder={replyingTo ? "Reply..." : "Type a message..."}
                 value={newMessage}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
@@ -775,6 +818,14 @@ const ChatWindow = ({
           </div>
         </div>
       )}
+
+      {/* Shared Media Sheet */}
+      <SharedMediaSheet
+        open={showSharedMedia}
+        onOpenChange={setShowSharedMedia}
+        conversation={conversation}
+        messages={messages}
+      />
     </div>
   );
 };
