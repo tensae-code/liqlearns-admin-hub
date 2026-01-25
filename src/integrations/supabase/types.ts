@@ -1434,6 +1434,130 @@ export type Database = {
           },
         ]
       }
+      livekit_session_invites: {
+        Row: {
+          created_at: string
+          id: string
+          invitee_id: string
+          inviter_id: string
+          responded_at: string | null
+          session_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invitee_id: string
+          inviter_id: string
+          responded_at?: string | null
+          session_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitee_id?: string
+          inviter_id?: string
+          responded_at?: string | null
+          session_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "livekit_session_invites_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "livekit_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      livekit_session_participants: {
+        Row: {
+          id: string
+          is_hand_raised: boolean
+          is_muted: boolean
+          is_video_on: boolean
+          joined_at: string
+          left_at: string | null
+          role: Database["public"]["Enums"]["session_role"]
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_hand_raised?: boolean
+          is_muted?: boolean
+          is_video_on?: boolean
+          joined_at?: string
+          left_at?: string | null
+          role?: Database["public"]["Enums"]["session_role"]
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_hand_raised?: boolean
+          is_muted?: boolean
+          is_video_on?: boolean
+          joined_at?: string
+          left_at?: string | null
+          role?: Database["public"]["Enums"]["session_role"]
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "livekit_session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "livekit_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      livekit_sessions: {
+        Row: {
+          active_screenshare_user_id: string | null
+          context_id: string
+          context_type: Database["public"]["Enums"]["session_context"]
+          created_at: string
+          ended_at: string | null
+          host_id: string
+          id: string
+          max_speakers: number
+          metadata: Json | null
+          room_name: string
+          status: string
+        }
+        Insert: {
+          active_screenshare_user_id?: string | null
+          context_id: string
+          context_type: Database["public"]["Enums"]["session_context"]
+          created_at?: string
+          ended_at?: string | null
+          host_id: string
+          id?: string
+          max_speakers?: number
+          metadata?: Json | null
+          room_name: string
+          status?: string
+        }
+        Update: {
+          active_screenshare_user_id?: string | null
+          context_id?: string
+          context_type?: Database["public"]["Enums"]["session_context"]
+          created_at?: string
+          ended_at?: string | null
+          host_id?: string
+          id?: string
+          max_speakers?: number
+          metadata?: Json | null
+          room_name?: string
+          status?: string
+        }
+        Relationships: []
+      }
       message_requests: {
         Row: {
           created_at: string
@@ -2852,6 +2976,8 @@ export type Database = {
         | "spam"
         | "underage_violation"
         | "other"
+      session_context: "dm" | "group" | "study_room"
+      session_role: "host" | "moderator" | "speaker" | "listener"
       study_room_type: "public" | "private" | "kids"
     }
     CompositeTypes: {
@@ -2999,6 +3125,8 @@ export const Constants = {
         "underage_violation",
         "other",
       ],
+      session_context: ["dm", "group", "study_room"],
+      session_role: ["host", "moderator", "speaker", "listener"],
       study_room_type: ["public", "private", "kids"],
     },
   },

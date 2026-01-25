@@ -36,7 +36,7 @@ import usePresence from '@/hooks/usePresence';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCall } from '@/contexts/CallContext';
+import { useLiveKitContext } from '@/contexts/LiveKitContext';
 
 export interface Message {
   id: string;
@@ -128,7 +128,7 @@ const ChatWindow = ({
   currentChannelName,
 }: ChatWindowProps) => {
   const { user } = useAuth();
-  const { startCall } = useCall();
+  const { startDMCall, startGroupCall } = useLiveKitContext();
   const [newMessage, setNewMessage] = useState('');
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -207,10 +207,10 @@ const ChatWindow = ({
     if (conversation?.type === 'dm') {
       const partnerId = getPartnerId();
       if (partnerId) {
-        startCall(partnerId, conversation.name, conversation.avatar, 'voice');
+        startDMCall(partnerId, conversation.name, conversation.avatar, 'voice');
       }
-    } else {
-      toast.info('Voice calls coming soon for groups!');
+    } else if (conversation?.type === 'group') {
+      startGroupCall(conversation.id, 'voice');
     }
   };
 
@@ -218,10 +218,10 @@ const ChatWindow = ({
     if (conversation?.type === 'dm') {
       const partnerId = getPartnerId();
       if (partnerId) {
-        startCall(partnerId, conversation.name, conversation.avatar, 'video');
+        startDMCall(partnerId, conversation.name, conversation.avatar, 'video');
       }
-    } else {
-      toast.info('Video calls coming soon for groups!');
+    } else if (conversation?.type === 'group') {
+      startGroupCall(conversation.id, 'video');
     }
   };
 
