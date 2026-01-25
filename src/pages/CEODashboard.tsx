@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import CourseCategoryManager from '@/components/ceo/CourseCategoryManager';
 import PlatformControls from '@/components/ceo/PlatformControls';
 import CEOSkillApproval from '@/components/ceo/CEOSkillApproval';
+import AdminPrivilegeManager from '@/components/ceo/AdminPrivilegeManager';
 import {
   Users,
   BookOpen,
@@ -38,6 +39,7 @@ const CEODashboard = () => {
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
   const [platformControlsOpen, setPlatformControlsOpen] = useState(false);
   const [skillApprovalOpen, setSkillApprovalOpen] = useState(false);
+  const [adminPrivilegesOpen, setAdminPrivilegesOpen] = useState(false);
 
   // Handle tab query params to open modals from sidebar navigation
   useEffect(() => {
@@ -50,6 +52,8 @@ const CEODashboard = () => {
       setPlatformControlsOpen(true);
     } else if (tab === 'categories') {
       setCategoryManagerOpen(true);
+    } else if (tab === 'privileges') {
+      setAdminPrivilegesOpen(true);
     }
   }, [location.search]);
 
@@ -66,6 +70,11 @@ const CEODashboard = () => {
 
   const handleCategoriesClose = (open: boolean) => {
     setCategoryManagerOpen(open);
+    if (!open) navigate('/ceo', { replace: true });
+  };
+
+  const handlePrivilegesClose = (open: boolean) => {
+    setAdminPrivilegesOpen(open);
     if (!open) navigate('/ceo', { replace: true });
   };
   
@@ -274,6 +283,10 @@ const CEODashboard = () => {
       <CEOSkillApproval
         open={skillApprovalOpen}
         onOpenChange={handleSkillClose}
+      />
+      <AdminPrivilegeManager
+        open={adminPrivilegesOpen}
+        onOpenChange={handlePrivilegesClose}
       />
     </DashboardLayout>
   );

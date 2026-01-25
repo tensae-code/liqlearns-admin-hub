@@ -149,7 +149,7 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
     setSelectedModule(null);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (submitForReview: boolean = false) => {
     if (!formData.title || !formData.category) {
       toast.error('Please fill in all required fields');
       return;
@@ -174,7 +174,7 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
         throw new Error('Could not find your profile');
       }
 
-      // Create the course in the database
+      // Create the course in the database with appropriate status
       const { data: course, error: courseError } = await supabase
         .from('courses')
         .insert({
@@ -185,8 +185,10 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
           price: formData.isFree ? 0 : parseFloat(formData.price) || 0,
           estimated_duration: parseInt(formData.estimatedDuration) || null,
           instructor_id: profile.id,
-          is_published: false, // Start as draft
+          is_published: false,
           total_lessons: modules.length,
+          submission_status: submitForReview ? 'submitted' : 'draft',
+          submitted_at: submitForReview ? new Date().toISOString() : null,
         })
         .select()
         .single();
@@ -216,9 +218,15 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
       queryClient.invalidateQueries({ queryKey: ['teacher-courses'] });
 
-      toast.success('Course created successfully!', {
-        description: 'Your course has been saved as a draft. Add content to publish it.',
-      });
+      if (submitForReview) {
+        toast.success('Course submitted for review!', {
+          description: 'An admin will review your course and approve it for publishing.',
+        });
+      } else {
+        toast.success('Course saved as draft!', {
+          description: 'You can continue editing and submit for review when ready.',
+        });
+      }
       
       onOpenChange(false);
       resetForm();
@@ -253,7 +261,15 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
       toast.error('Please enter a course title to save as draft');
       return;
     }
-    await handleSubmit();
+    await handleSubmit(false);
+  };
+
+  const handleSubmitForReview = async () => {
+    if (!formData.title || !formData.category) {
+      toast.error('Please fill in all required fields before submitting');
+      return;
+    }
+    await handleSubmit(true);
   };
 
   return (
@@ -664,15 +680,15 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
                     <Save className="w-4 h-4 mr-2" />
-                    Save as Draft
+                    Save Draft
                   </Button>
-                  <Button onClick={handleSubmit} className="bg-gradient-accent" disabled={isSubmitting}>
+                  <Button onClick={handleSubmitForReview} className="bg-gradient-accent" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
                       <Sparkles className="w-4 h-4 mr-2" />
                     )}
-                    {isSubmitting ? 'Creating...' : 'Create Course'}
+                    {isSubmitting ? 'Submitting...' : 'Submit for Review'}
                   </Button>
                 </div>
               </div>
