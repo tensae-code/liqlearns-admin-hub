@@ -42,68 +42,88 @@ export const useIncomingCallSubscription = ({
       return;
     }
 
-    console.log('[IncomingCallSubscription] Setting up subscription for profile:', profile.id);
+    const myProfileId = profile.id;
+    console.log('[IncomingCallSubscription] Setting up subscription for profile:', myProfileId);
 
-    // Subscribe to new call invites for this user using their PROFILE ID
+    // Also poll for pending invites on mount and periodically as fallback
+    const checkPendingInvites = async () => {
+      const { data: pendingInvites, error } = await supabase
+        .from('livekit_session_invites')
+        .select('*')
+        .eq('invitee_id', myProfileId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('[IncomingCallSubscription] Error checking pending invites:', error);
+        return;
+      }
+
+      if (pendingInvites && pendingInvites.length > 0) {
+        const invite = pendingInvites[0] as CallInvite;
+        // Only notify if invite is recent (within last 30 seconds)
+        const inviteAge = Date.now() - new Date(invite.created_at).getTime();
+        if (inviteAge < 30000) {
+          console.log('[IncomingCallSubscription] 📞 Found pending invite via polling:', invite);
+          onIncomingCall(invite);
+        }
+      }
+    };
+
+    // Check immediately on mount
+    checkPendingInvites();
+
+    // Poll every 3 seconds as fallback
+    const pollInterval = setInterval(checkPendingInvites, 3000);
+
+    // Subscribe to ALL changes on the table, filter in callback
+    // This is more reliable than server-side filters which can be buggy
     const channel = supabase
-      .channel(`call-invites-${profile.id}`)
+      .channel(`call-invites-global-${myProfileId}`)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // Listen to all events
           schema: 'public',
           table: 'livekit_session_invites',
-          filter: `invitee_id=eq.${profile.id}`,
         },
-        (payload: RealtimePostgresInsertPayload<CallInvite>) => {
-          console.log('[IncomingCallSubscription] 🔔 NEW CALL INVITE RECEIVED:', payload.new);
-          const invite = payload.new;
-          if (invite.status === 'pending') {
-            console.log('[IncomingCallSubscription] ✅ Triggering incoming call UI for:', invite.inviter_name);
-            onIncomingCall(invite);
+        (payload) => {
+          console.log('[IncomingCallSubscription] 🔔 Realtime event:', payload.eventType, payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const invite = payload.new as CallInvite;
+            // Only handle if this invite is for ME
+            if (invite.invitee_id === myProfileId && invite.status === 'pending') {
+              console.log('[IncomingCallSubscription] ✅ NEW CALL FOR ME:', invite.inviter_name);
+              onIncomingCall(invite);
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const invite = payload.new as CallInvite;
+            // Handle if I'm the invitee and it was cancelled
+            if (invite.invitee_id === myProfileId && (invite.status === 'cancelled' || invite.status === 'rejected')) {
+              onCallCancelled(invite.id);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const oldInvite = payload.old as { id: string; invitee_id?: string };
+            if (oldInvite.invitee_id === myProfileId) {
+              onCallCancelled(oldInvite.id);
+            }
           }
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'livekit_session_invites',
-          filter: `invitee_id=eq.${profile.id}`,
-        },
-        (payload) => {
-          console.log('[IncomingCallSubscription] Call invite updated:', payload.new);
-          const invite = payload.new as CallInvite;
-          // If the invite was cancelled or rejected
-          if (invite.status === 'cancelled' || invite.status === 'rejected') {
-            onCallCancelled(invite.id);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'livekit_session_invites',
-          filter: `invitee_id=eq.${profile.id}`,
-        },
-        (payload) => {
-          console.log('[IncomingCallSubscription] Call invite deleted:', payload.old);
-          const oldInvite = payload.old as { id: string };
-          onCallCancelled(oldInvite.id);
-        }
-      )
-      .subscribe((status) => {
-        console.log('[IncomingCallSubscription] Subscription status:', status);
+      .subscribe((status, err) => {
+        console.log('[IncomingCallSubscription] Subscription status:', status, err || '');
         if (status === 'SUBSCRIBED') {
-          console.log('[IncomingCallSubscription] ✅ Successfully subscribed to incoming calls for profile:', profile.id);
+          console.log('[IncomingCallSubscription] ✅ Successfully subscribed to incoming calls for profile:', myProfileId);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[IncomingCallSubscription] ❌ Channel error - relying on polling');
         }
       });
 
     return () => {
       console.log('[IncomingCallSubscription] Cleaning up subscription');
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
   }, [profile?.id, onIncomingCall, onCallCancelled]);
