@@ -46,47 +46,39 @@ export const useMessaging = () => {
     channelName: 'general',
     channelType: 'text',
   });
-  const [isInitialized, setIsInitialized] = useState(false);
+  
 
-  // Fetch all conversations (DMs and Groups) - optimized for speed
+  // Fetch all conversations (DMs and Groups)
   const fetchConversations = useCallback(async () => {
-    if (!user) return;
+    // Need user for DMs - user.id is auth.uid()
+    if (!user?.id) {
+      console.log('fetchConversations: no user.id');
+      return;
+    }
+
+    console.log('fetchConversations: starting for user', user.id);
+    setLoading(true);
 
     try {
-      setLoading(true);
-
-      // Fetch DMs and groups in parallel for speed
-      const dmPromise = supabase
+      // Fetch DMs using auth.uid() - matches RLS policy
+      const { data: dmData, error: dmError } = await supabase
         .from('direct_messages')
         .select('*')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
-        .limit(100); // Limit for speed
+        .limit(100);
 
-      // Only fetch groups if profile is ready
-      const groupPromise = profile ? supabase
-        .from('group_members')
-        .select(`
-          group_id,
-          groups:group_id (
-            id,
-            name,
-            username,
-            avatar_url,
-            member_count,
-            description
-          )
-        `)
-        .eq('user_id', profile.id) : Promise.resolve({ data: [], error: null });
+      if (dmError) {
+        console.error('Error fetching DMs:', dmError);
+        throw dmError;
+      }
 
-      const [dmResult, groupResult] = await Promise.all([dmPromise, groupPromise]);
-
-      if (dmResult.error) throw dmResult.error;
+      console.log('fetchConversations: got DMs', dmData?.length || 0);
 
       // Get unique conversation partners
       const dmConversationsMap = new Map<string, any>();
       
-      dmResult.data?.forEach(dm => {
+      (dmData || []).forEach(dm => {
         const partnerId = dm.sender_id === user.id ? dm.receiver_id : dm.sender_id;
         if (!dmConversationsMap.has(partnerId)) {
           dmConversationsMap.set(partnerId, dm);
@@ -94,21 +86,26 @@ export const useMessaging = () => {
       });
 
       const partnerIds = Array.from(dmConversationsMap.keys());
+      console.log('fetchConversations: unique partners', partnerIds.length);
       
-      // Fetch partner profiles in parallel
+      // Fetch partner profiles
       let dmConversations: Conversation[] = [];
       
       if (partnerIds.length > 0) {
-        const { data: profiles } = await supabase
+        const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, user_id, full_name, username, avatar_url')
           .in('user_id', partnerIds);
 
+        if (profilesError) {
+          console.error('Error fetching partner profiles:', profilesError);
+        }
+
         dmConversations = partnerIds.map(partnerId => {
-          const partnerProfile = profiles?.find(p => p.user_id === partnerId);
+          const partnerProfile = profilesData?.find(p => p.user_id === partnerId);
           const lastDm = dmConversationsMap.get(partnerId);
           
-          const unreadCount = dmResult.data?.filter(
+          const unreadCount = (dmData || []).filter(
             dm => dm.sender_id === partnerId && !dm.is_read
           ).length || 0;
 
@@ -126,25 +123,50 @@ export const useMessaging = () => {
         });
       }
 
-      // Process groups
-      const groupConversations: Conversation[] = (groupResult.data || []).map((membership: any) => ({
-        id: `group_${membership.groups?.id}`,
-        type: 'group' as const,
-        name: membership.groups?.name || 'Unknown Group',
-        avatar: membership.groups?.avatar_url,
-        lastMessage: '',
-        lastMessageTime: '',
-        members: membership.groups?.member_count || 0,
-      }));
+      // Fetch groups if profile is ready
+      let groupConversations: Conversation[] = [];
+      
+      if (profile?.id) {
+        const { data: groupData, error: groupError } = await supabase
+          .from('group_members')
+          .select(`
+            group_id,
+            groups:group_id (
+              id,
+              name,
+              username,
+              avatar_url,
+              member_count,
+              description
+            )
+          `)
+          .eq('user_id', profile.id);
 
-      setConversations([...dmConversations, ...groupConversations]);
+        if (groupError) {
+          console.error('Error fetching groups:', groupError);
+        } else {
+          groupConversations = (groupData || []).map((membership: any) => ({
+            id: `group_${membership.groups?.id}`,
+            type: 'group' as const,
+            name: membership.groups?.name || 'Unknown Group',
+            avatar: membership.groups?.avatar_url,
+            lastMessage: '',
+            lastMessageTime: '',
+            members: membership.groups?.member_count || 0,
+          }));
+        }
+      }
+
+      const allConversations = [...dmConversations, ...groupConversations];
+      console.log('fetchConversations: total conversations', allConversations.length);
+      setConversations(allConversations);
     } catch (error) {
       console.error('Error fetching conversations:', error);
       toast.error('Failed to load conversations');
     } finally {
       setLoading(false);
     }
-  }, [user, profile]);
+  }, [user?.id, profile?.id]);
 
   // Fetch messages for a conversation (including call logs)
   const fetchMessages = useCallback(async (conversationId: string) => {
@@ -789,31 +811,22 @@ export const useMessaging = () => {
     };
   }, [profile?.id, currentConversation?.id, currentConversation?.type, currentChannel.channelId]);
 
-  // Initial fetch - run immediately when user is ready, don't wait for profile
+  // Fetch conversations when user is available
   useEffect(() => {
-    if (user && !isInitialized) {
-      console.log('Initializing messaging - fetching conversations immediately');
-      setIsInitialized(true);
+    if (user?.id) {
+      console.log('User ready, fetching conversations...');
       fetchConversations();
     }
-  }, [user?.id, isInitialized, fetchConversations]);
+  }, [user?.id, fetchConversations]);
 
-  // Refetch when profile becomes available (for groups)
-  useEffect(() => {
-    if (user && profile && isInitialized) {
-      fetchConversations();
-    }
-  }, [profile?.id]);
-
-  // Reset initialization when user changes
+  // Reset when user logs out
   useEffect(() => {
     if (!user) {
-      setIsInitialized(false);
       setConversations([]);
       setMessages([]);
       setCurrentConversation(null);
     }
-  }, [user?.id]);
+  }, [user]);
 
   return {
     conversations,
