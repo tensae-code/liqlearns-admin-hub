@@ -2,11 +2,12 @@ import { useState, useRef } from 'react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck, Trash2, MoreVertical, Reply } from 'lucide-react';
+import { Check, CheckCheck, Trash2, MoreVertical, Reply, Pin } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -25,11 +26,15 @@ interface SwipeableChatBubbleProps {
   isLastInGroup?: boolean;
   onDelete?: () => void;
   onReply?: () => void;
+  onPin?: () => void;
+  onUnpin?: () => void;
+  isPinned?: boolean;
   messageId?: string;
   replyTo?: {
     content: string;
     senderName: string;
   };
+  highlightId?: string;
 }
 
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
@@ -45,9 +50,14 @@ const SwipeableChatBubble = ({
   isLastInGroup = true,
   onDelete,
   onReply,
+  onPin,
+  onUnpin,
+  isPinned = false,
   messageId,
   replyTo,
+  highlightId,
 }: SwipeableChatBubbleProps) => {
+  const isHighlighted = highlightId === messageId;
   const [showOptions, setShowOptions] = useState(false);
   const x = useMotionValue(0);
   const controls = useAnimation();
@@ -102,15 +112,21 @@ const SwipeableChatBubble = ({
       case 'delivered':
         return <CheckCheck className="w-3 h-3 text-muted-foreground/70" />;
       case 'read':
-        return <CheckCheck className="w-3 h-3 text-blue-400" />;
+        return <CheckCheck className="w-3 h-3 text-primary" />;
     }
   };
 
   return (
-    <div 
+    <motion.div 
       ref={constraintRef}
+      id={`message-${messageId}`}
+      initial={false}
+      animate={{
+        backgroundColor: isHighlighted ? 'hsl(var(--accent) / 0.2)' : 'transparent',
+      }}
+      transition={{ duration: 0.5 }}
       className={cn(
-        "flex gap-2 group relative",
+        "flex gap-2 group relative rounded-lg -mx-1 px-1",
         isSender ? "flex-row-reverse" : "flex-row",
         isLastInGroup ? "mb-3" : "mb-0.5"
       )}
@@ -178,7 +194,7 @@ const SwipeableChatBubble = ({
         
         <div className="flex items-center gap-1">
           {/* Delete option for sender messages */}
-          {isSender && showOptions && onDelete && (
+          {isSender && showOptions && (onDelete || onPin || onUnpin) && (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <button 
@@ -195,13 +211,33 @@ const SwipeableChatBubble = ({
                     Reply
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem 
-                  onClick={() => handleDelete()}
-                  className="text-destructive cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete message
-                </DropdownMenuItem>
+                {isPinned ? (
+                  onUnpin && (
+                    <DropdownMenuItem onClick={onUnpin} className="cursor-pointer">
+                      <Pin className="w-4 h-4 mr-2" />
+                      Unpin
+                    </DropdownMenuItem>
+                  )
+                ) : (
+                  onPin && (
+                    <DropdownMenuItem onClick={onPin} className="cursor-pointer">
+                      <Pin className="w-4 h-4 mr-2" />
+                      Pin message
+                    </DropdownMenuItem>
+                  )
+                )}
+                {onDelete && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => handleDelete()}
+                      className="text-destructive cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete message
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -228,7 +264,7 @@ const SwipeableChatBubble = ({
           </div>
 
           {/* Delete option for received messages */}
-          {!isSender && showOptions && (onDelete || onReply) && (
+          {!isSender && showOptions && (onDelete || onReply || onPin || onUnpin) && (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <button 
@@ -245,14 +281,32 @@ const SwipeableChatBubble = ({
                     Reply
                   </DropdownMenuItem>
                 )}
+                {isPinned ? (
+                  onUnpin && (
+                    <DropdownMenuItem onClick={onUnpin} className="cursor-pointer">
+                      <Pin className="w-4 h-4 mr-2" />
+                      Unpin
+                    </DropdownMenuItem>
+                  )
+                ) : (
+                  onPin && (
+                    <DropdownMenuItem onClick={onPin} className="cursor-pointer">
+                      <Pin className="w-4 h-4 mr-2" />
+                      Pin message
+                    </DropdownMenuItem>
+                  )
+                )}
                 {onDelete && (
-                  <DropdownMenuItem 
-                    onClick={() => handleDelete()}
-                    className="text-destructive cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete for me
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => handleDelete()}
+                      className="text-destructive cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete for me
+                    </DropdownMenuItem>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -269,7 +323,7 @@ const SwipeableChatBubble = ({
       
       {/* Spacer for sender messages */}
       {isSender && <div className="w-1" />}
-    </div>
+    </motion.div>
   );
 };
 
