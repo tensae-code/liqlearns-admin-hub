@@ -46,38 +46,34 @@ export const useMessaging = () => {
     channelName: 'general',
     channelType: 'text',
   });
-  
 
-  // Fetch all conversations (DMs and Groups)
+  // Helper to format time
+  const formatTimeHelper = (dateString?: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days === 0) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return date.toLocaleDateString([], { weekday: 'short' });
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  // Refetch conversations (used by external callers)
   const fetchConversations = useCallback(async () => {
-    // Need user for DMs - user.id is auth.uid()
-    if (!user?.id) {
-      console.log('fetchConversations: no user.id');
-      return;
-    }
-
-    console.log('fetchConversations: starting for user', user.id);
+    if (!user?.id) return;
+    
     setLoading(true);
-
     try {
-      // Fetch DMs using auth.uid() - matches RLS policy
-      const { data: dmData, error: dmError } = await supabase
+      const { data: dmData } = await supabase
         .from('direct_messages')
         .select('*')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (dmError) {
-        console.error('Error fetching DMs:', dmError);
-        throw dmError;
-      }
-
-      console.log('fetchConversations: got DMs', dmData?.length || 0);
-
-      // Get unique conversation partners
       const dmConversationsMap = new Map<string, any>();
-      
       (dmData || []).forEach(dm => {
         const partnerId = dm.sender_id === user.id ? dm.receiver_id : dm.sender_id;
         if (!dmConversationsMap.has(partnerId)) {
@@ -86,28 +82,18 @@ export const useMessaging = () => {
       });
 
       const partnerIds = Array.from(dmConversationsMap.keys());
-      console.log('fetchConversations: unique partners', partnerIds.length);
-      
-      // Fetch partner profiles
       let dmConversations: Conversation[] = [];
       
       if (partnerIds.length > 0) {
-        const { data: profilesData, error: profilesError } = await supabase
+        const { data: profilesData } = await supabase
           .from('profiles')
           .select('id, user_id, full_name, username, avatar_url')
           .in('user_id', partnerIds);
 
-        if (profilesError) {
-          console.error('Error fetching partner profiles:', profilesError);
-        }
-
         dmConversations = partnerIds.map(partnerId => {
           const partnerProfile = profilesData?.find(p => p.user_id === partnerId);
           const lastDm = dmConversationsMap.get(partnerId);
-          
-          const unreadCount = (dmData || []).filter(
-            dm => dm.sender_id === partnerId && !dm.is_read
-          ).length || 0;
+          const unreadCount = (dmData || []).filter(dm => dm.sender_id === partnerId && !dm.is_read).length || 0;
 
           return {
             id: `dm_${partnerId}`,
@@ -115,7 +101,7 @@ export const useMessaging = () => {
             name: partnerProfile?.full_name || 'Unknown User',
             avatar: partnerProfile?.avatar_url,
             lastMessage: lastDm?.content?.substring(0, 50) || '',
-            lastMessageTime: formatTime(lastDm?.created_at),
+            lastMessageTime: formatTimeHelper(lastDm?.created_at),
             unreadCount,
             isOnline: false,
             lastMessageIsMine: lastDm?.sender_id === user.id,
@@ -123,46 +109,27 @@ export const useMessaging = () => {
         });
       }
 
-      // Fetch groups if profile is ready
       let groupConversations: Conversation[] = [];
-      
       if (profile?.id) {
-        const { data: groupData, error: groupError } = await supabase
+        const { data: groupData } = await supabase
           .from('group_members')
-          .select(`
-            group_id,
-            groups:group_id (
-              id,
-              name,
-              username,
-              avatar_url,
-              member_count,
-              description
-            )
-          `)
+          .select(`group_id, groups:group_id (id, name, username, avatar_url, member_count, description)`)
           .eq('user_id', profile.id);
 
-        if (groupError) {
-          console.error('Error fetching groups:', groupError);
-        } else {
-          groupConversations = (groupData || []).map((membership: any) => ({
-            id: `group_${membership.groups?.id}`,
-            type: 'group' as const,
-            name: membership.groups?.name || 'Unknown Group',
-            avatar: membership.groups?.avatar_url,
-            lastMessage: '',
-            lastMessageTime: '',
-            members: membership.groups?.member_count || 0,
-          }));
-        }
+        groupConversations = (groupData || []).map((membership: any) => ({
+          id: `group_${membership.groups?.id}`,
+          type: 'group' as const,
+          name: membership.groups?.name || 'Unknown Group',
+          avatar: membership.groups?.avatar_url,
+          lastMessage: '',
+          lastMessageTime: '',
+          members: membership.groups?.member_count || 0,
+        }));
       }
 
-      const allConversations = [...dmConversations, ...groupConversations];
-      console.log('fetchConversations: total conversations', allConversations.length);
-      setConversations(allConversations);
+      setConversations([...dmConversations, ...groupConversations]);
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      toast.error('Failed to load conversations');
     } finally {
       setLoading(false);
     }
@@ -811,13 +778,118 @@ export const useMessaging = () => {
     };
   }, [profile?.id, currentConversation?.id, currentConversation?.type, currentChannel.channelId]);
 
-  // Fetch conversations when user is available
+  // Fetch conversations when user/profile is ready
   useEffect(() => {
-    if (user?.id) {
-      console.log('User ready, fetching conversations...');
-      fetchConversations();
-    }
-  }, [user?.id, fetchConversations]);
+    const loadConversations = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      console.log('Loading conversations for user:', user.id);
+      setLoading(true);
+
+      try {
+        // Fetch DMs using auth.uid() - matches RLS policy
+        const { data: dmData, error: dmError } = await supabase
+          .from('direct_messages')
+          .select('*')
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (dmError) {
+          console.error('Error fetching DMs:', dmError);
+          throw dmError;
+        }
+
+        console.log('Got DMs:', dmData?.length || 0);
+
+        // Get unique conversation partners
+        const dmConversationsMap = new Map<string, any>();
+        
+        (dmData || []).forEach(dm => {
+          const partnerId = dm.sender_id === user.id ? dm.receiver_id : dm.sender_id;
+          if (!dmConversationsMap.has(partnerId)) {
+            dmConversationsMap.set(partnerId, dm);
+          }
+        });
+
+        const partnerIds = Array.from(dmConversationsMap.keys());
+        
+        // Fetch partner profiles
+        let dmConversations: Conversation[] = [];
+        
+        if (partnerIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, user_id, full_name, username, avatar_url')
+            .in('user_id', partnerIds);
+
+          dmConversations = partnerIds.map(partnerId => {
+            const partnerProfile = profilesData?.find(p => p.user_id === partnerId);
+            const lastDm = dmConversationsMap.get(partnerId);
+            
+            const unreadCount = (dmData || []).filter(
+              dm => dm.sender_id === partnerId && !dm.is_read
+            ).length || 0;
+
+            return {
+              id: `dm_${partnerId}`,
+              type: 'dm' as const,
+              name: partnerProfile?.full_name || 'Unknown User',
+              avatar: partnerProfile?.avatar_url,
+              lastMessage: lastDm?.content?.substring(0, 50) || '',
+              lastMessageTime: formatTime(lastDm?.created_at),
+              unreadCount,
+              isOnline: false,
+              lastMessageIsMine: lastDm?.sender_id === user.id,
+            };
+          });
+        }
+
+        // Fetch groups if profile is ready
+        let groupConversations: Conversation[] = [];
+        
+        if (profile?.id) {
+          const { data: groupData } = await supabase
+            .from('group_members')
+            .select(`
+              group_id,
+              groups:group_id (
+                id,
+                name,
+                username,
+                avatar_url,
+                member_count,
+                description
+              )
+            `)
+            .eq('user_id', profile.id);
+
+          groupConversations = (groupData || []).map((membership: any) => ({
+            id: `group_${membership.groups?.id}`,
+            type: 'group' as const,
+            name: membership.groups?.name || 'Unknown Group',
+            avatar: membership.groups?.avatar_url,
+            lastMessage: '',
+            lastMessageTime: '',
+            members: membership.groups?.member_count || 0,
+          }));
+        }
+
+        const allConversations = [...dmConversations, ...groupConversations];
+        console.log('Total conversations:', allConversations.length);
+        setConversations(allConversations);
+      } catch (error) {
+        console.error('Error fetching conversations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadConversations();
+  }, [user?.id, profile?.id]);
 
   // Reset when user logs out
   useEffect(() => {
@@ -825,6 +897,7 @@ export const useMessaging = () => {
       setConversations([]);
       setMessages([]);
       setCurrentConversation(null);
+      setLoading(true);
     }
   }, [user]);
 
