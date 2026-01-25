@@ -33,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { useLiveKitContext } from '@/contexts/LiveKitContext';
+import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
 import { useStudyRoomPresence } from '@/hooks/useStudyRoomPresence';
 import ParticipantSidebar from './ParticipantSidebar';
 import RoomSettingsSheet from './RoomSettingsSheet';
@@ -98,21 +98,20 @@ const StudyRoomView = ({
   });
 
   // LiveKit for video/audio
-  const {
-    isConnected: isLiveKitConnected,
-    isMuted,
-    isVideoOn,
-    isScreenSharing,
-    remoteParticipants: liveKitParticipants,
-    toggleMute,
-    toggleVideo,
-    toggleScreenShare,
-    raiseHand,
-    lowerHand,
-    isHandRaised: liveKitHandRaised,
-    attachLocalVideoToElement,
-    attachVideoToElement,
-  } = useLiveKitContext();
+  const liveKitContext = useOptionalLiveKitContext();
+  const isLiveKitConnected = liveKitContext?.isConnected ?? false;
+  const isMuted = liveKitContext?.isMuted ?? true;
+  const isVideoOn = liveKitContext?.isVideoOn ?? false;
+  const isScreenSharing = liveKitContext?.isScreenSharing ?? false;
+  const liveKitParticipants = liveKitContext?.remoteParticipants ?? [];
+  const toggleMute = liveKitContext?.toggleMute;
+  const toggleVideo = liveKitContext?.toggleVideo;
+  const toggleScreenShare = liveKitContext?.toggleScreenShare;
+  const raiseHand = liveKitContext?.raiseHand;
+  const lowerHand = liveKitContext?.lowerHand;
+  const liveKitHandRaised = liveKitContext?.isHandRaised ?? false;
+  const attachLocalVideoToElement = liveKitContext?.attachLocalVideoToElement;
+  const attachVideoToElement = liveKitContext?.attachVideoToElement;
 
   // Real-time presence tracking (Supabase)
   const {
@@ -138,7 +137,7 @@ const StudyRoomView = ({
 
   // Attach local video when LiveKit connects
   useEffect(() => {
-    if (localVideoRef.current && isLiveKitConnected) {
+    if (localVideoRef.current && isLiveKitConnected && attachLocalVideoToElement) {
       attachLocalVideoToElement(localVideoRef.current);
     }
   }, [isLiveKitConnected, isVideoOn, attachLocalVideoToElement]);
@@ -170,7 +169,7 @@ const StudyRoomView = ({
 
   const handleMicToggle = () => {
     onToggleMic();
-    toggleMute();
+    toggleMute?.();
   };
 
   const totalGridItems = sortedParticipants.length + (isScreenSharing ? 1 : 0);
@@ -517,7 +516,7 @@ const StudyRoomView = ({
                 "rounded-full w-10 h-10 md:w-14 md:h-14",
                 isVideoOn && "bg-accent hover:bg-accent/90"
               )}
-              onClick={toggleVideo}
+              onClick={() => toggleVideo?.()}
               title={isVideoOn ? "Turn off camera" : "Turn on camera"}
             >
               {isVideoOn ? <Video className="w-4 h-4 md:w-6 md:h-6" /> : <VideoOff className="w-4 h-4 md:w-6 md:h-6" />}
@@ -532,7 +531,7 @@ const StudyRoomView = ({
                 isScreenSharing && "bg-accent hover:bg-accent/90",
                 !isScreenShareAllowed && "opacity-50 cursor-not-allowed"
               )}
-              onClick={isScreenShareAllowed ? toggleScreenShare : undefined}
+              onClick={isScreenShareAllowed ? () => toggleScreenShare?.() : undefined}
               disabled={!isScreenShareAllowed}
               title={!isScreenShareAllowed ? "Screen sharing not allowed in public rooms" : isScreenSharing ? "Stop sharing screen" : "Share screen"}
             >

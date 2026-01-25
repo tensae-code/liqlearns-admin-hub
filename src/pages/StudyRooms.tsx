@@ -5,7 +5,7 @@ import { useStudyRooms } from '@/hooks/useStudyRooms';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { useStudyRoomContext } from '@/contexts/StudyRoomContext';
-import { useLiveKitContext } from '@/contexts/LiveKitContext';
+import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
 import CreateRoomModal from '@/components/study-rooms/CreateRoomModal';
 import JoinRoomModal from '@/components/study-rooms/JoinRoomModal';
 import StudyRoomView from '@/components/study-rooms/StudyRoomView';
@@ -62,7 +62,9 @@ const StudyRooms = () => {
   const { profile } = useProfile();
   const { toast } = useToast();
   const studyRoomContext = useStudyRoomContext();
-  const { joinStudyRoom, endCall } = useLiveKitContext();
+  const liveKitContext = useOptionalLiveKitContext();
+  const joinStudyRoom = liveKitContext?.joinStudyRoom;
+  const endCall = liveKitContext?.endCall;
   
   const [searchQuery, setSearchQuery] = useState('');
   const [ageCategory, setAgeCategory] = useState<'adult' | 'kids'>('adult');
@@ -121,7 +123,9 @@ const StudyRooms = () => {
       
       // Connect to LiveKit for video/audio
       console.log('Connecting to LiveKit for study room:', roomToJoin.id);
-      await joinStudyRoom(roomToJoin.id, 'speaker');
+      if (joinStudyRoom) {
+        await joinStudyRoom(roomToJoin.id, 'speaker');
+      }
       
       // Fetch participants after a small delay to ensure DB is updated
       setTimeout(() => {
@@ -138,7 +142,7 @@ const StudyRooms = () => {
     if (!currentRoom) return;
     
     // Disconnect from LiveKit first
-    endCall();
+    endCall?.();
     
     await leaveRoom(currentRoom.id);
     setCurrentRoom(null);

@@ -20,12 +20,12 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useLiveKitContext } from '@/contexts/LiveKitContext';
+import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
 import { useOptionalStudyRoomContext } from '@/contexts/StudyRoomContext';
 
 const FloatingStudyRoom = forwardRef<HTMLDivElement>((_, ref) => {
   const context = useOptionalStudyRoomContext();
-  const livekit = useLiveKitContext();
+  const livekit = useOptionalLiveKitContext();
   
   // All hooks must be called before any conditional returns
   const [showPinnedList, setShowPinnedList] = useState(true);
@@ -64,10 +64,10 @@ const FloatingStudyRoom = forwardRef<HTMLDivElement>((_, ref) => {
 
   // Attach local video when available
   useEffect(() => {
-    if (localVideoRef.current && livekit.isVideoOn) {
+    if (localVideoRef.current && livekit?.isVideoOn && livekit?.attachLocalVideoToElement) {
       livekit.attachLocalVideoToElement(localVideoRef.current);
     }
-  }, [livekit.isVideoOn, livekit.attachLocalVideoToElement]);
+  }, [livekit?.isVideoOn, livekit?.attachLocalVideoToElement]);
 
   // Handle drag events
   useEffect(() => {
@@ -131,15 +131,15 @@ const FloatingStudyRoom = forwardRef<HTMLDivElement>((_, ref) => {
 
   const handleMicToggle = () => {
     setIsMicOn?.(!isMicOn);
-    livekit.toggleMute();
+    livekit?.toggleMute();
   };
 
   const handleVideoToggle = () => {
-    livekit.toggleVideo();
+    livekit?.toggleVideo();
   };
 
   const handleLeave = async () => {
-    livekit.endCall();
+    livekit?.endCall();
     await leaveActiveRoom?.();
   };
 
