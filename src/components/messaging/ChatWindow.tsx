@@ -551,31 +551,31 @@ const ChatWindow = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-background h-full">
-      {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-border bg-card">
+    <div className="flex-1 flex flex-col bg-background h-full min-h-0 overflow-hidden">
+      {/* Header - Fixed height, shrink-0 */}
+      <div className="flex items-center gap-2 p-2 md:p-4 border-b border-border bg-card shrink-0">
         {isMobile && onBack && (
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="w-5 h-5" />
+          <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={onBack}>
+            <ArrowLeft className="w-4 h-4" />
           </Button>
         )}
         
-        <Avatar className="h-10 w-10">
+        <Avatar className="h-8 w-8 md:h-10 md:w-10 shrink-0">
           <AvatarImage src={conversation.avatar} />
           <AvatarFallback className={
             conversation.type === 'group' 
               ? "bg-primary/20 text-primary" 
               : "bg-gradient-accent text-accent-foreground"
           }>
-            {conversation.type === 'group' ? <Users className="w-5 h-5" /> : conversation.name.charAt(0).toUpperCase()}
+            {conversation.type === 'group' ? <Users className="w-4 h-4" /> : conversation.name.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-medium text-foreground">{conversation.name}</h3>
+            <h3 className="font-medium text-foreground text-sm md:text-base truncate">{conversation.name}</h3>
             {currentChannelName && (
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-[10px] shrink-0">
                 #{currentChannelName}
               </Badge>
             )}
@@ -593,27 +593,27 @@ const ChatWindow = ({
           </p>
         </div>
 
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon" title="Voice Call" onClick={handleVoiceCall}>
+        <div className="flex gap-0.5 shrink-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8" title="Voice Call" onClick={handleVoiceCall}>
             <Phone className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" title="Video Call" onClick={handleVideoCall}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" title="Video Call" onClick={handleVideoCall}>
             <Video className="w-4 h-4" />
           </Button>
           {onViewInfo && (
-            <Button variant="ghost" size="icon" onClick={onViewInfo} title="Info">
+            <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:flex" onClick={onViewInfo} title="Info">
               <Info className="w-4 h-4" />
             </Button>
           )}
         </div>
       </div>
 
-      {/* Messages with date separators */}
-      <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-background to-muted/20">
+      {/* Messages with date separators - flex-1 with min-h-0 for proper shrinking */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 md:p-4 bg-gradient-to-b from-background to-muted/20">
         {groupedMessages.map((dateGroup, dateIndex) => (
           <div key={dateIndex}>
             {/* Date Separator */}
-            <div className="flex justify-center my-4">
+            <div className="flex justify-center my-3">
               <div className="px-3 py-1 rounded-full bg-muted/70 text-xs text-muted-foreground font-medium">
                 {formatDateSeparator(dateGroup.date)}
               </div>
@@ -679,10 +679,10 @@ const ChatWindow = ({
         )}
       </AnimatePresence>
 
-      {/* Voice recorder */}
+      {/* Voice recorder - shrink-0 */}
       <AnimatePresence>
         {showVoiceRecorder && (
-          <div className="p-4 border-t border-border bg-card">
+          <div className="p-3 md:p-4 border-t border-border bg-card shrink-0">
             <VoiceRecorder
               onSend={handleVoiceSend}
               onCancel={() => setShowVoiceRecorder(false)}
@@ -692,10 +692,10 @@ const ChatWindow = ({
         )}
       </AnimatePresence>
 
-      {/* Input */}
+      {/* Input - shrink-0 */}
       {!showVoiceRecorder && (
-        <div className="p-4 border-t border-border bg-card">
-          <div className="flex items-center gap-2">
+        <div className="p-2 md:p-4 border-t border-border bg-card shrink-0">
+          <div className="flex items-center gap-1 md:gap-2">
             <input
               type="file"
               ref={fileInputRef}
@@ -706,28 +706,28 @@ const ChatWindow = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="shrink-0"
+              className="shrink-0 h-8 w-8"
               onClick={() => fileInputRef.current?.click()}
             >
-              <Paperclip className="w-5 h-5 text-muted-foreground" />
+              <Paperclip className="w-4 h-4 text-muted-foreground" />
             </Button>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="shrink-0"
+              className="shrink-0 h-8 w-8 hidden md:flex"
               onClick={() => setShowVoiceRecorder(true)}
             >
-              <Mic className="w-5 h-5 text-muted-foreground" />
+              <Mic className="w-4 h-4 text-muted-foreground" />
             </Button>
             
-            <div className="flex-1 relative">
+            <div className="flex-1 relative min-w-0">
               <Input
                 ref={inputRef}
                 placeholder="Type a message..."
                 value={newMessage}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
-                className="pr-10 bg-muted/50"
+                className="pr-10 bg-muted/50 h-9 md:h-10 text-sm"
               />
               <div className="absolute right-1 top-1/2 -translate-y-1/2">
                 <EmojiPicker onEmojiSelect={handleEmojiSelect} />
@@ -736,7 +736,7 @@ const ChatWindow = ({
             
             <Button 
               size="icon" 
-              className="bg-gradient-accent text-accent-foreground shrink-0"
+              className="bg-gradient-accent text-accent-foreground shrink-0 h-8 w-8 md:h-10 md:w-10"
               onClick={handleSend}
               disabled={(!newMessage.trim() && !pendingFile) || isUploading}
             >

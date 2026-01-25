@@ -101,6 +101,11 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     return null;
   }
 
+  // Auto-dismiss when call ends - don't show "Call ended" popup
+  if (callState.status === 'ended' || callState.status === 'rejected' || callState.status === 'no-answer') {
+    return null;
+  }
+
   // Handle incoming call - enhanced with visual effects
   if (incomingCall && callState.status === 'idle') {
     return (
@@ -398,16 +403,6 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
                 <PhoneOff className="h-6 w-6" />
               </Button>
             </>
-          )}
-
-          {(callState.status === 'ended' || callState.status === 'rejected' || callState.status === 'no-answer') && (
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={endCall}
-            >
-              Close
-            </Button>
           )}
         </div>
       </DialogContent>
