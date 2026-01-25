@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_privileges: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          granted: boolean | null
+          granted_by: string | null
+          id: string
+          privilege_type: string
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          granted?: boolean | null
+          granted_by?: string | null
+          id?: string
+          privilege_type: string
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          granted?: boolean | null
+          granted_by?: string | null
+          id?: string
+          privilege_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       badges: {
         Row: {
           category: string
@@ -561,6 +591,11 @@ export type Database = {
           instructor_id: string | null
           is_published: boolean | null
           price: number | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          submission_status: string | null
+          submitted_at: string | null
           thumbnail_url: string | null
           title: string
           total_lessons: number | null
@@ -576,6 +611,11 @@ export type Database = {
           instructor_id?: string | null
           is_published?: boolean | null
           price?: number | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          submission_status?: string | null
+          submitted_at?: string | null
           thumbnail_url?: string | null
           title: string
           total_lessons?: number | null
@@ -591,6 +631,11 @@ export type Database = {
           instructor_id?: string | null
           is_published?: boolean | null
           price?: number | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          submission_status?: string | null
+          submitted_at?: string | null
           thumbnail_url?: string | null
           title?: string
           total_lessons?: number | null
@@ -614,6 +659,27 @@ export type Database = {
           {
             foreignKeyName: "courses_instructor_id_fkey"
             columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_reviewed_by_fkey"
+            columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
@@ -1872,7 +1938,11 @@ export type Database = {
           enterprise_org_name: string | null
           enterprise_status: string | null
           full_name: string
+          held_at: string | null
+          held_by: string | null
+          hold_reason: string | null
           id: string
+          is_on_hold: boolean | null
           last_login_date: string | null
           longest_streak: number
           phone: string | null
@@ -1898,7 +1968,11 @@ export type Database = {
           enterprise_org_name?: string | null
           enterprise_status?: string | null
           full_name: string
+          held_at?: string | null
+          held_by?: string | null
+          hold_reason?: string | null
           id?: string
+          is_on_hold?: boolean | null
           last_login_date?: string | null
           longest_streak?: number
           phone?: string | null
@@ -1924,7 +1998,11 @@ export type Database = {
           enterprise_org_name?: string | null
           enterprise_status?: string | null
           full_name?: string
+          held_at?: string | null
+          held_by?: string | null
+          hold_reason?: string | null
           id?: string
+          is_on_hold?: boolean | null
           last_login_date?: string | null
           longest_streak?: number
           phone?: string | null
@@ -1940,6 +2018,27 @@ export type Database = {
           xp_points?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_sponsor_id_fkey"
             columns: ["sponsor_id"]
@@ -1957,6 +2056,174 @@ export type Database = {
           {
             foreignKeyName: "profiles_sponsor_id_fkey"
             columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_board_answers: {
+        Row: {
+          content: string
+          created_at: string
+          downvotes: number | null
+          id: string
+          is_accepted: boolean | null
+          link_url: string | null
+          question_id: string
+          updated_at: string
+          upvotes: number | null
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          downvotes?: number | null
+          id?: string
+          is_accepted?: boolean | null
+          link_url?: string | null
+          question_id: string
+          updated_at?: string
+          upvotes?: number | null
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          downvotes?: number | null
+          id?: string
+          is_accepted?: boolean | null
+          link_url?: string | null
+          question_id?: string
+          updated_at?: string
+          upvotes?: number | null
+          user_id?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_board_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quest_board_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_board_answers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_board_answers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_board_answers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_board_questions: {
+        Row: {
+          answers_count: number | null
+          approved_at: string | null
+          approved_by: string | null
+          content: string | null
+          created_at: string
+          hashtags: string[] | null
+          id: string
+          link_url: string | null
+          rejection_reason: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          video_url: string | null
+          views_count: number | null
+        }
+        Insert: {
+          answers_count?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          content?: string | null
+          created_at?: string
+          hashtags?: string[] | null
+          id?: string
+          link_url?: string | null
+          rejection_reason?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          video_url?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          answers_count?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          content?: string | null
+          created_at?: string
+          hashtags?: string[] | null
+          id?: string
+          link_url?: string | null
+          rejection_reason?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          video_url?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_board_questions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_board_questions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_board_questions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_board_questions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_board_questions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_board_questions_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
@@ -2781,6 +3048,52 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_hashtag_preferences: {
+        Row: {
+          created_at: string
+          enabled: boolean | null
+          hashtag: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean | null
+          hashtag: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean | null
+          hashtag?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_hashtag_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_hashtag_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_hashtag_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
