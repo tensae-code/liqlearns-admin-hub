@@ -282,21 +282,66 @@ const AdminDashboard = () => {
               animate={{ opacity: 1, y: 0 }}
             >
               {/* Search & Filters */}
-              <div className="p-4 border-b border-border flex items-center gap-3">
-                <div className="relative flex-1 max-w-md">
+              <div className="p-4 border-b border-border flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input placeholder="Search users..." className="pl-10" />
                 </div>
-                <Button variant="outline">
-                  <Filter className="w-4 h-4 mr-2" /> Filter
-                </Button>
-                <Button>
-                  <UserPlus className="w-4 h-4 mr-2" /> Add User
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
+                    <Filter className="w-4 h-4 sm:mr-2" /> 
+                    <span className="hidden sm:inline">Filter</span>
+                  </Button>
+                  <Button size="sm" className="flex-1 sm:flex-initial">
+                    <UserPlus className="w-4 h-4 sm:mr-2" /> 
+                    <span className="hidden sm:inline">Add User</span>
+                  </Button>
+                </div>
               </div>
 
-              {/* Table */}
-              <div className="overflow-x-auto">
+              {/* Mobile Cards */}
+              <div className="divide-y divide-border md:hidden">
+                {recentUsers.map((user) => (
+                  <div key={user.id} className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Avatar>
+                        <AvatarFallback className="bg-accent/10 text-accent">
+                          {user.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-medium text-foreground truncate">{user.name}</p>
+                          <span className={`text-xs font-medium px-2 py-1 rounded-full shrink-0 ${getStatusColor(user.status)}`}>
+                            {user.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                          <span className="bg-muted px-2 py-0.5 rounded">{user.role}</span>
+                          <span>{user.joinDate}</span>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="shrink-0">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-popover">
+                          <DropdownMenuItem><Eye className="w-4 h-4 mr-2" />View</DropdownMenuItem>
+                          <DropdownMenuItem><Edit className="w-4 h-4 mr-2" />Edit</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive"><Trash2 className="w-4 h-4 mr-2" />Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="overflow-x-auto hidden md:block">
                 <table className="w-full">
                   <thead className="bg-muted/50">
                     <tr>
@@ -378,34 +423,37 @@ const AdminDashboard = () => {
               animate={{ opacity: 1, y: 0 }}
             >
               {pendingApprovals.map((item) => (
-                <div key={item.id} className="bg-card rounded-xl border border-border p-5">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center">
+                <div key={item.id} className="bg-card rounded-xl border border-border p-4 md:p-5">
+                  <div className="flex flex-col sm:flex-row items-start gap-3 md:gap-4">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gold/10 flex items-center justify-center shrink-0">
                       {item.type === 'Course' ? (
-                        <BookOpen className="w-6 h-6 text-gold" />
+                        <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-gold" />
                       ) : (
-                        <FileText className="w-6 h-6 text-gold" />
+                        <FileText className="w-5 h-5 md:w-6 md:h-6 text-gold" />
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-xs font-medium text-gold bg-gold/10 px-2 py-0.5 rounded-full">
                           {item.type}
                         </span>
                         <span className="text-xs text-muted-foreground">{item.submitted}</span>
                       </div>
-                      <h3 className="text-lg font-display font-semibold text-foreground">{item.title}</h3>
-                      <p className="text-muted-foreground">by {item.author}</p>
+                      <h3 className="text-base md:text-lg font-display font-semibold text-foreground truncate">{item.title}</h3>
+                      <p className="text-sm text-muted-foreground">by {item.author}</p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4 mr-2" /> Preview
+                    <div className="flex gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
+                        <Eye className="w-4 h-4 sm:mr-2" /> 
+                        <span className="hidden sm:inline">Preview</span>
                       </Button>
-                      <Button variant="outline" size="sm" className="text-success border-success hover:bg-success/10">
-                        <CheckCircle2 className="w-4 h-4 mr-2" /> Approve
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-initial text-success border-success hover:bg-success/10">
+                        <CheckCircle2 className="w-4 h-4 sm:mr-2" /> 
+                        <span className="hidden sm:inline">Approve</span>
                       </Button>
-                      <Button variant="outline" size="sm" className="text-destructive border-destructive hover:bg-destructive/10">
-                        <XCircle className="w-4 h-4 mr-2" /> Reject
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-initial text-destructive border-destructive hover:bg-destructive/10">
+                        <XCircle className="w-4 h-4 sm:mr-2" /> 
+                        <span className="hidden sm:inline">Reject</span>
                       </Button>
                     </div>
                   </div>
@@ -430,61 +478,64 @@ const AdminDashboard = () => {
                       Review and manage community skill suggestions
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <div className="relative">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                    <div className="relative flex-1 sm:flex-initial">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input 
-                        placeholder="Search suggestions..." 
-                        className="pl-10 w-48"
+                        placeholder="Search..." 
+                        className="pl-10 w-full sm:w-40"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue placeholder="Filter" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="voting">Voting</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                        <SelectItem value="in_development">In Development</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="icon" onClick={refreshSkills}>
-                      <RefreshCw className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="flex-1 sm:w-28">
+                          <SelectValue placeholder="Filter" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="voting">Voting</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                          <SelectItem value="in_development">In Dev</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" size="icon" onClick={refreshSkills} className="shrink-0">
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
                 {/* Bulk Actions */}
 {selectedIds.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-3">
+                  <div className="mt-4 pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center gap-3">
                     <span className="text-sm text-muted-foreground">
                       {selectedIds.length} selected
                     </span>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="text-accent border-accent hover:bg-accent/10"
+                        className="text-accent border-accent hover:bg-accent/10 flex-1 sm:flex-initial"
                         onClick={() => bulkUpdateStatus(selectedIds, 'voting')}
                       >
-                        <Vote className="w-4 h-4 mr-1" /> Open for Voting
+                        <Vote className="w-4 h-4 mr-1" /> 
+                        <span className="hidden xs:inline">Open for</span> Voting
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="text-destructive border-destructive hover:bg-destructive/10"
+                        className="text-destructive border-destructive hover:bg-destructive/10 flex-1 sm:flex-initial"
                         onClick={() => bulkUpdateStatus(selectedIds, 'rejected')}
                       >
                         <X className="w-4 h-4 mr-1" /> Reject
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground ml-2">
-                      💡 CEO approves skills after voting period
+                    <p className="text-xs text-muted-foreground sm:ml-2">
+                      💡 CEO approves after voting
                     </p>
                   </div>
                 )}
