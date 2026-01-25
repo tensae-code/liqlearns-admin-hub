@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useRef, useCallback, useEff
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCallLogging } from '@/hooks/useCallLogging';
-import { getIceServers } from '@/lib/webrtcConfig';
 
 export type CallStatus = 'idle' | 'ringing' | 'connecting' | 'connected' | 'ended' | 'rejected' | 'no-answer';
 
@@ -30,7 +29,12 @@ interface SignalingMessage {
 }
 
 const ICE_SERVERS: RTCConfiguration = {
-  iceServers: getIceServers(),
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+  ],
 };
 
 interface CallContextType {

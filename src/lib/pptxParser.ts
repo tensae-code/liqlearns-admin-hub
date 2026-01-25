@@ -39,7 +39,6 @@ export interface ParsedSlide {
   notes: string;
   images: string[];
   backgroundColor: string;
-  backgroundImage?: string;
   shapes: SlideShape[];
   layout: 'title' | 'titleContent' | 'twoColumn' | 'blank' | 'custom';
 }
@@ -213,23 +212,6 @@ const extractBackgroundColor = (xmlString: string): string => {
   const colorMatch = xmlString.match(/<a:srgbClr val="([^"]+)"/);
   if (colorMatch) return `#${colorMatch[1]}`;
   return '#ffffff';
-};
-
-const extractBackgroundImage = (
-  slideXml: string,
-  relsXml: string,
-  mediaFiles: Record<string, string>
-): string | undefined => {
-  const bgMatch = slideXml.match(/<p:bg[\s\S]*?<a:blip[^>]*r:embed="([^"]+)"[\s\S]*?<\/p:bg>/);
-  if (!bgMatch) return undefined;
-
-  const relId = bgMatch[1];
-  const relPattern = new RegExp(`Id="${relId}"[^>]*Target="([^"]+)"`);
-  const relMatch = relsXml.match(relPattern);
-  if (!relMatch) return undefined;
-
-  const targetPath = relMatch[1].replace('../', 'ppt/');
-  return mediaFiles[targetPath];
 };
 
 // Convert image to base64 data URL
@@ -406,11 +388,7 @@ export const parsePPTX = async (file: File): Promise<ParsedPresentation> => {
         }
       }
     }
-
-    const backgroundImage = relsXml
-      ? extractBackgroundImage(slideXml, relsXml, mediaFiles)
-      : undefined;
-
+    
     // Parse shapes with positioning
     const shapes = parseShapes(slideXml, mediaFiles, relsXml);
     
@@ -421,13 +399,12 @@ export const parsePPTX = async (file: File): Promise<ParsedPresentation> => {
       notes,
       images,
       backgroundColor,
-      backgroundImage,
       shapes,
       layout,
     });
     
     // Generate simple thumbnail placeholder (first image or background)
-    thumbnails.push(images[0] || backgroundImage || '');
+    thumbnails.push(images[0] || '');
   }
   
   return {

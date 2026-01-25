@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { getIceServers } from '@/lib/webrtcConfig';
 
 export interface PeerConnection {
   peerId: string;
@@ -17,7 +16,13 @@ interface SignalingMessage {
 }
 
 const ICE_SERVERS: RTCConfiguration = {
-  iceServers: getIceServers(),
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+  ],
 };
 
 export const useWebRTC = (roomId: string, localStream: MediaStream | null) => {
