@@ -205,9 +205,13 @@ const ChatWindow = ({
 
   const handleVoiceCall = () => {
     if (conversation?.type === 'dm') {
-      const partnerId = getPartnerId();
-      if (partnerId) {
-        startDMCall(partnerId, conversation.name, conversation.avatar, 'voice');
+      // CRITICAL: Use partnerProfileId (profile.id) for call signaling, NOT the auth user_id
+      const partnerProfileId = conversation.partnerProfileId;
+      if (partnerProfileId) {
+        startDMCall(partnerProfileId, conversation.name, conversation.avatar, 'voice');
+      } else {
+        console.error('Cannot start call: partner profile ID not available');
+        toast.error('Unable to start call. Please try again.');
       }
     } else if (conversation?.type === 'group') {
       startGroupCall(conversation.id, 'voice');
@@ -216,9 +220,13 @@ const ChatWindow = ({
 
   const handleVideoCall = () => {
     if (conversation?.type === 'dm') {
-      const partnerId = getPartnerId();
-      if (partnerId) {
-        startDMCall(partnerId, conversation.name, conversation.avatar, 'video');
+      // CRITICAL: Use partnerProfileId (profile.id) for call signaling, NOT the auth user_id
+      const partnerProfileId = conversation.partnerProfileId;
+      if (partnerProfileId) {
+        startDMCall(partnerProfileId, conversation.name, conversation.avatar, 'video');
+      } else {
+        console.error('Cannot start call: partner profile ID not available');
+        toast.error('Unable to start call. Please try again.');
       }
     } else if (conversation?.type === 'group') {
       startGroupCall(conversation.id, 'video');
