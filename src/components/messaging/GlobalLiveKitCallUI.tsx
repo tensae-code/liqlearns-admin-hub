@@ -96,6 +96,11 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     return null;
   }
 
+  // Don't render popup for study rooms - they have embedded controls in StudyRoomView
+  if (callState.roomContext === 'study_room') {
+    return null;
+  }
+
   // Handle incoming call - enhanced with visual effects
   if (incomingCall && callState.status === 'idle') {
     return (
