@@ -1,5 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { AccessToken, VideoGrant } from 'https://esm.sh/livekit-server-sdk@2.9.0';
+
+// Manual JWT implementation for LiveKit tokens
+// This avoids dependency issues with livekit-server-sdk on esm.sh
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +13,96 @@ interface TokenRequest {
   contextType: 'dm' | 'group' | 'study_room';
   contextId: string;
   role?: 'host' | 'moderator' | 'speaker' | 'listener';
+}
+
+interface VideoGrant {
+  room?: string;
+  roomJoin?: boolean;
+  roomList?: boolean;
+  roomCreate?: boolean;
+  roomAdmin?: boolean;
+  canPublish?: boolean;
+  canPublishData?: boolean;
+  canSubscribe?: boolean;
+  hidden?: boolean;
+  recorder?: boolean;
+}
+
+interface ClaimGrants {
+  video?: VideoGrant;
+  metadata?: string;
+  name?: string;
+}
+
+// Base64URL encode
+function base64UrlEncode(data: Uint8Array | string): string {
+  let base64: string;
+  if (typeof data === 'string') {
+    base64 = btoa(data);
+  } else {
+    let binary = '';
+    for (let i = 0; i < data.length; i++) {
+      binary += String.fromCharCode(data[i]);
+    }
+    base64 = btoa(binary);
+  }
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Create HMAC-SHA256 signature
+async function createHmacSha256(secret: string, data: string): Promise<Uint8Array> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const dataBytes = encoder.encode(data);
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, dataBytes);
+  return new Uint8Array(signature);
+}
+
+// Create LiveKit access token
+async function createAccessToken(
+  apiKey: string,
+  apiSecret: string,
+  identity: string,
+  name: string,
+  grants: ClaimGrants,
+  ttlSeconds: number = 3600
+): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  
+  const header = {
+    alg: 'HS256',
+    typ: 'JWT',
+  };
+  
+  const payload = {
+    iss: apiKey,
+    sub: identity,
+    iat: now,
+    nbf: now,
+    exp: now + ttlSeconds,
+    jti: crypto.randomUUID(),
+    name,
+    video: grants.video,
+    metadata: grants.metadata,
+  };
+  
+  const headerB64 = base64UrlEncode(JSON.stringify(header));
+  const payloadB64 = base64UrlEncode(JSON.stringify(payload));
+  const toSign = `${headerB64}.${payloadB64}`;
+  
+  const signature = await createHmacSha256(apiSecret, toSign);
+  const signatureB64 = base64UrlEncode(signature);
+  
+  return `${toSign}.${signatureB64}`;
 }
 
 Deno.serve(async (req) => {
@@ -154,22 +246,23 @@ Deno.serve(async (req) => {
       // Hosts/moderators can manage participants (via LiveKit admin API)
     }
 
-    // Create access token
-    const at = new AccessToken(apiKey, apiSecret, {
-      identity: profile.id,
-      name: profile.full_name || 'Anonymous',
-      ttl: 3600, // 1 hour token validity
-      metadata: JSON.stringify({
-        role,
-        avatarUrl: profile.avatar_url,
-        contextType,
-        contextId,
-      }),
-    });
-
-    at.addGrant(videoGrant);
-
-    const accessToken = await at.toJwt();
+    // Create access token using manual JWT implementation
+    const accessToken = await createAccessToken(
+      apiKey,
+      apiSecret,
+      profile.id,
+      profile.full_name || 'Anonymous',
+      {
+        video: videoGrant,
+        metadata: JSON.stringify({
+          role,
+          avatarUrl: profile.avatar_url,
+          contextType,
+          contextId,
+        }),
+      },
+      3600 // 1 hour TTL
+    );
 
     // Upsert session record
     const { error: sessionError } = await supabase
