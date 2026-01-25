@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { STAT_GRADIENTS } from '@/lib/theme';
+import { supabase } from '@/integrations/supabase/client';
 import BrainBankModal from '@/components/brain-bank/BrainBankModal';
 import DailyBonusModal from './DailyBonusModal';
 import AIAssistantModal from './AIAssistantModal';
@@ -211,13 +212,11 @@ const QuickAccessButton = () => {
   const handleSearchUsers = async (query: string) => {
     setSearchLoading(true);
     try {
-      const { data, error } = await import('@/integrations/supabase/client').then(m => 
-        m.supabase
-          .from('profiles')
-          .select('id, user_id, full_name, username, avatar_url')
-          .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`)
-          .limit(20)
-      );
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, user_id, full_name, username, avatar_url')
+        .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`)
+        .limit(20);
       
       if (error) throw error;
       

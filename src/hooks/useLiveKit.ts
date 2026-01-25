@@ -225,8 +225,12 @@ export const useLiveKit = (): UseLiveKitReturn => {
         updateParticipants();
       });
 
-      newRoom.on(RoomEvent.ParticipantDisconnected, () => {
+      newRoom.on(RoomEvent.ParticipantDisconnected, (participant: RemoteParticipant) => {
+        console.log('[LiveKit] Participant disconnected:', participant.identity);
         updateParticipants();
+        
+        // For 1:1 DM calls - if remote participant leaves, we should disconnect too
+        // This will be handled by context checking remoteParticipants.length === 0
       });
 
       newRoom.on(RoomEvent.TrackSubscribed, () => {
