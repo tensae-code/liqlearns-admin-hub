@@ -13,6 +13,8 @@ export interface SubmittedCourse {
   submitted_at: string | null;
   claimed_by: string | null;
   claimed_at: string | null;
+  total_lessons: number | null;
+  estimated_duration: number | null;
   instructor: {
     id: string;
     full_name: string;
@@ -53,6 +55,8 @@ export const useSubmittedCourses = () => {
           submitted_at,
           claimed_by,
           claimed_at,
+          total_lessons,
+          estimated_duration,
           instructor:profiles!courses_instructor_id_fkey(id, full_name, avatar_url)
         `)
         .eq('submission_status', 'submitted')
