@@ -355,21 +355,32 @@ const CoursePreviewPanel = forwardRef<HTMLDivElement, CoursePreviewPanelProps>(
               </span>
             </div>
 
-            {/* Progress */}
-            <div className="mb-4">
+            {/* Current Progress */}
+            <div className="p-3 bg-muted/50 rounded-lg border border-border">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-foreground">
-                  Module Progress (0/{modules.length})
+                <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-accent" />
+                  Current Progress
                 </span>
-                <span className="text-sm text-muted-foreground">
-                  80% needed to complete
+                <span className="text-sm font-semibold text-accent">
+                  0%
                 </span>
               </div>
-              <Progress value={0} className="h-2" />
+              <Progress value={0} className="h-2 mb-2" />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>0/{modules.length} modules completed</span>
+                <span>80% needed to complete</span>
+              </div>
             </div>
 
-            <Button variant="hero" className="w-full" disabled>
-              <Play className="w-4 h-4 mr-2" /> Preview Only
+            <Button 
+              variant="hero" 
+              className="w-full mt-3" 
+              onClick={() => {
+                window.location.href = `/course/${course.id}`;
+              }}
+            >
+              <Play className="w-4 h-4 mr-2" /> Try as Student
             </Button>
           </motion.div>
 
