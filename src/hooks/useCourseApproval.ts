@@ -234,6 +234,14 @@ export const useApproveCourse = () => {
 
       if (updateError) throw updateError;
 
+      // Also publish all lessons for this course
+      const { error: lessonsError } = await supabase
+        .from('lessons')
+        .update({ is_published: true })
+        .eq('course_id', courseId);
+
+      if (lessonsError) console.error('Failed to publish lessons:', lessonsError);
+
       // Create notification for teacher
       const { error: notifError } = await supabase
         .from('notifications')
