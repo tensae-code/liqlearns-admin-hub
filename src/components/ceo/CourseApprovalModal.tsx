@@ -66,7 +66,8 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
 
   const isClaimedByMe = selectedCourse?.claimed_by === profile?.id;
   const isClaimedByOther = selectedCourse?.claimed_by && selectedCourse.claimed_by !== profile?.id;
-  const canReview = isClaimedByMe || !selectedCourse?.claimed_by;
+  // Can review if unclaimed OR claimed by me
+  const canReview = !selectedCourse?.claimed_by || isClaimedByMe;
 
   const handleAddComment = () => {
     if (!newComment.trim() || !selectedCourse || !profile) return;
