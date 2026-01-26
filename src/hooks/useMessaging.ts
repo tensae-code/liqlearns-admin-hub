@@ -30,6 +30,12 @@ interface SendMessageOptions {
   fileSize?: number;
   durationSeconds?: number;
   replyToId?: string;
+  mediaOptions?: {
+    viewOnce?: boolean;
+    saveInChat?: boolean;
+    repeat?: boolean;
+    blur?: boolean;
+  };
 }
 
 export const useMessaging = () => {
@@ -209,6 +215,7 @@ export const useMessaging = () => {
         const formattedMessages: Message[] = (data || []).map(msg => {
           const msgProfile = profiles?.find(p => p.user_id === msg.sender_id);
           const msgType = msg.message_type || 'text';
+          const mediaOpts = msg.media_options as Message['mediaOptions'];
           
           return {
             id: msg.id,
@@ -225,6 +232,7 @@ export const useMessaging = () => {
             fileName: msg.file_name,
             fileSize: msg.file_size,
             durationSeconds: msg.duration_seconds,
+            mediaOptions: mediaOpts,
           };
         });
 
@@ -287,6 +295,7 @@ export const useMessaging = () => {
           const formattedMessages: Message[] = (data || []).map(msg => {
             const msgProfile = profiles?.find(p => p.id === msg.sender_id);
             const msgType = msg.message_type || 'text';
+            const mediaOpts = msg.media_options as Message['mediaOptions'];
             
             // Handle reply info
             let replyTo: Message['replyTo'] = undefined;
@@ -314,6 +323,7 @@ export const useMessaging = () => {
               fileSize: msg.file_size,
               durationSeconds: msg.duration_seconds,
               replyTo,
+              mediaOptions: mediaOpts,
             };
           });
 
@@ -353,6 +363,7 @@ export const useMessaging = () => {
             file_name: options?.fileName,
             file_size: options?.fileSize,
             duration_seconds: options?.durationSeconds,
+            media_options: options?.mediaOptions || {},
           })
           .select()
           .single();
@@ -379,6 +390,7 @@ export const useMessaging = () => {
           fileName: options?.fileName,
           fileSize: options?.fileSize,
           durationSeconds: options?.durationSeconds,
+          mediaOptions: options?.mediaOptions,
         };
         setMessages(prev => [...prev, newMessage]);
         
@@ -403,6 +415,18 @@ export const useMessaging = () => {
         }
 
         if (targetChannelId) {
+          // Get replyTo content for optimistic UI
+          let replyToData: Message['replyTo'] = undefined;
+          if (options?.replyToId) {
+            const replyMsg = messages.find(m => m.id === options.replyToId);
+            if (replyMsg) {
+              replyToData = {
+                content: replyMsg.content,
+                senderName: replyMsg.sender.name,
+              };
+            }
+          }
+
           // Use profile.id for group messages (RLS requires it)
           const { data, error } = await supabase
             .from('group_messages')
@@ -416,6 +440,7 @@ export const useMessaging = () => {
               file_size: options?.fileSize,
               duration_seconds: options?.durationSeconds,
               reply_to_id: options?.replyToId,
+              media_options: options?.mediaOptions || {},
             })
             .select()
             .single();
@@ -441,6 +466,8 @@ export const useMessaging = () => {
             fileName: options?.fileName,
             fileSize: options?.fileSize,
             durationSeconds: options?.durationSeconds,
+            replyTo: replyToData,
+            mediaOptions: options?.mediaOptions,
           };
           setMessages(prev => [...prev, newMessage]);
         }
@@ -658,6 +685,8 @@ export const useMessaging = () => {
       const formattedMessages: Message[] = (data || []).map(msg => {
         const senderProfile = profiles?.find(p => p.id === msg.sender_id);
         const msgType = msg.message_type || 'text';
+        const mediaOpts = msg.media_options as Message['mediaOptions'];
+        
         return {
           id: msg.id,
           content: msg.content,
@@ -672,6 +701,7 @@ export const useMessaging = () => {
           fileName: msg.file_name,
           fileSize: msg.file_size,
           durationSeconds: msg.duration_seconds,
+          mediaOptions: mediaOpts,
         };
       });
 
@@ -708,6 +738,8 @@ export const useMessaging = () => {
               .single();
 
             const msgType = payload.new.message_type || 'text';
+            const mediaOpts = payload.new.media_options as Message['mediaOptions'];
+            
             const newMessage: Message = {
               id: payload.new.id,
               content: payload.new.content,
@@ -723,6 +755,7 @@ export const useMessaging = () => {
               fileName: payload.new.file_name,
               fileSize: payload.new.file_size,
               durationSeconds: payload.new.duration_seconds,
+              mediaOptions: mediaOpts,
             };
             
             setMessages(prev => {
@@ -782,7 +815,32 @@ export const useMessaging = () => {
             .eq('id', payload.new.sender_id)
             .single();
 
+          // Fetch reply_to message if exists
+          let replyToData: Message['replyTo'] = undefined;
+          if (payload.new.reply_to_id) {
+            const { data: replyMsg } = await supabase
+              .from('group_messages')
+              .select('content, sender_id')
+              .eq('id', payload.new.reply_to_id)
+              .single();
+            
+            if (replyMsg) {
+              const { data: replyProfile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', replyMsg.sender_id)
+                .single();
+              
+              replyToData = {
+                content: replyMsg.content,
+                senderName: replyProfile?.full_name || 'Unknown',
+              };
+            }
+          }
+
           const msgType = payload.new.message_type || 'text';
+          const mediaOpts = payload.new.media_options as Message['mediaOptions'];
+          
           const newMessage: Message = {
             id: payload.new.id,
             content: payload.new.content,
@@ -797,6 +855,8 @@ export const useMessaging = () => {
             fileName: payload.new.file_name,
             fileSize: payload.new.file_size,
             durationSeconds: payload.new.duration_seconds,
+            replyTo: replyToData,
+            mediaOptions: mediaOpts,
           };
           
           setMessages(prev => {
