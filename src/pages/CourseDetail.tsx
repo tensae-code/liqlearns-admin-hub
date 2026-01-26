@@ -417,6 +417,7 @@ const CourseDetail = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: moduleIndex * 0.05 }}
                   >
+                    {/* Module Header */}
                     <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         module.completed 
@@ -438,36 +439,49 @@ const CourseDetail = () => {
                           {module.title}
                         </h3>
                         <p className="text-xs text-muted-foreground">
-                          {module.presentations.length} presentation{module.presentations.length !== 1 ? 's' : ''} • {module.totalSlides} slides • {module.resources.length} resource{module.resources.length !== 1 ? 's' : ''}
+                          {module.presentations.length + module.resources.length} item{(module.presentations.length + module.resources.length) !== 1 ? 's' : ''}
                         </p>
                       </div>
+                      {module.completed && (
+                        <Badge className="bg-gold/20 text-gold border-gold/30">Completed</Badge>
+                      )}
                     </div>
                     
-                    {/* Presentations in this module */}
+                    {/* Lessons (Presentations) & Resources Combined */}
                     <div className="divide-y divide-border">
-                      {module.presentations.map((pres) => (
+                      {/* Lessons from presentations */}
+                      {module.presentations.map((pres, lessonIndex) => (
                         <div
                           key={pres.id}
                           className={`flex items-center gap-4 p-4 text-left transition-colors ${
                             module.unlocked ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-50 cursor-not-allowed'
                           }`}
                         >
-                          <div className="w-10 h-10 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
-                            <Presentation className="w-5 h-5" />
+                          {/* Progress indicator */}
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                            false // TODO: Track lesson completion
+                              ? 'bg-success border-success text-success-foreground'
+                              : 'border-muted-foreground/30 text-muted-foreground'
+                          }`}>
+                            {false ? (
+                              <CheckCircle2 className="w-4 h-4" />
+                            ) : (
+                              <span className="text-xs font-medium">{lessonIndex + 1}</span>
+                            )}
                           </div>
                           <div className="flex-1">
                             <p className="font-medium text-foreground">
                               {pres.file_name.replace(/\.pptx?$/i, '')}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {pres.total_slides} slides
+                              Lesson
                             </p>
                           </div>
                           <ChevronRight className="w-4 h-4 text-muted-foreground" />
                         </div>
                       ))}
                       
-                      {/* Resources in this module */}
+                      {/* Resources under the module */}
                       {module.resources.map((res) => {
                         const Icon = getTypeIcon(res.type);
                         return (
@@ -477,15 +491,24 @@ const CourseDetail = () => {
                               module.unlocked ? 'hover:bg-accent/10 cursor-pointer' : 'opacity-50 cursor-not-allowed'
                             }`}
                           >
-                            <div className="w-10 h-10 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
-                              <Icon className="w-5 h-5" />
+                            {/* Progress indicator for resource */}
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                              false // TODO: Track resource completion
+                                ? 'bg-success border-success text-success-foreground'
+                                : 'border-accent/30 bg-accent/10 text-accent'
+                            }`}>
+                              {false ? (
+                                <CheckCircle2 className="w-4 h-4" />
+                              ) : (
+                                <Icon className="w-4 h-4" />
+                              )}
                             </div>
                             <div className="flex-1">
                               <p className="font-medium text-foreground">
                                 {res.title}
                               </p>
                               <p className="text-xs text-muted-foreground capitalize">
-                                {res.type} • After slide {res.show_after_slide}
+                                {res.type}
                               </p>
                             </div>
                             <Badge variant="outline" className="text-xs capitalize">{res.type}</Badge>
