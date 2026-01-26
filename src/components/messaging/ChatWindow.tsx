@@ -599,11 +599,46 @@ const ChatWindow = ({
   // Render file message
   const renderFileMessage = (msg: Message, isSender: boolean) => {
     const isImage = msg.type === 'image';
+    const isVideo = msg.fileName?.match(/\.(mp4|webm|mov|avi)$/i);
+    const hasMediaOptions = msg.mediaOptions && (msg.mediaOptions.viewOnce || msg.mediaOptions.blur);
+    
+    // Use ViewOnceMedia for images/videos with special options
+    if ((isImage || isVideo) && msg.fileUrl && hasMediaOptions) {
+      return (
+        <motion.div
+          key={msg.id}
+          id={`message-${msg.id}`}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2`}
+        >
+          <div className="flex flex-col">
+            <ViewOnceMedia
+              type={isVideo ? 'video' : 'image'}
+              url={msg.fileUrl}
+              options={msg.mediaOptions}
+              isSender={isSender}
+            />
+            <div className={`px-3 py-2 text-xs rounded-b-2xl ${
+              isSender 
+                ? 'bg-[hsl(var(--accent))] text-accent-foreground/70' 
+                : 'bg-muted text-muted-foreground'
+            }`}>
+              {(() => {
+                const msgDate = parseMessageDate(msg.timestamp);
+                return !isNaN(msgDate.getTime()) ? format(msgDate, 'h:mm a') : msg.timestamp;
+              })()}
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
     
     if (isImage && msg.fileUrl) {
       return (
         <motion.div
           key={msg.id}
+          id={`message-${msg.id}`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2`}
