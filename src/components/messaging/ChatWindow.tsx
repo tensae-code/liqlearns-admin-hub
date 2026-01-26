@@ -545,62 +545,111 @@ const ChatWindow = ({
     );
   };
 
-  // Render voice message bubble
+  // Render voice message bubble with reply support
   const renderVoiceMessage = (msg: Message, isSender: boolean) => {
     const isPlaying = playingAudioId === msg.id;
     
     return (
       <motion.div
         key={msg.id}
+        id={`message-${msg.id}`}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2`}
+        className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2 group`}
       >
-        <div 
-          className={`flex items-center gap-3 px-4 py-3 rounded-2xl max-w-[280px] ${
-            isSender 
-              ? 'bg-[hsl(var(--accent))] text-accent-foreground' 
-              : 'bg-muted text-foreground'
-          }`}
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full shrink-0"
-            onClick={() => msg.fileUrl && toggleAudioPlayback(msg.id, msg.fileUrl)}
-          >
-            {isPlaying ? (
-              <Pause className="w-5 h-5" />
-            ) : (
-              <Play className="w-5 h-5" />
-            )}
-          </Button>
-          
-          <div className="flex-1">
-            <div className="flex items-center gap-1">
-              {Array.from({ length: 15 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-1 rounded-full ${isSender ? 'bg-accent-foreground/50' : 'bg-foreground/30'}`}
-                  style={{ height: `${Math.random() * 16 + 4}px` }}
-                />
-              ))}
+        <div className="max-w-[280px] flex flex-col">
+          {/* Reply preview if this is a reply */}
+          {msg.replyTo && (
+            <div className={`px-2 py-1.5 rounded-t-lg flex items-center gap-2 ${
+              isSender ? 'bg-[hsl(var(--accent))]/30' : 'bg-muted/70'
+            }`}>
+              <div className="w-0.5 h-8 bg-accent rounded-full shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-medium text-accent">{msg.replyTo.senderName}</p>
+                <p className="text-xs text-muted-foreground truncate">{msg.replyTo.content}</p>
+              </div>
             </div>
+          )}
+          <div 
+            className={`flex items-center gap-3 px-4 py-3 ${msg.replyTo ? 'rounded-b-2xl' : 'rounded-2xl'} ${
+              isSender 
+                ? 'bg-[hsl(var(--accent))] text-accent-foreground' 
+                : 'bg-muted text-foreground'
+            }`}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full shrink-0"
+              onClick={() => msg.fileUrl && toggleAudioPlayback(msg.id, msg.fileUrl)}
+            >
+              {isPlaying ? (
+                <Pause className="w-5 h-5" />
+              ) : (
+                <Play className="w-5 h-5" />
+              )}
+            </Button>
+            
+            <div className="flex-1">
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 15 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-1 rounded-full ${isSender ? 'bg-accent-foreground/50' : 'bg-foreground/30'}`}
+                    style={{ height: `${Math.random() * 16 + 4}px` }}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            <span className={`text-xs ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
+              {msg.durationSeconds ? formatVoiceDuration(msg.durationSeconds) : '0:00'}
+            </span>
           </div>
-          
-          <span className={`text-xs ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
-            {msg.durationSeconds ? formatVoiceDuration(msg.durationSeconds) : '0:00'}
-          </span>
+          {/* Reply button on hover */}
+          <button
+            onClick={() => setReplyingTo(msg)}
+            className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-muted"
+            title="Reply"
+          >
+            <ArrowLeft className="w-4 h-4 rotate-[135deg]" />
+          </button>
         </div>
       </motion.div>
     );
   };
 
-  // Render file message
+  // Render file message with reply support
   const renderFileMessage = (msg: Message, isSender: boolean) => {
     const isImage = msg.type === 'image';
     const isVideo = msg.fileName?.match(/\.(mp4|webm|mov|avi)$/i);
     const hasMediaOptions = msg.mediaOptions && (msg.mediaOptions.viewOnce || msg.mediaOptions.blur);
+    
+    // Reply preview component reused across all file types
+    const ReplyPreview = () => msg.replyTo ? (
+      <div className={`px-2 py-1.5 rounded-t-lg flex items-center gap-2 ${
+        isSender ? 'bg-[hsl(var(--accent))]/30' : 'bg-muted/70'
+      }`}>
+        <div className="w-0.5 h-8 bg-accent rounded-full shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-medium text-accent">{msg.replyTo.senderName}</p>
+          <p className="text-xs text-muted-foreground truncate">{msg.replyTo.content}</p>
+        </div>
+      </div>
+    ) : null;
+
+    // Reply button component
+    const ReplyButton = () => (
+      <button
+        onClick={() => setReplyingTo(msg)}
+        className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-muted ${
+          isSender ? '-left-8' : '-right-8'
+        }`}
+        title="Reply"
+      >
+        <ArrowLeft className="w-4 h-4 rotate-[135deg]" />
+      </button>
+    );
     
     // Use ViewOnceMedia for images/videos with special options
     if ((isImage || isVideo) && msg.fileUrl && hasMediaOptions) {
@@ -610,9 +659,10 @@ const ChatWindow = ({
           id={`message-${msg.id}`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2`}
+          className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2 group relative`}
         >
-          <div className="flex flex-col">
+          <div className="flex flex-col max-w-[280px]">
+            <ReplyPreview />
             <ViewOnceMedia
               type={isVideo ? 'video' : 'image'}
               url={msg.fileUrl}
@@ -630,6 +680,7 @@ const ChatWindow = ({
               })()}
             </div>
           </div>
+          <ReplyButton />
         </motion.div>
       );
     }
@@ -641,15 +692,18 @@ const ChatWindow = ({
           id={`message-${msg.id}`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2`}
+          className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2 group relative`}
         >
-          <div className="max-w-[280px] rounded-2xl overflow-hidden">
-            <img 
-              src={msg.fileUrl} 
-              alt={msg.fileName || 'Image'} 
-              className="w-full h-auto"
-            />
-            <div className={`px-3 py-2 text-xs ${
+          <div className="max-w-[280px] flex flex-col">
+            <ReplyPreview />
+            <div className={`${msg.replyTo ? '' : 'rounded-t-2xl'} overflow-hidden`}>
+              <img 
+                src={msg.fileUrl} 
+                alt={msg.fileName || 'Image'} 
+                className="w-full h-auto"
+              />
+            </div>
+            <div className={`px-3 py-2 text-xs rounded-b-2xl ${
               isSender 
                 ? 'bg-[hsl(var(--accent))] text-accent-foreground/70' 
                 : 'bg-muted text-muted-foreground'
@@ -660,6 +714,7 @@ const ChatWindow = ({
               })()}
             </div>
           </div>
+          <ReplyButton />
         </motion.div>
       );
     }
@@ -667,40 +722,45 @@ const ChatWindow = ({
     return (
       <motion.div
         key={msg.id}
+        id={`message-${msg.id}`}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2`}
+        className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2 group relative`}
       >
-        <div 
-          className={`flex items-center gap-3 px-4 py-3 rounded-2xl max-w-[280px] ${
-            isSender 
-              ? 'bg-[hsl(var(--accent))] text-accent-foreground' 
-              : 'bg-muted text-foreground'
-          }`}
-        >
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-            isSender ? 'bg-accent-foreground/20' : 'bg-foreground/10'
-          }`}>
-            <FileIcon className="w-5 h-5" />
+        <div className="max-w-[280px] flex flex-col">
+          <ReplyPreview />
+          <div 
+            className={`flex items-center gap-3 px-4 py-3 ${msg.replyTo ? 'rounded-b-2xl' : 'rounded-2xl'} ${
+              isSender 
+                ? 'bg-[hsl(var(--accent))] text-accent-foreground' 
+                : 'bg-muted text-foreground'
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+              isSender ? 'bg-accent-foreground/20' : 'bg-foreground/10'
+            }`}>
+              <FileIcon className="w-5 h-5" />
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{msg.fileName || 'File'}</p>
+              <p className={`text-xs ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
+                {msg.fileSize ? formatFileSize(msg.fileSize) : ''}
+              </p>
+            </div>
+            
+            {msg.fileUrl && (
+              <a 
+                href={msg.fileUrl} 
+                download={msg.fileName}
+                className="shrink-0"
+              >
+                <Download className={`w-4 h-4 ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`} />
+              </a>
+            )}
           </div>
-          
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{msg.fileName || 'File'}</p>
-            <p className={`text-xs ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
-              {msg.fileSize ? formatFileSize(msg.fileSize) : ''}
-            </p>
-          </div>
-          
-          {msg.fileUrl && (
-            <a 
-              href={msg.fileUrl} 
-              download={msg.fileName}
-              className="shrink-0"
-            >
-              <Download className={`w-4 h-4 ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`} />
-            </a>
-          )}
         </div>
+        <ReplyButton />
       </motion.div>
     );
   };

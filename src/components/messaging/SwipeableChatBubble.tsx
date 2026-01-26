@@ -179,16 +179,19 @@ const SwipeableChatBubble = ({
           </span>
         )}
 
-        {/* Reply preview */}
+        {/* Reply preview - matching input area style */}
         {replyTo && (
           <div className={cn(
-            "px-3 py-1.5 rounded-t-lg mb-0.5 text-xs border-l-2",
+            "px-2 py-1.5 rounded-lg mb-1 flex items-center gap-2",
             isSender 
-              ? "bg-[hsl(var(--accent))]/50 border-accent-foreground/50" 
-              : "bg-muted/70 border-primary"
+              ? "bg-[hsl(var(--accent))]/30" 
+              : "bg-muted/70"
           )}>
-            <p className="font-medium text-[10px] opacity-70">{replyTo.senderName}</p>
-            <p className="truncate opacity-80">{replyTo.content}</p>
+            <div className="w-0.5 h-8 bg-accent rounded-full shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-medium text-accent">{replyTo.senderName}</p>
+              <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
+            </div>
           </div>
         )}
         
