@@ -413,6 +413,98 @@ const parseShapes = (slideXml: string, mediaFiles: Record<string, string>, relsX
   return shapes;
 };
 
+// Helper to get layout/master background
+const getLayoutBackground = async (
+  zip: JSZip,
+  slideRelsXml: string,
+  mediaFiles: Record<string, string>
+): Promise<{ backgroundColor?: string; backgroundImage?: string }> => {
+  // Find the layout reference in slide rels
+  const layoutMatch = slideRelsXml.match(/Target="\.\.\/slideLayouts\/slideLayout(\d+)\.xml"/);
+  if (!layoutMatch) return {};
+  
+  const layoutNum = layoutMatch[1];
+  const layoutFile = zip.file(`ppt/slideLayouts/slideLayout${layoutNum}.xml`);
+  if (!layoutFile) return {};
+  
+  const layoutXml = await layoutFile.async('text');
+  
+  // Check layout for background color
+  const layoutBgColor = extractBackgroundColor(layoutXml);
+  
+  // Check layout rels for background image
+  const layoutRelsFile = zip.file(`ppt/slideLayouts/_rels/slideLayout${layoutNum}.xml.rels`);
+  let layoutBgImage: string | undefined;
+  
+  if (layoutRelsFile) {
+    const layoutRelsXml = await layoutRelsFile.async('text');
+    layoutBgImage = extractBackgroundImage(layoutXml, layoutRelsXml, mediaFiles);
+    
+    // If no background image from layout, check slide master
+    if (!layoutBgImage) {
+      const masterMatch = layoutRelsXml.match(/Target="\.\.\/slideMasters\/slideMaster(\d+)\.xml"/);
+      if (masterMatch) {
+        const masterNum = masterMatch[1];
+        const masterFile = zip.file(`ppt/slideMasters/slideMaster${masterNum}.xml`);
+        const masterRelsFile = zip.file(`ppt/slideMasters/_rels/slideMaster${masterNum}.xml.rels`);
+        
+        if (masterFile && masterRelsFile) {
+          const masterXml = await masterFile.async('text');
+          const masterRelsXml = await masterRelsFile.async('text');
+          layoutBgImage = extractBackgroundImage(masterXml, masterRelsXml, mediaFiles);
+          
+          // Also get master background color if layout didn't have one
+          if (layoutBgColor === '#ffffff') {
+            const masterBgColor = extractBackgroundColor(masterXml);
+            if (masterBgColor !== '#ffffff') {
+              return { backgroundColor: masterBgColor, backgroundImage: layoutBgImage };
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return {
+    backgroundColor: layoutBgColor !== '#ffffff' ? layoutBgColor : undefined,
+    backgroundImage: layoutBgImage,
+  };
+};
+
+// Extract images from layout/master that should appear on all slides using that layout
+const getLayoutImages = async (
+  zip: JSZip,
+  slideRelsXml: string,
+  mediaFiles: Record<string, string>
+): Promise<string[]> => {
+  const images: string[] = [];
+  
+  // Find the layout reference
+  const layoutMatch = slideRelsXml.match(/Target="\.\.\/slideLayouts\/slideLayout(\d+)\.xml"/);
+  if (!layoutMatch) return images;
+  
+  const layoutNum = layoutMatch[1];
+  const layoutRelsFile = zip.file(`ppt/slideLayouts/_rels/slideLayout${layoutNum}.xml.rels`);
+  
+  if (layoutRelsFile) {
+    const layoutRelsXml = await layoutRelsFile.async('text');
+    
+    // Get all image references from layout
+    const imageRels = layoutRelsXml.match(/Target="\.\.\/media\/[^"]+"/g) || [];
+    for (const rel of imageRels) {
+      const pathMatch = rel.match(/Target="\.\.\/media\/([^"]+)"/);
+      if (pathMatch) {
+        const mediaPath = `ppt/media/${pathMatch[1]}`;
+        if (mediaFiles[mediaPath]) {
+          images.push(mediaFiles[mediaPath]);
+        }
+      }
+    }
+  }
+  
+  return images;
+};
+
 export const parsePPTX = async (file: File): Promise<ParsedPresentation> => {
   const zip = await JSZip.loadAsync(file);
   
@@ -465,7 +557,7 @@ export const parsePPTX = async (file: File): Promise<ParsedPresentation> => {
     const slideTitle = extractSlideTitle(slideXml);
     const allText = parseTextFromXml(slideXml);
     const content = allText.slice(1); // Skip title
-    const backgroundColor = extractBackgroundColor(slideXml);
+    let backgroundColor = extractBackgroundColor(slideXml);
     const layout = detectLayout(slideXml);
     
     // Get slide notes
@@ -496,9 +588,29 @@ export const parsePPTX = async (file: File): Promise<ParsedPresentation> => {
       }
     }
 
-    const backgroundImage = relsXml
+    // Get background image from slide itself first
+    let backgroundImage = relsXml
       ? extractBackgroundImage(slideXml, relsXml, mediaFiles)
       : undefined;
+
+    // If no background found on slide, check layout/master
+    if (!backgroundImage && backgroundColor === '#ffffff' && relsXml) {
+      const layoutBg = await getLayoutBackground(zip, relsXml, mediaFiles);
+      if (layoutBg.backgroundImage) {
+        backgroundImage = layoutBg.backgroundImage;
+      }
+      if (layoutBg.backgroundColor) {
+        backgroundColor = layoutBg.backgroundColor;
+      }
+      
+      // Also get decorative images from layout
+      const layoutImages = await getLayoutImages(zip, relsXml, mediaFiles);
+      for (const img of layoutImages) {
+        if (!images.includes(img)) {
+          images.push(img);
+        }
+      }
+    }
 
     // Parse shapes with positioning
     const shapes = parseShapes(slideXml, mediaFiles, relsXml);
