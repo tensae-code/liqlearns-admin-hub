@@ -1,5 +1,5 @@
 import { useState, useEffect, forwardRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,6 +20,7 @@ import {
   Headphones,
   Trophy,
   ChevronRight,
+  ChevronDown,
   Award,
   Layers,
   FlaskConical,
@@ -43,12 +44,21 @@ interface CoursePreviewPanelProps {
   onBack: () => void;
 }
 
+interface LessonBreak {
+  id: string;
+  afterSlide: number;
+  lessonNumber: number;
+  title: string;
+}
+
 interface ModulePresentation {
   id: string;
   module_id: string;
   file_name: string;
   total_slides: number;
   created_at: string;
+  lesson_breaks?: LessonBreak[];
+  module_title?: string;
 }
 
 interface CourseResource {
@@ -59,12 +69,22 @@ interface CourseResource {
   show_after_slide: number;
 }
 
+interface LessonItem {
+  id: string;
+  title: string;
+  type: 'presentation' | 'resource';
+  slides?: number;
+  resourceType?: string;
+}
+
 interface ModuleData {
   moduleId: string;
   title: string;
   presentations: ModulePresentation[];
   resources: CourseResource[];
+  lessons: LessonItem[];
   totalSlides: number;
+  isExpanded: boolean;
 }
 
 interface BadgeSuggestion {
@@ -86,90 +106,127 @@ const CoursePreviewPanel = forwardRef<HTMLDivElement, CoursePreviewPanelProps>(
   const [badgeSuggestions, setBadgeSuggestions] = useState<BadgeSuggestion[]>([]);
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
 
-  // Fetch real course data
+  // Fetch real course data with parallel requests
   useEffect(() => {
     const fetchCourseData = async () => {
       setIsLoading(true);
       
       try {
-        // Fetch presentations for this course
-        const { data: presentations, error: presError } = await supabase
-          .from('module_presentations')
-          .select('*')
-          .eq('course_id', course.id)
-          .order('created_at');
+        // Fetch all data in parallel
+        const [presentationsResult, resourcesResult, enrollmentResult, badgesResult] = await Promise.all([
+          supabase
+            .from('module_presentations')
+            .select('*')
+            .eq('course_id', course.id)
+            .order('created_at'),
+          supabase
+            .from('course_resources')
+            .select('*')
+            .eq('course_id', course.id)
+            .order('order_index'),
+          supabase
+            .from('enrollments')
+            .select('*', { count: 'exact', head: true })
+            .eq('course_id', course.id),
+          supabase
+            .from('course_badge_suggestions')
+            .select('*')
+            .eq('course_id', course.id)
+            .order('votes_count', { ascending: false })
+        ]);
 
-        if (presError) console.error('Presentations fetch error:', presError);
-
-        // Fetch resources for this course
-        const { data: resources, error: resError } = await supabase
-          .from('course_resources')
-          .select('*')
-          .eq('course_id', course.id)
-          .order('order_index');
-
-        if (resError) console.error('Resources fetch error:', resError);
-
-        // Fetch enrollment count
-        const { count } = await supabase
-          .from('enrollments')
-          .select('*', { count: 'exact', head: true })
-          .eq('course_id', course.id);
-
-        // Fetch badge suggestions
-        const { data: badges } = await supabase
-          .from('course_badge_suggestions')
-          .select('*')
-          .eq('course_id', course.id)
-          .order('votes_count', { ascending: false });
-
-        setBadgeSuggestions((badges as BadgeSuggestion[]) || []);
-        const selected = badges?.find((b: any) => b.is_selected);
+        setBadgeSuggestions((badgesResult.data as BadgeSuggestion[]) || []);
+        const selected = badgesResult.data?.find((b: any) => b.is_selected);
         setSelectedBadge(selected?.suggested_name || null);
+        setEnrollmentCount(enrollmentResult.count || 0);
+        setAllResources(resourcesResult.data || []);
 
-        setEnrollmentCount(count || 0);
-        setAllResources(resources || []);
+        const presentations = presentationsResult.data || [];
+        const resources = resourcesResult.data || [];
 
-        // Group by module_id
+        // Group by module_id and build lessons
         const moduleMap = new Map<string, ModuleData>();
         
-        (presentations || []).forEach((pres: any) => {
+        presentations.forEach((pres: any, idx: number) => {
           const moduleId = pres.module_id;
           if (!moduleMap.has(moduleId)) {
             moduleMap.set(moduleId, {
               moduleId,
-              title: `Module ${moduleMap.size + 1}`,
+              title: pres.module_title || `Module ${moduleMap.size + 1}`,
               presentations: [],
               resources: [],
+              lessons: [],
               totalSlides: 0,
+              isExpanded: idx === 0,
             });
           }
           const mod = moduleMap.get(moduleId)!;
           mod.presentations.push(pres);
           mod.totalSlides += pres.total_slides || 0;
+          
+          // Build lessons from lesson breaks
+          const lessonBreaks: LessonBreak[] = pres.lesson_breaks || [];
+          
+          if (lessonBreaks.length === 0) {
+            mod.lessons.push({
+              id: pres.id,
+              title: pres.module_title || pres.file_name.replace(/\.pptx?$/i, ''),
+              type: 'presentation',
+              slides: pres.total_slides,
+            });
+          } else {
+            const sortedBreaks = [...lessonBreaks].sort((a, b) => a.afterSlide - b.afterSlide);
+            mod.lessons.push({
+              id: `${pres.id}-lesson-1`,
+              title: 'Lesson 1',
+              type: 'presentation',
+              slides: sortedBreaks[0].afterSlide,
+            });
+            sortedBreaks.forEach((brk, i) => {
+              const nextBreak = sortedBreaks[i + 1];
+              const endSlide = nextBreak ? nextBreak.afterSlide : pres.total_slides;
+              mod.lessons.push({
+                id: brk.id,
+                title: brk.title || `Lesson ${brk.lessonNumber}`,
+                type: 'presentation',
+                slides: endSlide - brk.afterSlide,
+              });
+            });
+          }
         });
 
-        // Add resources to their modules
-        (resources || []).forEach((res: any) => {
+        resources.forEach((res: any) => {
           const moduleId = res.module_id;
           if (moduleMap.has(moduleId)) {
-            moduleMap.get(moduleId)!.resources.push(res);
+            const mod = moduleMap.get(moduleId)!;
+            mod.resources.push(res);
+            mod.lessons.push({
+              id: res.id,
+              title: res.title,
+              type: 'resource',
+              resourceType: res.type
+            });
           } else {
-            // Module from resource that has no presentation
             moduleMap.set(moduleId, {
               moduleId,
               title: `Module ${moduleMap.size + 1}`,
               presentations: [],
               resources: [res],
+              lessons: [{
+                id: res.id,
+                title: res.title,
+                type: 'resource',
+                resourceType: res.type
+              }],
               totalSlides: 0,
+              isExpanded: false,
             });
           }
         });
 
-        // Convert to array and update titles
         const modulesArray = Array.from(moduleMap.values()).map((mod, idx) => ({
           ...mod,
-          title: `Module ${idx + 1}`,
+          title: mod.title || `Module ${idx + 1}`,
         }));
 
         setModules(modulesArray);
@@ -182,6 +239,12 @@ const CoursePreviewPanel = forwardRef<HTMLDivElement, CoursePreviewPanelProps>(
 
     fetchCourseData();
   }, [course.id]);
+
+  const toggleModule = (moduleId: string) => {
+    setModules(modules.map(m => 
+      m.moduleId === moduleId ? { ...m, isExpanded: !m.isExpanded } : m
+    ));
+  };
 
   // Calculate totals
   const totalSlides = modules.reduce((sum, m) => sum + m.totalSlides, 0);

@@ -1780,7 +1780,9 @@ export type Database = {
           file_name: string
           file_path: string
           id: string
+          lesson_breaks: Json | null
           module_id: string
+          module_title: string | null
           resources: Json | null
           slide_data: Json | null
           total_slides: number
@@ -1793,7 +1795,9 @@ export type Database = {
           file_name: string
           file_path: string
           id?: string
+          lesson_breaks?: Json | null
           module_id: string
+          module_title?: string | null
           resources?: Json | null
           slide_data?: Json | null
           total_slides?: number
@@ -1806,7 +1810,9 @@ export type Database = {
           file_name?: string
           file_path?: string
           id?: string
+          lesson_breaks?: Json | null
           module_id?: string
+          module_title?: string | null
           resources?: Json | null
           slide_data?: Json | null
           total_slides?: number

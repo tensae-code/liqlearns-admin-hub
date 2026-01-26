@@ -70,6 +70,13 @@ interface SlideResource {
   content?: any;
 }
 
+interface LessonBreak {
+  id: string;
+  afterSlide: number;
+  lessonNumber: number;
+  title: string;
+}
+
 interface CourseModule {
   id: string;
   title: string;
@@ -80,6 +87,7 @@ interface CourseModule {
   pptxFile?: File;
   slides?: any[];
   resources?: SlideResource[];
+  lessonBreaks?: LessonBreak[];
 }
 
 const courseEmojis = ['📚', '🎯', '💡', '🌟', '🔥', '🚀', '💻', '🎨', '🎵', '📖', '✏️', '🧠'];
@@ -194,7 +202,8 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
             pptxFileName: pptxData.fileName, 
             totalSlides: pptxData.totalSlides,
             slides: pptxData.slides,
-            resources: pptxData.resources || []
+            resources: pptxData.resources || [],
+            lessonBreaks: pptxData.lessonBreaks || []
           }
         : m
     ));
@@ -302,7 +311,7 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
       const modulesWithPPTX = modules.filter(m => m.hasPPTX && m.slides && course);
       
       await Promise.all(modulesWithPPTX.map(async (module) => {
-        // Save presentation to module_presentations
+        // Save presentation to module_presentations with lesson breaks
         const { data: presentation, error: presError } = await supabase
           .from('module_presentations')
           .insert([{
@@ -313,6 +322,8 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
             total_slides: module.totalSlides || 0,
             slide_data: module.slides as unknown as Json,
             resources: (module.resources || []) as unknown as Json,
+            lesson_breaks: (module.lessonBreaks || []) as unknown as Json,
+            module_title: module.title,
             uploaded_by: profile.id,
           }])
           .select()
