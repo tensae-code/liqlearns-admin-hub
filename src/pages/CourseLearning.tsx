@@ -392,7 +392,7 @@ const CourseLearning = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Slide Display */}
-        <div className={`${isFullscreen ? 'flex-1' : 'aspect-video'} bg-card border-b border-border flex items-center justify-center relative overflow-hidden select-none`}>
+        <div className={`${isFullscreen ? 'flex-1' : 'aspect-video max-h-[60vh] md:max-h-none'} bg-card border-b border-border flex items-center justify-center relative overflow-hidden`}>
           {parsingSlides ? (
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-accent mx-auto mb-4" />
@@ -420,19 +420,29 @@ const CourseLearning = () => {
             </AnimatePresence>
           )}
 
-          {/* Navigation Arrows */}
+          {/* Navigation Arrows - touch-optimized for mobile */}
           <button
             onClick={handlePrevious}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handlePrevious();
+            }}
             disabled={currentSlide === 1}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-card/80 hover:bg-card border border-border shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 p-4 md:p-3 rounded-full bg-card/90 hover:bg-card active:bg-card/70 border border-border shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all z-30 touch-manipulation min-w-[48px] min-h-[48px] flex items-center justify-center"
+            aria-label="Previous slide"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-6 h-6 md:w-6 md:h-6" />
           </button>
           <button
             onClick={handleNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-card/80 hover:bg-card border border-border shadow-lg transition-all"
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handleNext();
+            }}
+            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 p-4 md:p-3 rounded-full bg-card/90 hover:bg-card active:bg-card/70 border border-border shadow-lg transition-all z-30 touch-manipulation min-w-[48px] min-h-[48px] flex items-center justify-center"
+            aria-label="Next slide"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-6 h-6 md:w-6 md:h-6" />
           </button>
 
           {/* Slide Resources */}
