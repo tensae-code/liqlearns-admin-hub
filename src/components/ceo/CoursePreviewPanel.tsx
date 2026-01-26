@@ -362,14 +362,24 @@ const CoursePreviewPanel = forwardRef<HTMLDivElement, CoursePreviewPanelProps>(
                   Module Progress (0/{modules.length})
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  80% needed to complete
+                  0% current progress
                 </span>
               </div>
               <Progress value={0} className="h-2" />
             </div>
 
-            <Button variant="hero" className="w-full" disabled>
-              <Play className="w-4 h-4 mr-2" /> Preview Only
+            <Button 
+              variant="hero" 
+              className="w-full" 
+              disabled={!hasContent}
+              onClick={() => {
+                if (hasContent && modules.length > 0) {
+                  // Open course in same window with preview mode
+                  window.location.href = `/course/${course.id}?preview=true`;
+                }
+              }}
+            >
+              <Play className="w-4 h-4 mr-2" /> {hasContent ? 'Try as Student' : 'No Content'}
             </Button>
           </motion.div>
 

@@ -433,7 +433,7 @@ const CourseDetail = () => {
                   Module Progress ({completedModules}/{modules.length})
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  {completionThreshold}% needed to complete
+                  {completionPercentage}% current progress
                 </span>
               </div>
               <Progress value={completionPercentage} className="h-2" />
@@ -445,7 +445,20 @@ const CourseDetail = () => {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="hero" className="flex-1" disabled={!hasContent}>
+              <Button 
+                variant="hero" 
+                className="flex-1" 
+                disabled={!hasContent}
+                onClick={() => {
+                  if (hasContent && modules.length > 0) {
+                    // Navigate to first module presentation in same window
+                    const firstModule = modules[0];
+                    if (firstModule.presentations.length > 0) {
+                      navigate(`/course/${id}/learn?module=${firstModule.moduleId}${isPreview ? '&preview=true' : ''}`);
+                    }
+                  }
+                }}
+              >
                 <Play className="w-4 h-4 mr-2" /> 
                 {isPreview ? 'Try as Student' : hasContent ? 'Start Learning' : 'No Content'}
               </Button>
