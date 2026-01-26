@@ -369,14 +369,15 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
         course = data;
       }
 
-      // Create or update lessons/modules for the course
+      // Create or update lessons/modules for the course - run deletions in parallel
       if (modules.length > 0 && course) {
         if (editCourse) {
-          // When editing, delete existing lessons and re-create
-          await supabase
-            .from('lessons')
-            .delete()
-            .eq('course_id', course.id);
+          // When editing, delete existing data in parallel for speed
+          await Promise.all([
+            supabase.from('lessons').delete().eq('course_id', course.id),
+            supabase.from('course_resources').delete().eq('course_id', course.id),
+            supabase.from('module_presentations').delete().eq('course_id', course.id),
+          ]);
         }
         
         const lessonsToCreate = modules.map((module, index) => ({
@@ -387,6 +388,7 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
           is_published: false,
         }));
 
+        // Insert lessons
         const { error: lessonsError } = await supabase
           .from('lessons')
           .insert(lessonsToCreate);
@@ -398,21 +400,6 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
 
       // Save presentations and resources for modules with PPTX data (in parallel)
       const modulesWithPPTX = modules.filter(m => m.hasPPTX && m.slides && course);
-      
-      // When editing, we need to delete old presentations/resources first and re-insert
-      if (editCourse && modulesWithPPTX.length > 0) {
-        // Delete existing resources for this course
-        await supabase
-          .from('course_resources')
-          .delete()
-          .eq('course_id', course!.id);
-        
-        // Delete existing presentations for this course
-        await supabase
-          .from('module_presentations')
-          .delete()
-          .eq('course_id', course!.id);
-      }
       
       await Promise.all(modulesWithPPTX.map(async (module) => {
         // Save presentation to module_presentations with lesson breaks
