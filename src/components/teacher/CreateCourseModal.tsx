@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import ModulePPTXUploader from '@/components/course/ModulePPTXUploader';
@@ -60,6 +61,15 @@ interface CreateCourseModalProps {
   editCourse?: EditCourse | null;
 }
 
+interface SlideResource {
+  id: string;
+  type: 'video' | 'audio' | 'quiz' | 'flashcard';
+  title: string;
+  showAfterSlide: number;
+  showBeforeSlide: number;
+  content?: any;
+}
+
 interface CourseModule {
   id: string;
   title: string;
@@ -67,6 +77,9 @@ interface CourseModule {
   hasPPTX: boolean;
   pptxFileName?: string;
   totalSlides?: number;
+  pptxFile?: File;
+  slides?: any[];
+  resources?: SlideResource[];
 }
 
 const courseEmojis = ['📚', '🎯', '💡', '🌟', '🔥', '🚀', '💻', '🎨', '🎵', '📖', '✏️', '🧠'];
@@ -175,7 +188,14 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
     if (!selectedModule) return;
     setModules(modules.map(m => 
       m.id === selectedModule.id 
-        ? { ...m, hasPPTX: true, pptxFileName: pptxData.fileName, totalSlides: pptxData.totalSlides }
+        ? { 
+            ...m, 
+            hasPPTX: true, 
+            pptxFileName: pptxData.fileName, 
+            totalSlides: pptxData.totalSlides,
+            slides: pptxData.slides,
+            resources: pptxData.resources || []
+          }
         : m
     ));
     setSelectedModule(null);
@@ -275,6 +295,55 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
 
         if (lessonsError) {
           console.error('Error creating lessons:', lessonsError);
+        }
+      }
+
+      // Save presentations and resources for modules with PPTX data
+      for (const module of modules) {
+        if (module.hasPPTX && module.slides && course) {
+          // Save presentation to module_presentations
+          const { data: presentation, error: presError } = await supabase
+            .from('module_presentations')
+            .insert([{
+              module_id: module.id,
+              course_id: course.id,
+              file_name: module.pptxFileName || 'presentation.pptx',
+              file_path: `${course.id}/${module.id}/presentation.pptx`,
+              total_slides: module.totalSlides || 0,
+              slide_data: module.slides as unknown as Json,
+              resources: (module.resources || []) as unknown as Json,
+              uploaded_by: profile.id,
+            }])
+            .select()
+            .single();
+
+          if (presError) {
+            console.error('Error saving presentation:', presError);
+          }
+
+          // Save individual resources to course_resources table
+          if (module.resources && module.resources.length > 0 && presentation) {
+            const resourcesToCreate = module.resources.map((res, index) => ({
+              course_id: course.id,
+              module_id: module.id,
+              presentation_id: presentation.id,
+              type: res.type,
+              title: res.title,
+              show_after_slide: res.showAfterSlide,
+              show_before_slide: res.showBeforeSlide,
+              content: (res.content || {}) as unknown as Json,
+              order_index: index,
+              created_by: profile.id,
+            }));
+
+            const { error: resError } = await supabase
+              .from('course_resources')
+              .insert(resourcesToCreate);
+
+            if (resError) {
+              console.error('Error saving resources:', resError);
+            }
+          }
         }
       }
 
