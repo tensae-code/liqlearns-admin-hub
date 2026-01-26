@@ -166,7 +166,7 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
       return;
     }
     const newModule: CourseModule = {
-      id: `module-${Date.now()}`,
+      id: crypto.randomUUID(),
       title: newModuleName,
       description: '',
       hasPPTX: false,
