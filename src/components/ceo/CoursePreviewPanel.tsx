@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -23,7 +23,8 @@ import {
   Award,
   Layers,
   FlaskConical,
-  Presentation
+  Presentation,
+  AlertCircle
 } from 'lucide-react';
 
 interface CoursePreviewPanelProps {
@@ -66,12 +67,24 @@ interface ModuleData {
   totalSlides: number;
 }
 
-const CoursePreviewPanel = ({ course, onBack }: CoursePreviewPanelProps) => {
+interface BadgeSuggestion {
+  id: string;
+  suggested_name: string;
+  source: 'teacher' | 'student' | 'admin';
+  votes_count: number;
+  is_selected: boolean;
+  suggested_by: string;
+}
+
+const CoursePreviewPanel = forwardRef<HTMLDivElement, CoursePreviewPanelProps>(
+  ({ course, onBack }, ref) => {
   const [activeTab, setActiveTab] = useState<'lessons' | 'resources' | 'reviews'>('lessons');
   const [modules, setModules] = useState<ModuleData[]>([]);
   const [allResources, setAllResources] = useState<CourseResource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [enrollmentCount, setEnrollmentCount] = useState(0);
+  const [badgeSuggestions, setBadgeSuggestions] = useState<BadgeSuggestion[]>([]);
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
 
   // Fetch real course data
   useEffect(() => {
@@ -102,6 +115,17 @@ const CoursePreviewPanel = ({ course, onBack }: CoursePreviewPanelProps) => {
           .from('enrollments')
           .select('*', { count: 'exact', head: true })
           .eq('course_id', course.id);
+
+        // Fetch badge suggestions
+        const { data: badges } = await supabase
+          .from('course_badge_suggestions')
+          .select('*')
+          .eq('course_id', course.id)
+          .order('votes_count', { ascending: false });
+
+        setBadgeSuggestions((badges as BadgeSuggestion[]) || []);
+        const selected = badges?.find((b: any) => b.is_selected);
+        setSelectedBadge(selected?.suggested_name || null);
 
         setEnrollmentCount(count || 0);
         setAllResources(resources || []);
@@ -184,8 +208,10 @@ const CoursePreviewPanel = ({ course, onBack }: CoursePreviewPanelProps) => {
     }
   };
 
+  const hasContent = modules.length > 0 || allResources.length > 0;
+
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div ref={ref} className="flex flex-col h-[60vh] min-h-0">
       {/* Header */}
       <div className="flex items-center gap-3 pb-4 border-b border-border shrink-0">
         <Button variant="ghost" size="sm" onClick={onBack}>
@@ -198,8 +224,25 @@ const CoursePreviewPanel = ({ course, onBack }: CoursePreviewPanelProps) => {
       </div>
 
       {/* Scrollable Content */}
-      <ScrollArea className="flex-1 mt-4">
-        <div className="space-y-6 pr-2">
+      <ScrollArea className="flex-1 mt-4 h-full">
+        <div className="space-y-6 pr-4 pb-4">
+          {/* No Content Warning */}
+          {!isLoading && !hasContent && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-warning/10 border border-warning/30 rounded-lg flex items-start gap-3"
+            >
+              <AlertCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-warning">No Course Content Found</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  The teacher hasn't uploaded any presentations, quizzes, or resources yet. 
+                  You may want to request they add content before approving.
+                </p>
+              </div>
+            </motion.div>
+          )}
           {/* Course Header */}
           <motion.div
             className="bg-muted/30 rounded-xl border border-border p-5"
@@ -421,18 +464,98 @@ const CoursePreviewPanel = ({ course, onBack }: CoursePreviewPanelProps) => {
 
           {/* Reviews Tab */}
           {activeTab === 'reviews' && (
-            <div className="bg-card rounded-xl border border-border p-6 text-center">
-              <Star className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-foreground font-medium">Student Reviews</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                No reviews yet - this course is pending approval
-              </p>
+            <div className="space-y-4">
+              {/* Badge Name Section */}
+              <div className="bg-card rounded-xl border border-border p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Award className="w-5 h-5 text-gold" />
+                  <h3 className="font-display font-semibold text-foreground">Badge Name</h3>
+                </div>
+                
+                {selectedBadge ? (
+                  <div className="p-3 bg-gold/10 border border-gold/30 rounded-lg flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gold/20 flex items-center justify-center">
+                      🏆
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{selectedBadge}</p>
+                      <p className="text-xs text-muted-foreground">Selected badge name for completion</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No badge name has been selected yet.
+                  </p>
+                )}
+
+                {badgeSuggestions.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-foreground mb-2">
+                      Suggested Names ({badgeSuggestions.length})
+                    </p>
+                    <div className="space-y-2">
+                      {badgeSuggestions.map((suggestion) => (
+                        <div
+                          key={suggestion.id}
+                          className={`flex items-center justify-between p-2 rounded-lg border ${
+                            suggestion.is_selected 
+                              ? 'border-gold/50 bg-gold/5' 
+                              : 'border-border bg-muted/30'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs capitalize ${
+                                suggestion.source === 'teacher' 
+                                  ? 'border-accent text-accent' 
+                                  : suggestion.source === 'student'
+                                    ? 'border-primary text-primary'
+                                    : 'border-gold text-gold'
+                              }`}
+                            >
+                              {suggestion.source}
+                            </Badge>
+                            <span className="text-sm font-medium text-foreground">
+                              {suggestion.suggested_name}
+                            </span>
+                          </div>
+                          {suggestion.votes_count > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              {suggestion.votes_count} vote{suggestion.votes_count !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {badgeSuggestions.length === 0 && !selectedBadge && (
+                  <div className="mt-3 p-3 bg-muted/30 rounded-lg text-center">
+                    <p className="text-xs text-muted-foreground">
+                      Teachers and students can suggest badge names. The admin will select one upon approval.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Student Reviews Section */}
+              <div className="bg-card rounded-xl border border-border p-6 text-center">
+                <Star className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-foreground font-medium">Student Reviews</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  No reviews yet - this course is pending approval
+                </p>
+              </div>
             </div>
           )}
         </div>
       </ScrollArea>
     </div>
   );
-};
+});
+
+CoursePreviewPanel.displayName = 'CoursePreviewPanel';
 
 export default CoursePreviewPanel;
