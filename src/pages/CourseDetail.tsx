@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import CourseInfoModal from '@/components/course/CourseInfoModal';
 import CourseLearningResources from '@/components/course/CourseLearningResources';
 import CourseReviews from '@/components/course/CourseReviews';
+import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft,
   Play,
@@ -24,120 +27,274 @@ import {
   Share2,
   Heart,
   Info,
-  Award
+  Award,
+  Presentation,
+  Layers,
+  AlertCircle
 } from 'lucide-react';
+
+interface ModulePresentation {
+  id: string;
+  module_id: string;
+  file_name: string;
+  total_slides: number;
+  created_at: string;
+}
+
+interface CourseResource {
+  id: string;
+  module_id: string;
+  type: string;
+  title: string;
+  show_after_slide: number;
+}
+
+interface ModuleData {
+  moduleId: string;
+  title: string;
+  presentations: ModulePresentation[];
+  resources: CourseResource[];
+  totalSlides: number;
+  unlocked: boolean;
+  completed: boolean;
+}
+
+interface CourseData {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  difficulty: string;
+  instructor_id: string | null;
+  is_published: boolean | null;
+  submission_status: string | null;
+  badge_name: string | null;
+  instructor?: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+}
 
 const CourseDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const isPreview = searchParams.get('preview') === 'true';
+  
   const [activeTab, setActiveTab] = useState<'lessons' | 'resources' | 'reviews'>('lessons');
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [course, setCourse] = useState<CourseData | null>(null);
+  const [modules, setModules] = useState<ModuleData[]>([]);
+  const [allResources, setAllResources] = useState<CourseResource[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [enrollmentCount, setEnrollmentCount] = useState(0);
 
-  // Mock course data
-  const course = {
-    id: id || '1',
-    title: 'Amharic Basics for Beginners',
-    description: 'Learn the fundamentals of Amharic language including the Ge\'ez script, basic vocabulary, greetings, and essential grammar structures. This comprehensive course takes you from complete beginner to conversational level.',
-    instructor: {
-      id: 'inst-1',
-      name: 'Dr. Alemayehu Bekele',
-      avatar: null,
-      bio: 'Professor of Ethiopian Languages at Addis Ababa University with 15+ years of teaching experience.',
-      verified: true,
-      socialLinks: { twitter: '@alemayehu', linkedin: 'alemayehu-bekele' }
-    },
-    category: 'Language',
-    level: 'Beginner',
-    duration: '12 hours',
-    totalModules: 8,
-    students: 1250,
-    rating: 4.8,
-    reviewCount: 342,
-    progress: 65,
-    thumbnail: '📚',
-    completionThreshold: 80, // 80% to complete
-    prerequisites: ['Basic understanding of any language structure', 'Dedication to practice daily'],
-    whatYouWillLearn: [
-      'Read and write Ge\'ez script',
-      'Basic conversational Amharic',
-      'Numbers and counting system',
-      'Common phrases for daily life'
-    ],
-    badge: {
-      name: 'Amharic Scholar',
-      icon: '🎓',
-      currentLevel: 2,
-      maxLevel: 8
-    }
-  };
+  // Fetch real course data
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      if (!id) return;
+      
+      setIsLoading(true);
+      
+      try {
+        // Fetch course with instructor
+        const { data: courseData, error: courseError } = await supabase
+          .from('courses')
+          .select(`
+            *,
+            instructor:profiles!courses_instructor_id_fkey(id, full_name, avatar_url)
+          `)
+          .eq('id', id)
+          .maybeSingle();
 
-  const modules = [
-    {
-      id: 'm1',
-      title: 'Getting Started',
-      badgeLevel: 1,
-      unlocked: true,
-      completed: true,
-      lessons: [
-        { id: 1, title: 'Welcome to Amharic', type: 'video', duration: '5:30', completed: true, xp: 25 },
-        { id: 2, title: 'Introduction to Ge\'ez Script', type: 'video', duration: '12:45', completed: true, xp: 30 },
-        { id: 3, title: 'Practice: First Letters', type: 'quiz', duration: '10 min', completed: true, xp: 50 },
-      ]
-    },
-    {
-      id: 'm2',
-      title: 'Basic Greetings',
-      badgeLevel: 2,
-      unlocked: true,
-      completed: false,
-      lessons: [
-        { id: 4, title: 'Saying Hello & Goodbye', type: 'video', duration: '8:20', completed: true, xp: 25 },
-        { id: 5, title: 'Common Phrases', type: 'audio', duration: '15:00', completed: false, current: true, xp: 30 },
-        { id: 6, title: 'Practice Conversation', type: 'interactive', duration: '20 min', completed: false, xp: 45 },
-      ]
-    },
-    {
-      id: 'm3',
-      title: 'Numbers & Counting',
-      badgeLevel: 3,
-      unlocked: false,
-      completed: false,
-      lessons: [
-        { id: 7, title: 'Numbers 1-10', type: 'video', duration: '10:15', completed: false, locked: true, xp: 25 },
-        { id: 8, title: 'Numbers 11-100', type: 'video', duration: '12:30', completed: false, locked: true, xp: 30 },
-        { id: 9, title: 'Number Quiz', type: 'quiz', duration: '15 min', completed: false, locked: true, xp: 50 },
-      ]
-    },
-  ];
+        if (courseError) {
+          console.error('Course fetch error:', courseError);
+          return;
+        }
+        
+        if (!courseData) {
+          console.error('Course not found');
+          return;
+        }
+
+        setCourse(courseData);
+
+        // Fetch presentations for this course
+        const { data: presentations, error: presError } = await supabase
+          .from('module_presentations')
+          .select('*')
+          .eq('course_id', id)
+          .order('created_at');
+
+        if (presError) console.error('Presentations fetch error:', presError);
+
+        // Fetch resources for this course
+        const { data: resources, error: resError } = await supabase
+          .from('course_resources')
+          .select('*')
+          .eq('course_id', id)
+          .order('order_index');
+
+        if (resError) console.error('Resources fetch error:', resError);
+
+        // Fetch enrollment count
+        const { count } = await supabase
+          .from('enrollments')
+          .select('*', { count: 'exact', head: true })
+          .eq('course_id', id);
+
+        setEnrollmentCount(count || 0);
+        setAllResources(resources || []);
+
+        // Group by module_id
+        const moduleMap = new Map<string, ModuleData>();
+        
+        (presentations || []).forEach((pres: any, idx: number) => {
+          const moduleId = pres.module_id;
+          if (!moduleMap.has(moduleId)) {
+            moduleMap.set(moduleId, {
+              moduleId,
+              title: `Module ${moduleMap.size + 1}`,
+              presentations: [],
+              resources: [],
+              totalSlides: 0,
+              unlocked: idx === 0 || isPreview, // First module unlocked, or all in preview
+              completed: false,
+            });
+          }
+          const mod = moduleMap.get(moduleId)!;
+          mod.presentations.push(pres);
+          mod.totalSlides += pres.total_slides || 0;
+        });
+
+        // Add resources to their modules
+        (resources || []).forEach((res: any) => {
+          const moduleId = res.module_id;
+          if (moduleMap.has(moduleId)) {
+            moduleMap.get(moduleId)!.resources.push(res);
+          } else {
+            // Module from resource that has no presentation
+            moduleMap.set(moduleId, {
+              moduleId,
+              title: `Module ${moduleMap.size + 1}`,
+              presentations: [],
+              resources: [res],
+              totalSlides: 0,
+              unlocked: isPreview,
+              completed: false,
+            });
+          }
+        });
+
+        // Convert to array and update titles
+        const modulesArray = Array.from(moduleMap.values()).map((mod, idx) => ({
+          ...mod,
+          title: `Module ${idx + 1}`,
+          unlocked: idx === 0 || isPreview, // Re-apply unlock logic based on order
+        }));
+
+        setModules(modulesArray);
+      } catch (err) {
+        console.error('Error fetching course data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourseData();
+  }, [id, isPreview]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'video': return Video;
       case 'audio': return Headphones;
       case 'quiz': return Trophy;
+      case 'flashcard': return Layers;
       default: return FileText;
     }
   };
 
+  // Calculate totals
+  const totalSlides = modules.reduce((sum, m) => sum + m.totalSlides, 0);
+  const estimatedHours = Math.max(1, Math.ceil(totalSlides / 15));
   const completedModules = modules.filter(m => m.completed).length;
-  const completionPercentage = Math.round((completedModules / modules.length) * 100);
-  const isOfficiallyComplete = completionPercentage >= course.completionThreshold;
+  const completionPercentage = modules.length > 0 ? Math.round((completedModules / modules.length) * 100) : 0;
+  const completionThreshold = 80;
+  const isOfficiallyComplete = completionPercentage >= completionThreshold;
+  const hasContent = modules.length > 0 || allResources.length > 0;
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back
+        </Button>
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-96 w-full" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!course) {
+    return (
+      <DashboardLayout>
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back
+        </Button>
+        <div className="flex flex-col items-center justify-center py-20">
+          <AlertCircle className="w-16 h-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-display font-bold text-foreground">Course Not Found</h2>
+          <p className="text-muted-foreground mt-2">The course you're looking for doesn't exist.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       {/* Back Button */}
-      <Button
-        variant="ghost"
-        onClick={() => navigate(-1)}
-        className="mb-4"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back to Courses
-      </Button>
+      <div className="flex items-center gap-3 mb-4">
+        <Button variant="ghost" onClick={() => navigate(-1)}>
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Courses
+        </Button>
+        {isPreview && (
+          <Badge variant="secondary" className="text-accent border-accent/30">
+            Teacher Preview Mode
+          </Badge>
+        )}
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Course Header - Compact */}
+          {/* No Content Warning */}
+          {!hasContent && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-warning/10 border border-warning/30 rounded-lg flex items-start gap-3"
+            >
+              <AlertCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-warning">No Course Content Found</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This course doesn't have any presentations or resources uploaded yet.
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Course Header */}
           <motion.div
             className="bg-card rounded-xl border border-border p-6"
             initial={{ opacity: 0, y: 20 }}
@@ -145,10 +302,9 @@ const CourseDetail = () => {
           >
             <div className="flex items-start gap-4 mb-4">
               <div className="w-16 h-16 rounded-xl bg-accent/10 flex items-center justify-center text-3xl relative">
-                {course.thumbnail}
-                {/* Badge Level Indicator */}
+                📚
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gold text-gold-foreground rounded-full flex items-center justify-center text-xs font-bold border-2 border-card">
-                  {course.badge.currentLevel}
+                  {modules.length}
                 </div>
               </div>
               <div className="flex-1">
@@ -156,14 +312,15 @@ const CourseDetail = () => {
                   <span className="text-xs font-medium text-accent px-2 py-0.5 bg-accent/10 rounded-full">
                     {course.category}
                   </span>
-                  <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
-                    {course.level}
+                  <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-muted rounded-full capitalize">
+                    {course.difficulty}
                   </span>
                 </div>
                 <h1 className="text-2xl font-display font-bold text-foreground">{course.title}</h1>
-                <p className="text-muted-foreground mt-1">by {course.instructor.name}</p>
+                <p className="text-muted-foreground mt-1">
+                  by {course.instructor?.full_name || 'Unknown Instructor'}
+                </p>
               </div>
-              {/* Info Button */}
               <Button 
                 variant="outline" 
                 size="icon"
@@ -174,29 +331,34 @@ const CourseDetail = () => {
               </Button>
             </div>
 
+            <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{course.description}</p>
+
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
               <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" /> {course.duration}
+                <Clock className="w-4 h-4" /> ~{estimatedHours} hour{estimatedHours > 1 ? 's' : ''}
               </span>
               <span className="flex items-center gap-1">
-                <BookOpen className="w-4 h-4" /> {course.totalModules} modules
+                <BookOpen className="w-4 h-4" /> {modules.length} module{modules.length !== 1 ? 's' : ''}
               </span>
               <span className="flex items-center gap-1">
-                <Users className="w-4 h-4" /> {course.students.toLocaleString()} students
+                <Presentation className="w-4 h-4" /> {totalSlides} slides
               </span>
-              <span className="flex items-center gap-1 text-gold">
-                <Star className="w-4 h-4 fill-gold" /> {course.rating} ({course.reviewCount} reviews)
+              <span className="flex items-center gap-1">
+                <Users className="w-4 h-4" /> {enrollmentCount} students
+              </span>
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <Star className="w-4 h-4" /> 0 (0 reviews)
               </span>
             </div>
 
-            {/* Progress - Shows module completion */}
+            {/* Progress */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-foreground">
                   Module Progress ({completedModules}/{modules.length})
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  {course.completionThreshold}% needed to complete
+                  {completionThreshold}% needed to complete
                 </span>
               </div>
               <Progress value={completionPercentage} className="h-2" />
@@ -208,13 +370,14 @@ const CourseDetail = () => {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="hero" className="flex-1">
-                <Play className="w-4 h-4 mr-2" /> Continue Learning
+              <Button variant="hero" className="flex-1" disabled={isPreview || !hasContent}>
+                <Play className="w-4 h-4 mr-2" /> 
+                {isPreview ? 'Preview Only' : hasContent ? 'Start Learning' : 'No Content'}
               </Button>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" disabled={isPreview}>
                 <Heart className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" disabled={isPreview}>
                 <Share2 className="w-4 h-4" />
               </Button>
             </div>
@@ -233,118 +396,160 @@ const CourseDetail = () => {
                 }`}
               >
                 {tab}
+                {tab === 'resources' && allResources.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">{allResources.length}</Badge>
+                )}
               </button>
             ))}
           </div>
 
-          {/* Lessons - Modules as Badge Levels */}
+          {/* Lessons Tab */}
           {activeTab === 'lessons' && (
             <div className="space-y-4">
-              {modules.map((module, moduleIndex) => (
-                <motion.div
-                  key={module.id}
-                  className={`bg-card rounded-xl border overflow-hidden ${
-                    module.unlocked ? 'border-border' : 'border-border/50 opacity-75'
-                  }`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: moduleIndex * 0.1 }}
-                >
-                  <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-3">
-                    {/* Badge Level Icon */}
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      module.completed 
-                        ? 'bg-gold/20 text-gold' 
-                        : module.unlocked 
-                          ? 'bg-accent/10 text-accent'
-                          : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {module.completed ? (
-                        <Award className="w-5 h-5" />
-                      ) : module.unlocked ? (
-                        <span className="font-bold">{module.badgeLevel}</span>
-                      ) : (
-                        <Lock className="w-5 h-5" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-display font-semibold text-foreground">
-                        Level {module.badgeLevel}: {module.title}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        {module.completed 
-                          ? `✓ Badge Level ${module.badgeLevel} Unlocked`
+              {modules.length > 0 ? (
+                modules.map((module, moduleIndex) => (
+                  <motion.div
+                    key={module.moduleId}
+                    className={`bg-card rounded-xl border overflow-hidden ${
+                      module.unlocked ? 'border-border' : 'border-border/50 opacity-75'
+                    }`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: moduleIndex * 0.05 }}
+                  >
+                    <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        module.completed 
+                          ? 'bg-gold/20 text-gold' 
                           : module.unlocked 
-                            ? 'Complete to unlock badge level'
-                            : 'Complete previous module to unlock'}
-                      </p>
+                            ? 'bg-accent/10 text-accent'
+                            : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {module.completed ? (
+                          <Award className="w-5 h-5" />
+                        ) : module.unlocked ? (
+                          <span className="font-bold">{moduleIndex + 1}</span>
+                        ) : (
+                          <Lock className="w-5 h-5" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-display font-semibold text-foreground">
+                          {module.title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          {module.presentations.length} presentation{module.presentations.length !== 1 ? 's' : ''} • {module.totalSlides} slides • {module.resources.length} resource{module.resources.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
                     </div>
-                    {module.completed && (
-                      <div className="text-2xl">{course.badge.icon}</div>
-                    )}
-                  </div>
-                  <div className="divide-y divide-border">
-                    {module.lessons.map((lesson) => {
-                      const Icon = getTypeIcon(lesson.type);
-                      const isLocked = !module.unlocked || lesson.locked;
-                      return (
-                        <button
-                          key={lesson.id}
-                          className={`w-full flex items-center gap-4 p-4 text-left transition-colors ${
-                            isLocked
-                              ? 'opacity-50 cursor-not-allowed'
-                              : 'hover:bg-muted/50 cursor-pointer'
-                          } ${lesson.current ? 'bg-accent/5 border-l-2 border-accent' : ''}`}
-                          disabled={isLocked}
+                    
+                    {/* Presentations in this module */}
+                    <div className="divide-y divide-border">
+                      {module.presentations.map((pres) => (
+                        <div
+                          key={pres.id}
+                          className={`flex items-center gap-4 p-4 text-left transition-colors ${
+                            module.unlocked ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-50 cursor-not-allowed'
+                          }`}
                         >
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            lesson.completed
-                              ? 'bg-success/10 text-success'
-                              : lesson.current
-                              ? 'bg-accent/10 text-accent'
-                              : 'bg-muted text-muted-foreground'
-                          }`}>
-                            {lesson.completed ? (
-                              <CheckCircle2 className="w-5 h-5" />
-                            ) : isLocked ? (
-                              <Lock className="w-5 h-5" />
-                            ) : (
-                              <Icon className="w-5 h-5" />
-                            )}
+                          <div className="w-10 h-10 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+                            <Presentation className="w-5 h-5" />
                           </div>
                           <div className="flex-1">
-                            <p className={`font-medium ${lesson.current ? 'text-accent' : 'text-foreground'}`}>
-                              {lesson.title}
+                            <p className="font-medium text-foreground">
+                              {pres.file_name.replace(/\.pptx?$/i, '')}
                             </p>
-                            <p className="text-xs text-muted-foreground capitalize">
-                              {lesson.type} • {lesson.duration} • +{lesson.xp} XP
+                            <p className="text-xs text-muted-foreground">
+                              {pres.total_slides} slides
                             </p>
                           </div>
-                          {lesson.current && (
-                            <span className="text-xs font-medium text-accent px-2 py-1 bg-accent/10 rounded-full">
-                              Continue
-                            </span>
-                          )}
                           <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              ))}
+                        </div>
+                      ))}
+                      
+                      {/* Resources in this module */}
+                      {module.resources.map((res) => {
+                        const Icon = getTypeIcon(res.type);
+                        return (
+                          <div
+                            key={res.id}
+                            className={`flex items-center gap-4 p-4 text-left bg-accent/5 ${
+                              module.unlocked ? 'hover:bg-accent/10 cursor-pointer' : 'opacity-50 cursor-not-allowed'
+                            }`}
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-foreground">
+                                {res.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground capitalize">
+                                {res.type} • After slide {res.show_after_slide}
+                              </p>
+                            </div>
+                            <Badge variant="outline" className="text-xs capitalize">{res.type}</Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="bg-card rounded-xl border border-border p-6 text-center">
+                  <Presentation className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-foreground font-medium">No Modules Found</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This course has no presentations or lessons uploaded yet.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Resources - From Dashboard Learning Resources */}
+          {/* Resources Tab */}
           {activeTab === 'resources' && (
-            <CourseLearningResources courseId={course.id} />
+            <div className="space-y-3">
+              {allResources.length > 0 ? (
+                allResources.map((res) => {
+                  const Icon = getTypeIcon(res.type);
+                  return (
+                    <motion.div
+                      key={res.id}
+                      className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-foreground">{res.title}</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {res.type} • After slide {res.show_after_slide}
+                        </p>
+                      </div>
+                      <Badge className="capitalize">{res.type}</Badge>
+                    </motion.div>
+                  );
+                })
+              ) : (
+                <div className="bg-card rounded-xl border border-border p-6 text-center">
+                  <Layers className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-foreground font-medium">No Resources Found</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This course has no interactive resources (quizzes, flashcards, videos) yet.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
 
-          {/* Reviews - Enhanced */}
+          {/* Reviews Tab */}
           {activeTab === 'reviews' && (
             <CourseReviews 
-              courseRating={course.rating}
-              totalReviews={course.reviewCount}
+              courseRating={0}
+              totalReviews={0}
             />
           )}
         </div>
@@ -359,16 +564,16 @@ const CourseDetail = () => {
             transition={{ delay: 0.2 }}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="text-4xl">{course.badge.icon}</div>
+              <div className="text-4xl">🎓</div>
               <div>
-                <p className="text-sm opacity-80">{course.badge.name}</p>
+                <p className="text-sm opacity-80">{course.badge_name || 'Course Badge'}</p>
                 <p className="text-2xl font-display font-bold">
-                  Level {course.badge.currentLevel}/{course.badge.maxLevel}
+                  Level 0/{modules.length}
                 </p>
               </div>
             </div>
             <Progress 
-              value={(course.badge.currentLevel / course.badge.maxLevel) * 100} 
+              value={0} 
               className="h-2 bg-white/20" 
             />
             <p className="text-sm opacity-80 mt-2">
@@ -383,25 +588,23 @@ const CourseDetail = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <h3 className="font-display font-semibold text-foreground mb-4">Your Stats</h3>
+            <h3 className="font-display font-semibold text-foreground mb-4">Course Stats</h3>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Modules Completed</span>
-                <span className="font-medium text-foreground">{completedModules}/{modules.length}</span>
+                <span className="text-muted-foreground">Modules</span>
+                <span className="font-medium text-foreground">{modules.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Badge Level</span>
-                <span className="font-medium text-gold">{course.badge.currentLevel}</span>
+                <span className="text-muted-foreground">Total Slides</span>
+                <span className="font-medium text-foreground">{totalSlides}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">XP Earned</span>
-                <span className="font-medium text-success">+205 XP</span>
+                <span className="text-muted-foreground">Resources</span>
+                <span className="font-medium text-foreground">{allResources.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Completion</span>
-                <span className={`font-medium ${isOfficiallyComplete ? 'text-success' : 'text-foreground'}`}>
-                  {completionPercentage}%
-                </span>
+                <span className="text-muted-foreground">Est. Duration</span>
+                <span className="font-medium text-foreground">~{estimatedHours}h</span>
               </div>
             </div>
           </motion.div>
@@ -416,19 +619,16 @@ const CourseDetail = () => {
             <h3 className="font-display font-semibold text-foreground mb-3">Instructor</h3>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold">
-                {course.instructor.name.charAt(0)}
+                {course.instructor?.full_name?.charAt(0) || '?'}
               </div>
               <div className="flex-1">
                 <p className="font-medium text-foreground flex items-center gap-1">
-                  {course.instructor.name}
-                  {course.instructor.verified && (
-                    <CheckCircle2 className="w-4 h-4 text-accent" />
-                  )}
+                  {course.instructor?.full_name || 'Unknown Instructor'}
                 </p>
-                <p className="text-xs text-muted-foreground line-clamp-2">{course.instructor.bio}</p>
+                <p className="text-xs text-muted-foreground">Course Creator</p>
               </div>
             </div>
-            <Button variant="outline" className="w-full mt-3" size="sm">
+            <Button variant="outline" className="w-full mt-3" size="sm" disabled={isPreview}>
               View Profile
             </Button>
           </motion.div>
@@ -441,18 +641,25 @@ const CourseDetail = () => {
         onOpenChange={setShowInfoModal}
         course={{
           title: course.title,
-          description: course.description,
-          instructor: course.instructor,
+          description: course.description || '',
+          instructor: {
+            id: course.instructor?.id || '',
+            name: course.instructor?.full_name || 'Unknown',
+            avatar: course.instructor?.avatar_url,
+            bio: '',
+            verified: true,
+            socialLinks: {}
+          },
           category: course.category,
-          level: course.level,
-          duration: course.duration,
-          totalModules: course.totalModules,
-          students: course.students,
-          rating: course.rating,
-          reviewCount: course.reviewCount,
-          prerequisites: course.prerequisites,
-          whatYouWillLearn: course.whatYouWillLearn,
-          completionThreshold: course.completionThreshold
+          level: course.difficulty,
+          duration: `~${estimatedHours} hours`,
+          totalModules: modules.length,
+          students: enrollmentCount,
+          rating: 0,
+          reviewCount: 0,
+          prerequisites: [],
+          whatYouWillLearn: [],
+          completionThreshold: completionThreshold
         }}
       />
     </DashboardLayout>
