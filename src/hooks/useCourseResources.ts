@@ -19,12 +19,14 @@ export interface Flashcard {
   hint?: string;
 }
 
+export type ResourceType = 'video' | 'audio' | 'quiz' | 'flashcard' | 'game' | 'simulation' | 'document' | 'image' | 'link' | 'embed' | 'code' | 'discussion' | 'assignment';
+
 export interface CourseResource {
   id: string;
   courseId: string;
   moduleId: string;
   presentationId?: string;
-  type: 'video' | 'audio' | 'quiz' | 'flashcard';
+  type: ResourceType;
   title: string;
   description?: string;
   filePath?: string;
