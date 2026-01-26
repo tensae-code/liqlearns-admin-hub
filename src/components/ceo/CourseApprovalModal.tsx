@@ -64,8 +64,8 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
     course.instructor?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  const isClaimedByMe = selectedCourse?.claimed_by === user?.id;
-  const isClaimedByOther = selectedCourse?.claimed_by && selectedCourse.claimed_by !== user?.id;
+  const isClaimedByMe = selectedCourse?.claimed_by === profile?.id;
+  const isClaimedByOther = selectedCourse?.claimed_by && selectedCourse.claimed_by !== profile?.id;
   const canReview = isClaimedByMe || !selectedCourse?.claimed_by;
 
   const handleAddComment = () => {
@@ -81,8 +81,8 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
   };
 
   const handleClaim = () => {
-    if (!selectedCourse) return;
-    claimCourse.mutate(selectedCourse.id);
+    if (!selectedCourse || !profile) return;
+    claimCourse.mutate({ courseId: selectedCourse.id, profileId: profile.id });
   };
 
   const handleUnclaim = () => {
@@ -134,7 +134,7 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
   };
 
   const isCourseClaimedByOther = (course: SubmittedCourse) => {
-    return course.claimed_by && course.claimed_by !== user?.id;
+    return course.claimed_by && course.claimed_by !== profile?.id;
   };
 
   return (
@@ -391,7 +391,7 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
                 <div className="space-y-2">
                   {filteredCourses.map(course => {
                     const claimedByOther = isCourseClaimedByOther(course);
-                    const claimedByMe = course.claimed_by === user?.id;
+                    const claimedByMe = course.claimed_by === profile?.id;
                     
                     return (
                       <div
