@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,9 +43,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import ModulePPTXUploader from '@/components/course/ModulePPTXUploader';
 
+interface EditCourse {
+  id: string;
+  title: string;
+  description?: string;
+  category: string;
+  difficulty: string;
+  price?: number;
+  estimated_duration?: number;
+  submission_status?: string;
+}
+
 interface CreateCourseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editCourse?: EditCourse | null;
 }
 
 interface CourseModule {
@@ -74,7 +86,7 @@ const difficulties = [
   { id: 'advanced', label: 'Advanced', color: 'bg-destructive/10 text-destructive' },
 ];
 
-const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
+const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModalProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
@@ -94,6 +106,26 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
   const [pptxUploaderOpen, setPptxUploaderOpen] = useState(false);
   const [selectedModule, setSelectedModule] = useState<CourseModule | null>(null);
   const [newModuleName, setNewModuleName] = useState('');
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editCourse && open) {
+      setFormData({
+        title: editCourse.title || '',
+        description: editCourse.description || '',
+        category: editCourse.category || '',
+        difficulty: editCourse.difficulty || 'beginner',
+        price: editCourse.price?.toString() || '',
+        isFree: !editCourse.price || editCourse.price === 0,
+        thumbnail_emoji: '📚',
+        estimatedDuration: editCourse.estimated_duration?.toString() || '',
+        objectives: [''],
+      });
+    } else if (!open) {
+      // Reset when closing
+      resetForm();
+    }
+  }, [editCourse, open]);
 
   const handleAddObjective = () => {
     setFormData({
@@ -174,29 +206,50 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
         throw new Error('Could not find your profile');
       }
 
-      // Create the course in the database with appropriate status
-      const { data: course, error: courseError } = await supabase
-        .from('courses')
-        .insert({
-          title: formData.title,
-          description: formData.description || null,
-          category: formData.category,
-          difficulty: formData.difficulty,
-          price: formData.isFree ? 0 : parseFloat(formData.price) || 0,
-          estimated_duration: parseInt(formData.estimatedDuration) || null,
-          instructor_id: profile.id,
-          is_published: false,
-          total_lessons: modules.length,
-          submission_status: submitForReview ? 'submitted' : 'draft',
-          submitted_at: submitForReview ? new Date().toISOString() : null,
-        })
-        .select()
-        .single();
+      const courseData = {
+        title: formData.title,
+        description: formData.description || null,
+        category: formData.category,
+        difficulty: formData.difficulty,
+        price: formData.isFree ? 0 : parseFloat(formData.price) || 0,
+        estimated_duration: parseInt(formData.estimatedDuration) || null,
+        total_lessons: modules.length,
+        submission_status: submitForReview ? 'submitted' : 'draft',
+        submitted_at: submitForReview ? new Date().toISOString() : null,
+        rejection_reason: submitForReview ? null : undefined, // Clear rejection if resubmitting
+      };
 
-      if (courseError) throw courseError;
+      let course;
 
-      // Create lessons/modules for the course
-      if (modules.length > 0 && course) {
+      if (editCourse) {
+        // Update existing course
+        const { data, error: courseError } = await supabase
+          .from('courses')
+          .update(courseData)
+          .eq('id', editCourse.id)
+          .select()
+          .single();
+
+        if (courseError) throw courseError;
+        course = data;
+      } else {
+        // Create new course
+        const { data, error: courseError } = await supabase
+          .from('courses')
+          .insert({
+            ...courseData,
+            instructor_id: profile.id,
+            is_published: false,
+          })
+          .select()
+          .single();
+
+        if (courseError) throw courseError;
+        course = data;
+      }
+
+      // Create lessons/modules for the course (only for new courses)
+      if (modules.length > 0 && course && !editCourse) {
         const lessonsToCreate = modules.map((module, index) => ({
           course_id: course.id,
           title: module.title,
@@ -218,12 +271,13 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
       queryClient.invalidateQueries({ queryKey: ['courses'] });
       queryClient.invalidateQueries({ queryKey: ['teacher-courses'] });
 
+      const actionType = editCourse ? 'updated' : 'created';
       if (submitForReview) {
-        toast.success('Course submitted for review!', {
+        toast.success(`Course ${actionType} and submitted for review!`, {
           description: 'An admin will review your course and approve it for publishing.',
         });
       } else {
-        toast.success('Course saved as draft!', {
+        toast.success(`Course ${actionType} as draft!`, {
           description: 'You can continue editing and submit for review when ready.',
         });
       }
@@ -231,8 +285,8 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
       onOpenChange(false);
       resetForm();
     } catch (error: any) {
-      console.error('Error creating course:', error);
-      toast.error('Failed to create course', {
+      console.error('Error saving course:', error);
+      toast.error(`Failed to ${editCourse ? 'update' : 'create'} course`, {
         description: error.message || 'Please try again'
       });
     } finally {
@@ -278,10 +332,13 @@ const CreateCourseModal = ({ open, onOpenChange }: CreateCourseModalProps) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <BookOpen className="w-5 h-5 text-accent" />
-            Create New Course
+            {editCourse ? 'Edit Course' : 'Create New Course'}
           </DialogTitle>
           <DialogDescription>
-            Fill in the details to create your new course. You can save as draft anytime.
+            {editCourse 
+              ? 'Update your course details. You can save as draft or submit for review.'
+              : 'Fill in the details to create your new course. You can save as draft anytime.'
+            }
           </DialogDescription>
         </DialogHeader>
 

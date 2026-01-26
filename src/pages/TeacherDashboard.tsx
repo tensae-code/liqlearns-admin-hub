@@ -115,6 +115,16 @@ const TeacherDashboard = () => {
   };
   
   const [createCourseOpen, setCreateCourseOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<{
+    id: string;
+    title: string;
+    description?: string;
+    category: string;
+    difficulty: string;
+    price?: number;
+    estimated_duration?: number;
+    submission_status?: string;
+  } | null>(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [reviewText, setReviewText] = useState('');
@@ -182,6 +192,32 @@ const TeacherDashboard = () => {
       window.removeEventListener('openCreateCourseModal', handleOpenCreateCourseModal);
     };
   }, []);
+
+  // Handle editing a course
+  const handleEditCourse = (courseId: string) => {
+    const courseToEdit = teacherCourses.find(c => c.id === courseId);
+    if (courseToEdit) {
+      setEditingCourse({
+        id: courseToEdit.id,
+        title: courseToEdit.title,
+        description: courseToEdit.description || undefined,
+        category: courseToEdit.category,
+        difficulty: courseToEdit.difficulty,
+        price: courseToEdit.price || undefined,
+        estimated_duration: courseToEdit.estimated_duration || undefined,
+        submission_status: courseToEdit.submission_status || undefined,
+      });
+      setCreateCourseOpen(true);
+    }
+  };
+
+  // Handle closing the modal
+  const handleCloseModal = (open: boolean) => {
+    setCreateCourseOpen(open);
+    if (!open) {
+      setEditingCourse(null);
+    }
+  };
 
   // Calculate stats from real data
   const totalStudents = teacherCourses.reduce((sum, c) => sum + (c.enrollment_count || 0), 0);
@@ -473,7 +509,12 @@ const TeacherDashboard = () => {
                       <div className="text-right">
                         <p className="font-medium text-success">{course.revenue.toLocaleString()} ETB</p>
                         <div className="flex gap-1 mt-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => handleEditCourse(course.id)}
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -957,7 +998,11 @@ const TeacherDashboard = () => {
       </DashboardLayout>
 
       {/* Create Course Modal */}
-      <CreateCourseModal open={createCourseOpen} onOpenChange={setCreateCourseOpen} />
+      <CreateCourseModal 
+        open={createCourseOpen} 
+        onOpenChange={handleCloseModal} 
+        editCourse={editingCourse}
+      />
 
       {/* Review Student Modal */}
       <AnimatePresence>
