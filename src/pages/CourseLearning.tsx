@@ -154,21 +154,7 @@ const CourseLearning = () => {
         const zipContent = await zip.loadAsync(fileData);
         const slides: ParsedSlide[] = [];
 
-        // Simple slide parsing - extract basic content
-        for (let i = 1; i <= currentModule.totalSlides; i++) {
-          slides.push({
-            index: i,
-            title: `Slide ${i}`,
-            content: [],
-            images: [],
-            shapes: [],
-            notes: '',
-            backgroundColor: '#ffffff',
-            layout: 'blank'
-          });
-        }
-
-        // Try to parse actual slide data
+        // Get list of slide files sorted by number
         const slideFiles = Object.keys(zipContent.files)
           .filter(name => name.match(/ppt\/slides\/slide\d+\.xml$/))
           .sort((a, b) => {
@@ -177,19 +163,48 @@ const CourseLearning = () => {
             return numA - numB;
           });
 
+        // Parse each slide
         for (let i = 0; i < slideFiles.length; i++) {
           const slideFile = zipContent.files[slideFiles[i]];
+          let content: string[] = [];
+          let title = `Slide ${i + 1}`;
+          
           if (slideFile) {
             const xmlContent = await slideFile.async('text');
+            // Extract text content
             const textMatches = xmlContent.match(/<a:t>([^<]*)<\/a:t>/g) || [];
-            const texts = textMatches.map(m => m.replace(/<\/?a:t>/g, '').trim()).filter(Boolean);
+            content = textMatches.map(m => m.replace(/<\/?a:t>/g, '').trim()).filter(Boolean);
             
-            if (slides[i]) {
-              slides[i].content = texts;
-              if (texts.length > 0) {
-                slides[i].title = texts[0];
-              }
+            if (content.length > 0) {
+              title = content[0];
             }
+          }
+
+          slides.push({
+            index: i + 1,
+            title,
+            content,
+            images: [],
+            shapes: [],
+            notes: '',
+            backgroundColor: '#ffffff',
+            layout: content.length > 5 ? 'titleContent' : content.length > 0 ? 'title' : 'blank'
+          });
+        }
+
+        // Fallback if no slides found
+        if (slides.length === 0) {
+          for (let i = 1; i <= currentModule.totalSlides; i++) {
+            slides.push({
+              index: i,
+              title: `Slide ${i}`,
+              content: [],
+              images: [],
+              shapes: [],
+              notes: '',
+              backgroundColor: '#ffffff',
+              layout: 'blank'
+            });
           }
         }
 
@@ -514,7 +529,8 @@ const CourseLearning = () => {
                   cards={activeResource.content?.cards}
                   onComplete={(known, total) => {
                     handleResourceComplete(activeResource.id);
-                    toast.success(`Flashcards reviewed! ${known}/${total} mastered. +15 XP`);
+                    // No XP for flashcards - self-reported mastery is not verified
+                    toast.success(`Flashcards reviewed! ${known}/${total} cards completed.`);
                     setActiveResource(null);
                   }}
                   onClose={() => setActiveResource(null)}
