@@ -380,13 +380,48 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
           ]);
         }
         
-        const lessonsToCreate = modules.map((module, index) => ({
-          course_id: course.id,
-          title: module.title,
-          description: module.description || null,
-          order_index: index + 1,
-          is_published: false,
-        }));
+        // Create lessons from modules - if module has lesson breaks, create multiple lessons
+        const lessonsToCreate: Array<{
+          course_id: string;
+          title: string;
+          description: string | null;
+          order_index: number;
+          is_published: boolean;
+        }> = [];
+        
+        let lessonOrderIndex = 1;
+        modules.forEach((module) => {
+          if (module.lessonBreaks && module.lessonBreaks.length > 0) {
+            // First lesson is the module itself (slides before first break)
+            lessonsToCreate.push({
+              course_id: course.id,
+              title: module.title,
+              description: module.description || null,
+              order_index: lessonOrderIndex++,
+              is_published: false,
+            });
+            
+            // Additional lessons from lesson breaks
+            module.lessonBreaks.forEach((lb: { title?: string; lessonNumber?: number }) => {
+              lessonsToCreate.push({
+                course_id: course.id,
+                title: lb.title || `Lesson ${lb.lessonNumber || lessonOrderIndex}`,
+                description: null,
+                order_index: lessonOrderIndex++,
+                is_published: false,
+              });
+            });
+          } else {
+            // No lesson breaks - just create one lesson for the module
+            lessonsToCreate.push({
+              course_id: course.id,
+              title: module.title,
+              description: module.description || null,
+              order_index: lessonOrderIndex++,
+              is_published: false,
+            });
+          }
+        });
 
         // Insert lessons
         const { error: lessonsError } = await supabase
@@ -396,6 +431,12 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
         if (lessonsError) {
           console.error('Error creating lessons:', lessonsError);
         }
+        
+        // Update total_lessons count on the course
+        await supabase
+          .from('courses')
+          .update({ total_lessons: lessonsToCreate.length })
+          .eq('id', course.id);
       }
 
       // Save presentations and resources for modules with PPTX data (in parallel)
