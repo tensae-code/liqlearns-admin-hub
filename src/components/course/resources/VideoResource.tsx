@@ -21,6 +21,23 @@ interface VideoResourceProps {
   onClose: () => void;
 }
 
+// Helper to extract YouTube video ID
+const getYouTubeId = (url: string): string | null => {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+};
+
+const isYouTubeUrl = (url: string): boolean => {
+  return url.includes('youtube.com') || url.includes('youtu.be');
+};
+
 const VideoResource = ({ title, videoUrl, onComplete, onClose }: VideoResourceProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -29,6 +46,8 @@ const VideoResource = ({ title, videoUrl, onComplete, onClose }: VideoResourcePr
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [hasWatched80Percent, setHasWatched80Percent] = useState(false);
+
+  const isYouTube = videoUrl ? isYouTubeUrl(videoUrl) : false;
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -119,7 +138,16 @@ const VideoResource = ({ title, videoUrl, onComplete, onClose }: VideoResourcePr
 
       {/* Video Area */}
       <div className="relative aspect-video bg-black">
-        {videoUrl ? (
+        {videoUrl && isYouTubeUrl(videoUrl) ? (
+          // YouTube embed
+          <iframe
+            src={`https://www.youtube.com/embed/${getYouTubeId(videoUrl)}?autoplay=0&rel=0`}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={title}
+          />
+        ) : videoUrl ? (
           <video
             ref={videoRef}
             src={videoUrl}
@@ -217,17 +245,25 @@ const VideoResource = ({ title, videoUrl, onComplete, onClose }: VideoResourcePr
         {/* Completion Status */}
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="flex items-center gap-2">
-            <Progress value={progress} className="w-32 h-2" />
-            <span className="text-sm text-muted-foreground">
-              {Math.round(progress)}% watched
-            </span>
+            {isYouTube ? (
+              <span className="text-sm text-muted-foreground">
+                YouTube video - click complete when done
+              </span>
+            ) : (
+              <>
+                <Progress value={progress} className="w-32 h-2" />
+                <span className="text-sm text-muted-foreground">
+                  {Math.round(progress)}% watched
+                </span>
+              </>
+            )}
           </div>
           <Button 
             onClick={onComplete}
-            disabled={!hasWatched80Percent && videoUrl !== undefined}
+            disabled={!isYouTube && !hasWatched80Percent && videoUrl !== undefined}
             className="bg-gradient-accent"
           >
-            {hasWatched80Percent || !videoUrl ? 'Mark Complete' : 'Watch 80% to complete'}
+            {isYouTube || hasWatched80Percent || !videoUrl ? 'Mark Complete' : 'Watch 80% to complete'}
           </Button>
         </div>
       </div>
