@@ -31,6 +31,7 @@ import Help from "./pages/Help";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import CourseDetail from "./pages/CourseDetail";
+import CourseLearning from "./pages/CourseLearning";
 import AdminDashboard from "./pages/AdminDashboard";
 import CEODashboard from "./pages/CEODashboard";
 import CEOAnalytics from "./pages/CEOAnalytics";
@@ -64,6 +65,7 @@ const AppRoutes = () => (
     <Route path="/settings" element={<Settings />} />
     <Route path="/profile" element={<Profile />} />
     <Route path="/course/:id" element={<CourseDetail />} />
+    <Route path="/course/:id/learn" element={<CourseLearning />} />
     
     {/* Protected Teacher Routes */}
     <Route path="/teacher" element={
