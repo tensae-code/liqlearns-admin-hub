@@ -34,6 +34,7 @@ import {
 } from '@/hooks/useCourseApproval';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
+import CoursePreviewPanel from './CoursePreviewPanel';
 
 interface CourseApprovalModalProps {
   open: boolean;
@@ -48,6 +49,7 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
   const [newComment, setNewComment] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const { data: courses, isLoading } = useSubmittedCourses();
   const { data: comments, isLoading: commentsLoading } = useCourseReviewComments(selectedCourse?.id || '');
@@ -119,8 +121,7 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
 
   const handlePreview = () => {
     if (!selectedCourse) return;
-    // Open in new tab for preview
-    window.open(`/course/${selectedCourse.id}?preview=true`, '_blank');
+    setShowPreview(true);
   };
 
   const formatTime = (dateString: string | null) => {
@@ -149,7 +150,13 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
           </DialogTitle>
         </DialogHeader>
 
-        {selectedCourse ? (
+        {selectedCourse && showPreview ? (
+          // Inline Course Preview
+          <CoursePreviewPanel 
+            course={selectedCourse}
+            onBack={() => setShowPreview(false)}
+          />
+        ) : selectedCourse ? (
           // Course Detail View
           <div className="flex flex-col flex-1 min-h-0">
             <Button 
@@ -159,6 +166,7 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
                 setSelectedCourse(null);
                 setShowRejectForm(false);
                 setRejectionReason('');
+                setShowPreview(false);
               }}
               className="mb-2 shrink-0"
             >
