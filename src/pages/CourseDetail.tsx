@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import {
   Headphones,
   Trophy,
   ChevronRight,
+  ChevronDown,
   Share2,
   Heart,
   Info,
@@ -33,12 +34,21 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+interface LessonBreak {
+  id: string;
+  afterSlide: number;
+  lessonNumber: number;
+  title: string;
+}
+
 interface ModulePresentation {
   id: string;
   module_id: string;
   file_name: string;
   total_slides: number;
   created_at: string;
+  lesson_breaks?: LessonBreak[];
+  module_title?: string;
 }
 
 interface CourseResource {
@@ -49,14 +59,26 @@ interface CourseResource {
   show_after_slide: number;
 }
 
+interface LessonItem {
+  id: string;
+  title: string;
+  type: 'presentation' | 'resource';
+  slides?: number;
+  resourceType?: string;
+  startSlide?: number;
+  endSlide?: number;
+}
+
 interface ModuleData {
   moduleId: string;
   title: string;
   presentations: ModulePresentation[];
   resources: CourseResource[];
+  lessons: LessonItem[];
   totalSlides: number;
   unlocked: boolean;
   completed: boolean;
+  isExpanded: boolean;
 }
 
 interface CourseData {
@@ -90,7 +112,7 @@ const CourseDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [enrollmentCount, setEnrollmentCount] = useState(0);
 
-  // Fetch real course data
+  // Fetch real course data with parallel requests
   useEffect(() => {
     const fetchCourseData = async () => {
       if (!id) return;
@@ -98,100 +120,147 @@ const CourseDetail = () => {
       setIsLoading(true);
       
       try {
-        // Fetch course with instructor
-        const { data: courseData, error: courseError } = await supabase
-          .from('courses')
-          .select(`
-            *,
-            instructor:profiles!courses_instructor_id_fkey(id, full_name, avatar_url)
-          `)
-          .eq('id', id)
-          .maybeSingle();
+        // Fetch all data in parallel for speed
+        const [courseResult, presentationsResult, resourcesResult, enrollmentResult] = await Promise.all([
+          supabase
+            .from('courses')
+            .select(`*, instructor:profiles!courses_instructor_id_fkey(id, full_name, avatar_url)`)
+            .eq('id', id)
+            .maybeSingle(),
+          supabase
+            .from('module_presentations')
+            .select('*')
+            .eq('course_id', id)
+            .order('created_at'),
+          supabase
+            .from('course_resources')
+            .select('*')
+            .eq('course_id', id)
+            .order('order_index'),
+          supabase
+            .from('enrollments')
+            .select('*', { count: 'exact', head: true })
+            .eq('course_id', id)
+        ]);
 
-        if (courseError) {
-          console.error('Course fetch error:', courseError);
+        if (courseResult.error) {
+          console.error('Course fetch error:', courseResult.error);
           return;
         }
         
-        if (!courseData) {
+        if (!courseResult.data) {
           console.error('Course not found');
           return;
         }
 
-        setCourse(courseData);
+        setCourse(courseResult.data);
+        setEnrollmentCount(enrollmentResult.count || 0);
+        setAllResources(resourcesResult.data || []);
 
-        // Fetch presentations for this course
-        const { data: presentations, error: presError } = await supabase
-          .from('module_presentations')
-          .select('*')
-          .eq('course_id', id)
-          .order('created_at');
+        const presentations = presentationsResult.data || [];
+        const resources = resourcesResult.data || [];
 
-        if (presError) console.error('Presentations fetch error:', presError);
-
-        // Fetch resources for this course
-        const { data: resources, error: resError } = await supabase
-          .from('course_resources')
-          .select('*')
-          .eq('course_id', id)
-          .order('order_index');
-
-        if (resError) console.error('Resources fetch error:', resError);
-
-        // Fetch enrollment count
-        const { count } = await supabase
-          .from('enrollments')
-          .select('*', { count: 'exact', head: true })
-          .eq('course_id', id);
-
-        setEnrollmentCount(count || 0);
-        setAllResources(resources || []);
-
-        // Group by module_id
+        // Group by module_id and build lesson structure
         const moduleMap = new Map<string, ModuleData>();
         
-        (presentations || []).forEach((pres: any, idx: number) => {
+        presentations.forEach((pres: any, idx: number) => {
           const moduleId = pres.module_id;
           if (!moduleMap.has(moduleId)) {
             moduleMap.set(moduleId, {
               moduleId,
-              title: `Module ${moduleMap.size + 1}`,
+              title: pres.module_title || `Module ${moduleMap.size + 1}`,
               presentations: [],
               resources: [],
+              lessons: [],
               totalSlides: 0,
-              unlocked: idx === 0 || isPreview, // First module unlocked, or all in preview
+              unlocked: idx === 0 || isPreview,
               completed: false,
+              isExpanded: idx === 0, // First module expanded by default
             });
           }
           const mod = moduleMap.get(moduleId)!;
           mod.presentations.push(pres);
           mod.totalSlides += pres.total_slides || 0;
+          
+          // Build lessons from lesson breaks
+          const lessonBreaks: LessonBreak[] = pres.lesson_breaks || [];
+          
+          if (lessonBreaks.length === 0) {
+            // No breaks - entire presentation is one lesson
+            mod.lessons.push({
+              id: pres.id,
+              title: pres.module_title || pres.file_name.replace(/\.pptx?$/i, ''),
+              type: 'presentation',
+              slides: pres.total_slides,
+              startSlide: 1,
+              endSlide: pres.total_slides
+            });
+          } else {
+            // First lesson (before first break)
+            const sortedBreaks = [...lessonBreaks].sort((a, b) => a.afterSlide - b.afterSlide);
+            
+            mod.lessons.push({
+              id: `${pres.id}-lesson-1`,
+              title: 'Lesson 1',
+              type: 'presentation',
+              slides: sortedBreaks[0].afterSlide,
+              startSlide: 1,
+              endSlide: sortedBreaks[0].afterSlide
+            });
+            
+            // Lessons from breaks
+            sortedBreaks.forEach((brk, i) => {
+              const nextBreak = sortedBreaks[i + 1];
+              const endSlide = nextBreak ? nextBreak.afterSlide : pres.total_slides;
+              mod.lessons.push({
+                id: brk.id,
+                title: brk.title || `Lesson ${brk.lessonNumber}`,
+                type: 'presentation',
+                slides: endSlide - brk.afterSlide,
+                startSlide: brk.afterSlide + 1,
+                endSlide
+              });
+            });
+          }
         });
 
-        // Add resources to their modules
-        (resources || []).forEach((res: any) => {
+        // Add resources to their modules as lesson items
+        resources.forEach((res: any) => {
           const moduleId = res.module_id;
           if (moduleMap.has(moduleId)) {
-            moduleMap.get(moduleId)!.resources.push(res);
+            const mod = moduleMap.get(moduleId)!;
+            mod.resources.push(res);
+            // Insert resource into lessons at appropriate position
+            mod.lessons.push({
+              id: res.id,
+              title: res.title,
+              type: 'resource',
+              resourceType: res.type
+            });
           } else {
-            // Module from resource that has no presentation
             moduleMap.set(moduleId, {
               moduleId,
               title: `Module ${moduleMap.size + 1}`,
               presentations: [],
               resources: [res],
+              lessons: [{
+                id: res.id,
+                title: res.title,
+                type: 'resource',
+                resourceType: res.type
+              }],
               totalSlides: 0,
               unlocked: isPreview,
               completed: false,
+              isExpanded: false,
             });
           }
         });
 
-        // Convert to array and update titles
         const modulesArray = Array.from(moduleMap.values()).map((mod, idx) => ({
           ...mod,
-          title: `Module ${idx + 1}`,
-          unlocked: idx === 0 || isPreview, // Re-apply unlock logic based on order
+          title: mod.title || `Module ${idx + 1}`,
+          unlocked: idx === 0 || isPreview,
         }));
 
         setModules(modulesArray);
@@ -204,6 +273,12 @@ const CourseDetail = () => {
 
     fetchCourseData();
   }, [id, isPreview]);
+
+  const toggleModule = (moduleId: string) => {
+    setModules(modules.map(m => 
+      m.moduleId === moduleId ? { ...m, isExpanded: !m.isExpanded } : m
+    ));
+  };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -370,9 +445,9 @@ const CourseDetail = () => {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="hero" className="flex-1" disabled={isPreview || !hasContent}>
+              <Button variant="hero" className="flex-1" disabled={!hasContent}>
                 <Play className="w-4 h-4 mr-2" /> 
-                {isPreview ? 'Preview Only' : hasContent ? 'Start Learning' : 'No Content'}
+                {isPreview ? 'Try as Student' : hasContent ? 'Start Learning' : 'No Content'}
               </Button>
               <Button variant="outline" size="icon" disabled={isPreview}>
                 <Heart className="w-4 h-4" />
@@ -405,7 +480,7 @@ const CourseDetail = () => {
 
           {/* Lessons Tab */}
           {activeTab === 'lessons' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {modules.length > 0 ? (
                 modules.map((module, moduleIndex) => (
                   <motion.div
@@ -417,8 +492,11 @@ const CourseDetail = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: moduleIndex * 0.05 }}
                   >
-                    {/* Module Header */}
-                    <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-3">
+                    {/* Collapsible Module Header */}
+                    <button
+                      onClick={() => toggleModule(module.moduleId)}
+                      className="w-full p-4 border-b border-border bg-muted/30 flex items-center gap-3 hover:bg-muted/50 transition-colors"
+                    >
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         module.completed 
                           ? 'bg-gold/20 text-gold' 
@@ -434,88 +512,85 @@ const CourseDetail = () => {
                           <Lock className="w-5 h-5" />
                         )}
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 text-left">
                         <h3 className="font-display font-semibold text-foreground">
                           {module.title}
                         </h3>
                         <p className="text-xs text-muted-foreground">
-                          {module.presentations.length + module.resources.length} item{(module.presentations.length + module.resources.length) !== 1 ? 's' : ''}
+                          {module.lessons.length} lesson{module.lessons.length !== 1 ? 's' : ''} • {module.totalSlides} slides
                         </p>
                       </div>
                       {module.completed && (
                         <Badge className="bg-gold/20 text-gold border-gold/30">Completed</Badge>
                       )}
-                    </div>
+                      <motion.div
+                        animate={{ rotate: module.isExpanded ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                      </motion.div>
+                    </button>
                     
-                    {/* Lessons (Presentations) & Resources Combined */}
-                    <div className="divide-y divide-border">
-                      {/* Lessons from presentations */}
-                      {module.presentations.map((pres, lessonIndex) => (
-                        <div
-                          key={pres.id}
-                          className={`flex items-center gap-4 p-4 text-left transition-colors ${
-                            module.unlocked ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-50 cursor-not-allowed'
-                          }`}
+                    {/* Expanded Content - Lessons with indentation */}
+                    <AnimatePresence>
+                      {module.isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
                         >
-                          {/* Progress indicator */}
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                            false // TODO: Track lesson completion
-                              ? 'bg-success border-success text-success-foreground'
-                              : 'border-muted-foreground/30 text-muted-foreground'
-                          }`}>
-                            {false ? (
-                              <CheckCircle2 className="w-4 h-4" />
-                            ) : (
-                              <span className="text-xs font-medium">{lessonIndex + 1}</span>
-                            )}
+                          <div className="divide-y divide-border">
+                            {module.lessons.map((lesson, lessonIndex) => {
+                              const isResource = lesson.type === 'resource';
+                              const Icon = isResource ? getTypeIcon(lesson.resourceType || '') : Presentation;
+                              
+                              return (
+                                <div
+                                  key={lesson.id}
+                                  className={`flex items-center gap-4 p-4 text-left transition-colors ${
+                                    isResource ? 'ml-6 border-l-2 border-accent/20' : 'ml-4'
+                                  } ${
+                                    module.unlocked 
+                                      ? 'hover:bg-muted/50 cursor-pointer' 
+                                      : 'opacity-50 cursor-not-allowed'
+                                  }`}
+                                >
+                                  {/* Progress indicator */}
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shrink-0 ${
+                                    isResource 
+                                      ? 'border-accent/30 bg-accent/10 text-accent'
+                                      : 'border-muted-foreground/30 text-muted-foreground'
+                                  }`}>
+                                    {isResource ? (
+                                      <Icon className="w-4 h-4" />
+                                    ) : (
+                                      <span className="text-xs font-medium">{lessonIndex + 1}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-foreground truncate">
+                                      {lesson.title}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground capitalize">
+                                      {isResource ? lesson.resourceType : `${lesson.slides || 0} slides`}
+                                    </p>
+                                  </div>
+                                  {isResource ? (
+                                    <Badge variant="outline" className="text-xs capitalize shrink-0">
+                                      {lesson.resourceType}
+                                    </Badge>
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">
-                              {pres.file_name.replace(/\.pptx?$/i, '')}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Lesson
-                            </p>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                      ))}
-                      
-                      {/* Resources under the module */}
-                      {module.resources.map((res) => {
-                        const Icon = getTypeIcon(res.type);
-                        return (
-                          <div
-                            key={res.id}
-                            className={`flex items-center gap-4 p-4 text-left bg-accent/5 ${
-                              module.unlocked ? 'hover:bg-accent/10 cursor-pointer' : 'opacity-50 cursor-not-allowed'
-                            }`}
-                          >
-                            {/* Progress indicator for resource */}
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                              false // TODO: Track resource completion
-                                ? 'bg-success border-success text-success-foreground'
-                                : 'border-accent/30 bg-accent/10 text-accent'
-                            }`}>
-                              {false ? (
-                                <CheckCircle2 className="w-4 h-4" />
-                              ) : (
-                                <Icon className="w-4 h-4" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-medium text-foreground">
-                                {res.title}
-                              </p>
-                              <p className="text-xs text-muted-foreground capitalize">
-                                {res.type}
-                              </p>
-                            </div>
-                            <Badge variant="outline" className="text-xs capitalize">{res.type}</Badge>
-                          </div>
-                        );
-                      })}
-                    </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 ))
               ) : (
