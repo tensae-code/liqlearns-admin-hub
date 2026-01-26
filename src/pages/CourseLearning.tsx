@@ -15,7 +15,7 @@ import FlashcardResource from '@/components/course/resources/FlashcardResource';
 import { usePresentationProgress } from '@/hooks/useCourseResources';
 import { toast } from 'sonner';
 import { ParsedSlide } from '@/lib/pptxParser';
-import JSZip from 'jszip';
+
 
 interface SlideResource {
   id: string;
@@ -86,14 +86,32 @@ const CourseLearning = () => {
         }
 
         if (presentationsResult.data) {
-          const modules: ModuleData[] = presentationsResult.data.map((p: any) => ({
-            id: p.id,
-            moduleId: p.module_id,
-            title: p.module_title || p.file_name,
-            slides: [],
-            totalSlides: p.total_slides || 1,
-            filePath: p.file_path
-          }));
+          const modules: ModuleData[] = presentationsResult.data.map((p: any) => {
+            // Parse stored slide data from database
+            let slides: ParsedSlide[] = [];
+            if (p.slide_data && Array.isArray(p.slide_data)) {
+              slides = p.slide_data.map((s: any, idx: number) => ({
+                index: s.index || idx + 1,
+                title: s.title || `Slide ${idx + 1}`,
+                content: s.content || [],
+                images: s.images || [],
+                shapes: s.shapes || [],
+                notes: s.notes || '',
+                backgroundColor: s.backgroundColor || '#ffffff',
+                backgroundImage: s.backgroundImage,
+                layout: s.layout || 'blank'
+              }));
+            }
+            
+            return {
+              id: p.id,
+              moduleId: p.module_id,
+              title: p.module_title || p.file_name,
+              slides,
+              totalSlides: p.total_slides || slides.length || 1,
+              filePath: p.file_path
+            };
+          });
           setAllModules(modules);
 
           // Find the requested module or default to first
@@ -130,94 +148,31 @@ const CourseLearning = () => {
     loadCourseData();
   }, [id, moduleId]);
 
-  // Parse slides when module changes
+  // Use stored slides from module data (already parsed and saved to DB)
   useEffect(() => {
-    const parseModuleSlides = async () => {
-      if (!currentModule?.filePath) {
-        setParsedSlides([]);
-        return;
+    if (currentModule?.slides && currentModule.slides.length > 0) {
+      setParsedSlides(currentModule.slides);
+      setParsingSlides(false);
+    } else if (currentModule) {
+      // Fallback: generate placeholder slides if no slide data
+      const placeholderSlides: ParsedSlide[] = [];
+      for (let i = 1; i <= currentModule.totalSlides; i++) {
+        placeholderSlides.push({
+          index: i,
+          title: `Slide ${i}`,
+          content: [],
+          images: [],
+          shapes: [],
+          notes: '',
+          backgroundColor: '#ffffff',
+          layout: 'blank'
+        });
       }
-
-      setParsingSlides(true);
-      try {
-        const { data: fileData, error } = await supabase.storage
-          .from('presentations')
-          .download(currentModule.filePath);
-
-        if (error || !fileData) {
-          console.error('Error downloading presentation:', error);
-          setParsedSlides([]);
-          return;
-        }
-
-        const zip = new JSZip();
-        const zipContent = await zip.loadAsync(fileData);
-        const slides: ParsedSlide[] = [];
-
-        // Get list of slide files sorted by number
-        const slideFiles = Object.keys(zipContent.files)
-          .filter(name => name.match(/ppt\/slides\/slide\d+\.xml$/))
-          .sort((a, b) => {
-            const numA = parseInt(a.match(/slide(\d+)/)?.[1] || '0');
-            const numB = parseInt(b.match(/slide(\d+)/)?.[1] || '0');
-            return numA - numB;
-          });
-
-        // Parse each slide
-        for (let i = 0; i < slideFiles.length; i++) {
-          const slideFile = zipContent.files[slideFiles[i]];
-          let content: string[] = [];
-          let title = `Slide ${i + 1}`;
-          
-          if (slideFile) {
-            const xmlContent = await slideFile.async('text');
-            // Extract text content
-            const textMatches = xmlContent.match(/<a:t>([^<]*)<\/a:t>/g) || [];
-            content = textMatches.map(m => m.replace(/<\/?a:t>/g, '').trim()).filter(Boolean);
-            
-            if (content.length > 0) {
-              title = content[0];
-            }
-          }
-
-          slides.push({
-            index: i + 1,
-            title,
-            content,
-            images: [],
-            shapes: [],
-            notes: '',
-            backgroundColor: '#ffffff',
-            layout: content.length > 5 ? 'titleContent' : content.length > 0 ? 'title' : 'blank'
-          });
-        }
-
-        // Fallback if no slides found
-        if (slides.length === 0) {
-          for (let i = 1; i <= currentModule.totalSlides; i++) {
-            slides.push({
-              index: i,
-              title: `Slide ${i}`,
-              content: [],
-              images: [],
-              shapes: [],
-              notes: '',
-              backgroundColor: '#ffffff',
-              layout: 'blank'
-            });
-          }
-        }
-
-        setParsedSlides(slides);
-      } catch (err) {
-        console.error('Error parsing slides:', err);
-        setParsedSlides([]);
-      } finally {
-        setParsingSlides(false);
-      }
-    };
-
-    parseModuleSlides();
+      setParsedSlides(placeholderSlides);
+      setParsingSlides(false);
+    } else {
+      setParsedSlides([]);
+    }
   }, [currentModule]);
 
   // Initialize from saved progress
