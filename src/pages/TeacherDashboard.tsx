@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
-import { useTeacherCourses, useSubmitCourseForReview } from '@/hooks/useCourses';
+import { useTeacherCourses, useSubmitCourseForReview, useRequestDifferentReviewer } from '@/hooks/useCourses';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -107,6 +107,7 @@ const TeacherDashboard = () => {
   const { profile } = useProfile();
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const submitForReview = useSubmitCourseForReview();
+  const requestDifferentReviewer = useRequestDifferentReviewer();
   
   // Get active tab from URL query param, default to 'overview'
   const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'assignments' | 'earnings') || 'overview';
@@ -158,6 +159,7 @@ const TeacherDashboard = () => {
     title: string;
     rejection_reason?: string | null;
   } | null>(null);
+  const [escalationCourseId, setEscalationCourseId] = useState<string | null>(null);
 
   const getStudentSubmissions = (studentId: string) => [
     { id: '1', assignmentTitle: 'Week 1: Basic Greetings Essay', assignmentId: 'a1', submittedAt: '2 days ago', fileType: 'text' as const, content: 'Sample text...', status: 'graded' as const, grade: 'Good Job! 🎉', feedback: 'Excellent work! Great use of vocabulary.' },
@@ -251,13 +253,15 @@ const TeacherDashboard = () => {
         submissionStatus: c.submission_status || 'draft',
         lessons: c.total_lessons || 0,
         rejectionReason: c.rejection_reason,
+        reviewer: (c as any).reviewer as { id: string; full_name: string; avatar_url?: string } | null,
+        claimedAt: c.claimed_at,
       }))
     : [
-        { id: '1', title: 'Amharic for Beginners', students: 450, rating: 4.9, reviewCount: 128, revenue: 12500, status: 'published', submissionStatus: 'approved', lessons: 24 },
-        { id: '2', title: 'Ethiopian History', students: 320, rating: 4.8, reviewCount: 89, revenue: 9800, status: 'published', submissionStatus: 'approved', lessons: 18 },
-        { id: '3', title: 'Business Amharic', students: 180, rating: 4.7, reviewCount: 45, revenue: 8200, status: 'published', submissionStatus: 'approved', lessons: 20 },
-        { id: '4', title: 'Kids Amharic Fun', students: 298, rating: 4.9, reviewCount: 156, revenue: 14700, status: 'published', submissionStatus: 'approved', lessons: 30 },
-        { id: '5', title: 'Advanced Grammar', students: 0, rating: 0, reviewCount: 0, revenue: 0, status: 'draft', submissionStatus: 'draft', lessons: 12 },
+        { id: '1', title: 'Amharic for Beginners', students: 450, rating: 4.9, reviewCount: 128, revenue: 12500, status: 'published', submissionStatus: 'approved', lessons: 24, reviewer: null, claimedAt: null },
+        { id: '2', title: 'Ethiopian History', students: 320, rating: 4.8, reviewCount: 89, revenue: 9800, status: 'published', submissionStatus: 'approved', lessons: 18, reviewer: null, claimedAt: null },
+        { id: '3', title: 'Business Amharic', students: 180, rating: 4.7, reviewCount: 45, revenue: 8200, status: 'published', submissionStatus: 'approved', lessons: 20, reviewer: null, claimedAt: null },
+        { id: '4', title: 'Kids Amharic Fun', students: 298, rating: 4.9, reviewCount: 156, revenue: 14700, status: 'published', submissionStatus: 'approved', lessons: 30, reviewer: null, claimedAt: null },
+        { id: '5', title: 'Advanced Grammar', students: 0, rating: 0, reviewCount: 0, revenue: 0, status: 'draft', submissionStatus: 'draft', lessons: 12, reviewer: null, claimedAt: null },
       ];
 
   const recentStudents: Student[] = [
@@ -406,9 +410,51 @@ const TeacherDashboard = () => {
   const tabs = ['overview', 'courses', 'students', 'assignments', 'earnings'] as const;
 
 
+  // Get courses under review with reviewer info
+  const coursesUnderReview = courses.filter(c => c.submissionStatus === 'submitted' && c.reviewer);
+
   return (
     <>
       <DashboardLayout>
+        {/* Notification Banner for Courses Under Review */}
+        {coursesUnderReview.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 bg-gold/10 border border-gold/30 rounded-lg flex items-center justify-between gap-3 flex-wrap"
+          >
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-gold" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {coursesUnderReview.length === 1 
+                    ? `"${coursesUnderReview[0].title}" is being reviewed`
+                    : `${coursesUnderReview.length} courses are being reviewed`
+                  }
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {coursesUnderReview.length === 1 
+                    ? `Reviewer: ${coursesUnderReview[0].reviewer?.full_name || 'Admin'}`
+                    : 'Check the Courses tab for details'
+                  }
+                </p>
+              </div>
+            </div>
+            {coursesUnderReview.length === 1 && coursesUnderReview[0].reviewer && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => requestDifferentReviewer.mutate({ courseId: coursesUnderReview[0].id })}
+                disabled={requestDifferentReviewer.isPending}
+                className="text-xs"
+              >
+                <RefreshCw className="w-3 h-3 mr-1" />
+                Request Different Reviewer
+              </Button>
+            )}
+          </motion.div>
+        )}
+
         {/* Header */}
         <motion.div
           className="mb-4 md:mb-6"
@@ -673,6 +719,28 @@ const TeacherDashboard = () => {
                               <p className="text-xs text-destructive/80 max-w-[150px] truncate" title={course.rejectionReason}>
                                 {course.rejectionReason}
                               </p>
+                            )}
+                            {/* Show reviewer info when course is being reviewed */}
+                            {course.submissionStatus === 'submitted' && course.reviewer && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-muted-foreground">
+                                  Reviewer: {course.reviewer.full_name}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 px-1.5 text-xs text-accent hover:text-accent"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    requestDifferentReviewer.mutate({ courseId: course.id });
+                                  }}
+                                  disabled={requestDifferentReviewer.isPending}
+                                  title="Request a different reviewer"
+                                >
+                                  <RefreshCw className="w-3 h-3 mr-1" />
+                                  Change
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </td>
