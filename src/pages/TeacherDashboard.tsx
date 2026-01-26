@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
 import { useTeacherCourses, useSubmitCourseForReview, useRequestDifferentReviewer } from '@/hooks/useCourses';
+import { useTeacherStudents, TeacherStudent } from '@/hooks/useTeacherStudents';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -106,6 +107,7 @@ const TeacherDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { profile } = useProfile();
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
+  const { data: teacherStudents = [], isLoading: studentsLoading } = useTeacherStudents();
   const submitForReview = useSubmitCourseForReview();
   const requestDifferentReviewer = useRequestDifferentReviewer();
   
@@ -268,12 +270,40 @@ const TeacherDashboard = () => {
         { id: '5', title: 'Advanced Grammar', students: 0, rating: 0, reviewCount: 0, revenue: 0, status: 'draft', submissionStatus: 'draft', lessons: 12, reviewer: null, claimedAt: null },
       ];
 
-  const recentStudents: Student[] = [
-    { id: '1', name: 'Alemayehu M.', course: 'Amharic for Beginners', progress: 78, joinedAt: '2 hours ago', email: 'alemayehu@example.com', lastActive: '5 min ago', quizScore: 85, assignmentsCompleted: 12, totalAssignments: 15 },
-    { id: '2', name: 'Sara T.', course: 'Ethiopian History', progress: 45, joinedAt: '5 hours ago', email: 'sara@example.com', lastActive: '1 hour ago', quizScore: 72, assignmentsCompleted: 5, totalAssignments: 10 },
-    { id: '3', name: 'Dawit B.', course: 'Business Amharic', progress: 92, joinedAt: '1 day ago', email: 'dawit@example.com', lastActive: '2 hours ago', quizScore: 95, assignmentsCompleted: 18, totalAssignments: 18 },
-    { id: '4', name: 'Tigist K.', course: 'Kids Amharic Fun', progress: 34, joinedAt: '2 days ago', email: 'tigist@example.com', lastActive: '1 day ago', quizScore: 60, assignmentsCompleted: 3, totalAssignments: 12 },
-  ];
+  // Convert TeacherStudent to Student format for UI compatibility
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
+  };
+
+  const recentStudents: Student[] = teacherStudents.length > 0 
+    ? teacherStudents.map((s: TeacherStudent) => ({
+        id: s.id,
+        name: s.name,
+        avatar: s.avatar,
+        course: s.courseName,
+        progress: s.progress,
+        joinedAt: formatTimeAgo(s.enrolledAt),
+        email: s.email,
+        lastActive: formatTimeAgo(s.lastActiveAt),
+        quizScore: s.quizScore,
+        assignmentsCompleted: s.resourcesCompleted,
+        totalAssignments: s.totalResources,
+      }))
+    : [
+        { id: '1', name: 'Alemayehu M.', course: 'Amharic for Beginners', progress: 78, joinedAt: '2 hours ago', email: 'alemayehu@example.com', lastActive: '5 min ago', quizScore: 85, assignmentsCompleted: 12, totalAssignments: 15 },
+        { id: '2', name: 'Sara T.', course: 'Ethiopian History', progress: 45, joinedAt: '5 hours ago', email: 'sara@example.com', lastActive: '1 hour ago', quizScore: 72, assignmentsCompleted: 5, totalAssignments: 10 },
+        { id: '3', name: 'Dawit B.', course: 'Business Amharic', progress: 92, joinedAt: '1 day ago', email: 'dawit@example.com', lastActive: '2 hours ago', quizScore: 95, assignmentsCompleted: 18, totalAssignments: 18 },
+        { id: '4', name: 'Tigist K.', course: 'Kids Amharic Fun', progress: 34, joinedAt: '2 days ago', email: 'tigist@example.com', lastActive: '1 day ago', quizScore: 60, assignmentsCompleted: 3, totalAssignments: 12 },
+      ];
 
   const recentReviews: Review[] = [
     { id: '1', studentId: '1', studentName: 'Yonas G.', rating: 5, comment: 'Excellent course! Very clear explanations.', type: 'student', date: '1 hour ago' },
@@ -849,23 +879,23 @@ const TeacherDashboard = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className={`rounded-xl p-4 bg-gradient-to-br ${STAT_GRADIENTS[0]} text-white`}>
                   <Users className="w-5 h-5 mb-2 opacity-80" />
-                  <p className="text-2xl font-bold">1,248</p>
+                  <p className="text-2xl font-bold">{recentStudents.length}</p>
                   <p className="text-xs opacity-80">Total Students</p>
                 </div>
                 <div className={`rounded-xl p-4 bg-gradient-to-br ${STAT_GRADIENTS[1]} text-white`}>
                   <CheckCircle className="w-5 h-5 mb-2 opacity-80" />
-                  <p className="text-2xl font-bold">892</p>
-                  <p className="text-xs opacity-80">Active This Week</p>
+                  <p className="text-2xl font-bold">{recentStudents.filter(s => s.progress > 0).length}</p>
+                  <p className="text-xs opacity-80">Active Students</p>
                 </div>
                 <div className={`rounded-xl p-4 bg-gradient-to-br ${STAT_GRADIENTS[2]} text-white`}>
                   <Trophy className="w-5 h-5 mb-2 opacity-80" />
-                  <p className="text-2xl font-bold">156</p>
+                  <p className="text-2xl font-bold">{recentStudents.filter(s => s.progress >= 100).length}</p>
                   <p className="text-xs opacity-80">Course Completed</p>
                 </div>
                 <div className={`rounded-xl p-4 bg-gradient-to-br ${STAT_GRADIENTS[3]} text-white`}>
-                  <AlertTriangle className="w-5 h-5 mb-2 opacity-80" />
-                  <p className="text-2xl font-bold">23</p>
-                  <p className="text-xs opacity-80">Need Attention</p>
+                  <Target className="w-5 h-5 mb-2 opacity-80" />
+                  <p className="text-2xl font-bold">{recentStudents.length > 0 ? Math.round(recentStudents.reduce((a, s) => a + s.quizScore, 0) / recentStudents.length) : 0}%</p>
+                  <p className="text-xs opacity-80">Avg Quiz Score</p>
                 </div>
               </div>
 
