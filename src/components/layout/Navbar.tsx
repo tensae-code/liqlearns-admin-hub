@@ -39,8 +39,8 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="container">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
+          {/* Logo - takes logged-in users to dashboard, others to landing */}
+          <Link to={user ? getDashboardPath() : "/"} className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-hero flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-primary-foreground" />
             </div>
