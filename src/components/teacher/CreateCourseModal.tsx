@@ -298,54 +298,55 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
         }
       }
 
-      // Save presentations and resources for modules with PPTX data
-      for (const module of modules) {
-        if (module.hasPPTX && module.slides && course) {
-          // Save presentation to module_presentations
-          const { data: presentation, error: presError } = await supabase
-            .from('module_presentations')
-            .insert([{
-              module_id: module.id,
-              course_id: course.id,
-              file_name: module.pptxFileName || 'presentation.pptx',
-              file_path: `${course.id}/${module.id}/presentation.pptx`,
-              total_slides: module.totalSlides || 0,
-              slide_data: module.slides as unknown as Json,
-              resources: (module.resources || []) as unknown as Json,
-              uploaded_by: profile.id,
-            }])
-            .select()
-            .single();
+      // Save presentations and resources for modules with PPTX data (in parallel)
+      const modulesWithPPTX = modules.filter(m => m.hasPPTX && m.slides && course);
+      
+      await Promise.all(modulesWithPPTX.map(async (module) => {
+        // Save presentation to module_presentations
+        const { data: presentation, error: presError } = await supabase
+          .from('module_presentations')
+          .insert([{
+            module_id: module.id,
+            course_id: course!.id,
+            file_name: module.pptxFileName || 'presentation.pptx',
+            file_path: `${course!.id}/${module.id}/presentation.pptx`,
+            total_slides: module.totalSlides || 0,
+            slide_data: module.slides as unknown as Json,
+            resources: (module.resources || []) as unknown as Json,
+            uploaded_by: profile.id,
+          }])
+          .select()
+          .single();
 
-          if (presError) {
-            console.error('Error saving presentation:', presError);
-          }
+        if (presError) {
+          console.error('Error saving presentation:', presError);
+          return;
+        }
 
-          // Save individual resources to course_resources table
-          if (module.resources && module.resources.length > 0 && presentation) {
-            const resourcesToCreate = module.resources.map((res, index) => ({
-              course_id: course.id,
-              module_id: module.id,
-              presentation_id: presentation.id,
-              type: res.type,
-              title: res.title,
-              show_after_slide: res.showAfterSlide,
-              show_before_slide: res.showBeforeSlide,
-              content: (res.content || {}) as unknown as Json,
-              order_index: index,
-              created_by: profile.id,
-            }));
+        // Save individual resources to course_resources table
+        if (module.resources && module.resources.length > 0 && presentation) {
+          const resourcesToCreate = module.resources.map((res, index) => ({
+            course_id: course!.id,
+            module_id: module.id,
+            presentation_id: presentation.id,
+            type: res.type,
+            title: res.title,
+            show_after_slide: res.showAfterSlide,
+            show_before_slide: res.showBeforeSlide,
+            content: (res.content || {}) as unknown as Json,
+            order_index: index,
+            created_by: profile.id,
+          }));
 
-            const { error: resError } = await supabase
-              .from('course_resources')
-              .insert(resourcesToCreate);
+          const { error: resError } = await supabase
+            .from('course_resources')
+            .insert(resourcesToCreate);
 
-            if (resError) {
-              console.error('Error saving resources:', resError);
-            }
+          if (resError) {
+            console.error('Error saving resources:', resError);
           }
         }
-      }
+      }));
 
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['courses'] });
