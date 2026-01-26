@@ -11,10 +11,16 @@ export interface SubmittedCourse {
   difficulty: string;
   submission_status: string | null;
   submitted_at: string | null;
+  claimed_by: string | null;
+  claimed_at: string | null;
   instructor: {
     id: string;
     full_name: string;
     avatar_url: string | null;
+  } | null;
+  claimer?: {
+    id: string;
+    full_name: string;
   } | null;
 }
 
@@ -45,6 +51,8 @@ export const useSubmittedCourses = () => {
           difficulty,
           submission_status,
           submitted_at,
+          claimed_by,
+          claimed_at,
           instructor:profiles!courses_instructor_id_fkey(id, full_name, avatar_url)
         `)
         .eq('submission_status', 'submitted')
@@ -113,6 +121,62 @@ export const useAddReviewComment = () => {
   });
 };
 
+// Hook to claim a course for review
+export const useClaimCourse = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (courseId: string) => {
+      const { error } = await supabase
+        .from('courses')
+        .update({
+          claimed_by: user?.id,
+          claimed_at: new Date().toISOString(),
+        })
+        .eq('id', courseId)
+        .is('claimed_by', null); // Only claim if not already claimed
+
+      if (error) throw error;
+      return { courseId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['submitted-courses'] });
+      toast.success('Course claimed for review');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to claim course');
+    },
+  });
+};
+
+// Hook to unclaim a course
+export const useUnclaimCourse = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (courseId: string) => {
+      const { error } = await supabase
+        .from('courses')
+        .update({
+          claimed_by: null,
+          claimed_at: null,
+        })
+        .eq('id', courseId);
+
+      if (error) throw error;
+      return { courseId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['submitted-courses'] });
+      toast.success('Course unclaimed');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to unclaim course');
+    },
+  });
+};
+
 // Hook to approve a course
 export const useApproveCourse = () => {
   const queryClient = useQueryClient();
@@ -129,6 +193,8 @@ export const useApproveCourse = () => {
           reviewed_at: new Date().toISOString(),
           reviewed_by: user?.id,
           rejection_reason: null,
+          claimed_by: null,
+          claimed_at: null,
         })
         .eq('id', courseId);
 
@@ -172,7 +238,7 @@ export const useRejectCourse = () => {
     }: { 
       courseId: string; 
       instructorId: string;
-      reason: string;
+      reason?: string;
     }) => {
       // Update course status
       const { error: updateError } = await supabase
@@ -182,7 +248,9 @@ export const useRejectCourse = () => {
           is_published: false,
           reviewed_at: new Date().toISOString(),
           reviewed_by: user?.id,
-          rejection_reason: reason,
+          rejection_reason: reason || 'Needs revision',
+          claimed_by: null,
+          claimed_at: null,
         })
         .eq('id', courseId);
 
@@ -195,7 +263,9 @@ export const useRejectCourse = () => {
           user_id: instructorId,
           type: 'course',
           title: 'Course Needs Revision',
-          message: `Your course needs changes: ${reason.substring(0, 50)}${reason.length > 50 ? '...' : ''}`,
+          message: reason 
+            ? `Your course needs changes: ${reason.substring(0, 50)}${reason.length > 50 ? '...' : ''}`
+            : 'Your course needs some revisions before it can be published.',
           data: { course_id: courseId, rejection_reason: reason },
         });
 

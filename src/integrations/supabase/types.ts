@@ -636,6 +636,8 @@ export type Database = {
       courses: {
         Row: {
           category: string
+          claimed_at: string | null
+          claimed_by: string | null
           created_at: string
           description: string | null
           difficulty: string
@@ -656,6 +658,8 @@ export type Database = {
         }
         Insert: {
           category: string
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           description?: string | null
           difficulty?: string
@@ -676,6 +680,8 @@ export type Database = {
         }
         Update: {
           category?: string
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           description?: string | null
           difficulty?: string

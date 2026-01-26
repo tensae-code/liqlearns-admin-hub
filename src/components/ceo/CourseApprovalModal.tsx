@@ -18,7 +18,9 @@ import {
   Clock,
   Eye,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  UserCheck,
+  Lock
 } from 'lucide-react';
 import { 
   useSubmittedCourses, 
@@ -26,10 +28,12 @@ import {
   useAddReviewComment,
   useApproveCourse,
   useRejectCourse,
+  useClaimCourse,
+  useUnclaimCourse,
   SubmittedCourse
 } from '@/hooks/useCourseApproval';
 import { useProfile } from '@/hooks/useProfile';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CourseApprovalModalProps {
   open: boolean;
@@ -37,7 +41,7 @@ interface CourseApprovalModalProps {
 }
 
 const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) => {
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const { profile } = useProfile();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<SubmittedCourse | null>(null);
@@ -50,11 +54,17 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
   const addComment = useAddReviewComment();
   const approveCourse = useApproveCourse();
   const rejectCourse = useRejectCourse();
+  const claimCourse = useClaimCourse();
+  const unclaimCourse = useUnclaimCourse();
 
   const filteredCourses = courses?.filter(course =>
     course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     course.instructor?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
+
+  const isClaimedByMe = selectedCourse?.claimed_by === user?.id;
+  const isClaimedByOther = selectedCourse?.claimed_by && selectedCourse.claimed_by !== user?.id;
+  const canReview = isClaimedByMe || !selectedCourse?.claimed_by;
 
   const handleAddComment = () => {
     if (!newComment.trim() || !selectedCourse || !profile) return;
@@ -66,6 +76,16 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
     }, {
       onSuccess: () => setNewComment(''),
     });
+  };
+
+  const handleClaim = () => {
+    if (!selectedCourse) return;
+    claimCourse.mutate(selectedCourse.id);
+  };
+
+  const handleUnclaim = () => {
+    if (!selectedCourse) return;
+    unclaimCourse.mutate(selectedCourse.id);
   };
 
   const handleApprove = () => {
@@ -82,12 +102,12 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
   };
 
   const handleReject = () => {
-    if (!selectedCourse || !selectedCourse.instructor || !rejectionReason.trim()) return;
+    if (!selectedCourse || !selectedCourse.instructor) return;
     
     rejectCourse.mutate({
       courseId: selectedCourse.id,
       instructorId: selectedCourse.instructor.id,
-      reason: rejectionReason.trim(),
+      reason: rejectionReason.trim() || undefined,
     }, {
       onSuccess: () => {
         setSelectedCourse(null);
@@ -99,8 +119,8 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
 
   const handlePreview = () => {
     if (!selectedCourse) return;
-    navigate(`/course/${selectedCourse.id}?preview=true`);
-    onOpenChange(false);
+    // Open in new tab for preview
+    window.open(`/course/${selectedCourse.id}?preview=true`, '_blank');
   };
 
   const formatTime = (dateString: string | null) => {
@@ -110,6 +130,10 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
     } catch {
       return 'Just now';
     }
+  };
+
+  const isCourseClaimedByOther = (course: SubmittedCourse) => {
+    return course.claimed_by && course.claimed_by !== user?.id;
   };
 
   return (
@@ -141,6 +165,30 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to list
             </Button>
+
+            {/* Claim Status Banner */}
+            {isClaimedByOther && (
+              <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg flex items-center gap-2">
+                <Lock className="w-4 h-4 text-warning" />
+                <span className="text-sm text-warning">
+                  This course is being reviewed by another admin
+                </span>
+              </div>
+            )}
+
+            {isClaimedByMe && (
+              <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-success" />
+                  <span className="text-sm text-success">
+                    You are reviewing this course
+                  </span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={handleUnclaim}>
+                  Release
+                </Button>
+              </div>
+            )}
 
             <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-lg">
               <div className="w-16 h-16 rounded-xl bg-gradient-hero flex items-center justify-center text-2xl text-primary-foreground">
@@ -180,7 +228,7 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
             <div className="space-y-3">
               <h4 className="font-medium text-foreground flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-accent" />
-                Review Comments
+                Review Comments (Optional)
               </h4>
               
               <ScrollArea className="h-48 border border-border rounded-lg p-3">
@@ -215,34 +263,36 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-6">
-                    No comments yet. Add feedback for the instructor.
+                    No comments yet. Add feedback for the instructor (optional).
                   </p>
                 )}
               </ScrollArea>
 
               {/* Add Comment */}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a comment for the instructor..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                />
-                <Button 
-                  onClick={handleAddComment} 
-                  disabled={!newComment.trim() || addComment.isPending}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
+              {canReview && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Add a comment for the instructor..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                  />
+                  <Button 
+                    onClick={handleAddComment} 
+                    disabled={!newComment.trim() || addComment.isPending}
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Reject Reason Form */}
             {showRejectForm && (
               <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-3">
-                <p className="text-sm font-medium text-destructive">Rejection Reason</p>
+                <p className="text-sm font-medium text-destructive">Rejection Reason (Optional)</p>
                 <Textarea
-                  placeholder="Explain what needs to be fixed..."
+                  placeholder="Explain what needs to be fixed (optional)..."
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   rows={3}
@@ -255,7 +305,7 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
                     variant="destructive" 
                     size="sm" 
                     onClick={handleReject}
-                    disabled={!rejectionReason.trim() || rejectCourse.isPending}
+                    disabled={rejectCourse.isPending}
                   >
                     Confirm Rejection
                   </Button>
@@ -269,7 +319,20 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
                 <Eye className="w-4 h-4 mr-2" />
                 Preview Course
               </Button>
-              {!showRejectForm && (
+              
+              {!selectedCourse.claimed_by && (
+                <Button 
+                  variant="secondary"
+                  onClick={handleClaim}
+                  disabled={claimCourse.isPending}
+                  className="flex-1"
+                >
+                  <UserCheck className="w-4 h-4 mr-2" />
+                  Claim for Review
+                </Button>
+              )}
+              
+              {canReview && !showRejectForm && (
                 <>
                   <Button 
                     variant="outline" 
@@ -313,31 +376,54 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
                 </div>
               ) : filteredCourses.length > 0 ? (
                 <div className="space-y-2">
-                  {filteredCourses.map(course => (
-                    <div
-                      key={course.id}
-                      onClick={() => setSelectedCourse(course)}
-                      className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:bg-muted/30 transition-colors cursor-pointer"
-                    >
-                      <div className="w-12 h-12 rounded-lg bg-gradient-hero flex items-center justify-center text-primary-foreground">
-                        <BookOpen className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">{course.title}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                          <span>by {course.instructor?.full_name || 'Unknown'}</span>
-                          <span>•</span>
-                          <span>{course.category}</span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {formatTime(course.submitted_at)}
-                          </span>
+                  {filteredCourses.map(course => {
+                    const claimedByOther = isCourseClaimedByOther(course);
+                    const claimedByMe = course.claimed_by === user?.id;
+                    
+                    return (
+                      <div
+                        key={course.id}
+                        onClick={() => setSelectedCourse(course)}
+                        className={`flex items-center gap-4 p-4 rounded-lg border bg-card transition-colors cursor-pointer ${
+                          claimedByOther 
+                            ? 'border-warning/30 opacity-60' 
+                            : claimedByMe 
+                              ? 'border-success/30 bg-success/5'
+                              : 'border-border hover:bg-muted/30'
+                        }`}
+                      >
+                        <div className="w-12 h-12 rounded-lg bg-gradient-hero flex items-center justify-center text-primary-foreground">
+                          <BookOpen className="w-6 h-6" />
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate">{course.title}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                            <span>by {course.instructor?.full_name || 'Unknown'}</span>
+                            <span>•</span>
+                            <span>{course.category}</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {formatTime(course.submitted_at)}
+                            </span>
+                          </div>
+                        </div>
+                        {claimedByOther && (
+                          <Badge variant="outline" className="text-warning border-warning/30">
+                            <Lock className="w-3 h-3 mr-1" />
+                            In Review
+                          </Badge>
+                        )}
+                        {claimedByMe && (
+                          <Badge variant="outline" className="text-success border-success/30">
+                            <UserCheck className="w-3 h-3 mr-1" />
+                            Your Review
+                          </Badge>
+                        )}
+                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
                       </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
