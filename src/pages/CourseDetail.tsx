@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import CourseInfoModal from '@/components/course/CourseInfoModal';
 import CourseLearningResources from '@/components/course/CourseLearningResources';
 import CourseReviews from '@/components/course/CourseReviews';
+import CourseImageGallery from '@/components/course/CourseImageGallery';
 import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft,
@@ -91,6 +92,8 @@ interface CourseData {
   is_published: boolean | null;
   submission_status: string | null;
   badge_name: string | null;
+  thumbnail_url: string | null;
+  gallery_images: string[] | null;
   instructor?: {
     id: string;
     full_name: string | null;
@@ -369,105 +372,111 @@ const CourseDetail = () => {
             </motion.div>
           )}
 
-          {/* Course Header */}
+          {/* Course Header with Image Gallery */}
           <motion.div
-            className="bg-card rounded-xl border border-border p-6"
+            className="bg-card rounded-xl border border-border overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-16 h-16 rounded-xl bg-accent/10 flex items-center justify-center text-3xl relative">
-                📚
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gold text-gold-foreground rounded-full flex items-center justify-center text-xs font-bold border-2 border-card">
-                  {modules.length}
+            {/* Course Image Gallery */}
+            <CourseImageGallery
+              images={course.gallery_images || []}
+              thumbnailUrl={course.thumbnail_url}
+              category={course.category}
+            />
+            
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-accent px-2 py-0.5 bg-accent/10 rounded-full">
+                      {course.category}
+                    </span>
+                    <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-muted rounded-full capitalize">
+                      {course.difficulty}
+                    </span>
+                    <Badge variant="outline" className="text-xs">
+                      {modules.length} module{modules.length !== 1 ? 's' : ''}
+                    </Badge>
+                  </div>
+                  <h1 className="text-2xl font-display font-bold text-foreground">{course.title}</h1>
+                  <p className="text-muted-foreground mt-1">
+                    by {course.instructor?.full_name || 'Unknown Instructor'}
+                  </p>
                 </div>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setShowInfoModal(true)}
+                  className="flex-shrink-0"
+                >
+                  <Info className="w-4 h-4" />
+                </Button>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-accent px-2 py-0.5 bg-accent/10 rounded-full">
-                    {course.category}
-                  </span>
-                  <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-muted rounded-full capitalize">
-                    {course.difficulty}
-                  </span>
-                </div>
-                <h1 className="text-2xl font-display font-bold text-foreground">{course.title}</h1>
-                <p className="text-muted-foreground mt-1">
-                  by {course.instructor?.full_name || 'Unknown Instructor'}
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => setShowInfoModal(true)}
-                className="flex-shrink-0"
-              >
-                <Info className="w-4 h-4" />
-              </Button>
-            </div>
 
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{course.description}</p>
+              <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{course.description}</p>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" /> ~{estimatedHours} hour{estimatedHours > 1 ? 's' : ''}
-              </span>
-              <span className="flex items-center gap-1">
-                <BookOpen className="w-4 h-4" /> {modules.length} module{modules.length !== 1 ? 's' : ''}
-              </span>
-              <span className="flex items-center gap-1">
-                <Presentation className="w-4 h-4" /> {totalSlides} slides
-              </span>
-              <span className="flex items-center gap-1">
-                <Users className="w-4 h-4" /> {enrollmentCount} students
-              </span>
-              <span className="flex items-center gap-1 text-muted-foreground">
-                <Star className="w-4 h-4" /> 0 (0 reviews)
-              </span>
-            </div>
-
-            {/* Progress */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-foreground">
-                  Module Progress ({completedModules}/{modules.length})
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" /> ~{estimatedHours} hour{estimatedHours > 1 ? 's' : ''}
                 </span>
-                <span className="text-sm text-muted-foreground">
-                  {completionPercentage}% current progress
+                <span className="flex items-center gap-1">
+                  <BookOpen className="w-4 h-4" /> {modules.length} module{modules.length !== 1 ? 's' : ''}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Presentation className="w-4 h-4" /> {totalSlides} slides
+                </span>
+                <span className="flex items-center gap-1">
+                  <Users className="w-4 h-4" /> {enrollmentCount} students
+                </span>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Star className="w-4 h-4" /> 0 (0 reviews)
                 </span>
               </div>
-              <Progress value={completionPercentage} className="h-2" />
-              {isOfficiallyComplete && (
-                <p className="text-xs text-success mt-1 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Course officially completed!
-                </p>
-              )}
-            </div>
 
-            <div className="flex gap-3">
-              <Button 
-                variant="hero" 
-                className="flex-1" 
-                disabled={!hasContent}
-                onClick={() => {
-                  if (hasContent && modules.length > 0) {
-                    // Navigate to first module presentation in same window
-                    const firstModule = modules[0];
-                    if (firstModule.presentations.length > 0) {
-                      navigate(`/course/${id}/learn?module=${firstModule.moduleId}${isPreview ? '&preview=true' : ''}`);
+              {/* Progress */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-foreground">
+                    Module Progress ({completedModules}/{modules.length})
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {completionPercentage}% current progress
+                  </span>
+                </div>
+                <Progress value={completionPercentage} className="h-2" />
+                {isOfficiallyComplete && (
+                  <p className="text-xs text-success mt-1 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Course officially completed!
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <Button 
+                  variant="hero" 
+                  className="flex-1" 
+                  disabled={!hasContent}
+                  onClick={() => {
+                    if (hasContent && modules.length > 0) {
+                      // Navigate to first module presentation in same window
+                      const firstModule = modules[0];
+                      if (firstModule.presentations.length > 0) {
+                        navigate(`/course/${id}/learn?module=${firstModule.moduleId}${isPreview ? '&preview=true' : ''}`);
+                      }
                     }
-                  }
-                }}
-              >
-                <Play className="w-4 h-4 mr-2" /> 
-                {isPreview ? 'Try as Student' : hasContent ? 'Start Learning' : 'No Content'}
-              </Button>
-              <Button variant="outline" size="icon" disabled={isPreview}>
-                <Heart className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="icon" disabled={isPreview}>
-                <Share2 className="w-4 h-4" />
-              </Button>
+                  }}
+                >
+                  <Play className="w-4 h-4 mr-2" /> 
+                  {isPreview ? 'Try as Student' : hasContent ? 'Start Learning' : 'No Content'}
+                </Button>
+                <Button variant="outline" size="icon" disabled={isPreview}>
+                  <Heart className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="icon" disabled={isPreview}>
+                  <Share2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </motion.div>
 
