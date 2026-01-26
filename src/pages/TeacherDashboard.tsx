@@ -14,6 +14,7 @@ import CreateAssignmentModal from '@/components/teacher/CreateAssignmentModal';
 import SubmissionReviewModal from '@/components/teacher/SubmissionReviewModal';
 import StudentSubmissionHistory from '@/components/teacher/StudentSubmissionHistory';
 import ProfilePreviewModal from '@/components/messaging/ProfilePreviewModal';
+import CourseReviewFeedback from '@/components/teacher/CourseReviewFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   BookOpen, 
@@ -150,6 +151,12 @@ const TeacherDashboard = () => {
     bio?: string;
     xp_points?: number;
     current_streak?: number;
+  } | null>(null);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackCourse, setFeedbackCourse] = useState<{
+    id: string;
+    title: string;
+    rejection_reason?: string | null;
   } | null>(null);
 
   const getStudentSubmissions = (studentId: string) => [
@@ -725,6 +732,24 @@ const TeacherDashboard = () => {
                                 disabled={submitForReview.isPending}
                               >
                                 <SendHorizonal className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {course.submissionStatus === 'rejected' && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive hover:text-destructive" 
+                                title="View Feedback"
+                                onClick={() => {
+                                  setFeedbackCourse({
+                                    id: course.id,
+                                    title: course.title,
+                                    rejection_reason: course.rejectionReason,
+                                  });
+                                  setFeedbackModalOpen(true);
+                                }}
+                              >
+                                <MessageSquare className="w-4 h-4" />
                               </Button>
                             )}
                             <Button variant="ghost" size="icon" className="h-8 w-8" title="Analytics">
@@ -1320,6 +1345,17 @@ const TeacherDashboard = () => {
           toast.info('Report submitted for review');
         }}
       />
+
+      {/* Course Review Feedback Modal */}
+      {feedbackCourse && (
+        <CourseReviewFeedback
+          open={feedbackModalOpen}
+          onOpenChange={setFeedbackModalOpen}
+          courseId={feedbackCourse.id}
+          courseTitle={feedbackCourse.title}
+          rejectionReason={feedbackCourse.rejection_reason}
+        />
+      )}
     </>
   );
 };

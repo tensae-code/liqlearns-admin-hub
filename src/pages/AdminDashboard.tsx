@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
 import { useAdminSkillSuggestions } from '@/hooks/useAdminSkillSuggestions';
+import { useSubmittedCourses } from '@/hooks/useCourseApproval';
+import CourseApprovalModal from '@/components/ceo/CourseApprovalModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -61,6 +63,7 @@ const AdminDashboard = () => {
   // Get active tab from URL query param, default to 'overview'
   const activeTab = (searchParams.get('tab') as TabType) || 'overview';
   const [searchQuery, setSearchQuery] = useState('');
+  const [courseApprovalOpen, setCourseApprovalOpen] = useState(false);
 
   const {
     suggestions: skillSuggestions,
@@ -77,11 +80,14 @@ const AdminDashboard = () => {
     refresh: refreshSkills,
   } = useAdminSkillSuggestions();
 
+  const { data: submittedCourses } = useSubmittedCourses();
+  const pendingCourseCount = submittedCourses?.length || 0;
+
   const stats = [
     { label: 'Total Users', value: '12,458', change: '+12%', icon: Users, gradient: STAT_GRADIENTS[0] },
     { label: 'Active Courses', value: '156', change: '+8%', icon: BookOpen, gradient: STAT_GRADIENTS[1] },
     { label: 'Monthly Revenue', value: '$45.2K', change: '+23%', icon: DollarSign, gradient: STAT_GRADIENTS[2] },
-    { label: 'Skill Suggestions', value: pendingCount.toString(), change: 'pending', icon: Lightbulb, gradient: STAT_GRADIENTS[3] },
+    { label: 'Pending Courses', value: pendingCourseCount.toString(), change: 'awaiting', icon: FileText, gradient: STAT_GRADIENTS[3] },
   ];
 
   const tabLabels: Record<TabType, { label: string; description: string }> = {
@@ -422,43 +428,68 @@ const AdminDashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              {pendingApprovals.map((item) => (
-                <div key={item.id} className="bg-card rounded-xl border border-border p-4 md:p-5">
-                  <div className="flex flex-col sm:flex-row items-start gap-3 md:gap-4">
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gold/10 flex items-center justify-center shrink-0">
-                      {item.type === 'Course' ? (
-                        <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-gold" />
-                      ) : (
-                        <FileText className="w-5 h-5 md:w-6 md:h-6 text-gold" />
-                      )}
+              {/* Course Approvals Section */}
+              <div className="bg-card rounded-xl border border-border p-4 md:p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                      <BookOpen className="w-5 h-5 text-gold" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-medium text-gold bg-gold/10 px-2 py-0.5 rounded-full">
-                          {item.type}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{item.submitted}</span>
-                      </div>
-                      <h3 className="text-base md:text-lg font-display font-semibold text-foreground truncate">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground">by {item.author}</p>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto mt-3 sm:mt-0">
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
-                        <Eye className="w-4 h-4 sm:mr-2" /> 
-                        <span className="hidden sm:inline">Preview</span>
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-initial text-success border-success hover:bg-success/10">
-                        <CheckCircle2 className="w-4 h-4 sm:mr-2" /> 
-                        <span className="hidden sm:inline">Approve</span>
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-initial text-destructive border-destructive hover:bg-destructive/10">
-                        <XCircle className="w-4 h-4 sm:mr-2" /> 
-                        <span className="hidden sm:inline">Reject</span>
-                      </Button>
+                    <div>
+                      <h3 className="font-display font-semibold text-foreground">Course Submissions</h3>
+                      <p className="text-sm text-muted-foreground">Review and approve teacher-submitted courses</p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    {pendingCourseCount > 0 && (
+                      <Badge className="bg-gold/20 text-gold">{pendingCourseCount} pending</Badge>
+                    )}
+                    <Button onClick={() => setCourseApprovalOpen(true)}>
+                      Review Courses
+                    </Button>
+                  </div>
                 </div>
-              ))}
+                
+                {submittedCourses && submittedCourses.length > 0 ? (
+                  <div className="space-y-2">
+                    {submittedCourses.slice(0, 3).map((course) => (
+                      <div 
+                        key={course.id} 
+                        className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setCourseApprovalOpen(true)}
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-gradient-hero flex items-center justify-center text-primary-foreground">
+                          📚
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate">{course.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            by {course.instructor?.full_name || 'Unknown'} • {course.category}
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="bg-gold/10 text-gold">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Pending
+                        </Badge>
+                      </div>
+                    ))}
+                    {submittedCourses.length > 3 && (
+                      <Button 
+                        variant="ghost" 
+                        className="w-full" 
+                        onClick={() => setCourseApprovalOpen(true)}
+                      >
+                        View all {submittedCourses.length} submissions
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <CheckCircle2 className="w-10 h-10 text-success mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">All courses reviewed!</p>
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
 
@@ -816,6 +847,12 @@ const AdminDashboard = () => {
             </motion.div>
           )}
         </div>
+        
+        {/* Course Approval Modal */}
+        <CourseApprovalModal 
+          open={courseApprovalOpen} 
+          onOpenChange={setCourseApprovalOpen} 
+        />
     </DashboardLayout>
   );
 };
