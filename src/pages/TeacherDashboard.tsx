@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
-import { useTeacherCourses } from '@/hooks/useCourses';
+import { useTeacherCourses, useSubmitCourseForReview } from '@/hooks/useCourses';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -36,6 +36,7 @@ import {
   Calendar,
   X,
   Send,
+  SendHorizonal,
   CheckCircle,
   AlertTriangle,
   Trophy,
@@ -104,6 +105,7 @@ const TeacherDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { profile } = useProfile();
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
+  const submitForReview = useSubmitCourseForReview();
   
   // Get active tab from URL query param, default to 'overview'
   const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'assignments' | 'earnings') || 'overview';
@@ -202,14 +204,16 @@ const TeacherDashboard = () => {
         rating: 0,
         revenue: (c.price || 0) * (c.enrollment_count || 0),
         status: c.is_published ? 'published' : 'draft',
+        submissionStatus: c.submission_status || 'draft',
         lessons: c.total_lessons || 0,
+        rejectionReason: c.rejection_reason,
       }))
     : [
-        { id: '1', title: 'Amharic for Beginners', students: 450, rating: 4.9, revenue: 12500, status: 'published', lessons: 24 },
-        { id: '2', title: 'Ethiopian History', students: 320, rating: 4.8, revenue: 9800, status: 'published', lessons: 18 },
-        { id: '3', title: 'Business Amharic', students: 180, rating: 4.7, revenue: 8200, status: 'published', lessons: 20 },
-        { id: '4', title: 'Kids Amharic Fun', students: 298, rating: 4.9, revenue: 14700, status: 'published', lessons: 30 },
-        { id: '5', title: 'Advanced Grammar', students: 0, rating: 0, revenue: 0, status: 'draft', lessons: 12 },
+        { id: '1', title: 'Amharic for Beginners', students: 450, rating: 4.9, revenue: 12500, status: 'published', submissionStatus: 'approved', lessons: 24 },
+        { id: '2', title: 'Ethiopian History', students: 320, rating: 4.8, revenue: 9800, status: 'published', submissionStatus: 'approved', lessons: 18 },
+        { id: '3', title: 'Business Amharic', students: 180, rating: 4.7, revenue: 8200, status: 'published', submissionStatus: 'approved', lessons: 20 },
+        { id: '4', title: 'Kids Amharic Fun', students: 298, rating: 4.9, revenue: 14700, status: 'published', submissionStatus: 'approved', lessons: 30 },
+        { id: '5', title: 'Advanced Grammar', students: 0, rating: 0, revenue: 0, status: 'draft', submissionStatus: 'draft', lessons: 12 },
       ];
 
   const recentStudents: Student[] = [
@@ -601,9 +605,26 @@ const TeacherDashboard = () => {
                           </div>
                         </td>
                         <td className="p-4">
-                          <Badge className={course.status === 'published' ? 'bg-success/10 text-success border-success/30' : 'bg-muted text-muted-foreground'}>
-                            {course.status}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge className={
+                              course.submissionStatus === 'approved' || course.status === 'published' 
+                                ? 'bg-success/10 text-success border-success/30' 
+                                : course.submissionStatus === 'submitted'
+                                ? 'bg-gold/10 text-gold border-gold/30'
+                                : course.submissionStatus === 'rejected'
+                                ? 'bg-destructive/10 text-destructive border-destructive/30'
+                                : 'bg-muted text-muted-foreground'
+                            }>
+                              {course.submissionStatus === 'approved' ? 'Published' : 
+                               course.submissionStatus === 'submitted' ? 'Pending Review' :
+                               course.submissionStatus === 'rejected' ? 'Rejected' : 'Draft'}
+                            </Badge>
+                            {course.submissionStatus === 'rejected' && course.rejectionReason && (
+                              <p className="text-xs text-destructive/80 max-w-[150px] truncate" title={course.rejectionReason}>
+                                {course.rejectionReason}
+                              </p>
+                            )}
+                          </div>
                         </td>
                         <td className="p-4 text-foreground">{course.students}</td>
                         <td className="p-4">
@@ -618,13 +639,25 @@ const TeacherDashboard = () => {
                         <td className="p-4 font-medium text-success">{course.revenue.toLocaleString()} ETB</td>
                         <td className="p-4">
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit Course">
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            {(course.submissionStatus === 'draft' || course.submissionStatus === 'rejected') && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-accent hover:text-accent" 
+                                title="Submit for Review"
+                                onClick={() => submitForReview.mutate(course.id)}
+                                disabled={submitForReview.isPending}
+                              >
+                                <SendHorizonal className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Analytics">
                               <BarChart3 className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="More Options">
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </div>
