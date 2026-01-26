@@ -802,12 +802,12 @@ const TeacherDashboard = () => {
                                 <SendHorizonal className="w-4 h-4" />
                               </Button>
                             )}
-                            {course.submissionStatus === 'rejected' && (
+                            {(course.submissionStatus === 'submitted' || course.submissionStatus === 'rejected') && (
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 text-destructive hover:text-destructive" 
-                                title="View Feedback"
+                                className={`h-8 w-8 ${course.submissionStatus === 'rejected' ? 'text-destructive hover:text-destructive' : 'text-accent hover:text-accent'}`}
+                                title="View Reviewer Comments"
                                 onClick={() => {
                                   setFeedbackCourse({
                                     id: course.id,

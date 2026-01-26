@@ -62,9 +62,14 @@ export const useSubmittedCourses = () => {
         .eq('submission_status', 'submitted')
         .order('submitted_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching submitted courses:', error);
+        throw error;
+      }
       return data as SubmittedCourse[];
     },
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 };
 
