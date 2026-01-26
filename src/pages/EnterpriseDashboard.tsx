@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -63,12 +63,47 @@ interface CourseProgress {
 
 const EnterpriseDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { profile } = useProfile();
   const [memberManagerOpen, setMemberManagerOpen] = useState(false);
   const [courseManagerOpen, setCourseManagerOpen] = useState(false);
   const [learningPathOpen, setLearningPathOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Handle tab query param to open modals
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'team') {
+      setMemberManagerOpen(true);
+    } else if (tab === 'courses') {
+      setCourseManagerOpen(true);
+    } else if (tab === 'paths') {
+      setLearningPathOpen(true);
+    }
+  }, [searchParams]);
+
+  // Clear query param when modal closes
+  const handleMemberManagerClose = (open: boolean) => {
+    setMemberManagerOpen(open);
+    if (!open && searchParams.get('tab') === 'team') {
+      setSearchParams({});
+    }
+  };
+
+  const handleCourseManagerClose = (open: boolean) => {
+    setCourseManagerOpen(open);
+    if (!open && searchParams.get('tab') === 'courses') {
+      setSearchParams({});
+    }
+  };
+
+  const handleLearningPathClose = (open: boolean) => {
+    setLearningPathOpen(open);
+    if (!open && searchParams.get('tab') === 'paths') {
+      setSearchParams({});
+    }
+  };
 
   // Generate enterprise code from user id
   const enterpriseCode = profile?.id ? `ENT-${profile.id.slice(0, 8).toUpperCase()}` : 'ENT-LOADING';
@@ -418,15 +453,15 @@ const EnterpriseDashboard = () => {
       {/* Modals */}
       <EnterpriseMemberManager
         open={memberManagerOpen}
-        onOpenChange={setMemberManagerOpen}
+        onOpenChange={handleMemberManagerClose}
       />
       <EnterpriseCourseManager
         open={courseManagerOpen}
-        onOpenChange={setCourseManagerOpen}
+        onOpenChange={handleCourseManagerClose}
       />
       <LearningPathBuilder
         open={learningPathOpen}
-        onOpenChange={setLearningPathOpen}
+        onOpenChange={handleLearningPathClose}
       />
     </DashboardLayout>
   );
