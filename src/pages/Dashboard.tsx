@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useStreakAnimation } from '@/hooks/useStreakAnimation';
 import { useStudyTime } from '@/hooks/useStudyTime';
+import { useMyEnrollments } from '@/hooks/useCourses';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import AICoach from '@/components/dashboard/AICoach';
 import StudyTimeTracker from '@/components/dashboard/StudyTimeTracker';
@@ -18,6 +19,7 @@ import { useClans } from '@/hooks/useClans';
 import AchievementsSection from '@/components/dashboard/AchievementsSection';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   BookOpen, 
   Trophy, 
@@ -31,7 +33,8 @@ import {
   CheckCircle2,
   Circle,
   Sparkles,
-  Shield
+  Shield,
+  ShoppingCart
 } from 'lucide-react';
 
 import { STAT_GRADIENTS } from '@/lib/theme';
@@ -40,6 +43,7 @@ const Dashboard = () => {
   const { user, loading } = useAuth();
   const { profile, updateStreak } = useProfile();
   const { myClans } = useClans();
+  const { data: enrollments = [], isLoading: enrollmentsLoading } = useMyEnrollments();
   const navigate = useNavigate();
   const {
     totalTodaySeconds,
@@ -161,11 +165,15 @@ const Dashboard = () => {
     { icon: Sparkles, label: 'Aura', value: '1,250', gradient: 'from-violet-500 to-purple-600', clickable: true, popupType: 'aura' as const },
   ];
 
-  const courses = [
-    { title: 'Amharic Basics', progress: 65, lessons: 24, icon: '📚', category: 'Language' },
-    { title: 'Ethiopian Culture', progress: 30, lessons: 18, icon: '🏛️', category: 'Culture' },
-    { title: 'Web Development', progress: 80, lessons: 32, icon: '💻', category: 'Technology' },
-  ];
+  // Use real enrolled courses
+  const displayCourses = enrollments.slice(0, 3).map(enrollment => ({
+    id: enrollment.course_id,
+    title: enrollment.course?.title || 'Untitled Course',
+    progress: enrollment.calculated_progress || 0,
+    lessons: enrollment.course?.total_lessons || 0,
+    icon: enrollment.thumbnail_emoji || '📖',
+    category: enrollment.course?.category || 'General',
+  }));
 
   const completedCount = quests.filter(q => q.completed).length;
   const totalXP = quests.filter(q => q.completed).reduce((sum, q) => sum + q.xp, 0);
@@ -313,42 +321,73 @@ const Dashboard = () => {
           </div>
           
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-            {courses.map((course, i) => (
+            {enrollmentsLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-40 rounded-xl" />
+              ))
+            ) : displayCourses.length > 0 ? (
+              displayCourses.map((course, i) => (
+                <motion.div
+                  key={course.id}
+                  className="bg-card rounded-xl p-4 md:p-5 border border-border hover:border-accent/30 hover:shadow-elevated transition-all cursor-pointer group"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + i * 0.1 }}
+                  onClick={() => navigate(`/course/${course.id}`)}
+                >
+                  <div className="flex items-start justify-between mb-2 md:mb-3">
+                    <span className="text-2xl md:text-3xl">{course.icon}</span>
+                    <span className="text-[10px] md:text-xs font-medium text-muted-foreground px-1.5 md:px-2 py-0.5 md:py-1 bg-muted rounded-full">
+                      {course.category}
+                    </span>
+                  </div>
+                  <h3 className="font-display font-semibold text-foreground mb-1 md:mb-2 group-hover:text-accent transition-colors text-sm md:text-base line-clamp-1">
+                    {course.title}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground mb-2 md:mb-3">
+                    <Clock className="w-3 h-3 md:w-4 md:h-4" />
+                    <span>{course.lessons} lessons</span>
+                  </div>
+                  <div className="w-full h-1.5 md:h-2 bg-muted rounded-full overflow-hidden mb-2">
+                    <div 
+                      className="h-full bg-gradient-to-r from-accent to-success rounded-full transition-all"
+                      style={{ width: `${course.progress}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] md:text-xs text-muted-foreground">{course.progress}% complete</span>
+                    <Button variant="ghost" size="sm" className="p-0 h-auto text-accent">
+                      <Play className="w-3 h-3 md:w-4 md:h-4" />
+                    </Button>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              // No enrolled courses - show enroll card
               <motion.div
-                key={course.title}
-                className="bg-card rounded-xl p-4 md:p-5 border border-border hover:border-accent/30 hover:shadow-elevated transition-all cursor-pointer group"
+                className="bg-card rounded-xl p-4 md:p-5 border border-dashed border-accent/50 hover:border-accent hover:shadow-elevated transition-all cursor-pointer group col-span-full md:col-span-1"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-                onClick={() => navigate('/courses')}
+                transition={{ delay: 0.3 }}
+                onClick={() => navigate('/marketplace')}
               >
-                <div className="flex items-start justify-between mb-2 md:mb-3">
-                  <span className="text-2xl md:text-3xl">{course.icon}</span>
-                  <span className="text-[10px] md:text-xs font-medium text-muted-foreground px-1.5 md:px-2 py-0.5 md:py-1 bg-muted rounded-full">
-                    {course.category}
-                  </span>
-                </div>
-                <h3 className="font-display font-semibold text-foreground mb-1 md:mb-2 group-hover:text-accent transition-colors text-sm md:text-base">
-                  {course.title}
-                </h3>
-                <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground mb-2 md:mb-3">
-                  <Clock className="w-3 h-3 md:w-4 md:h-4" />
-                  <span>{course.lessons} lessons</span>
-                </div>
-                <div className="w-full h-1.5 md:h-2 bg-muted rounded-full overflow-hidden mb-2">
-                  <div 
-                    className="h-full bg-gradient-to-r from-accent to-success rounded-full transition-all"
-                    style={{ width: `${course.progress}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] md:text-xs text-muted-foreground">{course.progress}% complete</span>
-                  <Button variant="ghost" size="sm" className="p-0 h-auto text-accent">
-                    <Play className="w-3 h-3 md:w-4 md:h-4" />
+                <div className="flex flex-col items-center justify-center text-center py-4">
+                  <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <ShoppingCart className="w-6 h-6 text-accent" />
+                  </div>
+                  <h3 className="font-display font-semibold text-foreground mb-1 group-hover:text-accent transition-colors">
+                    Enroll into a Course
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Browse our marketplace and start learning today!
+                  </p>
+                  <Button variant="hero" size="sm" className="gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    Browse Courses
                   </Button>
                 </div>
               </motion.div>
-            ))}
+            )}
           </div>
         </motion.div>
       </div>

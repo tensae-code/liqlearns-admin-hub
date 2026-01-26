@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -12,6 +12,7 @@ import {
   X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useQuizAttempts } from '@/hooks/useCourseResources';
 
 interface QuizQuestion {
   id: string;
@@ -22,11 +23,13 @@ interface QuizQuestion {
 }
 
 interface QuizResourceProps {
+  resourceId?: string;
   title: string;
   questions?: QuizQuestion[];
   passingScore?: number;
   onComplete: (score: number, passed: boolean) => void;
   onClose: () => void;
+  isPreview?: boolean;
 }
 
 // Demo questions
@@ -62,17 +65,22 @@ const demoQuestions: QuizQuestion[] = [
 ];
 
 const QuizResource = ({ 
+  resourceId,
   title, 
   questions = demoQuestions, 
   passingScore = 75,
   onComplete, 
-  onClose 
+  onClose,
+  isPreview = false
 }: QuizResourceProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [answers, setAnswers] = useState<(number | null)[]>(new Array(questions.length).fill(null));
   const [isFinished, setIsFinished] = useState(false);
+  const [startTime] = useState(Date.now());
+
+  const { recordAttempt } = useQuizAttempts(resourceId);
 
   const question = questions[currentQuestion];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
@@ -91,7 +99,7 @@ const QuizResource = ({
     setShowResult(true);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
       setSelectedAnswer(null);
@@ -99,7 +107,19 @@ const QuizResource = ({
     } else {
       // Calculate score
       const correctCount = answers.filter((a, i) => a === questions[i].correctAnswer).length;
-      const score = Math.round((correctCount / questions.length) * 100);
+      const finalScore = Math.round((correctCount / questions.length) * 100);
+      const timeTaken = Math.round((Date.now() - startTime) / 1000);
+      const didPass = finalScore >= passingScore;
+      
+      // Record attempt to database (only if not preview mode and has resourceId)
+      if (!isPreview && resourceId) {
+        const answersMap: Record<string, number> = {};
+        answers.forEach((a, i) => {
+          if (a !== null) answersMap[questions[i].id] = a;
+        });
+        await recordAttempt(finalScore, didPass, answersMap, timeTaken);
+      }
+      
       setIsFinished(true);
     }
   };

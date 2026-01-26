@@ -321,8 +321,8 @@ const Courses = () => {
                 : "Try adjusting your search or filters"}
             </p>
             {courses.length === 0 && (
-              <Button onClick={() => navigate('/teacher')} variant="outline">
-                Create a Course
+              <Button onClick={() => navigate('/marketplace')} variant="hero" className="gap-2">
+                Browse Marketplace
               </Button>
             )}
           </div>

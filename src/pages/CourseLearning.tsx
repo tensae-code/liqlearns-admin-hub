@@ -463,9 +463,11 @@ const CourseLearning = () => {
               )}
               {activeResource.type === 'quiz' && (
                 <QuizResource
+                  resourceId={activeResource.id}
                   title={activeResource.title}
                   questions={activeResource.content?.questions}
                   passingScore={activeResource.content?.passingScore}
+                  isPreview={isPreview}
                   onComplete={(score, passed) => {
                     handleResourceComplete(activeResource.id);
                     if (passed) {
