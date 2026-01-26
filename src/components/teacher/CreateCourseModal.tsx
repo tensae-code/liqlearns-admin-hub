@@ -369,8 +369,16 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
         course = data;
       }
 
-      // Create lessons/modules for the course (only for new courses)
-      if (modules.length > 0 && course && !editCourse) {
+      // Create or update lessons/modules for the course
+      if (modules.length > 0 && course) {
+        if (editCourse) {
+          // When editing, delete existing lessons and re-create
+          await supabase
+            .from('lessons')
+            .delete()
+            .eq('course_id', course.id);
+        }
+        
         const lessonsToCreate = modules.map((module, index) => ({
           course_id: course.id,
           title: module.title,
