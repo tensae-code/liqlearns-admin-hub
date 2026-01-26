@@ -505,6 +505,47 @@ export type Database = {
           },
         ]
       }
+      course_badge_suggestions: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          is_selected: boolean | null
+          source: string
+          suggested_by: string
+          suggested_name: string
+          votes_count: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          is_selected?: boolean | null
+          source: string
+          suggested_by: string
+          suggested_name: string
+          votes_count?: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          is_selected?: boolean | null
+          source?: string
+          suggested_by?: string
+          suggested_name?: string
+          votes_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_badge_suggestions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_resources: {
         Row: {
           content: Json | null
@@ -635,6 +676,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          badge_name: string | null
           category: string
           claimed_at: string | null
           claimed_by: string | null
@@ -657,6 +699,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          badge_name?: string | null
           category: string
           claimed_at?: string | null
           claimed_by?: string | null
@@ -679,6 +722,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          badge_name?: string | null
           category?: string
           claimed_at?: string | null
           claimed_by?: string | null
