@@ -206,6 +206,10 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
         throw new Error('Could not find your profile');
       }
 
+      // When editing an approved course, it needs re-approval
+      const wasApproved = editCourse?.submission_status === 'approved';
+      const needsReApproval = wasApproved && submitForReview;
+
       const courseData = {
         title: formData.title,
         description: formData.description || null,
@@ -216,7 +220,14 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
         total_lessons: modules.length,
         submission_status: submitForReview ? 'submitted' : 'draft',
         submitted_at: submitForReview ? new Date().toISOString() : null,
-        rejection_reason: submitForReview ? null : undefined, // Clear rejection if resubmitting
+        rejection_reason: submitForReview ? null : undefined,
+        // Unpublish if needs re-approval
+        is_published: needsReApproval ? false : undefined,
+        // Clear previous review data when resubmitting
+        reviewed_at: submitForReview ? null : undefined,
+        reviewed_by: submitForReview ? null : undefined,
+        claimed_by: submitForReview ? null : undefined,
+        claimed_at: submitForReview ? null : undefined,
       };
 
       let course;
@@ -326,6 +337,8 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
     await handleSubmit(true);
   };
 
+  const wasApprovedCourse = editCourse?.submission_status === 'approved';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -342,7 +355,12 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step Indicators */}
+        {/* Re-approval Warning */}
+        {wasApprovedCourse && (
+          <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg text-sm text-warning">
+            <strong>Note:</strong> Editing an approved course will require re-approval before changes go live.
+          </div>
+        )}
         <div className="flex items-center gap-2 mb-6">
           {[1, 2, 3, 4].map((s) => (
             <button
