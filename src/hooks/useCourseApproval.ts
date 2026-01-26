@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export interface SubmittedCourse {
@@ -216,10 +215,9 @@ export const useUnclaimCourse = () => {
 // Hook to approve a course
 export const useApproveCourse = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ courseId, instructorId }: { courseId: string; instructorId: string }) => {
+    mutationFn: async ({ courseId, instructorId, reviewerProfileId }: { courseId: string; instructorId: string; reviewerProfileId: string }) => {
       // Update course status
       const { error: updateError } = await supabase
         .from('courses')
@@ -227,7 +225,7 @@ export const useApproveCourse = () => {
           submission_status: 'approved',
           is_published: true,
           reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
+          reviewed_by: reviewerProfileId,
           rejection_reason: null,
           claimed_by: null,
           claimed_at: null,
@@ -264,17 +262,18 @@ export const useApproveCourse = () => {
 // Hook to reject a course
 export const useRejectCourse = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ 
       courseId, 
       instructorId, 
-      reason 
+      reason,
+      reviewerProfileId
     }: { 
       courseId: string; 
       instructorId: string;
       reason?: string;
+      reviewerProfileId: string;
     }) => {
       // Update course status
       const { error: updateError } = await supabase
@@ -283,7 +282,7 @@ export const useRejectCourse = () => {
           submission_status: 'rejected',
           is_published: false,
           reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
+          reviewed_by: reviewerProfileId,
           rejection_reason: reason || 'Needs revision',
           claimed_by: null,
           claimed_at: null,
