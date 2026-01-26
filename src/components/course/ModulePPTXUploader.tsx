@@ -571,7 +571,7 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
                           {/* Resources and breaks BEFORE this slide (after previous) */}
                           {slideNum > 1 && (
                             <div className="relative pl-4 border-l-2 border-dashed border-muted ml-4">
-                              {/* Existing resources */}
+                              {/* Existing resources BEFORE lesson break */}
                               {resourcesBefore.map((res) => (
                                 <div key={res.id} className="my-1 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-accent/10 to-transparent rounded-lg border border-accent/20 shadow-sm group/res">
                                   <div className="w-6 h-6 rounded-md bg-accent/20 flex items-center justify-center shrink-0">
@@ -591,25 +591,7 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
                                 </div>
                               ))}
                               
-                              {/* Lesson Break indicator */}
-                              {lessonBreakBefore && (
-                                <div className="my-1 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary/15 to-primary/5 rounded-lg border border-primary/20 shadow-sm">
-                                  <div className="w-5 h-5 rounded-md bg-primary/20 flex items-center justify-center">
-                                    <Bookmark className="w-3 h-3 text-primary" />
-                                  </div>
-                                  <span className="text-xs font-semibold text-primary flex-1">{lessonBreakBefore.title}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-5 w-5 text-muted-foreground hover:text-destructive"
-                                    onClick={() => handleRemoveLessonBreak(lessonBreakBefore.id)}
-                                  >
-                                    <Trash2 className="w-2.5 h-2.5" />
-                                  </Button>
-                                </div>
-                              )}
-                              
-                              {/* Add buttons - always visible on hover */}
+                              {/* Add buttons ABOVE lesson break */}
                               <div className="flex justify-center gap-1 py-0.5 opacity-0 group-hover/slide:opacity-100 transition-opacity">
                                 <Button
                                   variant="ghost"
@@ -628,10 +610,43 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
                                     onClick={() => handleOpenLessonBreakForm(slideNum - 1)}
                                   >
                                     <SplitSquareVertical className="w-2.5 h-2.5 mr-0.5" />
-                                    Break
+                                    Lesson Breaker
                                   </Button>
                                 )}
                               </div>
+                              
+                              {/* Lesson Break indicator */}
+                              {lessonBreakBefore && (
+                                <>
+                                  <div className="my-1 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary/15 to-primary/5 rounded-lg border border-primary/20 shadow-sm">
+                                    <div className="w-5 h-5 rounded-md bg-primary/20 flex items-center justify-center">
+                                      <Bookmark className="w-3 h-3 text-primary" />
+                                    </div>
+                                    <span className="text-xs font-semibold text-primary flex-1">{lessonBreakBefore.title}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                                      onClick={() => handleRemoveLessonBreak(lessonBreakBefore.id)}
+                                    >
+                                      <Trash2 className="w-2.5 h-2.5" />
+                                    </Button>
+                                  </div>
+                                  
+                                  {/* Add buttons BELOW lesson break */}
+                                  <div className="flex justify-center gap-1 py-0.5 opacity-0 group-hover/slide:opacity-100 transition-opacity">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 text-[10px] px-2 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-full"
+                                      onClick={() => handleOpenResourceCreator(slideNum - 1)}
+                                    >
+                                      <Plus className="w-2.5 h-2.5 mr-0.5" />
+                                      Resource
+                                    </Button>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           )}
                           
@@ -719,6 +734,7 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
                             onClick={() => handleOpenLessonBreakForm(pptxData.totalSlides)}
                           >
                             <SplitSquareVertical className="w-2.5 h-2.5 mr-0.5" />
+                            Lesson Breaker
                             Break
                           </Button>
                         )}
