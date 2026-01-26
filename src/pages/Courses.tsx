@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import CourseImageGallery from '@/components/course/CourseImageGallery';
 import { 
   Search, 
   Filter, 
@@ -233,11 +234,15 @@ const Courses = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 + i * 0.05 }}
               >
-                {/* Thumbnail */}
-                <div className="h-32 bg-gradient-to-br from-accent/10 to-primary/10 flex items-center justify-center relative">
-                  <span className="text-5xl">{course.thumbnail_emoji}</span>
-                  <div className="absolute top-3 left-3 flex gap-1">
-                    <Badge variant="secondary" className="text-xs">
+                {/* Thumbnail with Gallery */}
+                <div className="relative">
+                  <CourseImageGallery
+                    images={course.gallery_images || []}
+                    thumbnailUrl={course.thumbnail_url}
+                    category={course.category}
+                  />
+                  <div className="absolute top-3 left-3 flex gap-1 z-10">
+                    <Badge variant="secondary" className="text-xs bg-background/80 backdrop-blur-sm">
                       {course.difficulty}
                     </Badge>
                     {!course.is_published && (
@@ -247,8 +252,8 @@ const Courses = () => {
                     )}
                   </div>
                   {course.is_enrolled ? (
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-success/20 text-success border-success/30 gap-1">
+                    <div className="absolute top-3 right-3 z-10">
+                      <Badge className="bg-success/20 text-success border-success/30 gap-1 backdrop-blur-sm">
                         <CheckCircle className="w-3 h-3" />
                         Enrolled
                       </Badge>
@@ -256,7 +261,7 @@ const Courses = () => {
                   ) : (
                     <Button 
                       size="icon" 
-                      className="absolute bottom-3 right-3 rounded-full bg-accent text-accent-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute bottom-3 right-3 rounded-full bg-accent text-accent-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10"
                       onClick={(e) => handleEnroll(e, course.id)}
                       disabled={enrollMutation.isPending}
                     >

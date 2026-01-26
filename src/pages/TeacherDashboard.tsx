@@ -126,6 +126,8 @@ const TeacherDashboard = () => {
     price?: number;
     estimated_duration?: number;
     submission_status?: string;
+    thumbnail_url?: string;
+    gallery_images?: string[];
   } | null>(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -215,6 +217,8 @@ const TeacherDashboard = () => {
         price: courseToEdit.price || undefined,
         estimated_duration: courseToEdit.estimated_duration || undefined,
         submission_status: courseToEdit.submission_status || undefined,
+        thumbnail_url: courseToEdit.thumbnail_url || undefined,
+        gallery_images: courseToEdit.gallery_images || undefined,
       });
       setCreateCourseOpen(true);
     }

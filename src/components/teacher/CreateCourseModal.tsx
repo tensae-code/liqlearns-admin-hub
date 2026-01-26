@@ -53,6 +53,8 @@ interface EditCourse {
   price?: number;
   estimated_duration?: number;
   submission_status?: string;
+  thumbnail_url?: string;
+  gallery_images?: string[];
 }
 
 interface CreateCourseModalProps {
@@ -122,7 +124,10 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
     thumbnail_emoji: '📚',
     estimatedDuration: '',
     objectives: [''],
+    thumbnail_url: '',
+    gallery_images: [] as string[],
   });
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [modules, setModules] = useState<CourseModule[]>([]);
   const [pptxUploaderOpen, setPptxUploaderOpen] = useState(false);
   const [selectedModule, setSelectedModule] = useState<CourseModule | null>(null);
@@ -143,6 +148,8 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
         thumbnail_emoji: '📚',
         estimatedDuration: editCourse.estimated_duration?.toString() || '',
         objectives: [''],
+        thumbnail_url: editCourse.thumbnail_url || '',
+        gallery_images: editCourse.gallery_images || [],
       });
 
       // Fetch existing modules/presentations when editing
@@ -329,6 +336,8 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
         reviewed_by: submitForReview ? null : undefined,
         claimed_by: submitForReview ? null : undefined,
         claimed_at: submitForReview ? null : undefined,
+        thumbnail_url: formData.thumbnail_url || null,
+        gallery_images: formData.gallery_images.length > 0 ? formData.gallery_images : null,
       };
 
       let course;
@@ -485,8 +494,64 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
       thumbnail_emoji: '📚',
       estimatedDuration: '',
       objectives: [''],
+      thumbnail_url: '',
+      gallery_images: [],
     });
     setModules([]);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, isThumbnail: boolean) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `course-images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      if (isThumbnail) {
+        setFormData({ ...formData, thumbnail_url: publicUrl });
+      } else {
+        setFormData({ 
+          ...formData, 
+          gallery_images: [...formData.gallery_images, publicUrl] 
+        });
+      }
+      toast.success('Image uploaded successfully!');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleRemoveGalleryImage = (index: number) => {
+    setFormData({
+      ...formData,
+      gallery_images: formData.gallery_images.filter((_, i) => i !== index)
+    });
   };
 
   const handleSaveDraft = async () => {
@@ -556,15 +621,95 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
                   Basic Information
                 </h3>
 
-                {/* Emoji Selection */}
+                {/* Course Thumbnail Upload */}
                 <div>
-                  <Label>Course Icon</Label>
+                  <Label>Course Cover Image *</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    This is the main image students will see (required)
+                  </p>
+                  <div className="flex gap-4">
+                    {formData.thumbnail_url ? (
+                      <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-border">
+                        <img 
+                          src={formData.thumbnail_url} 
+                          alt="Course thumbnail" 
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={() => setFormData({ ...formData, thumbnail_url: '' })}
+                          className="absolute top-1 right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="w-32 h-20 rounded-lg border-2 border-dashed border-border hover:border-accent/50 transition-colors flex flex-col items-center justify-center cursor-pointer bg-muted/30">
+                        {isUploadingImage ? (
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        ) : (
+                          <>
+                            <Image className="w-5 h-5 text-muted-foreground mb-1" />
+                            <span className="text-xs text-muted-foreground">Upload</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleImageUpload(e, true)}
+                          disabled={isUploadingImage}
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {/* Gallery Images */}
+                <div>
+                  <Label>Gallery Images (Optional)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Add more preview images that students can scroll through
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.gallery_images.map((url, index) => (
+                      <div key={index} className="relative w-20 h-14 rounded-lg overflow-hidden border border-border">
+                        <img src={url} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => handleRemoveGalleryImage(index)}
+                          className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                        >
+                          <X className="w-2 h-2" />
+                        </button>
+                      </div>
+                    ))}
+                    {formData.gallery_images.length < 5 && (
+                      <label className="w-20 h-14 rounded-lg border-2 border-dashed border-border hover:border-accent/50 transition-colors flex flex-col items-center justify-center cursor-pointer bg-muted/30">
+                        {isUploadingImage ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        ) : (
+                          <Plus className="w-4 h-4 text-muted-foreground" />
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleImageUpload(e, false)}
+                          disabled={isUploadingImage}
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {/* Emoji Selection (fallback) */}
+                <div>
+                  <Label>Course Icon (fallback if no image)</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {courseEmojis.map((emoji) => (
                       <button
                         key={emoji}
                         onClick={() => setFormData({ ...formData, thumbnail_emoji: emoji })}
-                        className={`w-12 h-12 text-2xl rounded-lg border-2 transition-all hover:scale-110 ${
+                        className={`w-10 h-10 text-xl rounded-lg border-2 transition-all hover:scale-110 ${
                           formData.thumbnail_emoji === emoji
                             ? 'border-accent bg-accent/10'
                             : 'border-border bg-muted/30'

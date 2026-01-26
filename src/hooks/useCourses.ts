@@ -13,6 +13,7 @@ export interface Course {
   estimated_duration: number | null;
   price: number | null;
   thumbnail_url: string | null;
+  gallery_images: string[] | null;
   is_published: boolean | null;
   instructor_id: string | null;
   created_at: string;
