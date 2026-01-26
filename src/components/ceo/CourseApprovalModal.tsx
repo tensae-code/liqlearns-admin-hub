@@ -138,7 +138,7 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <BookOpen className="w-5 h-5 text-accent" />
@@ -151,7 +151,7 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
 
         {selectedCourse ? (
           // Course Detail View
-          <div className="space-y-4">
+          <div className="flex flex-col flex-1 min-h-0">
             <Button 
               variant="ghost" 
               size="sm" 
@@ -160,161 +160,166 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
                 setShowRejectForm(false);
                 setRejectionReason('');
               }}
-              className="mb-2"
+              className="mb-2 shrink-0"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to list
             </Button>
 
-            {/* Claim Status Banner */}
-            {isClaimedByOther && (
-              <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg flex items-center gap-2">
-                <Lock className="w-4 h-4 text-warning" />
-                <span className="text-sm text-warning">
-                  This course is being reviewed by another admin
-                </span>
-              </div>
-            )}
-
-            {isClaimedByMe && (
-              <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-success" />
-                  <span className="text-sm text-success">
-                    You are reviewing this course
-                  </span>
-                </div>
-                <Button variant="ghost" size="sm" onClick={handleUnclaim}>
-                  Release
-                </Button>
-              </div>
-            )}
-
-            <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-lg">
-              <div className="w-16 h-16 rounded-xl bg-gradient-hero flex items-center justify-center text-2xl text-primary-foreground">
-                📚
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-foreground">{selectedCourse.title}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-2">{selectedCourse.description}</p>
-                <div className="flex items-center gap-3 mt-2">
-                  <Badge variant="secondary">{selectedCourse.category}</Badge>
-                  <Badge variant="outline">{selectedCourse.difficulty}</Badge>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Submitted {formatTime(selectedCourse.submitted_at)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Instructor Info */}
-            {selectedCourse.instructor && (
-              <div className="flex items-center gap-3 p-3 border border-border rounded-lg">
-                <Avatar>
-                  <AvatarImage src={selectedCourse.instructor.avatar_url || undefined} />
-                  <AvatarFallback className="bg-accent/10 text-accent">
-                    {selectedCourse.instructor.full_name?.charAt(0) || '?'}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium text-foreground">{selectedCourse.instructor.full_name}</p>
-                  <p className="text-xs text-muted-foreground">Course Instructor</p>
-                </div>
-              </div>
-            )}
-
-            {/* Comments Section */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-foreground flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-accent" />
-                Review Comments (Optional)
-              </h4>
-              
-              <ScrollArea className="h-48 border border-border rounded-lg p-3">
-                {commentsLoading ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
+            {/* Scrollable content area */}
+            <ScrollArea className="flex-1">
+              <div className="space-y-4 pr-2">
+                {/* Claim Status Banner */}
+                {isClaimedByOther && (
+                  <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-warning" />
+                    <span className="text-sm text-warning">
+                      This course is being reviewed by another admin
+                    </span>
                   </div>
-                ) : comments && comments.length > 0 ? (
-                  <div className="space-y-3">
-                    {comments.map(comment => (
-                      <div key={comment.id} className="flex gap-3 p-2 bg-muted/30 rounded-lg">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={comment.reviewer?.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                            {comment.reviewer?.full_name?.charAt(0) || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-foreground">
-                              {comment.reviewer?.full_name || 'Reviewer'}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatTime(comment.created_at)}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">{comment.comment}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-6">
-                    No comments yet. Add feedback for the instructor (optional).
-                  </p>
                 )}
-              </ScrollArea>
 
-              {/* Add Comment */}
-              {canReview && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a comment for the instructor..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                  />
-                  <Button 
-                    onClick={handleAddComment} 
-                    disabled={!newComment.trim() || addComment.isPending}
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
+                {isClaimedByMe && (
+                  <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-success" />
+                      <span className="text-sm text-success">
+                        You are reviewing this course
+                      </span>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={handleUnclaim}>
+                      Release
+                    </Button>
+                  </div>
+                )}
 
-            {/* Reject Reason Form */}
-            {showRejectForm && (
-              <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-3">
-                <p className="text-sm font-medium text-destructive">Rejection Reason (Optional)</p>
-                <Textarea
-                  placeholder="Explain what needs to be fixed (optional)..."
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  rows={3}
-                />
-                <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" size="sm" onClick={() => setShowRejectForm(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={handleReject}
-                    disabled={rejectCourse.isPending}
-                  >
-                    Confirm Rejection
-                  </Button>
+                <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-lg">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-hero flex items-center justify-center text-2xl text-primary-foreground">
+                    📚
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-foreground">{selectedCourse.title}</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{selectedCourse.description}</p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <Badge variant="secondary">{selectedCourse.category}</Badge>
+                      <Badge variant="outline">{selectedCourse.difficulty}</Badge>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Submitted {formatTime(selectedCourse.submitted_at)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Instructor Info */}
+                {selectedCourse.instructor && (
+                  <div className="flex items-center gap-3 p-3 border border-border rounded-lg">
+                    <Avatar>
+                      <AvatarImage src={selectedCourse.instructor.avatar_url || undefined} />
+                      <AvatarFallback className="bg-accent/10 text-accent">
+                        {selectedCourse.instructor.full_name?.charAt(0) || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-foreground">{selectedCourse.instructor.full_name}</p>
+                      <p className="text-xs text-muted-foreground">Course Instructor</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Comments Section */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-foreground flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-accent" />
+                    Review Comments (Optional)
+                  </h4>
+                  
+                  <ScrollArea className="h-32 border border-border rounded-lg p-3">
+                    {commentsLoading ? (
+                      <div className="space-y-3">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                      </div>
+                    ) : comments && comments.length > 0 ? (
+                      <div className="space-y-3">
+                        {comments.map(comment => (
+                          <div key={comment.id} className="flex gap-3 p-2 bg-muted/30 rounded-lg">
+                            <Avatar className="w-8 h-8">
+                              <AvatarImage src={comment.reviewer?.avatar_url || undefined} />
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                {comment.reviewer?.full_name?.charAt(0) || '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-foreground">
+                                  {comment.reviewer?.full_name || 'Reviewer'}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatTime(comment.created_at)}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">{comment.comment}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No comments yet. Add feedback for the instructor (optional).
+                      </p>
+                    )}
+                  </ScrollArea>
+
+                  {/* Add Comment */}
+                  {canReview && (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Add a comment for the instructor..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                      />
+                      <Button 
+                        onClick={handleAddComment} 
+                        disabled={!newComment.trim() || addComment.isPending}
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Reject Reason Form */}
+                {showRejectForm && (
+                  <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg space-y-3">
+                    <p className="text-sm font-medium text-destructive">Rejection Reason (Optional)</p>
+                    <Textarea
+                      placeholder="Explain what needs to be fixed (optional)..."
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      rows={3}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="sm" onClick={() => setShowRejectForm(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={handleReject}
+                        disabled={rejectCourse.isPending}
+                      >
+                        Confirm Rejection
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </ScrollArea>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3 pt-4 border-t border-border">
+            {/* Fixed Actions Footer */}
+            <div className="flex items-center gap-3 pt-4 border-t border-border shrink-0">
               <Button variant="outline" onClick={handlePreview} className="flex-1">
                 <Eye className="w-4 h-4 mr-2" />
                 Preview Course
