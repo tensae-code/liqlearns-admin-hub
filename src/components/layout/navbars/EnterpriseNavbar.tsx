@@ -46,9 +46,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/enterprise' },
-  { icon: Users, label: 'Team', path: '/enterprise/team' },
-  { icon: GraduationCap, label: 'Courses', path: '/courses' },
-  { icon: Route, label: 'Learning Paths', path: '/enterprise/paths' },
+  { icon: Users, label: 'Team', path: '/enterprise?tab=team' },
+  { icon: GraduationCap, label: 'Courses', path: '/enterprise?tab=courses' },
+  { icon: Route, label: 'Learning Paths', path: '/enterprise?tab=paths' },
   { icon: BarChart3, label: 'Analytics', path: '/enterprise/analytics' },
   { icon: HelpCircle, label: 'Help', path: '/help' },
   { icon: Settings, label: 'Settings', path: '/settings' },
@@ -82,9 +82,17 @@ const EnterpriseNavbar = () => {
   };
 
   const isItemActive = (itemPath: string) => {
-    if (itemPath === '/enterprise' && location.pathname === '/enterprise') return true;
-    if (itemPath !== '/enterprise' && location.pathname.startsWith(itemPath) && itemPath !== '/') return true;
-    return location.pathname === itemPath;
+    const [path, query] = itemPath.split('?');
+    const currentPath = location.pathname;
+    const currentSearch = location.search;
+    
+    // Check for exact path + query match first
+    if (query && currentPath === path && currentSearch === `?${query}`) return true;
+    // Dashboard without query params
+    if (itemPath === '/enterprise' && currentPath === '/enterprise' && !currentSearch.includes('tab=')) return true;
+    // Other paths (analytics, help, settings)
+    if (!query && currentPath.startsWith(path) && path !== '/enterprise') return true;
+    return false;
   };
 
   return (
