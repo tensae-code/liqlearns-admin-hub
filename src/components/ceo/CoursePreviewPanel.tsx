@@ -180,8 +180,8 @@ const CoursePreviewPanel = ({ course, onBack }: CoursePreviewPanelProps) => {
               <Progress value={0} className="h-2" />
             </div>
 
-            <Button variant="hero" className="w-full">
-              <Play className="w-4 h-4 mr-2" /> Start Learning
+            <Button variant="hero" className="w-full" disabled>
+              <Play className="w-4 h-4 mr-2" /> Preview Only
             </Button>
           </motion.div>
 

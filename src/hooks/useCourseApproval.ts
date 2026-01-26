@@ -124,14 +124,13 @@ export const useAddReviewComment = () => {
 // Hook to claim a course for review
 export const useClaimCourse = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (courseId: string) => {
+    mutationFn: async ({ courseId, profileId }: { courseId: string; profileId: string }) => {
       const { error } = await supabase
         .from('courses')
         .update({
-          claimed_by: user?.id,
+          claimed_by: profileId,
           claimed_at: new Date().toISOString(),
         })
         .eq('id', courseId)
