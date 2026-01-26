@@ -288,12 +288,12 @@ export const useTeacherCourses = () => {
     queryFn: async () => {
       if (!profileId) return [];
 
+      // First, get courses without the reviewer join (no FK exists for claimed_by)
       const { data, error } = await supabase
         .from('courses')
         .select(`
           *,
-          instructor:profiles!courses_instructor_id_fkey(full_name, avatar_url),
-          reviewer:profiles!courses_claimed_by_fkey(id, full_name, avatar_url)
+          instructor:profiles!courses_instructor_id_fkey(full_name, avatar_url)
         `)
         .eq('instructor_id', profileId)
         .order('created_at', { ascending: false });
@@ -312,12 +312,28 @@ export const useTeacherCourses = () => {
         return acc;
       }, {} as Record<string, number>) || {};
 
+      // Fetch reviewer info separately for courses that are claimed
+      const claimedByIds = data?.filter(c => c.claimed_by).map(c => c.claimed_by) || [];
+      let reviewerMap: Record<string, { id: string; full_name: string; avatar_url: string | null }> = {};
+      
+      if (claimedByIds.length > 0) {
+        const { data: reviewers } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', claimedByIds);
+        
+        reviewerMap = (reviewers || []).reduce((acc, r) => {
+          acc[r.id] = r;
+          return acc;
+        }, {} as Record<string, { id: string; full_name: string; avatar_url: string | null }>);
+      }
+
       return data?.map(course => ({
         ...course,
         enrollment_count: countMap[course.id] || 0,
         thumbnail_emoji: getCategoryEmoji(course.category),
         submission_status: course.submission_status || 'draft',
-        reviewer: course.reviewer || null,
+        reviewer: course.claimed_by ? reviewerMap[course.claimed_by] || null : null,
       })) || [];
     },
     enabled: !!profileId,
