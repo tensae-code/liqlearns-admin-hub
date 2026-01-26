@@ -606,10 +606,45 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave, 
                       </div>
                       <span className="text-sm font-semibold text-primary">Lesson 1</span>
                     </div>
+                    
+                    {/* Add resource button AFTER Lesson 1 header (before slide 1) */}
+                    <div className="group/first relative pl-4 border-l-2 border-dashed border-muted ml-4">
+                      {/* Resources at position 0 (after Lesson 1 header, before first slide) */}
+                      {getResourcesForSlide(0).map((res) => (
+                        <div key={res.id} className="my-1 flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-accent/10 to-transparent rounded-lg border border-accent/20 shadow-sm group/res">
+                          <div className="w-6 h-6 rounded-md bg-accent/20 flex items-center justify-center shrink-0">
+                            <span className="text-xs">{resourceTypes.find(t => t.id === res.type)?.emoji}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate">{res.title}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 text-muted-foreground hover:text-destructive shrink-0 opacity-0 group-hover/res:opacity-100"
+                            onClick={() => handleRemoveResource(res.id)}
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <div className="flex justify-center gap-1 py-0.5 opacity-0 group-hover/first:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 text-[10px] px-2 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-full"
+                          onClick={() => handleOpenResourceCreator(0)}
+                        >
+                          <Plus className="w-2.5 h-2.5 mr-0.5" />
+                          Resource
+                        </Button>
+                      </div>
+                    </div>
 
                     {Array.from({ length: pptxData.totalSlides }, (_, i) => i + 1).map((slideNum) => {
                       const lessonBreakBefore = getLessonBreakForSlide(slideNum - 1);
-                      const resourcesBefore = getResourcesForSlide(slideNum - 1);
+                      const resourcesBefore = slideNum > 1 ? getResourcesForSlide(slideNum - 1) : [];
                       
                       return (
                         <div key={slideNum} className="group/slide">

@@ -60,6 +60,7 @@ const CourseLearning = () => {
   const [currentSlide, setCurrentSlide] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeResource, setActiveResource] = useState<SlideResource | null>(null);
+  const [pendingResourceQueue, setPendingResourceQueue] = useState<SlideResource[]>([]);
   const [completedSlides, setCompletedSlides] = useState<number[]>([]);
   const [completedResources, setCompletedResources] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -203,11 +204,32 @@ const CourseLearning = () => {
   const progressPercentage = (completedSlides.length / totalSlides) * 100;
   const currentSlideData = parsedSlides.find(s => s.index === currentSlide);
 
-  const goToSlide = (slide: number) => {
+  // Get resources that should show after a specific slide
+  const getResourcesAfterSlide = (slideNum: number) => {
+    return resources.filter(r => r.showAfterSlide === slideNum)
+      .sort((a, b) => (a.id > b.id ? 1 : -1));
+  };
+
+  const goToSlide = (slide: number, skipResources = false) => {
     if (slide < 1 || slide > totalSlides) return;
     
+    // Mark current slide as completed if moving forward
     if (slide > currentSlide && !completedSlides.includes(currentSlide)) {
       setCompletedSlides(prev => [...prev, currentSlide]);
+    }
+    
+    // Check for resources that should trigger AFTER the current slide (before moving to next)
+    if (!skipResources && slide > currentSlide) {
+      const resourcesAfterCurrent = getResourcesAfterSlide(currentSlide);
+      const unshownResources = resourcesAfterCurrent.filter(r => !completedResources.includes(r.id));
+      
+      if (unshownResources.length > 0) {
+        // Queue up resources and show the first one
+        setPendingResourceQueue(unshownResources.slice(1));
+        setActiveResource(unshownResources[0]);
+        setIsPlaying(false);
+        return; // Don't advance slide yet
+      }
     }
     
     setCurrentSlide(slide);
@@ -218,20 +240,28 @@ const CourseLearning = () => {
         slideViewed: slide
       });
     }
-    
-    const resourceToShow = resources.find(r => 
-      slide === r.showAfterSlide && !activeResource
-    );
-    if (resourceToShow) {
-      setActiveResource(resourceToShow);
-      setIsPlaying(false);
-    }
   };
 
   const handleNext = () => {
+    // If there's an active resource, complete it and show next or advance
+    if (activeResource) {
+      return; // Let the resource modal handle completion
+    }
+    
     if (currentSlide < totalSlides) {
       goToSlide(currentSlide + 1);
     } else {
+      // Check for resources after last slide
+      const resourcesAfterLast = getResourcesAfterSlide(totalSlides);
+      const unshownResources = resourcesAfterLast.filter(r => !completedResources.includes(r.id));
+      
+      if (unshownResources.length > 0) {
+        setPendingResourceQueue(unshownResources.slice(1));
+        setActiveResource(unshownResources[0]);
+        setIsPlaying(false);
+        return;
+      }
+      
       if (!completedSlides.includes(totalSlides)) {
         setCompletedSlides(prev => [...prev, totalSlides]);
       }
@@ -257,6 +287,34 @@ const CourseLearning = () => {
       setCompletedResources(prev => [...prev, resourceId]);
       if (!isPreview && currentModule?.id) {
         updateProgress({ resourceCompleted: resourceId });
+      }
+    }
+    
+    // Check if there are more resources in the queue
+    if (pendingResourceQueue.length > 0) {
+      const [nextResource, ...remainingQueue] = pendingResourceQueue;
+      setPendingResourceQueue(remainingQueue);
+      setActiveResource(nextResource);
+    } else {
+      setActiveResource(null);
+      // Now advance to the next slide
+      if (currentSlide < totalSlides) {
+        goToSlide(currentSlide + 1, true); // Skip resource check since we just showed them
+      } else {
+        // Completed last slide and its resources
+        if (!completedSlides.includes(totalSlides)) {
+          setCompletedSlides(prev => [...prev, totalSlides]);
+        }
+        
+        // Go to next module or back to course
+        const currentIndex = allModules.findIndex(m => m.id === currentModule?.id);
+        if (currentIndex >= 0 && currentIndex < allModules.length - 1) {
+          const nextModule = allModules[currentIndex + 1];
+          navigate(`/course/${id}/learn?module=${nextModule.moduleId}${isPreview ? '&preview=true' : ''}`);
+        } else {
+          toast.success('Course completed!');
+          navigate(`/course/${id}${isPreview ? '?preview=true' : ''}`);
+        }
       }
     }
   };
