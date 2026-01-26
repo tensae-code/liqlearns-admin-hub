@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,12 +84,21 @@ interface UploadedPPTX {
   slides?: ParsedSlide[];
 }
 
+interface InitialModuleData {
+  slides?: ParsedSlide[];
+  resources?: SlideResource[];
+  lessonBreaks?: LessonBreak[];
+  fileName?: string;
+  totalSlides?: number;
+}
+
 interface ModulePPTXUploaderProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   moduleId: string;
   moduleName: string;
   onSave: (pptxData: UploadedPPTX) => void;
+  initialData?: InitialModuleData;
 }
 
 const resourceTypes = [
@@ -121,7 +130,7 @@ interface Flashcard {
   back: string;
 }
 
-const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }: ModulePPTXUploaderProps) => {
+const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave, initialData }: ModulePPTXUploaderProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -131,6 +140,7 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
   const [currentPreviewSlide, setCurrentPreviewSlide] = useState(1);
   const [resources, setResources] = useState<SlideResource[]>([]);
   const [lessonBreaks, setLessonBreaks] = useState<LessonBreak[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Resource creation state
   const [showResourceCreator, setShowResourceCreator] = useState(false);
@@ -161,6 +171,41 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
   // Unsaved changes dialog
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Load initial data when editing existing module
+  React.useEffect(() => {
+    if (open && initialData && !isInitialized) {
+      // Set the parsed presentation from initial data
+      if (initialData.slides && initialData.slides.length > 0) {
+        const presentation: ParsedPresentation = {
+          slides: initialData.slides,
+          totalSlides: initialData.totalSlides || initialData.slides.length,
+          title: initialData.fileName?.replace('.pptx', '') || 'Presentation',
+          author: '',
+          thumbnails: []
+        };
+        setParsedPresentation(presentation);
+
+        const pptx: UploadedPPTX = {
+          id: `pptx-existing`,
+          fileName: initialData.fileName || 'presentation.pptx',
+          totalSlides: presentation.totalSlides,
+          uploadedAt: new Date().toISOString(),
+          resources: initialData.resources || [],
+          lessonBreaks: initialData.lessonBreaks || [],
+          slides: initialData.slides
+        };
+        setPptxData(pptx);
+        setResources(initialData.resources || []);
+        setLessonBreaks(initialData.lessonBreaks || []);
+        setCurrentPreviewSlide(1);
+      }
+      setIsInitialized(true);
+    } else if (!open) {
+      // Reset initialization flag when dialog closes
+      setIsInitialized(false);
+    }
+  }, [open, initialData, isInitialized]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

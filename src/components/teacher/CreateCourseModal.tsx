@@ -128,6 +128,8 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
   const [selectedModule, setSelectedModule] = useState<CourseModule | null>(null);
   const [newModuleName, setNewModuleName] = useState('');
 
+  const [isLoadingModules, setIsLoadingModules] = useState(false);
+
   // Populate form when editing
   useEffect(() => {
     if (editCourse && open) {
@@ -142,6 +144,76 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
         estimatedDuration: editCourse.estimated_duration?.toString() || '',
         objectives: [''],
       });
+
+      // Fetch existing modules/presentations when editing
+      const fetchExistingModules = async () => {
+        setIsLoadingModules(true);
+        try {
+          // Fetch presentations for this course
+          const { data: presentations, error: presError } = await supabase
+            .from('module_presentations')
+            .select('*')
+            .eq('course_id', editCourse.id)
+            .order('created_at', { ascending: true });
+
+          if (presError) {
+            console.error('Error fetching presentations:', presError);
+            return;
+          }
+
+          if (presentations && presentations.length > 0) {
+            // Fetch resources for this course
+            const { data: resources, error: resError } = await supabase
+              .from('course_resources')
+              .select('*')
+              .eq('course_id', editCourse.id);
+
+            if (resError) {
+              console.error('Error fetching resources:', resError);
+            }
+
+            // Map presentations to CourseModule format
+            const loadedModules: CourseModule[] = presentations.map((pres) => {
+              // Get resources for this module
+              const moduleResources = (resources || [])
+                .filter((r) => r.module_id === pres.module_id)
+                .map((r) => ({
+                  id: r.id,
+                  type: r.type as 'video' | 'audio' | 'quiz' | 'flashcard',
+                  title: r.title,
+                  showAfterSlide: r.show_after_slide,
+                  showBeforeSlide: r.show_before_slide,
+                  content: r.content,
+                }));
+
+              // Parse lesson breaks from the presentation
+              const lessonBreaks = Array.isArray(pres.lesson_breaks) 
+                ? (pres.lesson_breaks as unknown as LessonBreak[])
+                : [];
+
+              return {
+                id: pres.module_id,
+                title: pres.module_title || pres.file_name?.replace('.pptx', '') || 'Module',
+                description: '',
+                hasPPTX: true,
+                pptxFileName: pres.file_name,
+                totalSlides: pres.total_slides,
+                slides: Array.isArray(pres.slide_data) ? pres.slide_data : [],
+                resources: moduleResources,
+                lessonBreaks: lessonBreaks,
+              };
+            });
+
+            setModules(loadedModules);
+          }
+        } catch (error) {
+          console.error('Error loading existing modules:', error);
+        } finally {
+          setIsLoadingModules(false);
+        }
+      };
+
+      fetchExistingModules();
     } else if (!open) {
       // Reset when closing
       resetForm();
@@ -309,6 +381,21 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
 
       // Save presentations and resources for modules with PPTX data (in parallel)
       const modulesWithPPTX = modules.filter(m => m.hasPPTX && m.slides && course);
+      
+      // When editing, we need to delete old presentations/resources first and re-insert
+      if (editCourse && modulesWithPPTX.length > 0) {
+        // Delete existing resources for this course
+        await supabase
+          .from('course_resources')
+          .delete()
+          .eq('course_id', course!.id);
+        
+        // Delete existing presentations for this course
+        await supabase
+          .from('module_presentations')
+          .delete()
+          .eq('course_id', course!.id);
+      }
       
       await Promise.all(modulesWithPPTX.map(async (module) => {
         // Save presentation to module_presentations with lesson breaks
@@ -779,7 +866,12 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
 
                 {/* Modules List */}
                 <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                  {modules.length === 0 ? (
+                  {isLoadingModules ? (
+                    <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg">
+                      <Loader2 className="w-10 h-10 mx-auto mb-2 opacity-50 animate-spin" />
+                      <p>Loading existing modules...</p>
+                    </div>
+                  ) : modules.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg">
                       <Layers className="w-10 h-10 mx-auto mb-2 opacity-50" />
                       <p>No modules added yet</p>
@@ -801,6 +893,11 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
                               <p className="text-xs text-success flex items-center gap-1">
                                 <Presentation className="w-3 h-3" />
                                 {module.pptxFileName} ({module.totalSlides} slides)
+                                {module.resources && module.resources.length > 0 && (
+                                  <span className="ml-2 text-accent">
+                                    • {module.resources.length} resource(s)
+                                  </span>
+                                )}
                               </p>
                             ) : (
                               <p className="text-xs text-muted-foreground">No presentation uploaded</p>
@@ -812,7 +909,7 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
                             onClick={() => handleOpenPPTXUploader(module)}
                           >
                             <Upload className="w-4 h-4 mr-2" />
-                            {module.hasPPTX ? 'Replace PPTX' : 'Upload PPTX'}
+                            {module.hasPPTX ? 'Edit PPTX' : 'Upload PPTX'}
                           </Button>
                           <Button
                             variant="ghost"
@@ -860,6 +957,13 @@ const CreateCourseModal = ({ open, onOpenChange, editCourse }: CreateCourseModal
             moduleId={selectedModule.id}
             moduleName={selectedModule.title}
             onSave={handlePPTXSave}
+            initialData={selectedModule.hasPPTX ? {
+              slides: selectedModule.slides,
+              resources: selectedModule.resources,
+              lessonBreaks: selectedModule.lessonBreaks,
+              fileName: selectedModule.pptxFileName,
+              totalSlides: selectedModule.totalSlides
+            } : undefined}
           />
         )}
       </DialogContent>
