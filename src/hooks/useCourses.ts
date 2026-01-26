@@ -84,8 +84,8 @@ export const useCourses = () => {
   return useQuery({
     queryKey: ['courses', profileId],
     queryFn: async () => {
-      // Fetch courses with instructor info
-      const { data: courses, error } = await supabase
+      // Fetch published courses with instructor info
+      const { data: publishedCourses, error: publishedError } = await supabase
         .from('courses')
         .select(`
           *,
@@ -94,7 +94,31 @@ export const useCourses = () => {
         .eq('is_published', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (publishedError) throw publishedError;
+
+      // Also fetch instructor's own courses (including unpublished/pending)
+      let instructorCourses: typeof publishedCourses = [];
+      if (profileId) {
+        const { data: ownCourses, error: ownError } = await supabase
+          .from('courses')
+          .select(`
+            *,
+            instructor:profiles!courses_instructor_id_fkey(full_name, avatar_url)
+          `)
+          .eq('instructor_id', profileId)
+          .eq('is_published', false)
+          .order('created_at', { ascending: false });
+
+        if (!ownError && ownCourses) {
+          instructorCourses = ownCourses;
+        }
+      }
+
+      // Merge and deduplicate
+      const allCourses = [...(publishedCourses || []), ...instructorCourses];
+      const uniqueCourses = allCourses.filter((course, index, self) => 
+        index === self.findIndex(c => c.id === course.id)
+      );
 
       // Get enrollment counts for each course
       const { data: enrollmentCounts } = await supabase
@@ -116,12 +140,12 @@ export const useCourses = () => {
         userEnrollments = enrollments?.map(e => e.course_id) || [];
       }
 
-      return courses?.map(course => ({
+      return uniqueCourses.map(course => ({
         ...course,
         enrollment_count: countMap[course.id] || 0,
         is_enrolled: userEnrollments.includes(course.id),
         thumbnail_emoji: getCategoryEmoji(course.category),
-      })) || [];
+      }));
     },
   });
 };
