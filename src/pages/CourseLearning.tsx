@@ -24,6 +24,9 @@ interface SlideResource {
   showAfterSlide: number;
   showBeforeSlide: number;
   content?: any;
+  fileUrl?: string;
+  presentationId?: string;
+  moduleId?: string;
 }
 
 interface ModuleData {
@@ -126,16 +129,18 @@ const CourseLearning = () => {
         }
 
         if (resourcesResult.data) {
-          const formattedResources: SlideResource[] = resourcesResult.data
-            .filter((r: any) => r.presentation_id === currentModule?.id || r.module_id === moduleId)
-            .map((r: any) => ({
-              id: r.id,
-              type: r.type as SlideResource['type'],
-              title: r.title,
-              showAfterSlide: r.show_after_slide || 1,
-              showBeforeSlide: r.show_before_slide || 999,
-              content: r.content
-            }));
+          // Store all resources - we'll filter them when currentModule is set
+          const formattedResources: SlideResource[] = resourcesResult.data.map((r: any) => ({
+            id: r.id,
+            type: r.type as SlideResource['type'],
+            title: r.title,
+            showAfterSlide: r.show_after_slide || 0,
+            showBeforeSlide: r.show_before_slide || 999,
+            content: r.content,
+            fileUrl: r.file_url,
+            presentationId: r.presentation_id,
+            moduleId: r.module_id
+          }));
           setResources(formattedResources);
         }
       } catch (err) {
@@ -204,9 +209,14 @@ const CourseLearning = () => {
   const progressPercentage = (completedSlides.length / totalSlides) * 100;
   const currentSlideData = parsedSlides.find(s => s.index === currentSlide);
 
+  // Filter resources for current module
+  const moduleResources = resources.filter(r => 
+    r.presentationId === currentModule?.id || r.moduleId === currentModule?.moduleId
+  );
+
   // Get resources that should show after a specific slide
   const getResourcesAfterSlide = (slideNum: number) => {
-    return resources.filter(r => r.showAfterSlide === slideNum)
+    return moduleResources.filter(r => r.showAfterSlide === slideNum)
       .sort((a, b) => (a.id > b.id ? 1 : -1));
   };
 
@@ -320,7 +330,7 @@ const CourseLearning = () => {
   };
 
   const getCurrentSlideResources = () => {
-    return resources.filter(r => 
+    return moduleResources.filter(r => 
       currentSlide >= r.showAfterSlide && 
       currentSlide < r.showBeforeSlide
     );
