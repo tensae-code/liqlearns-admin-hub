@@ -301,15 +301,17 @@ const BlankLayout = ({ slide }: { slide: ParsedSlide }) => (
 
 const SlideRenderer = ({ slide, className = '' }: SlideRendererProps) => {
   const hasShapes = slide.shapes && slide.shapes.length > 0;
+  const hasImages = slide.images && slide.images.length > 0;
+  
   const backgroundStyles: React.CSSProperties = {
-    backgroundColor: slide.backgroundColor,
+    backgroundColor: slide.backgroundColor || '#ffffff',
     backgroundImage: slide.backgroundImage ? `url(${slide.backgroundImage})` : undefined,
     backgroundSize: slide.backgroundImage ? 'cover' : undefined,
     backgroundPosition: slide.backgroundImage ? 'center' : undefined,
     backgroundRepeat: slide.backgroundImage ? 'no-repeat' : undefined,
   };
   
-  // If we have positioned shapes, render them absolutely
+  // If we have positioned shapes, render them absolutely (this handles complex PPTX slides)
   if (hasShapes) {
     return (
       <motion.div
@@ -318,7 +320,64 @@ const SlideRenderer = ({ slide, className = '' }: SlideRendererProps) => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className={`w-full h-full relative ${className}`}
+        className={`w-full h-full relative overflow-hidden ${className}`}
+        style={backgroundStyles}
+      >
+        {/* Background images (decorative images scattered on slide) */}
+        {hasImages && slide.images.map((src, idx) => (
+          <motion.img
+            key={`bg-img-${idx}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            src={src}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            style={{ zIndex: 0 }}
+            draggable={false}
+          />
+        ))}
+        
+        {/* Title - only if not already in shapes */}
+        {slide.title && slide.title !== 'Untitled Slide' && !slide.shapes.some(s => 
+          s.content?.some(p => p.runs?.some(r => r.text === slide.title))
+        ) && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute top-[15%] left-[10%] right-[10%] text-center z-10"
+          >
+            <h1 className="text-3xl md:text-5xl font-bold text-foreground drop-shadow-lg">
+              {slide.title}
+            </h1>
+          </motion.div>
+        )}
+        
+        {/* Render positioned shapes */}
+        <div className="absolute inset-0" style={{ zIndex: 5 }}>
+          {slide.shapes.map((shape, idx) => (
+            <RenderShape key={idx} shape={shape} />
+          ))}
+        </div>
+        
+        {/* Slide Number */}
+        <div className="absolute bottom-4 right-4 text-sm text-muted-foreground/60 font-medium z-20">
+          {slide.index}
+        </div>
+      </motion.div>
+    );
+  }
+  
+  // Check if slide has inline images but no shapes - render image-focused layout
+  if (hasImages && !hasShapes) {
+    return (
+      <motion.div
+        key={slide.index}
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        transition={{ duration: 0.2 }}
+        className={`w-full h-full relative flex flex-col ${className}`}
         style={backgroundStyles}
       >
         {/* Title */}
@@ -326,16 +385,38 @@ const SlideRenderer = ({ slide, className = '' }: SlideRendererProps) => {
           <motion.h2
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute top-6 left-8 right-8 text-3xl md:text-4xl font-bold text-foreground"
+            className="text-2xl md:text-3xl font-bold text-foreground p-6 text-center"
           >
             {slide.title}
           </motion.h2>
         )}
         
-        {/* Render positioned shapes */}
-        {slide.shapes.map((shape, idx) => (
-          <RenderShape key={idx} shape={shape} />
-        ))}
+        {/* Image gallery */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="flex flex-wrap gap-4 items-center justify-center">
+            {slide.images.map((src, idx) => (
+              <motion.img
+                key={idx}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.1 }}
+                src={src}
+                alt={`Slide ${slide.index} image ${idx + 1}`}
+                className="max-h-[60vh] max-w-[80%] object-contain rounded-lg shadow-lg"
+                draggable={false}
+              />
+            ))}
+          </div>
+        </div>
+        
+        {/* Content */}
+        {slide.content.length > 0 && (
+          <div className="p-4 space-y-2">
+            {slide.content.map((text, idx) => (
+              <p key={idx} className="text-lg text-foreground/80">{text}</p>
+            ))}
+          </div>
+        )}
         
         {/* Slide Number */}
         <div className="absolute bottom-4 right-4 text-sm text-muted-foreground/60 font-medium">
@@ -345,7 +426,7 @@ const SlideRenderer = ({ slide, className = '' }: SlideRendererProps) => {
     );
   }
   
-  // Use layout-based rendering for slides without positioned shapes
+  // Use layout-based rendering for slides without positioned shapes or images
   return (
     <motion.div
       key={slide.index}

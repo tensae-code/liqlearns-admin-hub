@@ -149,14 +149,16 @@ const parseParagraphs = (shapeXml: string): TextParagraph[] => {
 
 // Parse shape position and size
 const parseShapeTransform = (shapeXml: string): { x: number; y: number; width: number; height: number; rotation?: number } | null => {
-  const xfrmMatch = shapeXml.match(/<a:xfrm[^>]*>[\s\S]*?<\/a:xfrm>/);
+  // More flexible matching for xfrm - handle both namespace formats
+  const xfrmMatch = shapeXml.match(/<(?:a:)?xfrm[^>]*>[\s\S]*?<\/(?:a:)?xfrm>/i);
   if (!xfrmMatch) return null;
   
   const xfrm = xfrmMatch[0];
   
-  const offMatch = xfrm.match(/<a:off x="(\d+)" y="(\d+)"\/>/);
-  const extMatch = xfrm.match(/<a:ext cx="(\d+)" cy="(\d+)"\/>/);
-  const rotMatch = xfrm.match(/rot="(\d+)"/);
+  // More flexible offset matching - handle different quote styles and spacing
+  const offMatch = xfrm.match(/<(?:a:)?off\s+x=["']?(\d+)["']?\s+y=["']?(\d+)["']?\s*\/?>/i);
+  const extMatch = xfrm.match(/<(?:a:)?ext\s+cx=["']?(\d+)["']?\s+cy=["']?(\d+)["']?\s*\/?>/i);
+  const rotMatch = xfrm.match(/rot=["']?(\d+)["']?/);
   
   if (!offMatch || !extMatch) return null;
   
@@ -206,12 +208,42 @@ const detectLayout = (xmlString: string): ParsedSlide['layout'] => {
 
 // Extract background color from slide
 const extractBackgroundColor = (xmlString: string): string => {
-  // Check for solid fill
-  const solidFillMatch = xmlString.match(/<p:bgPr>[\s\S]*?<a:srgbClr val="([^"]+)"[\s\S]*?<\/p:bgPr>/);
-  if (solidFillMatch) return `#${solidFillMatch[1]}`;
+  // Check for solid fill in background properties
+  const bgPrMatch = xmlString.match(/<p:bgPr>[\s\S]*?<a:srgbClr val="([^"]+)"[\s\S]*?<\/p:bgPr>/);
+  if (bgPrMatch) return `#${bgPrMatch[1]}`;
   
-  const colorMatch = xmlString.match(/<a:srgbClr val="([^"]+)"/);
-  if (colorMatch) return `#${colorMatch[1]}`;
+  // Check for solid fill in cSld > bg (common in newer PPTX)
+  const cSldBgMatch = xmlString.match(/<p:cSld[^>]*>[\s\S]*?<p:bg>[\s\S]*?<a:srgbClr val="([^"]+)"/);
+  if (cSldBgMatch) return `#${cSldBgMatch[1]}`;
+  
+  // Check for solid fill in spTree shapes that might be acting as background
+  // Look for rectangle shapes with fills early in the shape tree
+  const bgRectMatch = xmlString.match(/<a:solidFill>[\s\S]*?<a:srgbClr val="([^"]+)"/);
+  if (bgRectMatch) return `#${bgRectMatch[1]}`;
+  
+  // Check for schemeClr (theme colors) - common values
+  const schemeClrMatch = xmlString.match(/<p:bg>[\s\S]*?<a:schemeClr val="([^"]+)"/);
+  if (schemeClrMatch) {
+    // Map common theme colors - these are approximations
+    const themeColors: Record<string, string> = {
+      'bg1': '#ffffff',
+      'bg2': '#f2f2f2',
+      'tx1': '#000000',
+      'tx2': '#666666',
+      'accent1': '#4472c4',
+      'accent2': '#ed7d31',
+      'accent3': '#a5a5a5',
+      'accent4': '#ffc000',
+      'accent5': '#5b9bd5',
+      'accent6': '#70ad47',
+      'lt1': '#ffffff',
+      'lt2': '#e7e6e6',
+      'dk1': '#000000',
+      'dk2': '#44546a',
+    };
+    return themeColors[schemeClrMatch[1]] || '#ffffff';
+  }
+  
   return '#ffffff';
 };
 
@@ -339,23 +371,36 @@ const parseShapes = (slideXml: string, mediaFiles: Record<string, string>, relsX
     });
   }
   
-  // Parse picture shapes (pic elements)
-  const picMatches = spTree.match(/<p:pic>[\s\S]*?<\/p:pic>/g) || [];
+  // Parse picture shapes (pic elements) - handle various namespace formats
+  const picMatches = spTree.match(/<(?:p:)?pic[^>]*>[\s\S]*?<\/(?:p:)?pic>/gi) || [];
   for (const picXml of picMatches) {
     const transform = parseShapeTransform(picXml);
     if (!transform) continue;
     
-    // Get relationship ID
-    const rIdMatch = picXml.match(/r:embed="([^"]+)"/);
+    // Get relationship ID - try different attribute patterns
+    const rIdMatch = picXml.match(/(?:r:embed|embed)=["']([^"']+)["']/i);
     if (!rIdMatch) continue;
     
-    // Find image path from relationships
-    const relPattern = new RegExp(`Id="${rIdMatch[1]}"[^>]*Target="([^"]+)"`);
-    const relMatch = relsXml.match(relPattern);
-    if (!relMatch) continue;
+    // Find image path from relationships - flexible matching
+    const relIdToFind = rIdMatch[1];
+    const relPatterns = [
+      new RegExp(`Id=["']${relIdToFind}["'][^>]*Target=["']([^"']+)["']`, 'i'),
+      new RegExp(`Target=["']([^"']+)["'][^>]*Id=["']${relIdToFind}["']`, 'i'),
+    ];
     
-    const targetPath = relMatch[1].replace('../', 'ppt/');
-    const imageSrc = mediaFiles[targetPath];
+    let targetPath: string | null = null;
+    for (const pattern of relPatterns) {
+      const match = relsXml.match(pattern);
+      if (match) {
+        targetPath = match[1];
+        break;
+      }
+    }
+    if (!targetPath) continue;
+    
+    // Normalize the target path
+    const normalizedPath = targetPath.replace(/^\.\.\//, 'ppt/');
+    const imageSrc = mediaFiles[normalizedPath];
     if (!imageSrc) continue;
     
     shapes.push({
