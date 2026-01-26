@@ -551,11 +551,11 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
                     )}
                   </h4>
                   
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  <div className="space-y-0.5 max-h-[400px] overflow-y-auto">
                     {/* Lesson 1 Header (always exists) */}
-                    <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg border border-primary/20">
-                      <Bookmark className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-semibold text-primary">Lesson 1</span>
+                    <div className="flex items-center gap-2 px-2 py-1 bg-primary/10 rounded border border-primary/20">
+                      <Bookmark className="w-3 h-3 text-primary" />
+                      <span className="text-xs font-semibold text-primary">Lesson 1</span>
                     </div>
 
                     {Array.from({ length: pptxData.totalSlides }, (_, i) => i + 1).map((slideNum) => {
@@ -564,90 +564,86 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
                       
                       return (
                         <div key={slideNum}>
-                          {/* Lesson Break indicator */}
-                          {lessonBreak && (
-                            <div className="flex items-center gap-2 px-3 py-2 my-2 bg-primary/10 rounded-lg border border-primary/20">
-                              <Bookmark className="w-4 h-4 text-primary" />
-                              <span className="text-sm font-semibold text-primary">{lessonBreak.title}</span>
-                              <span className="flex-1" />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-destructive hover:text-destructive"
-                                onClick={() => handleRemoveLessonBreak(lessonBreak.id)}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          )}
-                          
                           {/* Resources and Add Buttons Section - Always show for slides > 1 */}
                           {slideNum > 1 && (
-                            <div className="relative py-2">
-                              <div className="border-t border-dashed border-border" />
-                              
+                            <div className="relative group py-0.5">
                               {/* Show existing resources at this position */}
                               {slideResources.map((res) => (
-                                <div key={res.id} className="mx-8 my-2 flex items-center gap-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
-                                  <span className="text-lg">
+                                <div key={res.id} className="mx-4 my-0.5 flex items-center gap-1.5 px-2 py-1 bg-accent/10 rounded border border-accent/20">
+                                  <span className="text-sm">
                                     {resourceTypes.find(t => t.id === res.type)?.emoji}
                                   </span>
-                                  <span className="flex-1 text-sm font-medium text-foreground">{res.title}</span>
-                                  <Badge variant="secondary" className="text-xs">{res.type}</Badge>
+                                  <span className="flex-1 text-xs font-medium text-foreground truncate">{res.title}</span>
+                                  <Badge variant="secondary" className="text-[10px] px-1 py-0">{res.type}</Badge>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6 text-destructive hover:text-destructive"
+                                    className="h-5 w-5 text-destructive hover:text-destructive"
                                     onClick={() => handleRemoveResource(res.id)}
                                   >
-                                    <Trash2 className="w-3 h-3" />
+                                    <Trash2 className="w-2.5 h-2.5" />
                                   </Button>
                                 </div>
                               ))}
                               
-                              {/* Add buttons - always visible on hover */}
-                              <div className="flex justify-center gap-1 py-1 opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                              {/* Lesson Break indicator - after resources */}
+                              {lessonBreak && (
+                                <div className="flex items-center gap-2 px-2 py-1 my-0.5 mx-4 bg-primary/10 rounded border border-primary/20">
+                                  <Bookmark className="w-3 h-3 text-primary" />
+                                  <span className="text-xs font-semibold text-primary">{lessonBreak.title}</span>
+                                  <span className="flex-1" />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5 text-destructive hover:text-destructive"
+                                    onClick={() => handleRemoveLessonBreak(lessonBreak.id)}
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                  </Button>
+                                </div>
+                              )}
+                              
+                              {/* Add buttons - visible on hover */}
+                              <div className="flex justify-center gap-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button
-                                  variant="outline"
+                                  variant="ghost"
                                   size="sm"
-                                  className="bg-background h-7 text-xs"
+                                  className="h-5 text-[10px] px-1.5 text-muted-foreground hover:text-foreground"
                                   onClick={() => handleOpenResourceCreator(slideNum - 1)}
                                 >
-                                  <Plus className="w-3 h-3 mr-1" />
+                                  <Plus className="w-2.5 h-2.5 mr-0.5" />
                                   Resource
                                 </Button>
                                 <Button
-                                  variant="outline"
+                                  variant="ghost"
                                   size="sm"
-                                  className="bg-background border-primary/50 text-primary hover:bg-primary/10 h-7 text-xs"
+                                  className="h-5 text-[10px] px-1.5 text-primary/70 hover:text-primary"
                                   onClick={() => handleOpenLessonBreakForm(slideNum - 1)}
                                 >
-                                  <SplitSquareVertical className="w-3 h-3 mr-1" />
-                                  Lesson Break
+                                  <SplitSquareVertical className="w-2.5 h-2.5 mr-0.5" />
+                                  Break
                                 </Button>
                               </div>
                             </div>
                           )}
                           
-                          {/* Slide Preview Card */}
+                          {/* Slide Preview Card - Compact */}
                           <div
-                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
                               currentPreviewSlide === slideNum 
                                 ? 'bg-accent/10 border border-accent/30' 
                                 : 'hover:bg-muted/50'
                             }`}
                             onClick={() => setCurrentPreviewSlide(slideNum)}
                           >
-                            <div className="w-16 h-10 bg-card border border-border rounded flex items-center justify-center text-sm font-medium">
+                            <div className="w-8 h-5 bg-card border border-border rounded flex items-center justify-center text-xs font-medium shrink-0">
                               {slideNum}
                             </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-foreground">
-                                {parsedPresentation?.slides[slideNum - 1]?.title || `Slide ${slideNum}`}
-                              </p>
-                            </div>
+                            <p className="flex-1 text-xs text-foreground truncate">
+                              {parsedPresentation?.slides[slideNum - 1]?.title || `Slide ${slideNum}`}
+                            </p>
                             {currentPreviewSlide === slideNum && (
-                              <Eye className="w-4 h-4 text-accent" />
+                              <Eye className="w-3 h-3 text-accent shrink-0" />
                             )}
                           </div>
                         </div>
@@ -655,36 +651,59 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
                     })}
                     
                     {/* Add resource/lesson break after last slide */}
-                    <div className="relative py-2 group">
-                      <div className="border-t border-dashed border-border" />
-                      <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-background"
-                          onClick={() => handleOpenResourceCreator(pptxData.totalSlides)}
-                        >
-                          <Plus className="w-3 h-3 mr-1" />
-                          Resource
-                        </Button>
-                      </div>
+                    <div className="relative py-0.5 group">
                       {getResourcesForSlide(pptxData.totalSlides).map((res) => (
-                        <div key={res.id} className="mx-8 my-2 flex items-center gap-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
-                          <span className="text-lg">
+                        <div key={res.id} className="mx-4 my-0.5 flex items-center gap-1.5 px-2 py-1 bg-accent/10 rounded border border-accent/20">
+                          <span className="text-sm">
                             {resourceTypes.find(t => t.id === res.type)?.emoji}
                           </span>
-                          <span className="flex-1 text-sm font-medium text-foreground">{res.title}</span>
-                          <Badge variant="secondary" className="text-xs">{res.type}</Badge>
+                          <span className="flex-1 text-xs font-medium text-foreground truncate">{res.title}</span>
+                          <Badge variant="secondary" className="text-[10px] px-1 py-0">{res.type}</Badge>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-destructive hover:text-destructive"
+                            className="h-5 w-5 text-destructive hover:text-destructive"
                             onClick={() => handleRemoveResource(res.id)}
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-2.5 h-2.5" />
                           </Button>
                         </div>
                       ))}
+                      {getLessonBreakForSlide(pptxData.totalSlides) && (
+                        <div className="flex items-center gap-2 px-2 py-1 my-0.5 mx-4 bg-primary/10 rounded border border-primary/20">
+                          <Bookmark className="w-3 h-3 text-primary" />
+                          <span className="text-xs font-semibold text-primary">{getLessonBreakForSlide(pptxData.totalSlides)?.title}</span>
+                          <span className="flex-1" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 text-destructive hover:text-destructive"
+                            onClick={() => handleRemoveLessonBreak(getLessonBreakForSlide(pptxData.totalSlides)!.id)}
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex justify-center gap-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 text-[10px] px-1.5 text-muted-foreground hover:text-foreground"
+                          onClick={() => handleOpenResourceCreator(pptxData.totalSlides)}
+                        >
+                          <Plus className="w-2.5 h-2.5 mr-0.5" />
+                          Resource
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 text-[10px] px-1.5 text-primary/70 hover:text-primary"
+                          onClick={() => handleOpenLessonBreakForm(pptxData.totalSlides)}
+                        >
+                          <SplitSquareVertical className="w-2.5 h-2.5 mr-0.5" />
+                          Break
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
