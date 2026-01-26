@@ -16,6 +16,10 @@ export interface Course {
   is_published: boolean | null;
   instructor_id: string | null;
   created_at: string;
+  submission_status?: string | null;
+  submitted_at?: string | null;
+  reviewed_at?: string | null;
+  rejection_reason?: string | null;
   instructor?: {
     full_name: string;
     avatar_url: string | null;
@@ -311,6 +315,7 @@ export const useTeacherCourses = () => {
         ...course,
         enrollment_count: countMap[course.id] || 0,
         thumbnail_emoji: getCategoryEmoji(course.category),
+        submission_status: course.submission_status || 'draft',
       })) || [];
     },
     enabled: !!profileId,
@@ -386,6 +391,39 @@ export const useUpdateCourse = () => {
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update course');
+    },
+  });
+};
+
+// Hook to submit a course for review
+export const useSubmitCourseForReview = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (courseId: string) => {
+      const { data, error } = await supabase
+        .from('courses')
+        .update({
+          submission_status: 'submitted',
+          submitted_at: new Date().toISOString(),
+        })
+        .eq('id', courseId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, courseId) => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['teacher-courses'] });
+      toast.success('Course submitted for review!', {
+        description: 'An admin will review your course and approve it for publishing.',
+      });
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to submit course for review');
     },
   });
 };
