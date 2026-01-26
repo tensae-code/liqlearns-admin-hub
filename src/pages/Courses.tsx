@@ -236,10 +236,15 @@ const Courses = () => {
                 {/* Thumbnail */}
                 <div className="h-32 bg-gradient-to-br from-accent/10 to-primary/10 flex items-center justify-center relative">
                   <span className="text-5xl">{course.thumbnail_emoji}</span>
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 left-3 flex gap-1">
                     <Badge variant="secondary" className="text-xs">
                       {course.difficulty}
                     </Badge>
+                    {!course.is_published && (
+                      <Badge variant="outline" className="text-xs bg-warning/20 text-warning border-warning/30">
+                        {course.submission_status === 'submitted' ? 'Pending Review' : 'Draft'}
+                      </Badge>
+                    )}
                   </div>
                   {course.is_enrolled ? (
                     <div className="absolute top-3 right-3">
