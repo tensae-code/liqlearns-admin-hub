@@ -292,7 +292,8 @@ export const useTeacherCourses = () => {
         .from('courses')
         .select(`
           *,
-          instructor:profiles!courses_instructor_id_fkey(full_name, avatar_url)
+          instructor:profiles!courses_instructor_id_fkey(full_name, avatar_url),
+          reviewer:profiles!courses_claimed_by_fkey(id, full_name, avatar_url)
         `)
         .eq('instructor_id', profileId)
         .order('created_at', { ascending: false });
@@ -316,9 +317,70 @@ export const useTeacherCourses = () => {
         enrollment_count: countMap[course.id] || 0,
         thumbnail_emoji: getCategoryEmoji(course.category),
         submission_status: course.submission_status || 'draft',
+        reviewer: course.reviewer || null,
       })) || [];
     },
     enabled: !!profileId,
+  });
+};
+
+// Hook for teachers to request escalation or different reviewer
+export const useRequestDifferentReviewer = () => {
+  const queryClient = useQueryClient();
+  const { data: profileId } = useProfileId();
+
+  return useMutation({
+    mutationFn: async ({ courseId, reason }: { courseId: string; reason?: string }) => {
+      if (!profileId) throw new Error('Not authenticated');
+
+      // Get course details
+      const { data: course } = await supabase
+        .from('courses')
+        .select('title, claimed_by')
+        .eq('id', courseId)
+        .single();
+
+      if (!course?.claimed_by) {
+        throw new Error('Course is not currently claimed by a reviewer');
+      }
+
+      // Get teacher name
+      const { data: teacher } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', profileId)
+        .single();
+
+      // Notify the current reviewer
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: course.claimed_by,
+          type: 'course',
+          title: 'Reviewer Change Requested',
+          message: `${teacher?.full_name || 'A teacher'} has requested a different reviewer for "${course.title}".${reason ? ` Reason: ${reason}` : ''}`,
+          data: { course_id: courseId, requested_by: profileId },
+        });
+
+      // Unclaim the course so another admin can pick it up
+      const { error } = await supabase
+        .from('courses')
+        .update({
+          claimed_by: null,
+          claimed_at: null,
+        })
+        .eq('id', courseId);
+
+      if (error) throw error;
+      return { courseId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacher-courses'] });
+      toast.success('Request sent! Another reviewer will be assigned.');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to request different reviewer');
+    },
   });
 };
 

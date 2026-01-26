@@ -131,6 +131,20 @@ export const useClaimCourse = () => {
 
   return useMutation({
     mutationFn: async ({ courseId, profileId }: { courseId: string; profileId: string }) => {
+      // First get the course to find instructor
+      const { data: course } = await supabase
+        .from('courses')
+        .select('instructor_id, title')
+        .eq('id', courseId)
+        .single();
+
+      // Get reviewer name
+      const { data: reviewerProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', profileId)
+        .single();
+
       const { error } = await supabase
         .from('courses')
         .update({
@@ -141,6 +155,20 @@ export const useClaimCourse = () => {
         .is('claimed_by', null); // Only claim if not already claimed
 
       if (error) throw error;
+
+      // Send notification to instructor that their course is being reviewed
+      if (course?.instructor_id) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: course.instructor_id,
+            type: 'course',
+            title: 'Course Under Review',
+            message: `Your course "${course.title}" is now being reviewed by ${reviewerProfile?.full_name || 'an admin'}.`,
+            data: { course_id: courseId, reviewer_id: profileId },
+          });
+      }
+
       return { courseId };
     },
     onSuccess: () => {
