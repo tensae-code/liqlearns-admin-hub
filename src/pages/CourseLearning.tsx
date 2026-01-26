@@ -206,7 +206,7 @@ const CourseLearning = () => {
   }, [isPlaying, currentSlide, currentModule?.totalSlides]);
 
   const totalSlides = currentModule?.totalSlides || 1;
-  const progressPercentage = (completedSlides.length / totalSlides) * 100;
+  const progressPercentage = totalSlides > 0 ? Math.round((completedSlides.length / totalSlides) * 100) : 0;
   const currentSlideData = parsedSlides.find(s => s.index === currentSlide);
 
   // Filter resources for current module
@@ -220,12 +220,25 @@ const CourseLearning = () => {
       .sort((a, b) => (a.id > b.id ? 1 : -1));
   };
 
-  const goToSlide = (slide: number, skipResources = false) => {
+  const goToSlide = async (slide: number, skipResources = false) => {
     if (slide < 1 || slide > totalSlides) return;
     
     // Mark current slide as completed if moving forward
     if (slide > currentSlide && !completedSlides.includes(currentSlide)) {
-      setCompletedSlides(prev => [...prev, currentSlide]);
+      const newCompletedSlides = [...completedSlides, currentSlide];
+      setCompletedSlides(newCompletedSlides);
+      
+      // Save to DB
+      if (!isPreview && currentModule?.id) {
+        try {
+          await updateProgress({
+            currentSlide: slide,
+            slideViewed: currentSlide
+          });
+        } catch (err) {
+          console.error('Failed to save progress:', err);
+        }
+      }
     }
     
     // Check for resources that should trigger AFTER the current slide (before moving to next)
@@ -244,11 +257,16 @@ const CourseLearning = () => {
     
     setCurrentSlide(slide);
     
+    // Update current slide position in DB
     if (!isPreview && currentModule?.id) {
-      updateProgress({
-        currentSlide: slide,
-        slideViewed: slide
-      });
+      try {
+        await updateProgress({
+          currentSlide: slide,
+          slideViewed: slide
+        });
+      } catch (err) {
+        console.error('Failed to save slide position:', err);
+      }
     }
   };
 
@@ -293,11 +311,19 @@ const CourseLearning = () => {
     goToSlide(currentSlide - 1);
   };
 
-  const handleResourceComplete = (resourceId: string) => {
+  const handleResourceComplete = async (resourceId: string) => {
+    // Update local state immediately
     if (!completedResources.includes(resourceId)) {
-      setCompletedResources(prev => [...prev, resourceId]);
+      const newCompletedResources = [...completedResources, resourceId];
+      setCompletedResources(newCompletedResources);
+      
+      // Save to DB
       if (!isPreview && currentModule?.id) {
-        updateProgress({ resourceCompleted: resourceId });
+        try {
+          await updateProgress({ resourceCompleted: resourceId });
+        } catch (err) {
+          console.error('Failed to save resource completion:', err);
+        }
       }
     }
     
