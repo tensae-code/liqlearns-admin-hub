@@ -253,9 +253,10 @@ const CourseLearning = () => {
   };
 
   const handleNext = () => {
-    // If there's an active resource, complete it and show next or advance
+    // If there's an active resource modal open, don't advance
     if (activeResource) {
-      return; // Let the resource modal handle completion
+      // Close the modal and let user decide - don't block navigation
+      return; 
     }
     
     if (currentSlide < totalSlides) {
@@ -508,11 +509,10 @@ const CourseLearning = () => {
               {activeResource.type === 'video' && (
                 <VideoResource
                   title={activeResource.title}
-                  videoUrl={activeResource.content?.url}
+                  videoUrl={activeResource.content?.url || activeResource.fileUrl}
                   onComplete={() => {
                     handleResourceComplete(activeResource.id);
                     toast.success('Video completed! +10 XP');
-                    setActiveResource(null);
                   }}
                   onClose={() => setActiveResource(null)}
                 />
@@ -520,11 +520,10 @@ const CourseLearning = () => {
               {activeResource.type === 'audio' && (
                 <AudioResource
                   title={activeResource.title}
-                  audioUrl={activeResource.content?.url}
+                  audioUrl={activeResource.content?.url || activeResource.fileUrl}
                   onComplete={() => {
                     handleResourceComplete(activeResource.id);
                     toast.success('Audio completed! +10 XP');
-                    setActiveResource(null);
                   }}
                   onClose={() => setActiveResource(null)}
                 />
@@ -543,7 +542,6 @@ const CourseLearning = () => {
                     } else {
                       toast.info(`Quiz completed with ${score}%`);
                     }
-                    setActiveResource(null);
                   }}
                   onClose={() => setActiveResource(null)}
                 />
@@ -554,9 +552,7 @@ const CourseLearning = () => {
                   cards={activeResource.content?.cards}
                   onComplete={(known, total) => {
                     handleResourceComplete(activeResource.id);
-                    // No XP for flashcards - self-reported mastery is not verified
                     toast.success(`Flashcards reviewed! ${known}/${total} cards completed.`);
-                    setActiveResource(null);
                   }}
                   onClose={() => setActiveResource(null)}
                 />
