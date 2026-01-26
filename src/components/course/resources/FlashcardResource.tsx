@@ -155,10 +155,10 @@ const FlashcardResource = ({
           </motion.div>
 
           <h3 className="text-2xl font-bold text-foreground mb-2">
-            Deck Complete!
+            Review Complete!
           </h3>
           <p className="text-muted-foreground mb-6">
-            You've reviewed all flashcards
+            Great job reviewing all flashcards
           </p>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
