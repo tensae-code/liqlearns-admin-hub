@@ -92,11 +92,12 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
   };
 
   const handleApprove = () => {
-    if (!selectedCourse || !selectedCourse.instructor) return;
+    if (!selectedCourse || !selectedCourse.instructor || !profile) return;
     
     approveCourse.mutate({
       courseId: selectedCourse.id,
       instructorId: selectedCourse.instructor.id,
+      reviewerProfileId: profile.id,
     }, {
       onSuccess: () => {
         setSelectedCourse(null);
@@ -105,12 +106,13 @@ const CourseApprovalModal = ({ open, onOpenChange }: CourseApprovalModalProps) =
   };
 
   const handleReject = () => {
-    if (!selectedCourse || !selectedCourse.instructor) return;
+    if (!selectedCourse || !selectedCourse.instructor || !profile) return;
     
     rejectCourse.mutate({
       courseId: selectedCourse.id,
       instructorId: selectedCourse.instructor.id,
       reason: rejectionReason.trim() || undefined,
+      reviewerProfileId: profile.id,
     }, {
       onSuccess: () => {
         setSelectedCourse(null);
