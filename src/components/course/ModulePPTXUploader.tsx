@@ -47,6 +47,8 @@ import {
   Video,
   Music,
   HelpCircle,
+  Bookmark,
+  SplitSquareVertical,
   Sparkles,
   CheckCircle
 } from 'lucide-react';
@@ -63,12 +65,20 @@ interface SlideResource {
   content?: any; // Quiz questions, flashcards, or URL
 }
 
+interface LessonBreak {
+  id: string;
+  afterSlide: number;
+  lessonNumber: number;
+  title?: string;
+}
+
 interface UploadedPPTX {
   id: string;
   fileName: string;
   totalSlides: number;
   uploadedAt: string;
   resources: SlideResource[];
+  lessonBreaks: LessonBreak[];
   slides?: ParsedSlide[];
 }
 
@@ -109,6 +119,7 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
   const [parsedPresentation, setParsedPresentation] = useState<ParsedPresentation | null>(null);
   const [currentPreviewSlide, setCurrentPreviewSlide] = useState(1);
   const [resources, setResources] = useState<SlideResource[]>([]);
+  const [lessonBreaks, setLessonBreaks] = useState<LessonBreak[]>([]);
   
   // Resource creation state
   const [showResourceCreator, setShowResourceCreator] = useState(false);
@@ -171,6 +182,7 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
         totalSlides: parsed.totalSlides,
         uploadedAt: new Date().toISOString(),
         resources: [],
+        lessonBreaks: [],
         slides: parsed.slides
       };
 
@@ -327,7 +339,8 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
 
     onSave({
       ...pptxData,
-      resources
+      resources,
+      lessonBreaks
     });
 
     setHasUnsavedChanges(false);
@@ -349,6 +362,7 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
     setPptxData(null);
     setParsedPresentation(null);
     setResources([]);
+    setLessonBreaks([]);
     setCurrentPreviewSlide(1);
     setShowResourceCreator(false);
     setUploadProgress(0);
@@ -358,6 +372,46 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
 
   const getResourcesForSlide = (slideIndex: number) => {
     return resources.filter(r => r.showAfterSlide === slideIndex);
+  };
+
+  const getLessonBreakForSlide = (slideIndex: number) => {
+    return lessonBreaks.find(lb => lb.afterSlide === slideIndex);
+  };
+
+  const handleAddLessonBreak = (afterSlide: number) => {
+    // Calculate the next lesson number
+    const existingBreaks = lessonBreaks.filter(lb => lb.afterSlide < afterSlide);
+    const lessonNumber = existingBreaks.length + 2; // +2 because lesson 1 is before any breaks
+    
+    const newBreak: LessonBreak = {
+      id: `lb-${Date.now()}`,
+      afterSlide,
+      lessonNumber,
+    };
+    
+    // Recalculate all lesson numbers
+    const updatedBreaks = [...lessonBreaks, newBreak]
+      .sort((a, b) => a.afterSlide - b.afterSlide)
+      .map((lb, index) => ({ ...lb, lessonNumber: index + 2 }));
+    
+    setLessonBreaks(updatedBreaks);
+    setHasUnsavedChanges(true);
+    toast.success(`Lesson ${lessonNumber} break added`);
+  };
+
+  const handleRemoveLessonBreak = (id: string) => {
+    const updatedBreaks = lessonBreaks
+      .filter(lb => lb.id !== id)
+      .sort((a, b) => a.afterSlide - b.afterSlide)
+      .map((lb, index) => ({ ...lb, lessonNumber: index + 2 }));
+    
+    setLessonBreaks(updatedBreaks);
+    setHasUnsavedChanges(true);
+  };
+
+  const getCurrentLessonNumber = (slideNum: number) => {
+    const breaksBeforeSlide = lessonBreaks.filter(lb => lb.afterSlide < slideNum);
+    return breaksBeforeSlide.length + 1;
   };
 
   return (
@@ -435,7 +489,7 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
                   <div className="flex-1">
                     <p className="font-medium text-foreground">{pptxData.fileName}</p>
                     <p className="text-sm text-muted-foreground">
-                      {pptxData.totalSlides} slides • {resources.length} resources
+                      {pptxData.totalSlides} slides • {lessonBreaks.length + 1} lessons • {resources.length} resources
                     </p>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => setPptxData(null)}>
@@ -448,82 +502,150 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave }
                   <h4 className="font-semibold text-foreground flex items-center gap-2 mb-4">
                     <Layers className="w-4 h-4" />
                     Slides & Resources
+                    {lessonBreaks.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {lessonBreaks.length + 1} Lessons
+                      </Badge>
+                    )}
                   </h4>
                   
                   <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {Array.from({ length: pptxData.totalSlides }, (_, i) => i + 1).map((slideNum) => (
-                      <div key={slideNum}>
-                        {/* Add Resource Button BEFORE slide (except first) */}
-                        {slideNum > 1 && (
-                          <div className="relative py-2 group">
-                            <div className="border-t border-dashed border-border" />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-background"
-                              onClick={() => handleOpenResourceCreator(slideNum - 1)}
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Add Resource Here
-                            </Button>
-                            
-                            {/* Show existing resources at this position */}
-                            {getResourcesForSlide(slideNum - 1).map((res) => (
-                              <div key={res.id} className="mx-8 my-2 flex items-center gap-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
-                                <span className="text-lg">
-                                  {resourceTypes.find(t => t.id === res.type)?.emoji}
-                                </span>
-                                <span className="flex-1 text-sm font-medium text-foreground">{res.title}</span>
-                                <Badge variant="secondary" className="text-xs">{res.type}</Badge>
+                    {/* Lesson 1 Header (always exists) */}
+                    <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg border border-primary/20">
+                      <Bookmark className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-semibold text-primary">Lesson 1</span>
+                    </div>
+
+                    {Array.from({ length: pptxData.totalSlides }, (_, i) => i + 1).map((slideNum) => {
+                      const lessonBreak = getLessonBreakForSlide(slideNum - 1);
+                      
+                      return (
+                        <div key={slideNum}>
+                          {/* Lesson Break indicator */}
+                          {lessonBreak && (
+                            <div className="flex items-center gap-2 px-3 py-2 my-2 bg-primary/10 rounded-lg border border-primary/20">
+                              <Bookmark className="w-4 h-4 text-primary" />
+                              <span className="text-sm font-semibold text-primary">Lesson {lessonBreak.lessonNumber}</span>
+                              <span className="flex-1" />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:text-destructive"
+                                onClick={() => handleRemoveLessonBreak(lessonBreak.id)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                          
+                          {/* Add Resource/Lesson Break Button BEFORE slide (except first) */}
+                          {slideNum > 1 && !lessonBreak && (
+                            <div className="relative py-2 group">
+                              <div className="border-t border-dashed border-border" />
+                              <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                                 <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-destructive hover:text-destructive"
-                                  onClick={() => handleRemoveResource(res.id)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-background"
+                                  onClick={() => handleOpenResourceCreator(slideNum - 1)}
                                 >
-                                  <Trash2 className="w-3 h-3" />
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Resource
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-background border-primary/50 text-primary hover:bg-primary/10"
+                                  onClick={() => handleAddLessonBreak(slideNum - 1)}
+                                >
+                                  <SplitSquareVertical className="w-3 h-3 mr-1" />
+                                  Lesson Break
                                 </Button>
                               </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* Slide Preview Card */}
-                        <div
-                          className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                            currentPreviewSlide === slideNum 
-                              ? 'bg-accent/10 border border-accent/30' 
-                              : 'hover:bg-muted/50'
-                          }`}
-                          onClick={() => setCurrentPreviewSlide(slideNum)}
-                        >
-                          <div className="w-16 h-10 bg-card border border-border rounded flex items-center justify-center text-sm font-medium">
-                            {slideNum}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-foreground">
-                              {parsedPresentation?.slides[slideNum - 1]?.title || `Slide ${slideNum}`}
-                            </p>
-                          </div>
-                          {currentPreviewSlide === slideNum && (
-                            <Eye className="w-4 h-4 text-accent" />
+                              
+                              {/* Show existing resources at this position */}
+                              {getResourcesForSlide(slideNum - 1).map((res) => (
+                                <div key={res.id} className="mx-8 my-2 flex items-center gap-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
+                                  <span className="text-lg">
+                                    {resourceTypes.find(t => t.id === res.type)?.emoji}
+                                  </span>
+                                  <span className="flex-1 text-sm font-medium text-foreground">{res.title}</span>
+                                  <Badge variant="secondary" className="text-xs">{res.type}</Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-destructive hover:text-destructive"
+                                    onClick={() => handleRemoveResource(res.id)}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
                           )}
+                          
+                          {/* When there is a lesson break, still show resources */}
+                          {slideNum > 1 && lessonBreak && getResourcesForSlide(slideNum - 1).length > 0 && (
+                            <div className="relative py-2 group">
+                              {getResourcesForSlide(slideNum - 1).map((res) => (
+                                <div key={res.id} className="mx-8 my-2 flex items-center gap-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
+                                  <span className="text-lg">
+                                    {resourceTypes.find(t => t.id === res.type)?.emoji}
+                                  </span>
+                                  <span className="flex-1 text-sm font-medium text-foreground">{res.title}</span>
+                                  <Badge variant="secondary" className="text-xs">{res.type}</Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-destructive hover:text-destructive"
+                                    onClick={() => handleRemoveResource(res.id)}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Slide Preview Card */}
+                          <div
+                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                              currentPreviewSlide === slideNum 
+                                ? 'bg-accent/10 border border-accent/30' 
+                                : 'hover:bg-muted/50'
+                            }`}
+                            onClick={() => setCurrentPreviewSlide(slideNum)}
+                          >
+                            <div className="w-16 h-10 bg-card border border-border rounded flex items-center justify-center text-sm font-medium">
+                              {slideNum}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-foreground">
+                                {parsedPresentation?.slides[slideNum - 1]?.title || `Slide ${slideNum}`}
+                              </p>
+                            </div>
+                            {currentPreviewSlide === slideNum && (
+                              <Eye className="w-4 h-4 text-accent" />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     
-                    {/* Add resource after last slide */}
+                    {/* Add resource/lesson break after last slide */}
                     <div className="relative py-2 group">
                       <div className="border-t border-dashed border-border" />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-background"
-                        onClick={() => handleOpenResourceCreator(pptxData.totalSlides)}
-                      >
-                        <Plus className="w-3 h-3 mr-1" />
-                        Add Resource Here
-                      </Button>
+                      <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-background"
+                          onClick={() => handleOpenResourceCreator(pptxData.totalSlides)}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Resource
+                        </Button>
+                      </div>
                       {getResourcesForSlide(pptxData.totalSlides).map((res) => (
                         <div key={res.id} className="mx-8 my-2 flex items-center gap-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
                           <span className="text-lg">
