@@ -264,11 +264,61 @@ export const useMyEnrollments = () => {
         .order('last_accessed_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+
+      // Get presentation progress for enrolled courses
+      const courseIds = data?.map(e => e.course_id).filter(Boolean) || [];
+      
+      let progressMap: Record<string, number> = {};
+      if (courseIds.length > 0) {
+        const { data: progressData } = await supabase
+          .from('presentation_progress')
+          .select('course_id, slides_viewed, completed')
+          .eq('user_id', profileId)
+          .in('course_id', courseIds);
+
+        // Calculate progress per course
+        if (progressData) {
+          const courseProgress: Record<string, { viewed: number; total: number }> = {};
+          progressData.forEach(p => {
+            if (!courseProgress[p.course_id]) {
+              courseProgress[p.course_id] = { viewed: 0, total: 0 };
+            }
+            courseProgress[p.course_id].viewed += (p.slides_viewed || []).length;
+          });
+
+          // Get total slides per course
+          const { data: presentations } = await supabase
+            .from('module_presentations')
+            .select('course_id, total_slides')
+            .in('course_id', courseIds);
+
+          if (presentations) {
+            presentations.forEach(p => {
+              if (!courseProgress[p.course_id]) {
+                courseProgress[p.course_id] = { viewed: 0, total: 0 };
+              }
+              courseProgress[p.course_id].total += (p.total_slides || 0);
+            });
+          }
+
+          Object.entries(courseProgress).forEach(([courseId, progress]) => {
+            progressMap[courseId] = progress.total > 0 
+              ? Math.round((progress.viewed / progress.total) * 100)
+              : 0;
+          });
+        }
+      }
+
+      return (data || []).map(enrollment => ({
+        ...enrollment,
+        calculated_progress: progressMap[enrollment.course_id] || enrollment.progress_percentage || 0,
+        thumbnail_emoji: getCategoryEmoji(enrollment.course?.category || 'default'),
+      }));
     },
     enabled: !!profileId,
   });
 };
+
 
 export const useCategories = () => {
   return useQuery({

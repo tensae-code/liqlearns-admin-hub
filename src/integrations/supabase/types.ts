@@ -684,6 +684,7 @@ export type Database = {
           description: string | null
           difficulty: string
           estimated_duration: number | null
+          gallery_images: string[] | null
           id: string
           instructor_id: string | null
           is_published: boolean | null
@@ -707,6 +708,7 @@ export type Database = {
           description?: string | null
           difficulty?: string
           estimated_duration?: number | null
+          gallery_images?: string[] | null
           id?: string
           instructor_id?: string | null
           is_published?: boolean | null
@@ -730,6 +732,7 @@ export type Database = {
           description?: string | null
           difficulty?: string
           estimated_duration?: number | null
+          gallery_images?: string[] | null
           id?: string
           instructor_id?: string | null
           is_published?: boolean | null
