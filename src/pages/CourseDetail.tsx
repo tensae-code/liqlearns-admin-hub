@@ -163,7 +163,7 @@ const CourseDetail = () => {
         const presentations = presentationsResult.data || [];
         const resources = resourcesResult.data || [];
 
-        // Group by module_id and build lesson structure
+        // Group by module_id and build lesson structure with resources integrated
         const moduleMap = new Map<string, ModuleData>();
         
         presentations.forEach((pres: any, idx: number) => {
@@ -178,19 +178,35 @@ const CourseDetail = () => {
               totalSlides: 0,
               unlocked: idx === 0 || isPreview,
               completed: false,
-              isExpanded: idx === 0, // First module expanded by default
+              isExpanded: idx === 0,
             });
           }
           const mod = moduleMap.get(moduleId)!;
           mod.presentations.push(pres);
           mod.totalSlides += pres.total_slides || 0;
           
-          // Build lessons from lesson breaks
+          // Get resources for this module, sorted by show_after_slide
+          const moduleResources = resources.filter((r: any) => r.module_id === moduleId)
+            .sort((a: any, b: any) => a.show_after_slide - b.show_after_slide);
+          mod.resources = moduleResources;
+
+          // Build lessons from lesson breaks WITH resources integrated at correct positions
           const lessonBreaks: LessonBreak[] = pres.lesson_breaks || [];
+          const lessonsWithResources: LessonItem[] = [];
           
           if (lessonBreaks.length === 0) {
             // No breaks - entire presentation is one lesson
-            mod.lessons.push({
+            // First add resources that appear before/at slide 0
+            moduleResources.filter((r: any) => r.show_after_slide === 0).forEach((res: any) => {
+              lessonsWithResources.push({
+                id: res.id,
+                title: res.title,
+                type: 'resource',
+                resourceType: res.type
+              });
+            });
+            
+            lessonsWithResources.push({
               id: pres.id,
               title: pres.module_title || pres.file_name.replace(/\.pptx?$/i, ''),
               type: 'presentation',
@@ -198,24 +214,58 @@ const CourseDetail = () => {
               startSlide: 1,
               endSlide: pres.total_slides
             });
+            
+            // Add resources that appear after slides
+            moduleResources.filter((r: any) => r.show_after_slide > 0).forEach((res: any) => {
+              lessonsWithResources.push({
+                id: res.id,
+                title: res.title,
+                type: 'resource',
+                resourceType: res.type
+              });
+            });
           } else {
-            // First lesson (before first break)
+            // Has lesson breaks - interleave lessons and resources
             const sortedBreaks = [...lessonBreaks].sort((a, b) => a.afterSlide - b.afterSlide);
             
-            mod.lessons.push({
+            // Resources before first lesson (position 0)
+            moduleResources.filter((r: any) => r.show_after_slide === 0).forEach((res: any) => {
+              lessonsWithResources.push({
+                id: res.id,
+                title: res.title,
+                type: 'resource',
+                resourceType: res.type
+              });
+            });
+            
+            // First lesson (before first break)
+            const firstLessonEnd = sortedBreaks[0].afterSlide;
+            lessonsWithResources.push({
               id: `${pres.id}-lesson-1`,
               title: 'Lesson 1',
               type: 'presentation',
-              slides: sortedBreaks[0].afterSlide,
+              slides: firstLessonEnd,
               startSlide: 1,
-              endSlide: sortedBreaks[0].afterSlide
+              endSlide: firstLessonEnd
             });
             
-            // Lessons from breaks
+            // Resources after first lesson
+            moduleResources.filter((r: any) => r.show_after_slide > 0 && r.show_after_slide <= firstLessonEnd)
+              .forEach((res: any) => {
+                lessonsWithResources.push({
+                  id: res.id,
+                  title: res.title,
+                  type: 'resource',
+                  resourceType: res.type
+                });
+              });
+            
+            // Lessons from breaks with their resources
             sortedBreaks.forEach((brk, i) => {
               const nextBreak = sortedBreaks[i + 1];
               const endSlide = nextBreak ? nextBreak.afterSlide : pres.total_slides;
-              mod.lessons.push({
+              
+              lessonsWithResources.push({
                 id: brk.id,
                 title: brk.title || `Lesson ${brk.lessonNumber}`,
                 type: 'presentation',
@@ -223,24 +273,28 @@ const CourseDetail = () => {
                 startSlide: brk.afterSlide + 1,
                 endSlide
               });
+              
+              // Resources after this lesson (between this lesson's end and next lesson's start)
+              moduleResources.filter((r: any) => 
+                r.show_after_slide > brk.afterSlide && r.show_after_slide <= endSlide
+              ).forEach((res: any) => {
+                lessonsWithResources.push({
+                  id: res.id,
+                  title: res.title,
+                  type: 'resource',
+                  resourceType: res.type
+                });
+              });
             });
           }
+          
+          mod.lessons = lessonsWithResources;
         });
 
-        // Add resources to their modules as lesson items
+        // Handle resources for modules that don't have presentations
         resources.forEach((res: any) => {
           const moduleId = res.module_id;
-          if (moduleMap.has(moduleId)) {
-            const mod = moduleMap.get(moduleId)!;
-            mod.resources.push(res);
-            // Insert resource into lessons at appropriate position
-            mod.lessons.push({
-              id: res.id,
-              title: res.title,
-              type: 'resource',
-              resourceType: res.type
-            });
-          } else {
+          if (!moduleMap.has(moduleId)) {
             moduleMap.set(moduleId, {
               moduleId,
               title: `Module ${moduleMap.size + 1}`,
@@ -627,42 +681,13 @@ const CourseDetail = () => {
             </div>
           )}
 
-          {/* Resources Tab */}
+          {/* Resources Tab - Show the 13 resource category cards */}
           {activeTab === 'resources' && (
-            <div className="space-y-3">
-              {allResources.length > 0 ? (
-                allResources.map((res) => {
-                  const Icon = getTypeIcon(res.type);
-                  return (
-                    <motion.div
-                      key={res.id}
-                      className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{res.title}</p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {res.type} • After slide {res.show_after_slide}
-                        </p>
-                      </div>
-                      <Badge className="capitalize">{res.type}</Badge>
-                    </motion.div>
-                  );
-                })
-              ) : (
-                <div className="bg-card rounded-xl border border-border p-6 text-center">
-                  <Layers className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-foreground font-medium">No Resources Found</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    This course has no interactive resources (quizzes, flashcards, videos) yet.
-                  </p>
-                </div>
-              )}
-            </div>
+            <CourseLearningResources 
+              courseId={id}
+              courseCategory={course?.category}
+              completedModules={completedModules}
+            />
           )}
 
           {/* Reviews Tab */}

@@ -305,7 +305,7 @@ export const usePresentationProgress = (presentationId?: string, courseId?: stri
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: progress, isLoading } = useQuery({
+  const { data: progress, isLoading, refetch } = useQuery({
     queryKey: ['presentation-progress', presentationId],
     queryFn: async () => {
       if (!presentationId || !user) return null;
@@ -331,6 +331,95 @@ export const usePresentationProgress = (presentationId?: string, courseId?: stri
     enabled: !!presentationId && !!user,
   });
 
+  const updateProgressMutation = useMutation({
+    mutationFn: async (updates: {
+      currentSlide?: number;
+      slideViewed?: number;
+      resourceCompleted?: string;
+      completed?: boolean;
+      timeSpent?: number;
+    }) => {
+      if (!presentationId || !courseId || !user) {
+        throw new Error('Missing required data for progress update');
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
+      // Always fetch fresh progress to avoid stale data issues
+      const { data: existingProgress } = await supabase
+        .from('presentation_progress')
+        .select('*')
+        .eq('presentation_id', presentationId)
+        .eq('user_id', profile.id)
+        .maybeSingle();
+
+      if (existingProgress) {
+        // Update existing progress
+        const slidesViewed = [...(existingProgress.slides_viewed || [])];
+        const resourcesCompleted = [...(existingProgress.resources_completed || [])];
+
+        if (updates.slideViewed && !slidesViewed.includes(updates.slideViewed)) {
+          slidesViewed.push(updates.slideViewed);
+        }
+
+        if (updates.resourceCompleted && !resourcesCompleted.includes(updates.resourceCompleted)) {
+          resourcesCompleted.push(updates.resourceCompleted);
+        }
+
+        const { error } = await supabase
+          .from('presentation_progress')
+          .update({
+            current_slide: updates.currentSlide ?? existingProgress.current_slide,
+            slides_viewed: slidesViewed,
+            resources_completed: resourcesCompleted,
+            total_time_seconds: (existingProgress.total_time_seconds || 0) + (updates.timeSpent || 0),
+            completed: updates.completed ?? existingProgress.completed,
+            completed_at: updates.completed ? new Date().toISOString() : existingProgress.completed_at,
+            last_viewed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingProgress.id);
+
+        if (error) throw error;
+        
+        return { slidesViewed, resourcesCompleted };
+      } else {
+        // Create new progress record
+        const slidesViewed = updates.slideViewed ? [updates.slideViewed] : [];
+        const resourcesCompleted = updates.resourceCompleted ? [updates.resourceCompleted] : [];
+        
+        const { error } = await supabase
+          .from('presentation_progress')
+          .insert({
+            user_id: profile.id,
+            presentation_id: presentationId,
+            course_id: courseId,
+            current_slide: updates.currentSlide || 1,
+            slides_viewed: slidesViewed,
+            resources_completed: resourcesCompleted,
+            total_time_seconds: updates.timeSpent || 0,
+            completed: updates.completed || false,
+          });
+
+        if (error) throw error;
+        
+        return { slidesViewed, resourcesCompleted };
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['presentation-progress', presentationId] });
+    },
+    onError: (error) => {
+      console.error('Failed to update progress:', error);
+    }
+  });
+
   const updateProgress = async (updates: {
     currentSlide?: number;
     slideViewed?: number;
@@ -338,71 +427,14 @@ export const usePresentationProgress = (presentationId?: string, courseId?: stri
     completed?: boolean;
     timeSpent?: number;
   }) => {
-    if (!presentationId || !courseId || !user) return;
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) return;
-
-    const existingProgress = progress;
-
-    if (existingProgress) {
-      // Update existing progress
-      const slidesViewed = existingProgress.slides_viewed || [];
-      const resourcesCompleted = existingProgress.resources_completed || [];
-
-      if (updates.slideViewed && !slidesViewed.includes(updates.slideViewed)) {
-        slidesViewed.push(updates.slideViewed);
-      }
-
-      if (updates.resourceCompleted && !resourcesCompleted.includes(updates.resourceCompleted)) {
-        resourcesCompleted.push(updates.resourceCompleted);
-      }
-
-      const { error } = await supabase
-        .from('presentation_progress')
-        .update({
-          current_slide: updates.currentSlide ?? existingProgress.current_slide,
-          slides_viewed: slidesViewed,
-          resources_completed: resourcesCompleted,
-          total_time_seconds: (existingProgress.total_time_seconds || 0) + (updates.timeSpent || 0),
-          completed: updates.completed ?? existingProgress.completed,
-          completed_at: updates.completed ? new Date().toISOString() : existingProgress.completed_at,
-          last_viewed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existingProgress.id);
-
-      if (error) throw error;
-    } else {
-      // Create new progress record
-      const { error } = await supabase
-        .from('presentation_progress')
-        .insert({
-          user_id: profile.id,
-          presentation_id: presentationId,
-          course_id: courseId,
-          current_slide: updates.currentSlide || 1,
-          slides_viewed: updates.slideViewed ? [updates.slideViewed] : [],
-          resources_completed: updates.resourceCompleted ? [updates.resourceCompleted] : [],
-          total_time_seconds: updates.timeSpent || 0,
-          completed: updates.completed || false,
-        });
-
-      if (error) throw error;
-    }
-
-    queryClient.invalidateQueries({ queryKey: ['presentation-progress', presentationId] });
+    return updateProgressMutation.mutateAsync(updates);
   };
 
   return {
     progress,
     isLoading,
     updateProgress,
+    refetch,
   };
 };
 

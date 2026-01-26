@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, ThumbsUp, MessageSquare, Image as ImageIcon, ChevronDown, CheckCircle2, ExternalLink, UserPlus, Users } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Star, ThumbsUp, MessageSquare, Image as ImageIcon, ChevronDown, CheckCircle2, ExternalLink, UserPlus, Users, X } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,7 @@ interface Review {
   likes: number;
   date: string;
   helpful: boolean;
+  userLiked?: boolean;
 }
 
 const mockReviews: Review[] = [
@@ -47,10 +48,14 @@ const mockReviews: Review[] = [
     moduleTag: 'Getting Started',
     moduleNumber: 1,
     content: 'Excellent introduction to the basics! The instructor explains concepts clearly and the practice exercises really helped solidify my understanding. Highly recommend for beginners.',
-    images: ['https://via.placeholder.com/120', 'https://via.placeholder.com/120'],
+    images: [
+      'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200&h=200&fit=crop',
+      'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=200&h=200&fit=crop'
+    ],
     likes: 24,
     date: '2 days ago',
     helpful: true,
+    userLiked: false,
   },
   {
     id: '2',
@@ -70,6 +75,7 @@ const mockReviews: Review[] = [
     likes: 12,
     date: '1 week ago',
     helpful: false,
+    userLiked: false,
   },
   {
     id: '3',
@@ -86,10 +92,13 @@ const mockReviews: Review[] = [
     moduleTag: 'Numbers & Counting',
     moduleNumber: 3,
     content: 'This module really helped me grasp the number system. The flashcards feature is amazing for memorization!',
-    images: ['https://via.placeholder.com/120'],
+    images: [
+      'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=200&h=200&fit=crop'
+    ],
     likes: 8,
     date: '3 days ago',
     helpful: true,
+    userLiked: false,
   },
 ];
 
@@ -108,6 +117,27 @@ const CourseReviews = ({
   const [filter, setFilter] = useState<'all' | number>('all');
   const [expandedReview, setExpandedReview] = useState<string | null>(null);
   const [authorModalOpen, setAuthorModalOpen] = useState<ReviewAuthor | null>(null);
+  const [reviews, setReviews] = useState<Review[]>(mockReviews);
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
+
+  const handleLikeReview = (reviewId: string) => {
+    setReviews(prev => prev.map(review => {
+      if (review.id === reviewId) {
+        const wasLiked = review.userLiked;
+        return {
+          ...review,
+          userLiked: !wasLiked,
+          likes: wasLiked ? review.likes - 1 : review.likes + 1
+        };
+      }
+      return review;
+    }));
+    toast.success('Thanks for your feedback!');
+  };
+
+  const handleReplyToReview = (reviewId: string) => {
+    toast.info('Reply feature coming soon!');
+  };
 
   const handleAuthorClick = (author: ReviewAuthor) => {
     setAuthorModalOpen(author);
@@ -131,8 +161,8 @@ const CourseReviews = ({
   };
 
   const filteredReviews = filter === 'all' 
-    ? mockReviews 
-    : mockReviews.filter(r => r.moduleNumber === filter);
+    ? reviews 
+    : reviews.filter(r => r.moduleNumber === filter);
 
   const ratingDistribution = [
     { stars: 5, count: 245, percentage: 72 },
@@ -265,29 +295,47 @@ const CourseReviews = ({
             {/* Review Content */}
             <p className="text-sm text-foreground mb-3">{review.content}</p>
 
-            {/* Review Images */}
+            {/* Review Images - Now properly displays real images */}
             {review.images && review.images.length > 0 && (
-              <div className="flex gap-2 mb-3">
+              <div className="flex gap-2 mb-3 flex-wrap">
                 {review.images.map((img, idx) => (
-                  <div
+                  <button
                     key={idx}
-                    className="w-20 h-20 rounded-lg bg-muted border border-border overflow-hidden"
+                    onClick={() => setExpandedImage(img)}
+                    className="w-20 h-20 rounded-lg border border-border overflow-hidden hover:ring-2 hover:ring-accent transition-all cursor-pointer"
                   >
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                  </div>
+                    <img 
+                      src={img} 
+                      alt={`Review image ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to placeholder on error
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200&h=200&fit=crop';
+                      }}
+                    />
+                  </button>
                 ))}
               </div>
             )}
 
-            {/* Actions */}
+            {/* Actions - Now functional */}
             <div className="flex items-center gap-4 text-sm">
-              <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                <ThumbsUp className={cn('w-4 h-4', review.helpful && 'fill-accent text-accent')} />
+              <button 
+                onClick={() => handleLikeReview(review.id)}
+                className={cn(
+                  "flex items-center gap-1 transition-colors",
+                  review.userLiked 
+                    ? "text-accent" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <ThumbsUp className={cn('w-4 h-4', review.userLiked && 'fill-accent')} />
                 <span>{review.likes}</span>
               </button>
-              <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+              <button 
+                onClick={() => handleReplyToReview(review.id)}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+              >
                 <MessageSquare className="w-4 h-4" />
                 <span>Reply</span>
               </button>
@@ -352,6 +400,39 @@ const CourseReviews = ({
                   <UserPlus className="w-4 h-4 mr-2" /> Add Friend
                 </Button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Image Lightbox Modal */}
+      <AnimatePresence>
+        {expandedImage && (
+          <motion.div
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setExpandedImage(null)}
+          >
+            <motion.div
+              className="relative max-w-3xl max-h-[80vh] w-full"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setExpandedImage(null)}
+                className="absolute -top-12 right-0 p-2 text-white hover:text-accent transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <img
+                src={expandedImage}
+                alt="Review image"
+                className="w-full h-full object-contain rounded-lg"
+              />
             </motion.div>
           </motion.div>
         )}
