@@ -238,6 +238,7 @@ const TeacherDashboard = () => {
         title: c.title,
         students: c.enrollment_count || 0,
         rating: 0,
+        reviewCount: 0,
         revenue: (c.price || 0) * (c.enrollment_count || 0),
         status: c.is_published ? 'published' : 'draft',
         submissionStatus: c.submission_status || 'draft',
@@ -245,11 +246,11 @@ const TeacherDashboard = () => {
         rejectionReason: c.rejection_reason,
       }))
     : [
-        { id: '1', title: 'Amharic for Beginners', students: 450, rating: 4.9, revenue: 12500, status: 'published', submissionStatus: 'approved', lessons: 24 },
-        { id: '2', title: 'Ethiopian History', students: 320, rating: 4.8, revenue: 9800, status: 'published', submissionStatus: 'approved', lessons: 18 },
-        { id: '3', title: 'Business Amharic', students: 180, rating: 4.7, revenue: 8200, status: 'published', submissionStatus: 'approved', lessons: 20 },
-        { id: '4', title: 'Kids Amharic Fun', students: 298, rating: 4.9, revenue: 14700, status: 'published', submissionStatus: 'approved', lessons: 30 },
-        { id: '5', title: 'Advanced Grammar', students: 0, rating: 0, revenue: 0, status: 'draft', submissionStatus: 'draft', lessons: 12 },
+        { id: '1', title: 'Amharic for Beginners', students: 450, rating: 4.9, reviewCount: 128, revenue: 12500, status: 'published', submissionStatus: 'approved', lessons: 24 },
+        { id: '2', title: 'Ethiopian History', students: 320, rating: 4.8, reviewCount: 89, revenue: 9800, status: 'published', submissionStatus: 'approved', lessons: 18 },
+        { id: '3', title: 'Business Amharic', students: 180, rating: 4.7, reviewCount: 45, revenue: 8200, status: 'published', submissionStatus: 'approved', lessons: 20 },
+        { id: '4', title: 'Kids Amharic Fun', students: 298, rating: 4.9, reviewCount: 156, revenue: 14700, status: 'published', submissionStatus: 'approved', lessons: 30 },
+        { id: '5', title: 'Advanced Grammar', students: 0, rating: 0, reviewCount: 0, revenue: 0, status: 'draft', submissionStatus: 'draft', lessons: 12 },
       ];
 
   const recentStudents: Student[] = [
@@ -625,7 +626,8 @@ const TeacherDashboard = () => {
                     <tr className="text-left text-sm text-muted-foreground border-b border-border">
                       <th className="p-4 font-medium">Course</th>
                       <th className="p-4 font-medium">Status</th>
-                      <th className="p-4 font-medium">Students</th>
+                      <th className="p-4 font-medium">Enrolled</th>
+                      <th className="p-4 font-medium">Reviews</th>
                       <th className="p-4 font-medium">Rating</th>
                       <th className="p-4 font-medium">Revenue</th>
                       <th className="p-4 font-medium">Actions</th>
@@ -667,7 +669,22 @@ const TeacherDashboard = () => {
                             )}
                           </div>
                         </td>
-                        <td className="p-4 text-foreground">{course.students}</td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-1 text-foreground">
+                            <Users className="w-4 h-4 text-muted-foreground" />
+                            <span>{course.students}</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          {course.reviewCount > 0 ? (
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <MessageSquare className="w-4 h-4" />
+                              <span>{course.reviewCount}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
                         <td className="p-4">
                           {course.rating > 0 ? (
                             <span className="flex items-center gap-1 text-gold">
@@ -680,14 +697,29 @@ const TeacherDashboard = () => {
                         <td className="p-4 font-medium text-success">{course.revenue.toLocaleString()} ETB</td>
                         <td className="p-4">
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit Course">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8" 
+                              title="Edit Course"
+                              onClick={() => handleEditCourse(course.id)}
+                            >
                               <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-accent hover:text-accent" 
+                              title="View as Student"
+                              onClick={() => navigate(`/course/${course.id}?preview=true`)}
+                            >
+                              <Eye className="w-4 h-4" />
                             </Button>
                             {(course.submissionStatus === 'draft' || course.submissionStatus === 'rejected') && (
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 text-accent hover:text-accent" 
+                                className="h-8 w-8 text-success hover:text-success" 
                                 title="Submit for Review"
                                 onClick={() => submitForReview.mutate(course.id)}
                                 disabled={submitForReview.isPending}
@@ -697,9 +729,6 @@ const TeacherDashboard = () => {
                             )}
                             <Button variant="ghost" size="icon" className="h-8 w-8" title="Analytics">
                               <BarChart3 className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" title="More Options">
-                              <MoreVertical className="w-4 h-4" />
                             </Button>
                           </div>
                         </td>
