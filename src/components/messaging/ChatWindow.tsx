@@ -914,8 +914,8 @@ const ChatWindow = ({
 
       {/* Input - always visible at bottom */}
       {!showVoiceRecorder && (
-        <div className="p-2 md:p-4 border-t border-border bg-card flex-shrink-0 pb-safe">
-          <div className="flex items-center gap-1 md:gap-2">
+        <div className="p-2 border-t border-border bg-card flex-shrink-0 pb-safe">
+          <div className="flex items-center gap-1 w-full max-w-full">
             <input
               type="file"
               ref={fileInputRef}
@@ -926,29 +926,29 @@ const ChatWindow = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="shrink-0 h-8 w-8"
+              className="shrink-0 h-8 w-8 min-w-[32px]"
               onClick={() => fileInputRef.current?.click()}
             >
               <Paperclip className="w-4 h-4 text-muted-foreground" />
             </Button>
-            {/* Voice recorder button - visible on all screens */}
+            {/* Voice recorder button - hidden on very small screens */}
             <Button 
               variant="ghost" 
               size="icon" 
-              className="shrink-0 h-8 w-8"
+              className="shrink-0 h-8 w-8 min-w-[32px] hidden xs:flex"
               onClick={() => setShowVoiceRecorder(true)}
             >
               <Mic className="w-4 h-4 text-muted-foreground" />
             </Button>
             
-            <div className="flex-1 relative min-w-0">
+            <div className="flex-1 relative min-w-0 max-w-[calc(100%-120px)]">
               <Input
                 ref={inputRef}
-                placeholder={replyingTo ? "Reply..." : "Type a message..."}
+                placeholder={replyingTo ? "Reply..." : "Message..."}
                 value={newMessage}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
-                className="pr-10 bg-muted/50 h-9 md:h-10 text-sm"
+                className="pr-8 bg-muted/50 h-9 text-sm w-full"
               />
               <div className="absolute right-1 top-1/2 -translate-y-1/2">
                 <EmojiPicker onEmojiSelect={handleEmojiSelect} />
@@ -957,7 +957,7 @@ const ChatWindow = ({
             
             <Button 
               size="icon" 
-              className="bg-gradient-accent text-accent-foreground shrink-0 h-8 w-8 md:h-10 md:w-10"
+              className="bg-gradient-accent text-accent-foreground shrink-0 h-8 w-8 min-w-[32px]"
               onClick={handleSend}
               disabled={(!newMessage.trim() && !pendingFile) || isUploading}
             >

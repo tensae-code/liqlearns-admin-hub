@@ -177,10 +177,10 @@ export const useMessaging = () => {
     
     try {
       if (type === 'dm') {
-        // Fetch regular DM messages
+        // Fetch regular DM messages including reply_to_id
         const { data, error } = await supabase
           .from('direct_messages')
-          .select('*')
+          .select('*, reply_to_id')
           .or(`and(sender_id.eq.${user.id},receiver_id.eq.${id}),and(sender_id.eq.${id},receiver_id.eq.${user.id})`)
           .order('created_at', { ascending: true });
 
@@ -211,11 +211,24 @@ export const useMessaging = () => {
           callLogs = logs || [];
         }
 
-        // Format regular messages
+        // Format regular messages - include reply data
         const formattedMessages: Message[] = (data || []).map(msg => {
           const msgProfile = profiles?.find(p => p.user_id === msg.sender_id);
           const msgType = msg.message_type || 'text';
           const mediaOpts = msg.media_options as Message['mediaOptions'];
+          
+          // Look up reply_to data if present
+          let replyTo: Message['replyTo'] = undefined;
+          if (msg.reply_to_id) {
+            const replyMsg = data?.find(m => m.id === msg.reply_to_id);
+            if (replyMsg) {
+              const replyProfile = profiles?.find(p => p.user_id === replyMsg.sender_id);
+              replyTo = {
+                content: replyMsg.content,
+                senderName: replyProfile?.full_name || 'Unknown',
+              };
+            }
+          }
           
           return {
             id: msg.id,
@@ -233,6 +246,7 @@ export const useMessaging = () => {
             fileSize: msg.file_size,
             durationSeconds: msg.duration_seconds,
             mediaOptions: mediaOpts,
+            replyTo,
           };
         });
 
@@ -352,6 +366,18 @@ export const useMessaging = () => {
       console.log('Sending message:', { type, id, messageType, content: content.substring(0, 20) });
 
       if (type === 'dm') {
+        // Get replyTo content for optimistic UI
+        let replyToData: Message['replyTo'] = undefined;
+        if (options?.replyToId) {
+          const replyMsg = messages.find(m => m.id === options.replyToId);
+          if (replyMsg) {
+            replyToData = {
+              content: replyMsg.content,
+              senderName: replyMsg.sender.name,
+            };
+          }
+        }
+
         const { data, error } = await supabase
           .from('direct_messages')
           .insert({
@@ -364,6 +390,7 @@ export const useMessaging = () => {
             file_size: options?.fileSize,
             duration_seconds: options?.durationSeconds,
             media_options: options?.mediaOptions || {},
+            reply_to_id: options?.replyToId,
           })
           .select()
           .single();
@@ -391,6 +418,7 @@ export const useMessaging = () => {
           fileSize: options?.fileSize,
           durationSeconds: options?.durationSeconds,
           mediaOptions: options?.mediaOptions,
+          replyTo: replyToData,
         };
         setMessages(prev => [...prev, newMessage]);
         
