@@ -153,75 +153,35 @@ export const useWallet = () => {
     }
 
     try {
-      // Get receiver's wallet
-      const { data: receiverWallet, error: receiverError } = await supabase
-        .from('wallets')
-        .select('*')
-        .eq('user_id', receiverId)
-        .single();
-
-      if (receiverError) {
-        // Create wallet for receiver if it doesn't exist
-        const { data: newReceiverWallet, error: createError } = await supabase
-          .from('wallets')
-          .insert({ user_id: receiverId, balance: 0 })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-      }
-
-      const receiverCurrentBalance = receiverWallet?.balance || 0;
-      const senderPrevBalance = wallet.balance;
-      const senderNewBalance = senderPrevBalance - amount;
-      const receiverNewBalance = receiverCurrentBalance + amount;
-
-      // Update sender's wallet
-      const { error: senderUpdateError } = await supabase
-        .from('wallets')
-        .update({
-          balance: senderNewBalance,
-          total_spent: (wallet.total_spent || 0) + amount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', profile.id);
-
-      if (senderUpdateError) throw senderUpdateError;
-
-      // Update receiver's wallet
-      const { error: receiverUpdateError } = await supabase
-        .from('wallets')
-        .update({
-          balance: receiverNewBalance,
-          total_earned: (receiverWallet?.total_earned || 0) + amount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', receiverId);
-
-      if (receiverUpdateError) throw receiverUpdateError;
-
-      // Create transaction record
-      const { error: txError } = await supabase.from('transactions').insert({
-        sender_id: profile.id,
-        receiver_id: receiverId,
-        amount,
-        note,
-        transaction_type: 'transfer',
-        status: 'completed',
-        sender_prev_balance: senderPrevBalance,
-        sender_new_balance: senderNewBalance,
-        receiver_prev_balance: receiverCurrentBalance,
-        receiver_new_balance: receiverNewBalance,
+      // Use the secure database function for atomic transfer
+      const { data, error } = await supabase.rpc('transfer_money', {
+        p_sender_id: profile.id,
+        p_receiver_id: receiverId,
+        p_amount: amount,
+        p_note: note || null,
       });
 
-      if (txError) throw txError;
+      if (error) throw error;
+
+      const result = data as { 
+        success: boolean; 
+        error?: string; 
+        sender_new_balance?: number;
+        receiver_new_balance?: number;
+        sender_prev_balance?: number;
+        receiver_prev_balance?: number;
+      };
+
+      if (!result.success) {
+        return { success: false, error: result.error || 'Transfer failed' };
+      }
 
       // Create notification for sender
       await supabase.from('notifications').insert({
         user_id: profile.id,
         type: 'transaction',
         title: 'Money Sent',
-        message: `You sent ${amount.toLocaleString()} ETB to ${receiverName}. Your new balance is ${senderNewBalance.toLocaleString()} ETB.`,
+        message: `You sent ${amount.toLocaleString()} ETB to ${receiverName}. Your new balance is ${result.sender_new_balance?.toLocaleString()} ETB.`,
         data: { amount, receiver_id: receiverId, receiver_name: receiverName },
       });
 
@@ -230,7 +190,7 @@ export const useWallet = () => {
         user_id: receiverId,
         type: 'transaction',
         title: 'Money Received',
-        message: `You received ${amount.toLocaleString()} ETB from ${profile.full_name || 'Someone'}. Your new balance is ${receiverNewBalance.toLocaleString()} ETB.`,
+        message: `You received ${amount.toLocaleString()} ETB from ${profile.full_name || 'Someone'}. Your new balance is ${result.receiver_new_balance?.toLocaleString()} ETB.`,
         data: { amount, sender_id: profile.id, sender_name: profile.full_name },
       });
 
@@ -239,7 +199,7 @@ export const useWallet = () => {
         prev
           ? {
               ...prev,
-              balance: senderNewBalance,
+              balance: result.sender_new_balance || prev.balance - amount,
               total_spent: (prev.total_spent || 0) + amount,
             }
           : null
