@@ -38,7 +38,8 @@ import {
   ClipboardCheck,
   FolderTree,
   Bot,
-  Wallet
+  Wallet,
+  Crown
 } from 'lucide-react';
 import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
 
@@ -61,6 +62,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     case 'ceo':
       return [
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & insights', path: '/ceo' },
+        { icon: Crown, label: 'Subscriptions', description: 'User plans', path: '/ceo?tab=subscriptions' },
         { icon: Lightbulb, label: 'Skills', description: 'Skill approvals', path: '/ceo?tab=skills' },
         { icon: Shield, label: 'Controls', description: 'Platform controls', path: '/ceo?tab=controls' },
         { icon: FolderTree, label: 'Categories', description: 'Course categories', path: '/ceo?tab=categories' },
