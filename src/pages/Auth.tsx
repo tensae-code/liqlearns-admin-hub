@@ -706,13 +706,13 @@ const Auth = () => {
       </div>
 
       <div>
-        <Label htmlFor="sponsor">Sponsor Username (For Network Marketing)</Label>
+        <Label htmlFor="sponsor">Referral Code (Optional)</Label>
         <div className="relative mt-1">
           <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             id="sponsor"
             type="text"
-            placeholder="@sponsor_username"
+            placeholder="@referrer_username"
             value={formData.sponsorUsername}
             onChange={(e) => updateFormData('sponsorUsername', e.target.value.replace('@', ''))}
             className={`pl-10 pr-10 ${
@@ -733,12 +733,12 @@ const Auth = () => {
           </div>
         </div>
         {sponsorStatus === 'valid' && (
-          <p className="text-[10px] text-success mt-0.5">✓ Sponsor verified!</p>
+          <p className="text-[10px] text-success mt-0.5">✓ Referrer verified! You'll be added to their network.</p>
         )}
         {sponsorStatus === 'invalid' && (
-          <p className="text-[10px] text-destructive mt-0.5">User not found or is not eligible to be a sponsor (teachers/admins cannot sponsor)</p>
+          <p className="text-[10px] text-destructive mt-0.5">User not found or not eligible to refer</p>
         )}
-        <p className="text-[10px] text-muted-foreground mt-1">Only CEO and Students can sponsor new users</p>
+        <p className="text-[10px] text-muted-foreground mt-1">Enter the username of who referred you</p>
       </div>
     </div>
   );
