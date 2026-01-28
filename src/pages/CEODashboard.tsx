@@ -9,6 +9,7 @@ import PlatformControls from '@/components/ceo/PlatformControls';
 import CEOSkillApproval from '@/components/ceo/CEOSkillApproval';
 import AdminPrivilegeManager from '@/components/ceo/AdminPrivilegeManager';
 import CourseApprovalModal from '@/components/ceo/CourseApprovalModal';
+import UserSubscriptionManager from '@/components/ceo/UserSubscriptionManager';
 import {
   Users,
   BookOpen,
@@ -28,7 +29,8 @@ import {
   Smile,
   FolderTree,
   Shield,
-  Lightbulb
+  Lightbulb,
+  Crown
 } from 'lucide-react';
 
 import { STAT_GRADIENTS } from '@/lib/theme';
@@ -42,6 +44,7 @@ const CEODashboard = () => {
   const [skillApprovalOpen, setSkillApprovalOpen] = useState(false);
   const [adminPrivilegesOpen, setAdminPrivilegesOpen] = useState(false);
   const [courseApprovalOpen, setCourseApprovalOpen] = useState(false);
+  const [subscriptionManagerOpen, setSubscriptionManagerOpen] = useState(false);
 
   // Handle tab query params to open modals from sidebar navigation
   useEffect(() => {
@@ -58,6 +61,8 @@ const CEODashboard = () => {
       setAdminPrivilegesOpen(true);
     } else if (tab === 'courses') {
       setCourseApprovalOpen(true);
+    } else if (tab === 'subscriptions') {
+      setSubscriptionManagerOpen(true);
     }
   }, [location.search]);
 
@@ -84,6 +89,11 @@ const CEODashboard = () => {
 
   const handleCourseApprovalClose = (open: boolean) => {
     setCourseApprovalOpen(open);
+    if (!open) navigate('/ceo', { replace: true });
+  };
+
+  const handleSubscriptionManagerClose = (open: boolean) => {
+    setSubscriptionManagerOpen(open);
     if (!open) navigate('/ceo', { replace: true });
   };
   
@@ -300,6 +310,10 @@ const CEODashboard = () => {
       <CourseApprovalModal
         open={courseApprovalOpen}
         onOpenChange={handleCourseApprovalClose}
+      />
+      <UserSubscriptionManager
+        open={subscriptionManagerOpen}
+        onOpenChange={handleSubscriptionManagerClose}
       />
     </DashboardLayout>
   );

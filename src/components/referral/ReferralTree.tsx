@@ -73,9 +73,10 @@ const ReferralTree = ({ directReferrals, indirectReferrals }: ReferralTreeProps)
               <div className="flex flex-wrap justify-center gap-4">
                 {directReferrals.map((ref, idx) => {
                   const hasChildren = groupedIndirect[ref.full_name]?.length > 0;
+                  const isPaid = ref.subscription_status === 'active';
                   
                   return (
-                    <div key={ref.id} className="flex flex-col items-center relative">
+                    <div key={ref.id} className={`flex flex-col items-center relative ${!isPaid ? 'opacity-50 grayscale' : ''}`}>
                       {/* Horizontal connector from parent */}
                       {idx === 0 && directReferrals.length > 1 && (
                         <div className="absolute -top-4 left-1/2 right-0 h-0.5 bg-border" 
@@ -83,16 +84,23 @@ const ReferralTree = ({ directReferrals, indirectReferrals }: ReferralTreeProps)
                       )}
                       
                       <div className="relative">
-                        <Avatar className="w-12 h-12 ring-2 ring-blue-500/20">
+                        <Avatar className={`w-12 h-12 ring-2 ${isPaid ? 'ring-blue-500/20' : 'ring-muted-foreground/20'}`}>
                           <AvatarImage src={ref.avatar_url || ''} />
                           <AvatarFallback>{ref.full_name?.[0] || '?'}</AvatarFallback>
                         </Avatar>
-                        {ref.subscription_status === 'active' && (
+                        {isPaid ? (
                           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 ring-2 ring-background" />
+                        ) : (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-muted-foreground ring-2 ring-background" />
                         )}
                       </div>
                       <p className="mt-2 text-sm font-medium text-center max-w-[80px] truncate">{ref.full_name}</p>
                       <p className="text-[10px] text-muted-foreground">@{ref.username}</p>
+                      {!isPaid && (
+                        <Badge variant="outline" className="mt-1 text-[10px] text-muted-foreground">
+                          Unpaid
+                        </Badge>
+                      )}
                       
                       {/* Show children count */}
                       {hasChildren && (
@@ -116,16 +124,24 @@ const ReferralTree = ({ directReferrals, indirectReferrals }: ReferralTreeProps)
               </div>
               
               <div className="flex flex-wrap justify-center gap-3">
-                {indirectReferrals.map(ref => (
-                  <div key={ref.id} className="flex flex-col items-center p-2 rounded-lg bg-muted/50">
-                    <Avatar className="w-10 h-10 ring-2 ring-purple-500/20">
-                      <AvatarImage src={ref.avatar_url || ''} />
-                      <AvatarFallback className="text-xs">{ref.full_name?.[0] || '?'}</AvatarFallback>
-                    </Avatar>
-                    <p className="mt-1 text-xs font-medium text-center max-w-[70px] truncate">{ref.full_name}</p>
-                    <p className="text-[10px] text-muted-foreground">via {ref.referred_by_name?.split(' ')[0]}</p>
-                  </div>
-                ))}
+                {indirectReferrals.map(ref => {
+                  const isPaid = ref.subscription_status === 'active';
+                  return (
+                    <div key={ref.id} className={`flex flex-col items-center p-2 rounded-lg bg-muted/50 ${!isPaid ? 'opacity-50 grayscale' : ''}`}>
+                      <Avatar className={`w-10 h-10 ring-2 ${isPaid ? 'ring-purple-500/20' : 'ring-muted-foreground/20'}`}>
+                        <AvatarImage src={ref.avatar_url || ''} />
+                        <AvatarFallback className="text-xs">{ref.full_name?.[0] || '?'}</AvatarFallback>
+                      </Avatar>
+                      <p className="mt-1 text-xs font-medium text-center max-w-[70px] truncate">{ref.full_name}</p>
+                      <p className="text-[10px] text-muted-foreground">via {ref.referred_by_name?.split(' ')[0]}</p>
+                      {!isPaid && (
+                        <Badge variant="outline" className="mt-1 text-[8px] text-muted-foreground">
+                          Unpaid
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
