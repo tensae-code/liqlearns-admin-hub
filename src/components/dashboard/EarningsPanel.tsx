@@ -87,22 +87,39 @@ const EarningsPanel = ({
           </Badge>
         </div>
         
-        <p className="text-2xl md:text-3xl font-display font-bold mb-1">
-          {totalEarnings.toLocaleString()} <span className="text-lg md:text-xl">ETB</span>
-        </p>
-        <p className="text-xs md:text-sm text-white/70">Lifetime earnings</p>
-
-        {/* Balance Breakdown */}
-        <div className="grid grid-cols-2 gap-2 md:gap-3 mt-3 md:mt-4">
-          <div className="p-2 md:p-3 rounded-lg bg-white/10">
-            <p className="text-[10px] md:text-xs text-white/70 mb-0.5 md:mb-1">Available</p>
-            <p className="text-sm md:text-lg font-bold">{availableBalance.toLocaleString()}</p>
-          </div>
-          <div className="p-2 md:p-3 rounded-lg bg-white/10">
-            <p className="text-[10px] md:text-xs text-white/70 mb-0.5 md:mb-1">Pending</p>
-            <p className="text-sm md:text-lg font-bold">{pendingEarnings.toLocaleString()}</p>
-          </div>
-        </div>
+        {loading ? (
+          <>
+            <div className="h-8 md:h-10 w-40 bg-white/20 rounded animate-pulse mb-1" />
+            <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+            <div className="grid grid-cols-2 gap-2 md:gap-3 mt-3 md:mt-4">
+              <div className="p-2 md:p-3 rounded-lg bg-white/10">
+                <p className="text-[10px] md:text-xs text-white/70 mb-0.5 md:mb-1">Available</p>
+                <div className="h-5 md:h-7 w-20 bg-white/20 rounded animate-pulse" />
+              </div>
+              <div className="p-2 md:p-3 rounded-lg bg-white/10">
+                <p className="text-[10px] md:text-xs text-white/70 mb-0.5 md:mb-1">Pending</p>
+                <div className="h-5 md:h-7 w-20 bg-white/20 rounded animate-pulse" />
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-2xl md:text-3xl font-display font-bold mb-1">
+              {totalEarnings.toLocaleString()} <span className="text-lg md:text-xl">ETB</span>
+            </p>
+            <p className="text-xs md:text-sm text-white/70">Lifetime earnings</p>
+            <div className="grid grid-cols-2 gap-2 md:gap-3 mt-3 md:mt-4">
+              <div className="p-2 md:p-3 rounded-lg bg-white/10">
+                <p className="text-[10px] md:text-xs text-white/70 mb-0.5 md:mb-1">Available</p>
+                <p className="text-sm md:text-lg font-bold">{availableBalance.toLocaleString()}</p>
+              </div>
+              <div className="p-2 md:p-3 rounded-lg bg-white/10">
+                <p className="text-[10px] md:text-xs text-white/70 mb-0.5 md:mb-1">Pending</p>
+                <p className="text-sm md:text-lg font-bold">{pendingEarnings.toLocaleString()}</p>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Quick Actions */}
