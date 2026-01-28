@@ -41,6 +41,7 @@ import CEOAIManagement from "./pages/CEOAIManagement";
 import CEOFinance from "./pages/CEOFinance";
 import CEOUsers from "./pages/CEOUsers";
 import SupportDashboard from "./pages/SupportDashboard";
+import ReferralDashboard from "./pages/ReferralDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const AppRoutes = () => (
     <Route path="/profile" element={<Profile />} />
     <Route path="/course/:id" element={<CourseDetail />} />
     <Route path="/course/:id/learn" element={<CourseLearning />} />
+    <Route path="/referrals" element={<ReferralDashboard />} />
     
     {/* Protected Teacher Routes */}
     <Route path="/teacher" element={
