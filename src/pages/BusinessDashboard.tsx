@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { STAT_GRADIENTS } from '@/lib/theme';
+import { useReferralProgram } from '@/hooks/useReferralProgram';
+import { useProfile } from '@/hooks/useProfile';
+import ReferralTree from '@/components/referral/ReferralTree';
 import { 
   Users, 
   TrendingUp, 
@@ -13,7 +16,6 @@ import {
   Copy,
   ChevronRight,
   Target,
-  ArrowUpRight,
   Crown,
   Star,
   Zap,
@@ -22,52 +24,68 @@ import {
   Network,
   Layers,
   Trophy,
-  Rocket
+  Rocket,
+  Lock,
+  Link2,
+  CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BusinessDashboard = () => {
-  const [referralCode] = useState('LIQ-LEARN-2026');
+  const { profile } = useProfile();
+  const {
+    loading,
+    stats,
+    ranks,
+    currentRank,
+    nextRank,
+    directReferrals,
+    indirectReferrals,
+    referralLink,
+    copyReferralLink,
+    getRankProgress
+  } = useReferralProgram();
 
-  const copyReferralCode = () => {
-    navigator.clipboard.writeText(referralCode);
-    toast.success('Referral code copied to clipboard!');
+  const isPremium = profile?.subscription_status === 'active' || profile?.subscription_status === 'premium';
+  
+  const handleCopyLink = async () => {
+    const success = await copyReferralLink();
+    if (success) {
+      toast.success('Referral link copied to clipboard!');
+    } else {
+      toast.error('Failed to copy link');
+    }
   };
 
-  const referralStats = {
-    directReferrals: 24,
-    teamSize: 156,
-    activeMembers: 89,
-    pendingInvites: 5,
+  const { referralProgress, earningsProgress } = getRankProgress();
+
+  // Premium blur overlay component
+  const PremiumBlur = ({ children, message = "Upgrade to Premium to unlock" }: { children: React.ReactNode; message?: string }) => {
+    if (isPremium) return <>{children}</>;
+    
+    return (
+      <div className="relative">
+        <div className="blur-sm grayscale opacity-60 pointer-events-none select-none">
+          {children}
+        </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/40 backdrop-blur-[2px] rounded-xl">
+          <Lock className="w-8 h-8 text-muted-foreground mb-2" />
+          <p className="text-sm font-medium text-muted-foreground text-center px-4">{message}</p>
+          <Button size="sm" className="mt-3" onClick={() => toast.info('Premium upgrade coming soon!')}>
+            <Crown className="w-4 h-4 mr-2" />
+            Upgrade
+          </Button>
+        </div>
+      </div>
+    );
   };
 
-  const monthlyGoals = {
-    referrals: { current: 8, target: 15, reward: '500 ETB bonus' },
-    teamSales: { current: 12500, target: 20000, reward: '2x commission' },
-  };
-
-  const ranks = [
-    { name: 'Starter', requirement: '0 referrals', achieved: true, icon: Star, color: 'text-muted-foreground' },
-    { name: 'Builder', requirement: '5 referrals', achieved: true, icon: Zap, color: 'text-accent' },
-    { name: 'Leader', requirement: '15 referrals', achieved: true, icon: Crown, color: 'text-primary' },
-    { name: 'Ambassador', requirement: '50 referrals', achieved: false, current: true, icon: Trophy, color: 'text-gold' },
-    { name: 'Diamond', requirement: '100 referrals', achieved: false, icon: Rocket, color: 'text-success' },
-  ];
-
-  const topReferrers = [
-    { name: 'Kidus A.', referrals: 45, earnings: 12500, avatar: 'K' },
-    { name: 'Meron T.', referrals: 38, earnings: 10200, avatar: 'M' },
-    { name: 'Yonas B.', referrals: 32, earnings: 8900, avatar: 'Y' },
-    { name: 'Bethel G.', referrals: 28, earnings: 7500, avatar: 'B' },
-    { name: 'You', referrals: 24, earnings: 6800, avatar: 'U', isUser: true },
-  ];
-
-  const recentReferrals = [
-    { name: 'Hanna K.', date: '2 hours ago', status: 'active', coursesCompleted: 3 },
-    { name: 'Robel M.', date: '1 day ago', status: 'active', coursesCompleted: 1 },
-    { name: 'Selam T.', date: '3 days ago', status: 'pending', coursesCompleted: 0 },
-    { name: 'Abel D.', date: '5 days ago', status: 'active', coursesCompleted: 5 },
-  ];
+  const recentReferralsList = directReferrals.slice(0, 4).map(ref => ({
+    name: ref.full_name || ref.username,
+    date: new Date(ref.created_at).toLocaleDateString(),
+    status: ref.subscription_status === 'active' || ref.subscription_status === 'premium' ? 'active' : 'pending',
+    avatar: (ref.full_name || ref.username || 'U').charAt(0).toUpperCase()
+  }));
 
   return (
     <DashboardLayout>
@@ -84,14 +102,24 @@ const BusinessDashboard = () => {
             </h1>
             <p className="text-muted-foreground">Track your referrals, earnings, and network growth</p>
           </div>
-          <Badge className="bg-gold/10 text-gold border-gold/30 text-sm px-3 py-1">
-            <Crown className="w-4 h-4 mr-1" />
-            Leader Rank
-          </Badge>
+          <div className="flex items-center gap-2">
+            {!isPremium && (
+              <Badge className="bg-muted text-muted-foreground border-border">
+                <Lock className="w-3 h-3 mr-1" />
+                Free Tier
+              </Badge>
+            )}
+            {currentRank && (
+              <Badge className="bg-gold/10 text-gold border-gold/30 text-sm px-3 py-1">
+                <Crown className="w-4 h-4 mr-1" />
+                {currentRank.name}
+              </Badge>
+            )}
+          </div>
         </div>
       </motion.div>
 
-      {/* Referral Code Banner */}
+      {/* Referral Link Banner */}
       <motion.div
         className="bg-gradient-hero text-primary-foreground rounded-2xl p-6 mb-6"
         initial={{ opacity: 0, y: 20 }}
@@ -100,13 +128,18 @@ const BusinessDashboard = () => {
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <p className="text-sm text-primary-foreground/70 mb-1">Your Referral Code</p>
+            <p className="text-sm text-primary-foreground/70 mb-1">Your Referral Link</p>
             <div className="flex items-center gap-3">
-              <span className="text-2xl font-display font-bold tracking-wider">{referralCode}</span>
+              <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                <Link2 className="w-4 h-4" />
+                <span className="text-sm font-mono truncate max-w-[200px] md:max-w-[300px]">
+                  {referralLink || 'Loading...'}
+                </span>
+              </div>
               <Button 
                 variant="secondary" 
                 size="sm" 
-                onClick={copyReferralCode}
+                onClick={handleCopyLink}
                 className="bg-white/20 hover:bg-white/30 text-primary-foreground"
               >
                 <Copy className="w-4 h-4 mr-1" />
@@ -114,17 +147,23 @@ const BusinessDashboard = () => {
               </Button>
             </div>
             <p className="text-xs text-primary-foreground/60 mt-2">
-              Earn 10% commission on every referral's purchases
+              Earn 15% commission on every referral's purchases • Level 2: 5% (capped at $50)
             </p>
           </div>
           <div className="flex gap-3">
-            <Button variant="secondary" className="bg-white/20 hover:bg-white/30 text-primary-foreground">
+            <Button 
+              variant="secondary" 
+              className="bg-white/20 hover:bg-white/30 text-primary-foreground"
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ url: referralLink, title: 'Join Liqlearns!' });
+                } else {
+                  handleCopyLink();
+                }
+              }}
+            >
               <Share2 className="w-4 h-4 mr-2" />
               Share Link
-            </Button>
-            <Button className="bg-white text-accent hover:bg-white/90">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Invite Friends
             </Button>
           </div>
         </div>
@@ -133,10 +172,34 @@ const BusinessDashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Direct Referrals', value: referralStats.directReferrals, icon: UserPlus, gradient: STAT_GRADIENTS[0] },
-          { label: 'Team Size', value: referralStats.teamSize, icon: Network, gradient: STAT_GRADIENTS[1] },
-          { label: 'Active Members', value: referralStats.activeMembers, icon: Users, gradient: STAT_GRADIENTS[2] },
-          { label: 'Pending Invites', value: referralStats.pendingInvites, icon: Gift, gradient: STAT_GRADIENTS[3] },
+          { 
+            label: 'Registered by Link', 
+            value: stats?.direct_referrals || 0, 
+            icon: UserPlus, 
+            gradient: STAT_GRADIENTS[0],
+            description: 'Direct signups'
+          },
+          { 
+            label: 'Level 2 Referrals', 
+            value: stats?.indirect_referrals || 0, 
+            icon: Network, 
+            gradient: STAT_GRADIENTS[1],
+            description: 'From your referrals'
+          },
+          { 
+            label: 'Pending Earnings', 
+            value: `$${(stats?.pending_earnings || 0).toFixed(2)}`, 
+            icon: Gift, 
+            gradient: STAT_GRADIENTS[2],
+            description: 'Awaiting payout'
+          },
+          { 
+            label: 'Total Earned', 
+            value: `$${(stats?.paid_earnings || 0).toFixed(2)}`, 
+            icon: Trophy, 
+            gradient: STAT_GRADIENTS[3],
+            description: 'Paid out'
+          },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -149,6 +212,7 @@ const BusinessDashboard = () => {
             <stat.icon className="w-5 h-5 md:w-6 md:h-6 mb-2 opacity-90" />
             <p className="text-xl md:text-2xl font-display font-bold">{stat.value}</p>
             <p className="text-xs opacity-80">{stat.label}</p>
+            <p className="text-[10px] opacity-60 mt-0.5">{stat.description}</p>
           </motion.div>
         ))}
       </div>
@@ -156,46 +220,27 @@ const BusinessDashboard = () => {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Monthly Goals */}
-          <motion.div
-            className="bg-card rounded-xl border border-border p-5"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Target className="w-5 h-5 text-accent" />
-              <h2 className="text-lg font-display font-semibold text-foreground">Monthly Goals</h2>
-            </div>
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-muted/30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-foreground">New Referrals</span>
-                  <Badge className="bg-accent/10 text-accent border-accent/30 text-xs">
-                    {monthlyGoals.referrals.reward}
-                  </Badge>
-                </div>
-                <Progress value={(monthlyGoals.referrals.current / monthlyGoals.referrals.target) * 100} className="h-2 mb-2" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{monthlyGoals.referrals.current} of {monthlyGoals.referrals.target}</span>
-                  <span>{Math.round((monthlyGoals.referrals.current / monthlyGoals.referrals.target) * 100)}%</span>
-                </div>
+          {/* Genealogy Tree - Blurred for non-premium */}
+          <PremiumBlur message="Upgrade to view your referral network tree">
+            <motion.div
+              className="bg-card rounded-xl border border-border p-5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Network className="w-5 h-5 text-accent" />
+                <h2 className="text-lg font-display font-semibold text-foreground">Your Network</h2>
+                <Badge variant="outline" className="ml-auto text-xs">
+                  {(stats?.direct_referrals || 0) + (stats?.indirect_referrals || 0)} total
+                </Badge>
               </div>
-              <div className="p-4 rounded-lg bg-muted/30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-foreground">Team Sales</span>
-                  <Badge className="bg-gold/10 text-gold border-gold/30 text-xs">
-                    {monthlyGoals.teamSales.reward}
-                  </Badge>
-                </div>
-                <Progress value={(monthlyGoals.teamSales.current / monthlyGoals.teamSales.target) * 100} className="h-2 mb-2" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{monthlyGoals.teamSales.current.toLocaleString()} of {monthlyGoals.teamSales.target.toLocaleString()} ETB</span>
-                  <span>{Math.round((monthlyGoals.teamSales.current / monthlyGoals.teamSales.target) * 100)}%</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+              <ReferralTree 
+                directReferrals={directReferrals}
+                indirectReferrals={indirectReferrals}
+              />
+            </motion.div>
+          </PremiumBlur>
 
           {/* Recent Referrals */}
           <motion.div
@@ -205,75 +250,131 @@ const BusinessDashboard = () => {
             transition={{ delay: 0.3 }}
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-display font-semibold text-foreground">Recent Referrals</h2>
-              <Button variant="ghost" size="sm">
-                View All <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-success" />
+                <h2 className="text-lg font-display font-semibold text-foreground">Recent Signups</h2>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {stats?.direct_referrals || 0} registered
+              </Badge>
             </div>
-            <div className="space-y-3">
-              {recentReferrals.map((referral, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-semibold">
-                      {referral.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{referral.name}</p>
-                      <p className="text-xs text-muted-foreground">{referral.date}</p>
+            
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-muted" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-24" />
+                      <div className="h-3 bg-muted rounded w-16" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={referral.status === 'active' ? 'bg-success/10 text-success border-success/30' : 'bg-gold/10 text-gold border-gold/30'}>
-                      {referral.status}
+                ))}
+              </div>
+            ) : recentReferralsList.length > 0 ? (
+              <div className="space-y-3">
+                {recentReferralsList.map((referral, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-semibold">
+                        {referral.avatar}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{referral.name}</p>
+                        <p className="text-xs text-muted-foreground">{referral.date}</p>
+                      </div>
+                    </div>
+                    <Badge className={referral.status === 'active' ? 'bg-success/10 text-success border-success/30' : 'bg-muted text-muted-foreground border-border'}>
+                      {referral.status === 'active' ? (
+                        <>
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Subscribed
+                        </>
+                      ) : 'Pending'}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">{referral.coursesCompleted} courses</span>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <UserPlus className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No referrals yet</p>
+                <p className="text-xs mt-1">Share your link to start earning!</p>
+              </div>
+            )}
           </motion.div>
 
-          {/* Top Referrers Leaderboard */}
-          <motion.div
-            className="bg-card rounded-xl border border-border p-5"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Trophy className="w-5 h-5 text-gold" />
-              <h2 className="text-lg font-display font-semibold text-foreground">Top Referrers</h2>
-            </div>
-            <div className="space-y-2">
-              {topReferrers.map((referrer, i) => (
-                <div 
-                  key={i} 
-                  className={`flex items-center gap-3 p-3 rounded-lg ${referrer.isUser ? 'bg-accent/10 border border-accent/30' : 'bg-muted/30'}`}
-                >
-                  <span className="w-6 text-center font-bold text-muted-foreground">#{i + 1}</span>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${referrer.isUser ? 'bg-accent text-accent-foreground' : 'bg-primary/10 text-primary'}`}>
-                    {referrer.avatar}
+          {/* Rank Progress - Blurred for non-premium */}
+          <PremiumBlur message="Upgrade to track rank progression & earn bonuses">
+            <motion.div
+              className="bg-card rounded-xl border border-border p-5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Layers className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-display font-semibold text-foreground">Rank Progress</h2>
+              </div>
+              
+              {nextRank && (
+                <div className="mb-4 p-4 rounded-lg bg-muted/30">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-muted-foreground">Progress to {nextRank.name}</span>
+                    <span className="font-medium text-accent">{stats?.direct_referrals || 0}/{nextRank.min_referrals} referrals</span>
                   </div>
-                  <div className="flex-1">
-                    <p className={`font-medium ${referrer.isUser ? 'text-accent' : 'text-foreground'}`}>{referrer.name}</p>
-                    <p className="text-xs text-muted-foreground">{referrer.referrals} referrals</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-success">{referrer.earnings.toLocaleString()} ETB</p>
-                    <p className="text-xs text-muted-foreground">earnings</p>
+                  <Progress value={referralProgress} className="h-3 mb-2" />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>${stats?.paid_earnings || 0} / ${nextRank.min_earnings} earnings</span>
+                    <span>+{nextRank.bonus_percent}% bonus at this rank</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </motion.div>
+              )}
+
+              <div className="space-y-2">
+                {ranks.map((rank) => {
+                  const isAchieved = currentRank && rank.level <= currentRank.level;
+                  const isCurrent = currentRank?.id === rank.id;
+                  
+                  return (
+                    <div 
+                      key={rank.name} 
+                      className={`flex items-center gap-3 p-2 rounded-lg border ${
+                        isCurrent ? 'border-gold/50 bg-gold/5' : isAchieved ? 'border-success/30 bg-success/5' : 'border-border'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        isAchieved ? 'bg-success/20' : 'bg-muted'
+                      }`}>
+                        {rank.level === 1 && <Star className={`w-4 h-4 ${isAchieved ? 'text-success' : 'text-muted-foreground'}`} />}
+                        {rank.level === 2 && <Zap className={`w-4 h-4 ${isAchieved ? 'text-success' : 'text-accent'}`} />}
+                        {rank.level === 3 && <Crown className={`w-4 h-4 ${isAchieved ? 'text-success' : 'text-primary'}`} />}
+                        {rank.level === 4 && <Trophy className={`w-4 h-4 ${isAchieved ? 'text-success' : 'text-gold'}`} />}
+                        {rank.level >= 5 && <Rocket className={`w-4 h-4 ${isAchieved ? 'text-success' : 'text-success'}`} />}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-sm font-medium ${isCurrent ? 'text-gold' : isAchieved ? 'text-success' : 'text-foreground'}`}>
+                          {rank.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{rank.min_referrals} referrals • ${rank.min_earnings} earnings</p>
+                      </div>
+                      {isAchieved && <CheckCircle className="w-4 h-4 text-success" />}
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </PremiumBlur>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Earnings Panel */}
-          <EarningsPanel />
+          {/* Earnings Panel - Blurred for non-premium */}
+          <PremiumBlur message="Upgrade to unlock commission earnings">
+            <EarningsPanel />
+          </PremiumBlur>
 
-          {/* Rank Progress */}
+          {/* Quick Stats */}
           <motion.div
             className="bg-card rounded-xl border border-border p-5"
             initial={{ opacity: 0, y: 20 }}
@@ -281,40 +382,55 @@ const BusinessDashboard = () => {
             transition={{ delay: 0.4 }}
           >
             <div className="flex items-center gap-2 mb-4">
-              <Layers className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-display font-semibold text-foreground">Rank Progress</h2>
+              <TrendingUp className="w-5 h-5 text-accent" />
+              <h2 className="text-lg font-display font-semibold text-foreground">Quick Stats</h2>
             </div>
-            <div className="mb-4">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Progress to Ambassador</span>
-                <span className="font-medium text-accent">{referralStats.directReferrals}/50</span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <span className="text-sm text-muted-foreground">Total Network</span>
+                <span className="font-bold text-foreground">{(stats?.direct_referrals || 0) + (stats?.indirect_referrals || 0)}</span>
               </div>
-              <Progress value={(referralStats.directReferrals / 50) * 100} className="h-3" />
-            </div>
-            <div className="space-y-2">
-              {ranks.map((rank) => (
-                <div 
-                  key={rank.name} 
-                  className={`flex items-center gap-3 p-2 rounded-lg border ${
-                    rank.current ? 'border-gold/50 bg-gold/5' : rank.achieved ? 'border-success/30 bg-success/5' : 'border-border'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    rank.achieved ? 'bg-success/20' : 'bg-muted'
-                  }`}>
-                    <rank.icon className={`w-4 h-4 ${rank.achieved ? 'text-success' : rank.color}`} />
-                  </div>
-                  <div className="flex-1">
-                    <p className={`text-sm font-medium ${rank.current ? 'text-gold' : rank.achieved ? 'text-success' : 'text-foreground'}`}>
-                      {rank.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{rank.requirement}</p>
-                  </div>
-                  {rank.achieved && <Star className="w-4 h-4 text-success" />}
-                </div>
-              ))}
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <span className="text-sm text-muted-foreground">Active Subscribers</span>
+                <span className="font-bold text-success">
+                  {directReferrals.filter(r => r.subscription_status === 'active' || r.subscription_status === 'premium').length}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <span className="text-sm text-muted-foreground">Conversion Rate</span>
+                <span className="font-bold text-accent">
+                  {stats?.direct_referrals ? 
+                    Math.round((directReferrals.filter(r => r.subscription_status === 'active' || r.subscription_status === 'premium').length / stats.direct_referrals) * 100) 
+                    : 0}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <span className="text-sm text-muted-foreground">Current Rank</span>
+                <Badge className="bg-gold/10 text-gold border-gold/30">
+                  {currentRank?.name || 'Starter'}
+                </Badge>
+              </div>
             </div>
           </motion.div>
+
+          {/* Upgrade CTA for non-premium */}
+          {!isPremium && (
+            <motion.div
+              className="bg-gradient-to-br from-accent to-primary rounded-xl p-5 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }}
+            >
+              <Crown className="w-8 h-8 mb-3" />
+              <h3 className="font-display font-bold text-lg mb-2">Unlock Full Potential</h3>
+              <p className="text-sm text-white/80 mb-4">
+                Upgrade to Premium to earn commissions, view your network tree, and track rank progression.
+              </p>
+              <Button className="w-full bg-white text-accent hover:bg-white/90">
+                Upgrade to Premium
+              </Button>
+            </motion.div>
+          )}
         </div>
       </div>
     </DashboardLayout>
