@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Wallet, 
-  CreditCard, 
   Send, 
   QrCode, 
   Download,
@@ -15,6 +14,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import TopUpModal from './earnings/TopUpModal';
+import SendMoneyModal from './earnings/SendMoneyModal';
+import ScanQRModal from './earnings/ScanQRModal';
+import RequestMoneyModal from './earnings/RequestMoneyModal';
 
 interface Transaction {
   id: string;
@@ -47,6 +50,10 @@ const EarningsPanel = ({
   availableBalance = 36034.56
 }: EarningsPanelProps) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview');
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
 
   return (
     <motion.div
@@ -87,24 +94,58 @@ const EarningsPanel = ({
 
       {/* Quick Actions */}
       <div className="grid grid-cols-4 gap-2 p-4 border-b border-border">
-        {[
-          { icon: Plus, label: 'Top Up', color: 'text-success' },
-          { icon: Send, label: 'Send', color: 'text-accent' },
-          { icon: QrCode, label: 'Scan', color: 'text-primary' },
-          { icon: Download, label: 'Request', color: 'text-gold' },
-        ].map((action) => (
-          <Button 
-            key={action.label} 
-            variant="ghost" 
-            className="flex flex-col items-center gap-1 h-auto py-3"
-          >
-            <div className={cn('w-10 h-10 rounded-full bg-muted flex items-center justify-center', action.color)}>
-              <action.icon className="w-5 h-5" />
-            </div>
-            <span className="text-xs text-muted-foreground">{action.label}</span>
-          </Button>
-        ))}
+        <Button 
+          variant="ghost" 
+          className="flex flex-col items-center gap-1 h-auto py-3"
+          onClick={() => setTopUpOpen(true)}
+        >
+          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-success">
+            <Plus className="w-5 h-5" />
+          </div>
+          <span className="text-xs text-muted-foreground">Top Up</span>
+        </Button>
+        <Button 
+          variant="ghost" 
+          className="flex flex-col items-center gap-1 h-auto py-3"
+          onClick={() => setSendOpen(true)}
+        >
+          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-accent">
+            <Send className="w-5 h-5" />
+          </div>
+          <span className="text-xs text-muted-foreground">Send</span>
+        </Button>
+        <Button 
+          variant="ghost" 
+          className="flex flex-col items-center gap-1 h-auto py-3"
+          onClick={() => setScanOpen(true)}
+        >
+          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-primary">
+            <QrCode className="w-5 h-5" />
+          </div>
+          <span className="text-xs text-muted-foreground">Scan</span>
+        </Button>
+        <Button 
+          variant="ghost" 
+          className="flex flex-col items-center gap-1 h-auto py-3"
+          onClick={() => setRequestOpen(true)}
+        >
+          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-gold">
+            <Download className="w-5 h-5" />
+          </div>
+          <span className="text-xs text-muted-foreground">Request</span>
+        </Button>
       </div>
+
+      {/* Modals */}
+      <TopUpModal open={topUpOpen} onOpenChange={setTopUpOpen} />
+      <SendMoneyModal open={sendOpen} onOpenChange={setSendOpen} availableBalance={availableBalance} />
+      <ScanQRModal open={scanOpen} onOpenChange={setScanOpen} />
+      <RequestMoneyModal 
+        open={requestOpen} 
+        onOpenChange={setRequestOpen} 
+        availableBalance={availableBalance}
+        pendingBalance={pendingEarnings}
+      />
 
       {/* Tabs */}
       <div className="flex border-b border-border">
