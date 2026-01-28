@@ -1,5 +1,4 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useProfile } from '@/hooks/useProfile';
 import { Users, GitBranch } from 'lucide-react';
@@ -35,27 +34,19 @@ const ReferralTree = ({ directReferrals, indirectReferrals }: ReferralTreeProps)
   }, {} as Record<string, IndirectReferral[]>);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <GitBranch className="w-5 h-5" />
-          Your Referral Network
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="relative">
+      {/* Root node (You) */}
+      <div className="flex flex-col items-center mb-6">
         <div className="relative">
-          {/* Root node (You) */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="relative">
-              <Avatar className="w-16 h-16 ring-4 ring-primary/20">
-                <AvatarImage src={profile?.avatar_url || ''} />
-                <AvatarFallback className="text-lg">{profile?.full_name?.[0] || 'Y'}</AvatarFallback>
-              </Avatar>
-              <Badge className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px]">You</Badge>
-            </div>
-            <p className="mt-3 font-medium">{profile?.full_name}</p>
-            <p className="text-xs text-muted-foreground">@{profile?.username}</p>
-          </div>
+          <Avatar className="w-14 h-14 ring-4 ring-primary/20">
+            <AvatarImage src={profile?.avatar_url || ''} />
+            <AvatarFallback className="text-lg">{profile?.full_name?.[0] || 'Y'}</AvatarFallback>
+          </Avatar>
+          <Badge className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px]">You</Badge>
+        </div>
+        <p className="mt-2 font-medium text-sm">{profile?.full_name}</p>
+        <p className="text-xs text-muted-foreground">@{profile?.username}</p>
+      </div>
 
           {/* Connection line */}
           {directReferrals.length > 0 && (
@@ -146,17 +137,15 @@ const ReferralTree = ({ directReferrals, indirectReferrals }: ReferralTreeProps)
             </div>
           )}
 
-          {/* Empty state */}
-          {directReferrals.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Your network is empty</p>
-              <p className="text-sm">Share your referral link to start building your team!</p>
-            </div>
-          )}
+      {/* Empty state */}
+      {directReferrals.length === 0 && (
+        <div className="text-center py-6 text-muted-foreground">
+          <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">Your network is empty</p>
+          <p className="text-xs">Share your referral link to start building your team!</p>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 };
 
