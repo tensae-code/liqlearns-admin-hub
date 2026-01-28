@@ -3792,6 +3792,15 @@ export type Database = {
         Args: { p_session_id: string; p_user_id: string }
         Returns: boolean
       }
+      transfer_money: {
+        Args: {
+          p_amount: number
+          p_note?: string
+          p_receiver_id: string
+          p_sender_id: string
+        }
+        Returns: Json
+      }
       update_referral_stats: { Args: { p_user_id: string }; Returns: undefined }
     }
     Enums: {
