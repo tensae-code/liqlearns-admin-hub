@@ -21,7 +21,8 @@ import {
   Trophy,
   Library,
   Flame,
-  Star
+  Star,
+  Briefcase
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -49,6 +50,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+  { icon: Briefcase, label: 'Business', path: '/business' },
   { icon: Library, label: 'Courses', path: '/courses' },
   { icon: GraduationCap, label: 'Quest', path: '/quest' },
   { icon: Users, label: 'Study Rooms', path: '/study-rooms' },
