@@ -91,27 +91,27 @@ const BusinessDashboard = () => {
     <DashboardLayout>
       {/* Header */}
       <motion.div
-        className="mb-6"
+        className="mb-4 md:mb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-display font-bold text-foreground mb-1">
+            <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-1">
               Business Hub 💼
             </h1>
-            <p className="text-muted-foreground">Track your referrals, earnings, and network growth</p>
+            <p className="text-sm md:text-base text-muted-foreground">Track your referrals, earnings, and network growth</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {!isPremium && (
-              <Badge className="bg-muted text-muted-foreground border-border">
+              <Badge className="bg-muted text-muted-foreground border-border text-xs">
                 <Lock className="w-3 h-3 mr-1" />
                 Free Tier
               </Badge>
             )}
             {currentRank && (
-              <Badge className="bg-gold/10 text-gold border-gold/30 text-sm px-3 py-1">
-                <Crown className="w-4 h-4 mr-1" />
+              <Badge className="bg-gold/10 text-gold border-gold/30 text-xs md:text-sm px-2 md:px-3 py-1">
+                <Crown className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                 {currentRank.name}
               </Badge>
             )}
@@ -121,81 +121,82 @@ const BusinessDashboard = () => {
 
       {/* Referral Link Banner */}
       <motion.div
-        className="bg-gradient-hero text-primary-foreground rounded-2xl p-6 mb-6"
+        className="bg-gradient-hero text-primary-foreground rounded-xl md:rounded-2xl p-4 md:p-6 mb-4 md:mb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col gap-4">
           <div>
-            <p className="text-sm text-primary-foreground/70 mb-1">Your Referral Link</p>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
-                <Link2 className="w-4 h-4" />
-                <span className="text-sm font-mono truncate max-w-[200px] md:max-w-[300px]">
+            <p className="text-xs md:text-sm text-primary-foreground/70 mb-1">Your Referral Link</p>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2 flex-1 min-w-0">
+                <Link2 className="w-4 h-4 flex-shrink-0" />
+                <span className="text-xs md:text-sm font-mono truncate">
                   {referralLink || 'Loading...'}
                 </span>
               </div>
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                onClick={handleCopyLink}
-                className="bg-white/20 hover:bg-white/30 text-primary-foreground"
-              >
-                <Copy className="w-4 h-4 mr-1" />
-                Copy
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  onClick={handleCopyLink}
+                  className="bg-white/20 hover:bg-white/30 text-primary-foreground flex-1 sm:flex-none"
+                >
+                  <Copy className="w-4 h-4 mr-1" />
+                  Copy
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  className="bg-white/20 hover:bg-white/30 text-primary-foreground flex-1 sm:flex-none"
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({ url: referralLink, title: 'Join Liqlearns!' });
+                    } else {
+                      handleCopyLink();
+                    }
+                  }}
+                >
+                  <Share2 className="w-4 h-4 mr-1" />
+                  Share
+                </Button>
+              </div>
             </div>
-            <p className="text-xs text-primary-foreground/60 mt-2">
-              Earn 15% commission on every referral's purchases • Level 2: 5% (capped at $50)
+            <p className="text-[10px] md:text-xs text-primary-foreground/60 mt-2">
+              Earn 15% commission on every referral's purchases • Level 2: 5%
             </p>
-          </div>
-          <div className="flex gap-3">
-            <Button 
-              variant="secondary" 
-              className="bg-white/20 hover:bg-white/30 text-primary-foreground"
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({ url: referralLink, title: 'Join Liqlearns!' });
-                } else {
-                  handleCopyLink();
-                }
-              }}
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              Share Link
-            </Button>
           </div>
         </div>
       </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 mb-4 md:mb-6">
         {[
           { 
-            label: 'Registered by Link', 
+            label: 'Registered', 
             value: stats?.direct_referrals || 0, 
             icon: UserPlus, 
             gradient: STAT_GRADIENTS[0],
             description: 'Direct signups'
           },
           { 
-            label: 'Level 2 Referrals', 
+            label: 'Level 2', 
             value: stats?.indirect_referrals || 0, 
             icon: Network, 
             gradient: STAT_GRADIENTS[1],
-            description: 'From your referrals'
+            description: 'Indirect'
           },
           { 
-            label: 'Pending Earnings', 
-            value: `$${(stats?.pending_earnings || 0).toFixed(2)}`, 
+            label: 'Pending', 
+            value: `$${(stats?.pending_earnings || 0).toFixed(0)}`, 
             icon: Gift, 
             gradient: STAT_GRADIENTS[2],
             description: 'Awaiting payout'
           },
           { 
-            label: 'Total Earned', 
-            value: `$${(stats?.paid_earnings || 0).toFixed(2)}`, 
+            label: 'Earned', 
+            value: `$${(stats?.paid_earnings || 0).toFixed(0)}`, 
             icon: Trophy, 
             gradient: STAT_GRADIENTS[3],
             description: 'Paid out'
@@ -203,42 +204,44 @@ const BusinessDashboard = () => {
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
-            className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
+            className={`relative overflow-hidden rounded-xl md:rounded-2xl p-3 md:p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg`}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.15 + i * 0.05 }}
           >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
-            <stat.icon className="w-5 h-5 md:w-6 md:h-6 mb-2 opacity-90" />
-            <p className="text-xl md:text-2xl font-display font-bold">{stat.value}</p>
-            <p className="text-xs opacity-80">{stat.label}</p>
-            <p className="text-[10px] opacity-60 mt-0.5">{stat.description}</p>
+            <div className="absolute top-0 right-0 w-12 md:w-16 h-12 md:h-16 bg-white/10 rounded-full -mr-4 md:-mr-6 -mt-4 md:-mt-6" />
+            <stat.icon className="w-4 h-4 md:w-6 md:h-6 mb-1 md:mb-2 opacity-90" />
+            <p className="text-lg md:text-2xl font-display font-bold">{stat.value}</p>
+            <p className="text-[10px] md:text-xs opacity-80 truncate">{stat.label}</p>
+            <p className="text-[8px] md:text-[10px] opacity-60 mt-0.5 hidden sm:block">{stat.description}</p>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
           {/* Genealogy Tree - Blurred for non-premium */}
           <PremiumBlur message="Upgrade to view your referral network tree">
             <motion.div
-              className="bg-card rounded-xl border border-border p-5"
+              className="bg-card rounded-xl border border-border p-4 md:p-5 overflow-x-auto"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
               <div className="flex items-center gap-2 mb-4">
-                <Network className="w-5 h-5 text-accent" />
-                <h2 className="text-lg font-display font-semibold text-foreground">Your Network</h2>
-                <Badge variant="outline" className="ml-auto text-xs">
+                <Network className="w-4 h-4 md:w-5 md:h-5 text-accent" />
+                <h2 className="text-base md:text-lg font-display font-semibold text-foreground">Your Network</h2>
+                <Badge variant="outline" className="ml-auto text-[10px] md:text-xs">
                   {(stats?.direct_referrals || 0) + (stats?.indirect_referrals || 0)} total
                 </Badge>
               </div>
-              <ReferralTree 
-                directReferrals={directReferrals}
-                indirectReferrals={indirectReferrals}
-              />
+              <div className="min-w-[280px]">
+                <ReferralTree 
+                  directReferrals={directReferrals}
+                  indirectReferrals={indirectReferrals}
+                />
+              </div>
             </motion.div>
           </PremiumBlur>
 

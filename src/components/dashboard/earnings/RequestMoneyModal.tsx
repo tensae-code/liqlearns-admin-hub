@@ -84,63 +84,63 @@ const RequestMoneyModal = ({ open, onOpenChange, availableBalance, pendingBalanc
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) resetForm(); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md mx-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Download className="w-5 h-5 text-gold" />
+          <DialogTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Download className="w-4 h-4 md:w-5 md:h-5 text-gold" />
             Request Money
           </DialogTitle>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
-            <TabsTrigger value="request">Request Payment</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 h-9 md:h-10">
+            <TabsTrigger value="withdraw" className="text-xs md:text-sm">Withdraw</TabsTrigger>
+            <TabsTrigger value="request" className="text-xs md:text-sm">Request</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="withdraw" className="space-y-4 pt-4">
+          <TabsContent value="withdraw" className="space-y-3 md:space-y-4 pt-3 md:pt-4">
             {/* Balance Info */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 bg-success/10 rounded-lg">
-                <p className="text-xs text-muted-foreground">Available</p>
-                <p className="font-bold text-success">{availableBalance.toLocaleString()} ETB</p>
+            <div className="grid grid-cols-2 gap-2 md:gap-3">
+              <div className="p-2 md:p-3 bg-success/10 rounded-lg">
+                <p className="text-[10px] md:text-xs text-muted-foreground">Available</p>
+                <p className="font-bold text-success text-sm md:text-base">{availableBalance.toLocaleString()} ETB</p>
               </div>
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground">Pending</p>
-                <p className="font-bold">{pendingBalance.toLocaleString()} ETB</p>
+              <div className="p-2 md:p-3 bg-muted/50 rounded-lg">
+                <p className="text-[10px] md:text-xs text-muted-foreground">Pending</p>
+                <p className="font-bold text-sm md:text-base">{pendingBalance.toLocaleString()} ETB</p>
               </div>
             </div>
 
             {/* Amount */}
             <div>
-              <Label htmlFor="withdraw-amount">Amount (ETB)</Label>
+              <Label htmlFor="withdraw-amount" className="text-xs md:text-sm">Amount (ETB)</Label>
               <Input
                 id="withdraw-amount"
                 type="number"
                 placeholder="Min. 100 ETB"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="mt-1"
+                className="mt-1 h-9 md:h-10"
               />
             </div>
 
             {/* Withdrawal Method */}
             <div>
-              <Label>Withdrawal Method</Label>
-              <div className="grid grid-cols-3 gap-2 mt-2">
+              <Label className="text-xs md:text-sm">Withdrawal Method</Label>
+              <div className="grid grid-cols-3 gap-1.5 md:gap-2 mt-2">
                 {withdrawMethods.map((method) => (
                   <button
                     key={method.id}
                     onClick={() => setSelectedMethod(method.id)}
                     className={cn(
-                      'p-3 rounded-lg border text-center transition-colors',
+                      'p-2 md:p-3 rounded-lg border text-center transition-colors',
                       selectedMethod === method.id
                         ? 'border-primary bg-primary/10'
                         : 'border-border hover:bg-muted/50'
                     )}
                   >
-                    <method.icon className="w-5 h-5 mx-auto mb-1" />
-                    <p className="text-xs">{method.label}</p>
+                    <method.icon className="w-4 h-4 md:w-5 md:h-5 mx-auto mb-0.5 md:mb-1" />
+                    <p className="text-[10px] md:text-xs leading-tight">{method.label}</p>
                   </button>
                 ))}
               </div>

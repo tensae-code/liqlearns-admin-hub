@@ -47,19 +47,19 @@ const TopUpModal = ({ open, onOpenChange }: TopUpModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md mx-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-success" />
+          <DialogTitle className="flex items-center gap-2 text-base md:text-lg">
+            <CreditCard className="w-4 h-4 md:w-5 md:h-5 text-success" />
             Top Up Wallet
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {/* Quick Amounts */}
           <div>
-            <Label className="text-sm text-muted-foreground">Quick Select</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
+            <Label className="text-xs md:text-sm text-muted-foreground">Quick Select</Label>
+            <div className="grid grid-cols-5 gap-1.5 md:gap-2 mt-2">
               {quickAmounts.map((val) => (
                 <Button
                   key={val}
@@ -67,10 +67,11 @@ const TopUpModal = ({ open, onOpenChange }: TopUpModalProps) => {
                   size="sm"
                   onClick={() => setAmount(val.toString())}
                   className={cn(
+                    "text-xs md:text-sm px-2 md:px-3",
                     amount === val.toString() && 'border-primary bg-primary/10'
                   )}
                 >
-                  {val} ETB
+                  {val >= 1000 ? `${val/1000}K` : val}
                 </Button>
               ))}
             </div>
@@ -91,27 +92,27 @@ const TopUpModal = ({ open, onOpenChange }: TopUpModalProps) => {
 
           {/* Payment Method */}
           <div>
-            <Label className="text-sm text-muted-foreground">Payment Method</Label>
-            <div className="grid grid-cols-3 gap-2 mt-2">
+            <Label className="text-xs md:text-sm text-muted-foreground">Payment Method</Label>
+            <div className="grid grid-cols-3 gap-1.5 md:gap-2 mt-2">
               {paymentMethods.map((method) => (
                 <button
                   key={method.id}
                   onClick={() => setSelectedMethod(method.id)}
                   className={cn(
-                    'p-3 rounded-lg border text-center transition-colors',
+                    'p-2 md:p-3 rounded-lg border text-center transition-colors',
                     selectedMethod === method.id
                       ? 'border-primary bg-primary/10'
                       : 'border-border hover:bg-muted/50'
                   )}
                 >
-                  <method.icon className="w-5 h-5 mx-auto mb-1" />
-                  <p className="text-xs">{method.label}</p>
+                  <method.icon className="w-4 h-4 md:w-5 md:h-5 mx-auto mb-0.5 md:mb-1" />
+                  <p className="text-[10px] md:text-xs leading-tight">{method.label}</p>
                 </button>
               ))}
             </div>
           </div>
 
-          <Button 
+          <Button
             className="w-full" 
             onClick={handleTopUp}
             disabled={loading || !amount}

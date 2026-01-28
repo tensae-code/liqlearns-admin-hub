@@ -173,7 +173,7 @@ const StreakGiftAnimation: React.FC<StreakGiftAnimationProps> = ({
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="text-[120px] sm:text-[150px] relative z-10"
+            className="text-[80px] sm:text-[120px] md:text-[150px] relative z-10"
           >
             🔥
           </motion.div>
@@ -183,16 +183,16 @@ const StreakGiftAnimation: React.FC<StreakGiftAnimationProps> = ({
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="relative z-10 text-center -mt-4"
+            className="relative z-10 text-center -mt-2 sm:-mt-4"
           >
             <motion.div
               animate={{ scale: [1, 1.1, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
-              className="text-6xl sm:text-8xl font-black text-white drop-shadow-[0_0_30px_rgba(255,150,0,0.8)]"
+              className="text-5xl sm:text-6xl md:text-8xl font-black text-white drop-shadow-[0_0_30px_rgba(255,150,0,0.8)]"
             >
               {currentStreak}
             </motion.div>
-            <div className="text-xl sm:text-2xl font-bold text-yellow-200 uppercase tracking-widest mt-2">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-yellow-200 uppercase tracking-widest mt-1 sm:mt-2">
               Day Streak
             </div>
           </motion.div>
@@ -202,7 +202,7 @@ const StreakGiftAnimation: React.FC<StreakGiftAnimationProps> = ({
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="mt-6 text-2xl sm:text-3xl font-bold text-white drop-shadow-lg relative z-10"
+            className="mt-4 sm:mt-6 text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg relative z-10 px-4 text-center"
           >
             {getStreakTitle()}
           </motion.div>
