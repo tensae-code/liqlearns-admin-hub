@@ -102,9 +102,9 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: FileText, label: 'Assignments', description: 'Grade & review', path: '/teacher?tab=assignments' },
         { icon: Users, label: 'Students', description: 'View learners', path: '/teacher?tab=students' },
         { icon: BarChart3, label: 'Earnings', description: 'Revenue stats', path: '/teacher?tab=earnings' },
+        { icon: Briefcase, label: 'Referrals', description: 'Earn rewards', path: '/referrals' },
         { icon: Calendar, label: 'Events', description: 'Scheduled events', path: '/events' },
         { icon: Mail, label: 'Messages', description: 'Student chat', path: '/messages' },
-        { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
@@ -113,6 +113,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Family overview', path: '/parent' },
         { icon: Baby, label: 'My Children', description: 'Manage kids', path: '/parent/children' },
         { icon: BarChart3, label: 'Progress', description: 'Learning stats', path: '/parent/progress' },
+        { icon: Briefcase, label: 'Referrals', description: 'Earn rewards', path: '/referrals' },
         { icon: Mail, label: 'Messages', description: 'Communications', path: '/messages' },
         { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
@@ -124,6 +125,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Library, label: 'Courses', description: 'Training content', path: '/courses' },
         { icon: GraduationCap, label: 'Learning Paths', description: 'Training programs', path: '/enterprise/paths' },
         { icon: BarChart3, label: 'Analytics', description: 'Reports & insights', path: '/enterprise/analytics' },
+        { icon: Briefcase, label: 'Referrals', description: 'Earn rewards', path: '/referrals' },
         { icon: Mail, label: 'Messages', description: 'Team chat', path: '/messages' },
         { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
@@ -131,7 +133,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     default: // student - max 10 items
       return [
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Your overview', path: '/dashboard' },
-        { icon: Briefcase, label: 'Business', description: 'Referrals & earnings', path: '/business' },
+        { icon: Briefcase, label: 'Referrals', description: 'Earn rewards', path: '/referrals' },
         { icon: Library, label: 'Courses', description: 'Browse & learn', path: '/courses' },
         { icon: GraduationCap, label: 'Quest', description: 'Daily challenges', path: '/quest' },
         { icon: Users, label: 'Study Rooms', description: 'Learn together', path: '/study-rooms' },

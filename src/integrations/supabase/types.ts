@@ -2529,6 +2529,241 @@ export type Database = {
           },
         ]
       }
+      referral_ranks: {
+        Row: {
+          badge_color: string
+          badge_icon: string
+          bonus_percent: number
+          created_at: string
+          id: string
+          level: number
+          min_earnings: number
+          min_referrals: number
+          name: string
+        }
+        Insert: {
+          badge_color?: string
+          badge_icon?: string
+          bonus_percent?: number
+          created_at?: string
+          id?: string
+          level: number
+          min_earnings?: number
+          min_referrals?: number
+          name: string
+        }
+        Update: {
+          badge_color?: string
+          badge_icon?: string
+          bonus_percent?: number
+          created_at?: string
+          id?: string
+          level?: number
+          min_earnings?: number
+          min_referrals?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      referral_rewards: {
+        Row: {
+          amount: number
+          created_at: string
+          earner_id: string
+          id: string
+          paid_at: string | null
+          reward_type: Database["public"]["Enums"]["referral_reward_type"]
+          source_user_id: string
+          status: Database["public"]["Enums"]["referral_status"]
+          transaction_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          earner_id: string
+          id?: string
+          paid_at?: string | null
+          reward_type: Database["public"]["Enums"]["referral_reward_type"]
+          source_user_id: string
+          status?: Database["public"]["Enums"]["referral_status"]
+          transaction_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          earner_id?: string
+          id?: string
+          paid_at?: string | null
+          reward_type?: Database["public"]["Enums"]["referral_reward_type"]
+          source_user_id?: string
+          status?: Database["public"]["Enums"]["referral_status"]
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_rewards_earner_id_fkey"
+            columns: ["earner_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_rewards_earner_id_fkey"
+            columns: ["earner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_rewards_earner_id_fkey"
+            columns: ["earner_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_rewards_source_user_id_fkey"
+            columns: ["source_user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_rewards_source_user_id_fkey"
+            columns: ["source_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_rewards_source_user_id_fkey"
+            columns: ["source_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_settings: {
+        Row: {
+          id: string
+          level1_percent: number
+          level2_cap: number
+          level2_percent: number
+          min_payout: number
+          payout_method: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          level1_percent?: number
+          level2_cap?: number
+          level2_percent?: number
+          min_payout?: number
+          payout_method?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          level1_percent?: number
+          level2_cap?: number
+          level2_percent?: number
+          min_payout?: number
+          payout_method?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_stats: {
+        Row: {
+          current_rank_id: string | null
+          direct_referrals: number
+          id: string
+          indirect_referrals: number
+          paid_earnings: number
+          pending_earnings: number
+          total_earnings: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_rank_id?: string | null
+          direct_referrals?: number
+          id?: string
+          indirect_referrals?: number
+          paid_earnings?: number
+          pending_earnings?: number
+          total_earnings?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_rank_id?: string | null
+          direct_referrals?: number
+          id?: string
+          indirect_referrals?: number
+          paid_earnings?: number
+          pending_earnings?: number
+          total_earnings?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_stats_current_rank_id_fkey"
+            columns: ["current_rank_id"]
+            isOneToOne: false
+            referencedRelation: "referral_ranks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reports: {
         Row: {
           created_at: string
@@ -3421,8 +3656,31 @@ export type Database = {
         Args: { receiver_profile_id: string; sender_profile_id: string }
         Returns: boolean
       }
+      get_direct_referrals: {
+        Args: { p_profile_id: string }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          full_name: string
+          id: string
+          subscription_status: string
+          username: string
+        }[]
+      }
       get_follower_count: { Args: { profile_id: string }; Returns: number }
       get_following_count: { Args: { profile_id: string }; Returns: number }
+      get_indirect_referrals: {
+        Args: { p_profile_id: string }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          full_name: string
+          id: string
+          referred_by_name: string
+          subscription_status: string
+          username: string
+        }[]
+      }
       get_my_profile_id: { Args: never; Returns: string }
       get_pending_request_count: {
         Args: { receiver: string; sender: string }
@@ -3456,6 +3714,7 @@ export type Database = {
         Args: { p_session_id: string; p_user_id: string }
         Returns: boolean
       }
+      update_referral_stats: { Args: { p_user_id: string }; Returns: undefined }
     }
     Enums: {
       app_role:
@@ -3469,6 +3728,8 @@ export type Database = {
       channel_type: "text" | "announcement" | "voice"
       friendship_status: "pending" | "accepted" | "blocked"
       group_role: "owner" | "admin" | "member"
+      referral_reward_type: "level1" | "level2"
+      referral_status: "pending" | "paid" | "cancelled"
       report_reason:
         | "inappropriate_content"
         | "harassment"
@@ -3617,6 +3878,8 @@ export const Constants = {
       channel_type: ["text", "announcement", "voice"],
       friendship_status: ["pending", "accepted", "blocked"],
       group_role: ["owner", "admin", "member"],
+      referral_reward_type: ["level1", "level2"],
+      referral_status: ["pending", "paid", "cancelled"],
       report_reason: [
         "inappropriate_content",
         "harassment",
