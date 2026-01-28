@@ -91,51 +91,51 @@ const SendMoneyModal = ({ open, onOpenChange, availableBalance }: SendMoneyModal
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) resetForm(); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md mx-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Send className="w-5 h-5 text-accent" />
+          <DialogTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Send className="w-4 h-4 md:w-5 md:h-5 text-accent" />
             Send Money
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {/* Recipient Search */}
           {!selectedUser ? (
             <div>
-              <Label>Search Recipient</Label>
+              <Label className="text-xs md:text-sm">Search Recipient</Label>
               <div className="flex gap-2 mt-1">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Search className="absolute left-2.5 md:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 md:w-4 md:h-4 text-muted-foreground" />
                   <Input
                     placeholder="Username or name..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    className="pl-10"
+                    className="pl-8 md:pl-10 h-9 md:h-10 text-sm"
                   />
                 </div>
-                <Button onClick={handleSearch} disabled={searching}>
+                <Button onClick={handleSearch} disabled={searching} size="sm" className="h-9 md:h-10 px-3">
                   {searching ? '...' : 'Search'}
                 </Button>
               </div>
 
               {/* Search Results */}
               {searchResults.length > 0 && (
-                <div className="mt-2 border rounded-lg divide-y">
+                <div className="mt-2 border rounded-lg divide-y max-h-[150px] overflow-y-auto">
                   {searchResults.map((user) => (
                     <button
                       key={user.id}
                       onClick={() => setSelectedUser(user)}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors"
+                      className="w-full flex items-center gap-2 md:gap-3 p-2 md:p-3 hover:bg-muted/50 transition-colors"
                     >
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-7 w-7 md:h-8 md:w-8">
                         {user.avatar_url && <AvatarImage src={user.avatar_url} />}
-                        <AvatarFallback>{user.full_name?.[0]}</AvatarFallback>
+                        <AvatarFallback className="text-xs">{user.full_name?.[0]}</AvatarFallback>
                       </Avatar>
-                      <div className="text-left">
-                        <p className="text-sm font-medium">{user.full_name}</p>
-                        <p className="text-xs text-muted-foreground">@{user.username}</p>
+                      <div className="text-left min-w-0">
+                        <p className="text-xs md:text-sm font-medium truncate">{user.full_name}</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground">@{user.username}</p>
                       </div>
                     </button>
                   ))}
@@ -143,16 +143,16 @@ const SendMoneyModal = ({ open, onOpenChange, availableBalance }: SendMoneyModal
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-              <Avatar className="h-10 w-10">
+            <div className="flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-muted/30 rounded-lg">
+              <Avatar className="h-8 w-8 md:h-10 md:w-10">
                 {selectedUser.avatar_url && <AvatarImage src={selectedUser.avatar_url} />}
-                <AvatarFallback>{selectedUser.full_name?.[0]}</AvatarFallback>
+                <AvatarFallback className="text-xs md:text-sm">{selectedUser.full_name?.[0]}</AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <p className="font-medium">{selectedUser.full_name}</p>
-                <p className="text-xs text-muted-foreground">@{selectedUser.username}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm md:text-base truncate">{selectedUser.full_name}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">@{selectedUser.username}</p>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedUser(null)}>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedUser(null)} className="text-xs h-8 px-2">
                 Change
               </Button>
             </div>

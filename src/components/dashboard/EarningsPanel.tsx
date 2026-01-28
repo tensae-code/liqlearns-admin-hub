@@ -62,77 +62,77 @@ const EarningsPanel = ({
       animate={{ opacity: 1, y: 0 }}
     >
       {/* Header with Wallet Card */}
-      <div className="p-5 bg-gradient-hero rounded-t-xl text-white">
-        <div className="flex items-center justify-between mb-4">
+      <div className="p-4 md:p-5 bg-gradient-hero rounded-t-xl text-white">
+        <div className="flex items-center justify-between mb-3 md:mb-4">
           <div className="flex items-center gap-2">
-            <Wallet className="w-5 h-5" />
-            <span className="font-medium">Total Earnings</span>
+            <Wallet className="w-4 h-4 md:w-5 md:h-5" />
+            <span className="font-medium text-sm md:text-base">Total Earnings</span>
           </div>
-          <Badge className="bg-white/20 text-white border-white/30">
+          <Badge className="bg-white/20 text-white border-white/30 text-[10px] md:text-xs">
             <TrendingUp className="w-3 h-3 mr-1" />
             +12.5%
           </Badge>
         </div>
         
-        <p className="text-3xl font-display font-bold mb-1">
-          {totalEarnings.toLocaleString()} ETB
+        <p className="text-2xl md:text-3xl font-display font-bold mb-1">
+          {totalEarnings.toLocaleString()} <span className="text-lg md:text-xl">ETB</span>
         </p>
-        <p className="text-sm text-white/70">Lifetime earnings</p>
+        <p className="text-xs md:text-sm text-white/70">Lifetime earnings</p>
 
         {/* Balance Breakdown */}
-        <div className="grid grid-cols-2 gap-3 mt-4">
-          <div className="p-3 rounded-lg bg-white/10">
-            <p className="text-xs text-white/70 mb-1">Available</p>
-            <p className="text-lg font-bold">{availableBalance.toLocaleString()} ETB</p>
+        <div className="grid grid-cols-2 gap-2 md:gap-3 mt-3 md:mt-4">
+          <div className="p-2 md:p-3 rounded-lg bg-white/10">
+            <p className="text-[10px] md:text-xs text-white/70 mb-0.5 md:mb-1">Available</p>
+            <p className="text-sm md:text-lg font-bold">{availableBalance.toLocaleString()}</p>
           </div>
-          <div className="p-3 rounded-lg bg-white/10">
-            <p className="text-xs text-white/70 mb-1">Pending</p>
-            <p className="text-lg font-bold">{pendingEarnings.toLocaleString()} ETB</p>
+          <div className="p-2 md:p-3 rounded-lg bg-white/10">
+            <p className="text-[10px] md:text-xs text-white/70 mb-0.5 md:mb-1">Pending</p>
+            <p className="text-sm md:text-lg font-bold">{pendingEarnings.toLocaleString()}</p>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-4 gap-2 p-4 border-b border-border">
+      <div className="grid grid-cols-4 gap-1 md:gap-2 p-3 md:p-4 border-b border-border">
         <Button 
           variant="ghost" 
-          className="flex flex-col items-center gap-1 h-auto py-3"
+          className="flex flex-col items-center gap-0.5 md:gap-1 h-auto py-2 md:py-3 px-1"
           onClick={() => setTopUpOpen(true)}
         >
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-success">
-            <Plus className="w-5 h-5" />
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-muted flex items-center justify-center text-success">
+            <Plus className="w-4 h-4 md:w-5 md:h-5" />
           </div>
-          <span className="text-xs text-muted-foreground">Top Up</span>
+          <span className="text-[10px] md:text-xs text-muted-foreground">Top Up</span>
         </Button>
         <Button 
           variant="ghost" 
-          className="flex flex-col items-center gap-1 h-auto py-3"
+          className="flex flex-col items-center gap-0.5 md:gap-1 h-auto py-2 md:py-3 px-1"
           onClick={() => setSendOpen(true)}
         >
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-accent">
-            <Send className="w-5 h-5" />
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-muted flex items-center justify-center text-accent">
+            <Send className="w-4 h-4 md:w-5 md:h-5" />
           </div>
-          <span className="text-xs text-muted-foreground">Send</span>
+          <span className="text-[10px] md:text-xs text-muted-foreground">Send</span>
         </Button>
         <Button 
           variant="ghost" 
-          className="flex flex-col items-center gap-1 h-auto py-3"
+          className="flex flex-col items-center gap-0.5 md:gap-1 h-auto py-2 md:py-3 px-1"
           onClick={() => setScanOpen(true)}
         >
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-primary">
-            <QrCode className="w-5 h-5" />
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-muted flex items-center justify-center text-primary">
+            <QrCode className="w-4 h-4 md:w-5 md:h-5" />
           </div>
-          <span className="text-xs text-muted-foreground">Scan</span>
+          <span className="text-[10px] md:text-xs text-muted-foreground">Scan</span>
         </Button>
         <Button 
           variant="ghost" 
-          className="flex flex-col items-center gap-1 h-auto py-3"
+          className="flex flex-col items-center gap-0.5 md:gap-1 h-auto py-2 md:py-3 px-1"
           onClick={() => setRequestOpen(true)}
         >
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-gold">
-            <Download className="w-5 h-5" />
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-muted flex items-center justify-center text-gold">
+            <Download className="w-4 h-4 md:w-5 md:h-5" />
           </div>
-          <span className="text-xs text-muted-foreground">Request</span>
+          <span className="text-[10px] md:text-xs text-muted-foreground">Request</span>
         </Button>
       </div>
 
