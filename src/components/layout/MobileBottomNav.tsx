@@ -17,7 +17,8 @@ import {
   LogOut,
   ChevronRight,
   FileText,
-  Mail
+  Mail,
+  Briefcase
 } from 'lucide-react';
 import {
   Drawer,
@@ -164,6 +165,22 @@ const MobileBottomNav = () => {
                   <p className="text-xs text-muted-foreground">View and edit your profile</p>
                 </div>
               </Link>
+              {/* Business Dashboard - show for student, teacher, parent, enterprise */}
+              {(userRole === 'student' || userRole === 'teacher' || userRole === 'parent' || userRole === 'enterprise' || !userRole) && (
+                <Link
+                  to="/business"
+                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                    <Briefcase className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="font-medium text-foreground">Business</span>
+                    <p className="text-xs text-muted-foreground">Earn rewards & referrals</p>
+                  </div>
+                </Link>
+              )}
               <Link
                 to="/courses"
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
