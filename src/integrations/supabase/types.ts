@@ -3365,6 +3365,51 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          note: string | null
+          receiver_id: string
+          receiver_new_balance: number | null
+          receiver_prev_balance: number | null
+          sender_id: string
+          sender_new_balance: number | null
+          sender_prev_balance: number | null
+          status: string
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          receiver_id: string
+          receiver_new_balance?: number | null
+          receiver_prev_balance?: number | null
+          sender_id: string
+          sender_new_balance?: number | null
+          sender_prev_balance?: number | null
+          status?: string
+          transaction_type?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          receiver_id?: string
+          receiver_new_balance?: number | null
+          receiver_prev_balance?: number | null
+          sender_id?: string
+          sender_new_balance?: number | null
+          sender_prev_balance?: number | null
+          status?: string
+          transaction_type?: string
+        }
+        Relationships: []
+      }
       user_badges: {
         Row: {
           badge_id: string
@@ -3514,6 +3559,39 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          pending_balance: number
+          total_earned: number
+          total_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          pending_balance?: number
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          pending_balance?: number
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

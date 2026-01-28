@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Wallet, 
@@ -9,7 +9,8 @@ import {
   ArrowDownLeft,
   TrendingUp,
   ChevronRight,
-  Plus
+  Plus,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,25 +19,9 @@ import TopUpModal from './earnings/TopUpModal';
 import SendMoneyModal from './earnings/SendMoneyModal';
 import ScanQRModal from './earnings/ScanQRModal';
 import RequestMoneyModal from './earnings/RequestMoneyModal';
-
-interface Transaction {
-  id: string;
-  type: 'in' | 'out';
-  description: string;
-  amount: number;
-  source: string;
-  date: string;
-  prevBalance: number;
-  newBalance: number;
-}
-
-const transactions: Transaction[] = [
-  { id: '1', type: 'in', description: 'Referral Commission', amount: 500, source: 'Network', date: 'Today', prevBalance: 36734, newBalance: 37234 },
-  { id: '2', type: 'out', description: 'Withdrawal', amount: 1000, source: 'Bank Account', date: 'Yesterday', prevBalance: 37734, newBalance: 36734 },
-  { id: '3', type: 'in', description: 'Course Sale', amount: 350, source: 'Marketplace', date: 'Jan 7', prevBalance: 37384, newBalance: 37734 },
-  { id: '4', type: 'in', description: 'Level Bonus', amount: 200, source: 'Achievement', date: 'Jan 6', prevBalance: 37184, newBalance: 37384 },
-  { id: '5', type: 'out', description: 'Send to User', amount: 100, source: 'PayPal', date: 'Jan 5', prevBalance: 37284, newBalance: 37184 },
-];
+import { useWallet } from '@/hooks/useWallet';
+import { useProfile } from '@/hooks/useProfile';
+import { formatDistanceToNow } from 'date-fns';
 
 interface EarningsPanelProps {
   totalEarnings?: number;
@@ -45,15 +30,43 @@ interface EarningsPanelProps {
 }
 
 const EarningsPanel = ({ 
-  totalEarnings = 37234.56, 
-  pendingEarnings = 1200,
-  availableBalance = 36034.56
+  totalEarnings: propTotalEarnings = 37234.56, 
+  pendingEarnings: propPendingEarnings = 1200,
+  availableBalance: propAvailableBalance = 36034.56
 }: EarningsPanelProps) => {
+  const { wallet, transactions: walletTransactions, loading } = useWallet();
+  const { profile } = useProfile();
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview');
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
+
+  // Use wallet data if available, otherwise use props
+  const totalEarnings = wallet?.total_earned || propTotalEarnings;
+  const pendingEarnings = wallet?.pending_balance || propPendingEarnings;
+  const availableBalance = wallet?.balance || propAvailableBalance;
+
+  // Transform wallet transactions for display
+  const displayTransactions = useMemo(() => {
+    if (!walletTransactions || walletTransactions.length === 0) {
+      return [];
+    }
+    
+    return walletTransactions.slice(0, 5).map((tx) => {
+      const isOutgoing = tx.sender_id === profile?.id;
+      return {
+        id: tx.id,
+        type: isOutgoing ? 'out' as const : 'in' as const,
+        description: isOutgoing ? 'Money Sent' : 'Money Received',
+        amount: tx.amount,
+        source: tx.transaction_type === 'transfer' ? 'Transfer' : tx.transaction_type,
+        date: formatDistanceToNow(new Date(tx.created_at), { addSuffix: true }),
+        prevBalance: isOutgoing ? tx.sender_prev_balance || 0 : tx.receiver_prev_balance || 0,
+        newBalance: isOutgoing ? tx.sender_new_balance || 0 : tx.receiver_new_balance || 0,
+      };
+    });
+  }, [walletTransactions, profile?.id]);
 
   return (
     <motion.div
@@ -183,38 +196,51 @@ const EarningsPanel = ({
           </div>
         ) : (
           <div className="space-y-2">
-            {transactions.slice(0, 4).map((tx) => (
-              <div key={tx.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
-                <div className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center',
-                  tx.type === 'in' ? 'bg-success/10' : 'bg-destructive/10'
-                )}>
-                  {tx.type === 'in' ? (
-                    <ArrowDownLeft className="w-5 h-5 text-success" />
-                  ) : (
-                    <ArrowUpRight className="w-5 h-5 text-destructive" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{tx.description}</p>
-                  <p className="text-xs text-muted-foreground">{tx.source} • {tx.date}</p>
-                </div>
-                <div className="text-right">
-                  <p className={cn(
-                    'text-sm font-bold',
-                    tx.type === 'in' ? 'text-success' : 'text-destructive'
-                  )}>
-                    {tx.type === 'in' ? '+' : '-'}{tx.amount} ETB
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {tx.prevBalance} → {tx.newBalance}
-                  </p>
-                </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
-            ))}
-            <Button variant="ghost" className="w-full" size="sm">
-              View All Transactions <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
+            ) : displayTransactions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="text-sm">No transactions yet</p>
+                <p className="text-xs mt-1">Send or receive money to see transactions here</p>
+              </div>
+            ) : (
+              displayTransactions.map((tx) => (
+                <div key={tx.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                  <div className={cn(
+                    'w-10 h-10 rounded-full flex items-center justify-center',
+                    tx.type === 'in' ? 'bg-success/10' : 'bg-destructive/10'
+                  )}>
+                    {tx.type === 'in' ? (
+                      <ArrowDownLeft className="w-5 h-5 text-success" />
+                    ) : (
+                      <ArrowUpRight className="w-5 h-5 text-destructive" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">{tx.description}</p>
+                    <p className="text-xs text-muted-foreground">{tx.source} • {tx.date}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={cn(
+                      'text-sm font-bold',
+                      tx.type === 'in' ? 'text-success' : 'text-destructive'
+                    )}>
+                      {tx.type === 'in' ? '+' : '-'}{tx.amount.toLocaleString()} ETB
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {tx.prevBalance.toLocaleString()} → {tx.newBalance.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+            {displayTransactions.length > 0 && (
+              <Button variant="ghost" className="w-full" size="sm">
+                View All Transactions <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            )}
           </div>
         )}
       </div>
