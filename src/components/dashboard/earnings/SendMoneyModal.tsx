@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Search, User } from 'lucide-react';
+import { Send, Search, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useWallet } from '@/hooks/useWallet';
 
 interface SendMoneyModalProps {
   open: boolean;
@@ -34,6 +35,10 @@ const SendMoneyModal = ({ open, onOpenChange, availableBalance }: SendMoneyModal
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
+  const { sendMoney, balance } = useWallet();
+
+  // Use actual wallet balance if available, otherwise use prop
+  const actualBalance = balance > 0 ? balance : availableBalance;
 
   const handleSearch = async () => {
     if (searchQuery.length < 2) return;
@@ -50,6 +55,7 @@ const SendMoneyModal = ({ open, onOpenChange, availableBalance }: SendMoneyModal
       setSearchResults(data || []);
     } catch (err) {
       console.error('Search error:', err);
+      toast.error('Failed to search users');
     } finally {
       setSearching(false);
     }
@@ -67,18 +73,29 @@ const SendMoneyModal = ({ open, onOpenChange, availableBalance }: SendMoneyModal
       return;
     }
 
-    if (sendAmount > availableBalance) {
+    if (sendAmount > actualBalance) {
       toast.error('Insufficient balance');
       return;
     }
 
     setLoading(true);
-    // Simulate processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    toast.success(`${amount} ETB sent to ${selectedUser.full_name}!`);
+    
+    const result = await sendMoney(
+      selectedUser.id,
+      selectedUser.full_name,
+      sendAmount,
+      note || undefined
+    );
+
+    if (result.success) {
+      toast.success(`${sendAmount.toLocaleString()} ETB sent to ${selectedUser.full_name}!`);
+      onOpenChange(false);
+      resetForm();
+    } else {
+      toast.error(result.error || 'Failed to send money');
+    }
+    
     setLoading(false);
-    onOpenChange(false);
-    resetForm();
   };
 
   const resetForm = () => {
@@ -116,7 +133,7 @@ const SendMoneyModal = ({ open, onOpenChange, availableBalance }: SendMoneyModal
                   />
                 </div>
                 <Button onClick={handleSearch} disabled={searching} size="sm" className="h-9 md:h-10 px-3">
-                  {searching ? '...' : 'Search'}
+                  {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
                 </Button>
               </div>
 
@@ -170,7 +187,7 @@ const SendMoneyModal = ({ open, onOpenChange, availableBalance }: SendMoneyModal
               className="mt-1"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Available: {availableBalance.toLocaleString()} ETB
+              Available: {actualBalance.toLocaleString()} ETB
             </p>
           </div>
 
@@ -191,7 +208,14 @@ const SendMoneyModal = ({ open, onOpenChange, availableBalance }: SendMoneyModal
             onClick={handleSend}
             disabled={loading || !selectedUser || !amount}
           >
-            {loading ? 'Sending...' : `Send ${amount ? `${amount} ETB` : ''}`}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              `Send ${amount ? `${parseFloat(amount).toLocaleString()} ETB` : ''}`
+            )}
           </Button>
         </div>
       </DialogContent>

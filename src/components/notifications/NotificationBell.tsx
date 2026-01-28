@@ -87,6 +87,8 @@ const NotificationBell = () => {
   useEffect(() => {
     if (!user) return;
 
+    let profileId: string | null = null;
+
     const fetchNotifications = async () => {
       const { data: profile } = await supabase
         .from('profiles')
@@ -95,6 +97,7 @@ const NotificationBell = () => {
         .single();
 
       if (!profile) return;
+      profileId = profile.id;
 
       const { data } = await supabase
         .from('notifications')
@@ -111,9 +114,9 @@ const NotificationBell = () => {
 
     fetchNotifications();
 
-    // Subscribe to realtime notifications
+    // Subscribe to realtime notifications - listen to all inserts, filter in handler
     const channel = supabase
-      .channel('notifications')
+      .channel(`notifications-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -123,8 +126,11 @@ const NotificationBell = () => {
         },
         (payload) => {
           const newNotification = payload.new as Notification;
-          setNotifications((prev) => [newNotification, ...prev]);
-          setUnreadCount((prev) => prev + 1);
+          // Only add notification if it belongs to this user
+          if (profileId && (newNotification as any).user_id === profileId) {
+            setNotifications((prev) => [newNotification, ...prev]);
+            setUnreadCount((prev) => prev + 1);
+          }
         }
       )
       .subscribe();
@@ -179,6 +185,37 @@ const NotificationBell = () => {
         return <Trophy className="w-4 h-4 text-gold" />;
       case 'quiz':
         return <CheckCircle2 className="w-4 h-4 text-success" />;
+      case 'transaction':
+        return <Award className="w-4 h-4 text-success" />;
+      case 'message':
+        return <Bell className="w-4 h-4 text-primary" />;
+      case 'friend':
+      case 'enrollment':
+        return <Users className="w-4 h-4 text-accent" />;
+      case 'submission':
+      case 'review':
+        return <FileText className="w-4 h-4 text-primary" />;
+      case 'ticket':
+      case 'escalation':
+        return <AlertCircle className="w-4 h-4 text-destructive" />;
+      case 'payment':
+        return <Award className="w-4 h-4 text-success" />;
+      case 'child_progress':
+      case 'child_achievement':
+      case 'member_progress':
+        return <Star className="w-4 h-4 text-gold" />;
+      case 'skill_suggestion':
+      case 'skill_approval':
+      case 'approval':
+        return <Award className="w-4 h-4 text-accent" />;
+      case 'resolution':
+        return <CheckCircle2 className="w-4 h-4 text-success" />;
+      case 'analytics':
+      case 'report':
+        return <FileText className="w-4 h-4 text-primary" />;
+      case 'team':
+      case 'completion':
+        return <Users className="w-4 h-4 text-success" />;
       default:
         return <Bell className="w-4 h-4 text-muted-foreground" />;
     }
@@ -195,6 +232,32 @@ const NotificationBell = () => {
       case 'video': return 'bg-primary/10';
       case 'achievement': return 'bg-gold/10';
       case 'quiz': return 'bg-success/10';
+      case 'transaction': return 'bg-success/10';
+      case 'payment': return 'bg-success/10';
+      case 'message': return 'bg-primary/10';
+      case 'friend': 
+      case 'enrollment':
+      case 'team':
+        return 'bg-accent/10';
+      case 'submission':
+      case 'review':
+      case 'analytics':
+      case 'report':
+        return 'bg-primary/10';
+      case 'ticket':
+      case 'escalation':
+        return 'bg-destructive/10';
+      case 'child_progress':
+      case 'child_achievement':
+      case 'member_progress':
+        return 'bg-gold/10';
+      case 'skill_suggestion':
+      case 'skill_approval':
+      case 'approval':
+        return 'bg-accent/10';
+      case 'resolution':
+      case 'completion':
+        return 'bg-success/10';
       default: return 'bg-muted';
     }
   };

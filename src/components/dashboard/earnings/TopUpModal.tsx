@@ -8,9 +8,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CreditCard, Smartphone, Building } from 'lucide-react';
+import { CreditCard, Smartphone, Building, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useWallet } from '@/hooks/useWallet';
 
 interface TopUpModalProps {
   open: boolean;
@@ -29,20 +30,28 @@ const TopUpModal = ({ open, onOpenChange }: TopUpModalProps) => {
   const [amount, setAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('card');
   const [loading, setLoading] = useState(false);
+  const { topUp } = useWallet();
 
   const handleTopUp = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
+    const topUpAmount = parseFloat(amount);
+    if (!topUpAmount || topUpAmount <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
 
     setLoading(true);
-    // Simulate processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    toast.success(`Top up of ${amount} ETB initiated successfully!`);
+    
+    const result = await topUp(topUpAmount);
+    
+    if (result.success) {
+      toast.success(`Wallet topped up with ${topUpAmount.toLocaleString()} ETB!`);
+      onOpenChange(false);
+      setAmount('');
+    } else {
+      toast.error(result.error || 'Failed to top up wallet');
+    }
+    
     setLoading(false);
-    onOpenChange(false);
-    setAmount('');
   };
 
   return (
@@ -117,7 +126,14 @@ const TopUpModal = ({ open, onOpenChange }: TopUpModalProps) => {
             onClick={handleTopUp}
             disabled={loading || !amount}
           >
-            {loading ? 'Processing...' : `Top Up ${amount ? `${amount} ETB` : ''}`}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              `Top Up ${amount ? `${parseFloat(amount).toLocaleString()} ETB` : ''}`
+            )}
           </Button>
         </div>
       </DialogContent>
