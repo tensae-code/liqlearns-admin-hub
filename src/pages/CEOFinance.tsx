@@ -1,11 +1,18 @@
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Wallet, 
-  TrendingUp, 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from '@/hooks/useProfile';
+import { toast } from 'sonner';
+import {
+  Wallet,
+  TrendingUp,
   TrendingDown,
   DollarSign,
   CreditCard,
@@ -16,27 +23,169 @@ import {
   Calendar,
   Users,
   BookOpen,
-  ShoppingBag
+  ShoppingBag,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertCircle,
 } from 'lucide-react';
 
-const CEOFinance = () => {
-  const revenueData = [
-    { month: 'Jan', revenue: 45000, expenses: 32000 },
-    { month: 'Feb', revenue: 52000, expenses: 35000 },
-    { month: 'Mar', revenue: 61000, expenses: 38000 },
-    { month: 'Apr', revenue: 58000, expenses: 36000 },
-    { month: 'May', revenue: 67000, expenses: 40000 },
-    { month: 'Jun', revenue: 72000, expenses: 42000 },
-  ];
+interface WithdrawalRequest {
+  id: string;
+  user_id: string;
+  amount: number;
+  method: string;
+  account_info: string | null;
+  status: string;
+  rejection_reason: string | null;
+  created_at: string;
+  user?: { full_name: string; username: string; avatar_url: string | null };
+}
 
-  const transactions = [
-    { id: 1, type: 'income', description: 'Subscription Revenue', amount: 12500, date: 'Today' },
-    { id: 2, type: 'expense', description: 'Server Costs', amount: 3200, date: 'Today' },
-    { id: 3, type: 'income', description: 'Enterprise License', amount: 25000, date: 'Yesterday' },
-    { id: 4, type: 'expense', description: 'Marketing Campaign', amount: 5000, date: 'Yesterday' },
-    { id: 5, type: 'income', description: 'Course Sales', amount: 8400, date: '2 days ago' },
-    { id: 6, type: 'expense', description: 'Teacher Payouts', amount: 15600, date: '2 days ago' },
-  ];
+interface Transaction {
+  id: string;
+  sender_id: string | null;
+  receiver_id: string | null;
+  amount: number;
+  note: string | null;
+  transaction_type: string;
+  status: string;
+  created_at: string;
+}
+
+interface CoursePurchase {
+  id: string;
+  amount: number;
+  instructor_share: number;
+  platform_share: number;
+  l1_commission: number;
+  l2_commission: number;
+  created_at: string;
+}
+
+const CEOFinance = () => {
+  const { profile } = useProfile();
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [purchases, setPurchases] = useState<CoursePurchase[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+
+  // Computed stats
+  const totalPlatformRevenue = purchases.reduce((sum, p) => sum + p.platform_share, 0);
+  const totalInstructorPayouts = purchases.reduce((sum, p) => sum + p.instructor_share, 0);
+  const totalCommissions = purchases.reduce((sum, p) => sum + p.l1_commission + p.l2_commission, 0);
+  const totalCourseSales = purchases.reduce((sum, p) => sum + p.amount, 0);
+  const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending');
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [withdrawalsRes, txRes, purchasesRes] = await Promise.all([
+        supabase
+          .from('withdrawal_requests')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabase
+          .from('transactions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(30),
+        supabase
+          .from('course_purchases')
+          .select('id, amount, instructor_share, platform_share, l1_commission, l2_commission, created_at')
+          .order('created_at', { ascending: false })
+          .limit(100),
+      ]);
+
+      if (withdrawalsRes.data) {
+        // Fetch user profiles for withdrawals
+        const userIds = [...new Set(withdrawalsRes.data.map((w: any) => w.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, username, avatar_url')
+          .in('id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        setWithdrawals(
+          withdrawalsRes.data.map((w: any) => ({
+            ...w,
+            user: profileMap.get(w.user_id),
+          }))
+        );
+      }
+
+      if (txRes.data) setTransactions(txRes.data as Transaction[]);
+      if (purchasesRes.data) setPurchases(purchasesRes.data as CoursePurchase[]);
+    } catch (err) {
+      console.error('Error fetching finance data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async (requestId: string) => {
+    if (!profile?.id) return;
+    setProcessing(requestId);
+    try {
+      const { data, error } = await supabase.rpc('process_withdrawal', {
+        p_request_id: requestId,
+        p_action: 'approve',
+        p_reviewer_id: profile.id,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error);
+      toast.success('Withdrawal approved');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to approve');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleReject = async (requestId: string) => {
+    if (!profile?.id) return;
+    setProcessing(requestId);
+    try {
+      const { data, error } = await supabase.rpc('process_withdrawal', {
+        p_request_id: requestId,
+        p_action: 'reject',
+        p_reviewer_id: profile.id,
+        p_rejection_reason: rejectionReason || 'Rejected by CEO',
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) throw new Error(result.error);
+      toast.success('Withdrawal rejected');
+      setRejectingId(null);
+      setRejectionReason('');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to reject');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
 
   return (
     <DashboardLayout>
@@ -64,39 +213,20 @@ const CEOFinance = () => {
           </div>
         </div>
 
-        {/* Key Metrics */}
+        {/* Key Metrics - Now DB-driven from course_purchases */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Revenue</p>
-                  <p className="text-2xl font-bold text-success">$355,000</p>
-                  <div className="flex items-center gap-1 text-xs text-success mt-1">
-                    <ArrowUpRight className="w-3 h-3" />
-                    <span>+12.5% from last month</span>
-                  </div>
+                  <p className="text-sm text-muted-foreground">Course Sales</p>
+                  <p className="text-2xl font-bold text-success">
+                    {loading ? '...' : `$${totalCourseSales.toLocaleString()}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{purchases.length} purchases</p>
                 </div>
                 <div className="p-3 rounded-full bg-success/10">
                   <TrendingUp className="w-6 h-6 text-success" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-destructive/10 to-destructive/5 border-destructive/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Expenses</p>
-                  <p className="text-2xl font-bold text-destructive">$223,000</p>
-                  <div className="flex items-center gap-1 text-xs text-destructive mt-1">
-                    <ArrowDownRight className="w-3 h-3" />
-                    <span>+8.2% from last month</span>
-                  </div>
-                </div>
-                <div className="p-3 rounded-full bg-destructive/10">
-                  <TrendingDown className="w-6 h-6 text-destructive" />
                 </div>
               </div>
             </CardContent>
@@ -106,12 +236,11 @@ const CEOFinance = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Net Profit</p>
-                  <p className="text-2xl font-bold text-foreground">$132,000</p>
-                  <div className="flex items-center gap-1 text-xs text-success mt-1">
-                    <ArrowUpRight className="w-3 h-3" />
-                    <span>+18.3% margin</span>
-                  </div>
+                  <p className="text-sm text-muted-foreground">Platform Revenue</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {loading ? '...' : `$${totalPlatformRevenue.toLocaleString()}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">After payouts</p>
                 </div>
                 <div className="p-3 rounded-full bg-primary/10">
                   <DollarSign className="w-6 h-6 text-primary" />
@@ -124,12 +253,11 @@ const CEOFinance = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">MRR</p>
-                  <p className="text-2xl font-bold text-foreground">$48,500</p>
-                  <div className="flex items-center gap-1 text-xs text-success mt-1">
-                    <ArrowUpRight className="w-3 h-3" />
-                    <span>+5.2% growth</span>
-                  </div>
+                  <p className="text-sm text-muted-foreground">Instructor Payouts</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {loading ? '...' : `$${totalInstructorPayouts.toLocaleString()}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">70% share</p>
                 </div>
                 <div className="p-3 rounded-full bg-accent/10">
                   <PiggyBank className="w-6 h-6 text-accent" />
@@ -137,118 +265,250 @@ const CEOFinance = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Revenue Sources */}
-        <div className="grid md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-primary" />
-                Subscriptions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">$28,450</p>
-              <p className="text-xs text-muted-foreground mt-1">1,423 active subscribers</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-success" />
-                Course Sales
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">$15,200</p>
-              <p className="text-xs text-muted-foreground mt-1">342 courses sold this month</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Users className="w-4 h-4 text-accent" />
-                Enterprise
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">$45,000</p>
-              <p className="text-xs text-muted-foreground mt-1">8 enterprise contracts</p>
+          <Card className="bg-gradient-to-br from-gold/10 to-gold/5 border-gold/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Commissions Paid</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {loading ? '...' : `$${totalCommissions.toLocaleString()}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">L1 + L2 referral</p>
+                </div>
+                <div className="p-3 rounded-full bg-gold/10">
+                  <Users className="w-6 h-6 text-gold" />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Transactions & Charts */}
-        <Tabs defaultValue="transactions" className="space-y-4">
+        {/* Tabs */}
+        <Tabs defaultValue="withdrawals" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="transactions">Recent Transactions</TabsTrigger>
-            <TabsTrigger value="payouts">Teacher Payouts</TabsTrigger>
-            <TabsTrigger value="invoices">Invoices</TabsTrigger>
+            <TabsTrigger value="withdrawals" className="relative">
+              Withdrawals
+              {pendingWithdrawals.length > 0 && (
+                <Badge className="ml-2 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0">
+                  {pendingWithdrawals.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="purchases">Course Purchases</TabsTrigger>
           </TabsList>
 
+          {/* Withdrawals Tab */}
+          <TabsContent value="withdrawals">
+            <Card>
+              <CardHeader>
+                <CardTitle>Withdrawal Requests</CardTitle>
+                <CardDescription>Approve or reject user withdrawal requests</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                  </div>
+                ) : withdrawals.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Wallet className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No withdrawal requests yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {withdrawals.map(w => (
+                      <div key={w.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-border bg-muted/30">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Avatar className="h-10 w-10 shrink-0">
+                            {w.user?.avatar_url && <AvatarImage src={w.user.avatar_url} />}
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {w.user?.full_name?.charAt(0) || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground text-sm">{w.user?.full_name || 'Unknown'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {w.method} • {w.account_info || 'No account info'} • {formatDate(w.created_at)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <p className="text-lg font-bold text-foreground">${w.amount}</p>
+
+                          {w.status === 'pending' ? (
+                            <div className="flex items-center gap-2">
+                              {rejectingId === w.id ? (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    placeholder="Reason..."
+                                    value={rejectionReason}
+                                    onChange={e => setRejectionReason(e.target.value)}
+                                    className="h-8 w-[150px] text-xs"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    disabled={processing === w.id}
+                                    onClick={() => handleReject(w.id)}
+                                    className="h-8"
+                                  >
+                                    Reject
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => { setRejectingId(null); setRejectionReason(''); }}
+                                    className="h-8"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              ) : (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    disabled={processing === w.id}
+                                    onClick={() => handleApprove(w.id)}
+                                    className="h-8"
+                                  >
+                                    <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={processing === w.id}
+                                    onClick={() => setRejectingId(w.id)}
+                                    className="h-8 text-destructive hover:text-destructive"
+                                  >
+                                    <XCircle className="w-3.5 h-3.5 mr-1" />
+                                    Reject
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <Badge
+                              variant={w.status === 'approved' ? 'default' : 'destructive'}
+                              className="text-xs"
+                            >
+                              {w.status === 'approved' ? (
+                                <><CheckCircle className="w-3 h-3 mr-1" /> Approved</>
+                              ) : (
+                                <><XCircle className="w-3 h-3 mr-1" /> Rejected</>
+                              )}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Transactions Tab */}
           <TabsContent value="transactions">
             <Card>
               <CardHeader>
                 <CardTitle>Recent Transactions</CardTitle>
-                <CardDescription>Latest financial activities</CardDescription>
+                <CardDescription>All platform financial activities</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {transactions.map((tx) => (
-                    <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${tx.type === 'income' ? 'bg-success/10' : 'bg-destructive/10'}`}>
-                          {tx.type === 'income' ? (
-                            <ArrowUpRight className={`w-4 h-4 text-success`} />
-                          ) : (
-                            <ArrowDownRight className={`w-4 h-4 text-destructive`} />
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
+                  </div>
+                ) : transactions.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <DollarSign className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No transactions yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {transactions.map(tx => (
+                      <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${
+                            tx.transaction_type === 'purchase' ? 'bg-success/10' :
+                            tx.transaction_type === 'transfer' ? 'bg-primary/10' :
+                            'bg-muted'
+                          }`}>
+                            {tx.transaction_type === 'purchase' ? (
+                              <BookOpen className="w-4 h-4 text-success" />
+                            ) : tx.transaction_type === 'transfer' ? (
+                              <ArrowUpRight className="w-4 h-4 text-primary" />
+                            ) : (
+                              <DollarSign className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm text-foreground">
+                              {tx.note || tx.transaction_type}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{formatDate(tx.created_at)}</p>
+                          </div>
+                        </div>
+                        <span className="font-semibold text-foreground">
+                          ${tx.amount.toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Course Purchases Tab */}
+          <TabsContent value="purchases">
+            <Card>
+              <CardHeader>
+                <CardTitle>Course Purchases</CardTitle>
+                <CardDescription>Revenue breakdown per purchase</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
+                  </div>
+                ) : purchases.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No course purchases yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {purchases.map(p => (
+                      <div key={p.id} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg bg-muted/50">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">
+                            ${p.amount} sale
+                          </p>
+                          <p className="text-xs text-muted-foreground">{formatDate(p.created_at)}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline" className="text-xs text-success border-success/30">
+                            Platform: ${p.platform_share}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs text-primary border-primary/30">
+                            Instructor: ${p.instructor_share}
+                          </Badge>
+                          {(p.l1_commission > 0 || p.l2_commission > 0) && (
+                            <Badge variant="outline" className="text-xs text-gold border-gold/30">
+                              Commissions: ${p.l1_commission + p.l2_commission}
+                            </Badge>
                           )}
                         </div>
-                        <div>
-                          <p className="font-medium text-sm">{tx.description}</p>
-                          <p className="text-xs text-muted-foreground">{tx.date}</p>
-                        </div>
                       </div>
-                      <span className={`font-semibold ${tx.type === 'income' ? 'text-success' : 'text-destructive'}`}>
-                        {tx.type === 'income' ? '+' : '-'}${tx.amount.toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <Button variant="outline" className="w-full mt-4">
-                  View All Transactions
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="payouts">
-            <Card>
-              <CardHeader>
-                <CardTitle>Teacher Payouts</CardTitle>
-                <CardDescription>Pending and completed teacher payments</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <DollarSign className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Payout management coming soon</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="invoices">
-            <Card>
-              <CardHeader>
-                <CardTitle>Invoices</CardTitle>
-                <CardDescription>Generate and manage invoices</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <ShoppingBag className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Invoice management coming soon</p>
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
