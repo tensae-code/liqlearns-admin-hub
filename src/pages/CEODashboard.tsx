@@ -10,6 +10,7 @@ import CEOSkillApproval from '@/components/ceo/CEOSkillApproval';
 import AdminPrivilegeManager from '@/components/ceo/AdminPrivilegeManager';
 import CourseApprovalModal from '@/components/ceo/CourseApprovalModal';
 import UserSubscriptionManager from '@/components/ceo/UserSubscriptionManager';
+import CommissionGroupManager from '@/components/ceo/CommissionGroupManager';
 import {
   Users,
   BookOpen,
@@ -45,6 +46,7 @@ const CEODashboard = () => {
   const [adminPrivilegesOpen, setAdminPrivilegesOpen] = useState(false);
   const [courseApprovalOpen, setCourseApprovalOpen] = useState(false);
   const [subscriptionManagerOpen, setSubscriptionManagerOpen] = useState(false);
+  const [commissionGroupOpen, setCommissionGroupOpen] = useState(false);
 
   // Handle tab query params to open modals from sidebar navigation
   useEffect(() => {
@@ -63,6 +65,8 @@ const CEODashboard = () => {
       setCourseApprovalOpen(true);
     } else if (tab === 'subscriptions') {
       setSubscriptionManagerOpen(true);
+    } else if (tab === 'commissions') {
+      setCommissionGroupOpen(true);
     }
   }, [location.search]);
 
@@ -94,6 +98,11 @@ const CEODashboard = () => {
 
   const handleSubscriptionManagerClose = (open: boolean) => {
     setSubscriptionManagerOpen(open);
+    if (!open) navigate('/ceo', { replace: true });
+  };
+
+  const handleCommissionGroupClose = (open: boolean) => {
+    setCommissionGroupOpen(open);
     if (!open) navigate('/ceo', { replace: true });
   };
   
@@ -314,6 +323,10 @@ const CEODashboard = () => {
       <UserSubscriptionManager
         open={subscriptionManagerOpen}
         onOpenChange={handleSubscriptionManagerClose}
+      />
+      <CommissionGroupManager
+        open={commissionGroupOpen}
+        onOpenChange={handleCommissionGroupClose}
       />
     </DashboardLayout>
   );
