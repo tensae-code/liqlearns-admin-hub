@@ -131,6 +131,32 @@ export interface GameConfig {
   
   // Quiz
   questions?: QuizQuestion[];
+
+  // Matching
+  matchPairs?: { id: string; left: string; right: string }[];
+
+  // Sorting / Categorize
+  categories?: { id: string; name: string }[];
+  sortItems?: { id: string; text: string; categoryId: string }[];
+
+  // Sequencing
+  sequenceItems?: { id: string; text: string; correctOrder: number }[];
+
+  // Flashcards
+  flashcardItems?: { id: string; front: string; back: string; hint?: string }[];
+
+  // True or False
+  statements?: { id: string; text: string; isTrue: boolean; explanation?: string }[];
+
+  // Hotspot
+  hotspotImage?: string;
+  hotspots?: { id: string; x: number; y: number; radius: number; label: string }[];
+
+  // Crossword
+  crosswordClues?: { id: string; clue: string; answer: string; direction: 'across' | 'down'; row: number; col: number }[];
+
+  // Spin the Wheel
+  wheelSegments?: { id: string; text: string; color?: string }[];
 }
 
 export interface GameItem {
