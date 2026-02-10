@@ -595,6 +595,17 @@ const CourseLearning = () => {
                   onClose={() => setActiveResource(null)}
                 />
               )}
+              {activeResource.type === 'game' && (
+                <GameResource
+                  title={activeResource.title}
+                  gameTemplateId={activeResource.content?.gameTemplateId}
+                  onComplete={(score, maxScore) => {
+                    handleResourceComplete(activeResource.id);
+                    toast.success(`Game completed! ${score}/${maxScore} points earned.`);
+                  }}
+                  onClose={() => setActiveResource(null)}
+                />
+              )}
             </div>
           </motion.div>
         )}

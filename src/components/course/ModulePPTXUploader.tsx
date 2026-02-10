@@ -1169,8 +1169,38 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave, 
               </motion.div>
             )}
 
-            {/* Generic URL-based Resource Form (game, simulation, document, image, link, embed, code, discussion, assignment) */}
-            {selectedResourceType && !['video', 'audio', 'quiz', 'flashcard'].includes(selectedResourceType) && (
+            {/* Game Template Picker */}
+            {selectedResourceType === 'game' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedResourceType(null)}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <h4 className="font-semibold text-foreground">🎮 Select Game Template</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Pick an existing game or create a new one from the catalog below.
+                </p>
+                <GameTemplateCatalog
+                  courseId={undefined}
+                  moduleId={moduleId}
+                  mode="picker"
+                  onSelectGame={handleSelectGameTemplate}
+                />
+                <div className="flex justify-end pt-4">
+                  <Button variant="outline" onClick={() => setShowResourceCreator(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Generic URL-based Resource Form (simulation, document, image, link, embed, code, discussion, assignment) */}
+            {selectedResourceType && !['video', 'audio', 'quiz', 'flashcard', 'game'].includes(selectedResourceType) && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1208,7 +1238,6 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave, 
                     {selectedResourceType === 'document' && 'Link to Google Docs, PDF, or other document'}
                     {selectedResourceType === 'image' && 'Direct link to image or infographic'}
                     {selectedResourceType === 'link' && 'External website or resource URL'}
-                    {selectedResourceType === 'game' && 'Link to interactive game or activity'}
                     {selectedResourceType === 'simulation' && 'Link to PhET, GeoGebra, or simulation'}
                     {selectedResourceType === 'code' && 'Link to CodePen, JSFiddle, or code sandbox'}
                     {selectedResourceType === 'discussion' && 'Description or prompt for discussion'}
