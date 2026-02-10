@@ -42,6 +42,7 @@ import CEOFinance from "./pages/CEOFinance";
 import CEOUsers from "./pages/CEOUsers";
 import SupportDashboard from "./pages/SupportDashboard";
 import NotFound from "./pages/NotFound";
+import GamePage from "./pages/GamePage";
 import { Navigate } from "react-router-dom";
 
 const queryClient = new QueryClient();
