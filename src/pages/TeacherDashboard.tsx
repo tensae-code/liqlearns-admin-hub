@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import GameTemplateCatalog from '@/components/teacher/GameTemplateCatalog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
@@ -46,7 +47,8 @@ import {
   Loader2,
   History,
   RefreshCw,
-  UserCircle
+  UserCircle,
+  Gamepad2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -112,9 +114,9 @@ const TeacherDashboard = () => {
   const requestDifferentReviewer = useRequestDifferentReviewer();
   
   // Get active tab from URL query param, default to 'overview'
-  const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'assignments' | 'earnings') || 'overview';
+  const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'assignments' | 'games' | 'earnings') || 'overview';
   
-  const setActiveTab = (tab: 'overview' | 'courses' | 'students' | 'assignments' | 'earnings') => {
+  const setActiveTab = (tab: 'overview' | 'courses' | 'students' | 'assignments' | 'games' | 'earnings') => {
     setSearchParams({ tab });
   };
   
@@ -441,7 +443,7 @@ const TeacherDashboard = () => {
     }
   };
 
-  const tabs = ['overview', 'courses', 'students', 'assignments', 'earnings'] as const;
+  const tabs = ['overview', 'courses', 'students', 'assignments', 'games', 'earnings'] as const;
 
 
   // Get courses under review with reviewer info
@@ -1088,6 +1090,17 @@ const TeacherDashboard = () => {
                   </div>
                 </div>
               </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'games' && (
+            <motion.div
+              key="games"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <GameTemplateCatalog />
             </motion.div>
           )}
 

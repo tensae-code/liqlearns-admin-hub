@@ -1263,6 +1263,160 @@ export type Database = {
         }
         Relationships: []
       }
+      game_attempts: {
+        Row: {
+          attempt_data: Json | null
+          attempt_number: number | null
+          completed: boolean | null
+          created_at: string
+          game_id: string
+          id: string
+          max_score: number | null
+          score: number | null
+          time_spent_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          attempt_data?: Json | null
+          attempt_number?: number | null
+          completed?: boolean | null
+          created_at?: string
+          game_id: string
+          id?: string
+          max_score?: number | null
+          score?: number | null
+          time_spent_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          attempt_data?: Json | null
+          attempt_number?: number | null
+          completed?: boolean | null
+          created_at?: string
+          game_id?: string
+          id?: string
+          max_score?: number | null
+          score?: number | null
+          time_spent_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_attempts_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_templates: {
+        Row: {
+          config: Json
+          course_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_published: boolean | null
+          is_template: boolean | null
+          level: string | null
+          module_id: string | null
+          share_code: string | null
+          sub_level: string | null
+          thumbnail_url: string | null
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          course_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          is_template?: boolean | null
+          level?: string | null
+          module_id?: string | null
+          share_code?: string | null
+          sub_level?: string | null
+          thumbnail_url?: string | null
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          course_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          is_template?: boolean | null
+          level?: string | null
+          module_id?: string | null
+          share_code?: string | null
+          sub_level?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_templates_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_channels: {
         Row: {
           channel_type: Database["public"]["Enums"]["channel_type"]
