@@ -12,6 +12,7 @@ import VideoResource from '@/components/course/resources/VideoResource';
 import AudioResource from '@/components/course/resources/AudioResource';
 import QuizResource from '@/components/course/resources/QuizResource';
 import FlashcardResource from '@/components/course/resources/FlashcardResource';
+import GameResource from '@/components/course/resources/GameResource';
 import { usePresentationProgress } from '@/hooks/useCourseResources';
 import { toast } from 'sonner';
 import { ParsedSlide } from '@/lib/pptxParser';
@@ -19,7 +20,7 @@ import { ParsedSlide } from '@/lib/pptxParser';
 
 interface SlideResource {
   id: string;
-  type: 'video' | 'audio' | 'quiz' | 'flashcard';
+  type: 'video' | 'audio' | 'quiz' | 'flashcard' | 'game';
   title: string;
   showAfterSlide: number;
   showBeforeSlide: number;
@@ -38,11 +39,12 @@ interface ModuleData {
   filePath: string;
 }
 
-const resourceIcons = {
+const resourceIcons: Record<string, string> = {
   video: '🎬',
   audio: '🎧',
   quiz: '📝',
-  flashcard: '🃏'
+  flashcard: '🃏',
+  game: '🎮'
 };
 
 const CourseLearning = () => {
@@ -589,6 +591,17 @@ const CourseLearning = () => {
                   onComplete={(known, total) => {
                     handleResourceComplete(activeResource.id);
                     toast.success(`Flashcards reviewed! ${known}/${total} cards completed.`);
+                  }}
+                  onClose={() => setActiveResource(null)}
+                />
+              )}
+              {activeResource.type === 'game' && (
+                <GameResource
+                  title={activeResource.title}
+                  gameTemplateId={activeResource.content?.gameTemplateId}
+                  onComplete={(score, maxScore) => {
+                    handleResourceComplete(activeResource.id);
+                    toast.success(`Game completed! ${score}/${maxScore} points earned.`);
                   }}
                   onClose={() => setActiveResource(null)}
                 />
