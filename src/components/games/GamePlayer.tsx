@@ -7,7 +7,8 @@ import {
   Pencil, Mic, Timer, CircleCheck, Gamepad2,
   Link, FolderInput, ListOrdered, Layers, ToggleLeft,
   MousePointerClick, Hash, CircleDot, Shuffle, Tag,
-  HelpCircle, Images, Keyboard
+  HelpCircle, Images, Keyboard, Headphones, Music,
+  FolderOpen, BarChart3, MessageSquare
 } from 'lucide-react';
 import { GAME_TYPES } from '@/lib/gameTypes';
 import type { GameTemplate } from '@/hooks/useGameTemplates';
@@ -36,12 +37,18 @@ import LabelingPlayer from './LabelingPlayer';
 import RiddlePlayer from './RiddlePlayer';
 import PictureSequencePlayer from './PictureSequencePlayer';
 import TypeRacerPlayer from './TypeRacerPlayer';
+import ListenSpellPlayer from './ListenSpellPlayer';
+import RhymeTimePlayer from './RhymeTimePlayer';
+import CategorizePlayer from './CategorizePlayer';
+import PollPlayer from './PollPlayer';
+import DialogueBuilderPlayer from './DialogueBuilderPlayer';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Grid3X3, Brain, GripVertical, TextCursorInput, Search,
   Pencil, Mic, Timer, CircleCheck, Link, FolderInput,
   ListOrdered, Layers, ToggleLeft, MousePointerClick, Hash, CircleDot,
-  Shuffle, Tag, HelpCircle, Images, Keyboard,
+  Shuffle, Tag, HelpCircle, Images, Keyboard, Headphones, Music,
+  FolderOpen, BarChart3, MessageSquare,
 };
 
 interface GamePlayerProps {
@@ -105,6 +112,16 @@ const GamePlayer = ({ template, onComplete }: GamePlayerProps) => {
         return <PictureSequencePlayer config={template.config} onComplete={onComplete} />;
       case 'type_racer':
         return <TypeRacerPlayer config={template.config} onComplete={onComplete} />;
+      case 'listen_spell':
+        return <ListenSpellPlayer config={template.config} onComplete={onComplete} />;
+      case 'rhyme_time':
+        return <RhymeTimePlayer config={template.config} onComplete={onComplete} />;
+      case 'categorize':
+        return <CategorizePlayer config={template.config} onComplete={onComplete} />;
+      case 'poll':
+        return <PollPlayer config={template.config} onComplete={onComplete} />;
+      case 'dialogue':
+        return <DialogueBuilderPlayer config={template.config} onComplete={onComplete} />;
       default:
         return <p className="text-center text-muted-foreground py-8">Unknown game type</p>;
     }
