@@ -147,17 +147,24 @@ const CourseLearningResources = ({
     return GAME_TYPES.find(g => g.id === typeId);
   };
 
-  const activeGameIndex = activeGame ? gameTemplates.findIndex(g => g.id === activeGame.id) : -1;
+  // Group games by type for level-based navigation
+  const getGamesOfSameType = () => {
+    if (!activeGame) return [];
+    return gameTemplates.filter(g => g.type === activeGame.type);
+  };
 
-  const goToNextGame = () => {
-    if (activeGameIndex < gameTemplates.length - 1) {
-      setActiveGame(gameTemplates[activeGameIndex + 1]);
+  const sameTypeGames = getGamesOfSameType();
+  const activeTypeIndex = activeGame ? sameTypeGames.findIndex(g => g.id === activeGame.id) : -1;
+
+  const goToNextLevel = () => {
+    if (activeTypeIndex < sameTypeGames.length - 1) {
+      setActiveGame(sameTypeGames[activeTypeIndex + 1]);
     }
   };
 
-  const goToPrevGame = () => {
-    if (activeGameIndex > 0) {
-      setActiveGame(gameTemplates[activeGameIndex - 1]);
+  const goToPrevLevel = () => {
+    if (activeTypeIndex > 0) {
+      setActiveGame(sameTypeGames[activeTypeIndex - 1]);
     }
   };
 
@@ -174,19 +181,24 @@ const CourseLearningResources = ({
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Games
           </Button>
           <h3 className="text-lg font-display font-semibold text-foreground flex-1 truncate">{activeGame.title}</h3>
-          <span className="text-xs text-muted-foreground shrink-0">{activeGameIndex + 1}/{gameTemplates.length}</span>
+          <span className="text-xs text-muted-foreground shrink-0">{activeTypeIndex + 1}/{sameTypeGames.length}</span>
         </div>
         <GamePlayer template={activeGame} onComplete={(score, maxScore) => {
           console.log('Game completed:', score, '/', maxScore);
         }} />
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-          <Button variant="outline" size="sm" onClick={goToPrevGame} disabled={activeGameIndex <= 0}>
-            <ArrowLeft className="w-4 h-4 mr-1" /> Previous
-          </Button>
-          <Button size="sm" onClick={goToNextGame} disabled={activeGameIndex >= gameTemplates.length - 1}>
-            Next <Play className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
+        {sameTypeGames.length > 1 && (
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+            <Button variant="outline" size="sm" onClick={goToPrevLevel} disabled={activeTypeIndex <= 0}>
+              <ArrowLeft className="w-4 h-4 mr-1" /> Prev Level
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Level {activeTypeIndex + 1}/{sameTypeGames.length}
+            </span>
+            <Button size="sm" onClick={goToNextLevel} disabled={activeTypeIndex >= sameTypeGames.length - 1}>
+              Next Level <Play className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        )}
       </motion.div>
     );
   }
@@ -218,39 +230,56 @@ const CourseLearningResources = ({
             <p>No games available for this course yet.</p>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {gameTemplates.map((game, i) => {
-              const typeInfo = getGameTypeInfo(game.type);
-              return (
-                <motion.button
-                  key={game.id}
-                  onClick={() => setActiveGame(game)}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-accent/30 hover:shadow-md transition-all text-left group"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div className={cn(
-                    'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br',
-                    typeInfo?.color || 'from-accent to-accent/60'
-                  )}>
-                    <Gamepad2 className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-foreground truncate">{game.title}</p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {typeInfo?.name || game.type} • {game.level || 'All levels'}
-                    </p>
-                    {game.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{game.description}</p>
-                    )}
-                  </div>
-                  <Play className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors shrink-0" />
-                </motion.button>
-              );
-            })}
+          <div className="space-y-4">
+            {/* Group by game type */}
+            {(() => {
+              const grouped = new Map<string, typeof gameTemplates>();
+              gameTemplates.forEach(g => {
+                const key = g.type;
+                if (!grouped.has(key)) grouped.set(key, []);
+                grouped.get(key)!.push(g);
+              });
+              return Array.from(grouped.entries()).map(([type, games], gi) => {
+                const typeInfo = getGameTypeInfo(type);
+                return (
+                  <motion.div
+                    key={type}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: gi * 0.05 }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={cn(
+                        'w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br shrink-0',
+                        typeInfo?.color || 'from-accent to-accent/60'
+                      )}>
+                        <Gamepad2 className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">{typeInfo?.name || type}</p>
+                      <span className="text-xs text-muted-foreground">({games.length})</span>
+                    </div>
+                    <div className="space-y-1.5 pl-9">
+                      {games.map((game, i) => (
+                        <motion.button
+                          key={game.id}
+                          onClick={() => setActiveGame(game)}
+                          className="flex items-center gap-3 w-full p-3 rounded-lg border border-border bg-card hover:bg-primary/5 hover:border-primary/30 transition-all text-left group"
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground text-sm truncate">{game.title}</p>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {game.level || 'All levels'}{game.description ? ` • ${game.description}` : ''}
+                            </p>
+                          </div>
+                          <Play className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                );
+              });
+            })()}
           </div>
         )}
       </motion.div>

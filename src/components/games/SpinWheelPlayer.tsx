@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Hand } from 'lucide-react';
 import type { GameConfig } from '@/lib/gameTypes';
 
 interface SpinWheelPlayerProps {
@@ -22,29 +22,67 @@ const SpinWheelPlayer = ({ config, onComplete }: SpinWheelPlayerProps) => {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [spins, setSpins] = useState(0);
+  const [stopping, setStopping] = useState(false);
+  const stopRef = useRef(false);
+  const animRef = useRef<number | null>(null);
+  const currentRotRef = useRef(0);
 
   if (segments.length === 0) return <p className="text-center text-muted-foreground py-8">No wheel segments configured.</p>;
 
   const segAngle = 360 / segments.length;
 
+  const resolveResult = (finalRot: number) => {
+    const normalizedAngle = (360 - (finalRot % 360)) % 360;
+    const segmentIndex = Math.floor(normalizedAngle / segAngle) % segments.length;
+    return segments[segmentIndex].text;
+  };
+
   const spin = () => {
     if (spinning) return;
     setSpinning(true);
+    setStopping(false);
+    stopRef.current = false;
     setResult(null);
 
-    const extraSpins = 5 + Math.random() * 5; // 5-10 full spins
+    const extraSpins = 5 + Math.random() * 5;
     const landAngle = Math.random() * 360;
-    const totalRotation = rotation + extraSpins * 360 + landAngle;
+    const targetRotation = rotation + extraSpins * 360 + landAngle;
 
-    setRotation(totalRotation);
+    currentRotRef.current = targetRotation;
+    setRotation(targetRotation);
+
+    // After spin animation completes naturally (4s)
+    const timer = setTimeout(() => {
+      if (!stopRef.current) {
+        const landed = resolveResult(targetRotation);
+        setResult(landed);
+        setSpinning(false);
+        setSpins(s => s + 1);
+      }
+    }, 4000);
+
+    animRef.current = timer as unknown as number;
+  };
+
+  const stopWheel = () => {
+    if (!spinning || stopping) return;
+    setStopping(true);
+    stopRef.current = true;
+
+    // Cancel the pending natural completion
+    if (animRef.current) clearTimeout(animRef.current);
+
+    // Snap to a random nearby position
+    const snapRotation = rotation + Math.random() * 60 + 30;
+    setRotation(snapRotation);
 
     setTimeout(() => {
-      const normalizedAngle = (360 - (totalRotation % 360)) % 360;
-      const segmentIndex = Math.floor(normalizedAngle / segAngle) % segments.length;
-      setResult(segments[segmentIndex].text);
+      const landed = resolveResult(snapRotation);
+      setResult(landed);
       setSpinning(false);
+      setStopping(false);
       setSpins(s => s + 1);
-    }, 4000);
+    }, 800);
   };
 
   const reset = () => {
@@ -52,6 +90,8 @@ const SpinWheelPlayer = ({ config, onComplete }: SpinWheelPlayerProps) => {
     setResult(null);
     setSpins(0);
     setSpinning(false);
+    setStopping(false);
+    stopRef.current = false;
   };
 
   const radius = 130;
@@ -76,7 +116,10 @@ const SpinWheelPlayer = ({ config, onComplete }: SpinWheelPlayerProps) => {
           height="300"
           viewBox="0 0 300 300"
           animate={{ rotate: rotation }}
-          transition={{ duration: 4, ease: [0.17, 0.67, 0.12, 0.99] }}
+          transition={stopping
+            ? { duration: 0.8, ease: 'easeOut' }
+            : { duration: 4, ease: [0.17, 0.67, 0.12, 0.99] }
+          }
           className="block"
         >
           {segments.map((seg, i) => {
@@ -128,14 +171,20 @@ const SpinWheelPlayer = ({ config, onComplete }: SpinWheelPlayerProps) => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center p-4 bg-primary/10 border border-primary/30 rounded-xl"
         >
-          <p className="text-sm text-muted-foreground">You landed on:</p>
-          <p className="text-lg font-bold text-foreground mt-1">🎯 {result}</p>
+          <p className="text-lg font-bold text-foreground">🎯 You landed on:</p>
+          <p className="text-xl font-extrabold text-primary mt-1">{result}</p>
         </motion.div>
       )}
 
-      <Button onClick={spin} disabled={spinning} className="w-full" size="lg">
-        {spinning ? 'Spinning...' : '🎡 Spin!'}
-      </Button>
+      {spinning ? (
+        <Button onClick={stopWheel} variant="destructive" className="w-full" size="lg">
+          <Hand className="w-5 h-5 mr-2" /> Stop!
+        </Button>
+      ) : (
+        <Button onClick={spin} className="w-full" size="lg">
+          🎡 Spin!
+        </Button>
+      )}
     </div>
   );
 };
