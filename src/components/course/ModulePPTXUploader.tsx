@@ -332,6 +332,24 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave, 
     setFlashcards(updated);
   };
 
+  const handleSelectGameTemplate = (template: GameTemplate) => {
+    if (insertAfterSlide === null) return;
+
+    const resource: SlideResource = {
+      id: `res-${Date.now()}`,
+      type: 'game',
+      title: template.title,
+      showAfterSlide: insertAfterSlide,
+      showBeforeSlide: insertAfterSlide + 1,
+      content: { gameTemplateId: template.id, gameType: template.type }
+    };
+
+    setResources([...resources, resource]);
+    setHasUnsavedChanges(true);
+    setShowResourceCreator(false);
+    toast.success('Game added as resource!');
+  };
+
   const handleSaveResource = () => {
     if (!selectedResourceType || insertAfterSlide === null) return;
 
@@ -341,7 +359,6 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave, 
     switch (selectedResourceType) {
       case 'video':
       case 'audio':
-      case 'game':
       case 'simulation':
       case 'document':
       case 'image':
@@ -384,6 +401,9 @@ const ModulePPTXUploader = ({ open, onOpenChange, moduleId, moduleName, onSave, 
         title = flashcardTitle;
         resourceContent = { cards: validCards };
         break;
+      case 'game':
+        // Handled by handleSelectGameTemplate
+        return;
     }
 
     const resource: SlideResource = {
