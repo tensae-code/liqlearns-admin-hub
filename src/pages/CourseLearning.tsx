@@ -12,6 +12,7 @@ import VideoResource from '@/components/course/resources/VideoResource';
 import AudioResource from '@/components/course/resources/AudioResource';
 import QuizResource from '@/components/course/resources/QuizResource';
 import FlashcardResource from '@/components/course/resources/FlashcardResource';
+import GameResource from '@/components/course/resources/GameResource';
 import { usePresentationProgress } from '@/hooks/useCourseResources';
 import { toast } from 'sonner';
 import { ParsedSlide } from '@/lib/pptxParser';
