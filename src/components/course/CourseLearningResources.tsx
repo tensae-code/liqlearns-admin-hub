@@ -230,56 +230,46 @@ const CourseLearningResources = ({
             <p>No games available for this course yet.</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* Group by game type */}
-            {(() => {
-              const grouped = new Map<string, typeof gameTemplates>();
-              gameTemplates.forEach(g => {
-                const key = g.type;
-                if (!grouped.has(key)) grouped.set(key, []);
-                grouped.get(key)!.push(g);
-              });
-              return Array.from(grouped.entries()).map(([type, games], gi) => {
-                const typeInfo = getGameTypeInfo(type);
-                return (
-                  <motion.div
-                    key={type}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: gi * 0.05 }}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={cn(
-                        'w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br shrink-0',
-                        typeInfo?.color || 'from-accent to-accent/60'
-                      )}>
-                        <Gamepad2 className="w-3.5 h-3.5 text-white" />
-                      </div>
-                      <p className="text-sm font-semibold text-foreground">{typeInfo?.name || type}</p>
-                      <span className="text-xs text-muted-foreground">({games.length})</span>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {gameTemplates.map((game, i) => {
+              const typeInfo = getGameTypeInfo(game.type);
+              return (
+                <motion.button
+                  key={game.id}
+                  onClick={() => setActiveGame(game)}
+                  className="flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all text-left group"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {/* Card header with gradient */}
+                  <div className={cn(
+                    'h-20 bg-gradient-to-br flex items-center justify-center relative',
+                    typeInfo?.color || 'from-accent to-accent/60'
+                  )}>
+                    <Gamepad2 className="w-8 h-8 text-white/80" />
+                    <div className="absolute top-2 right-2">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-medium capitalize">
+                        {game.level || 'All'}
+                      </span>
                     </div>
-                    <div className="space-y-1.5 pl-9">
-                      {games.map((game, i) => (
-                        <motion.button
-                          key={game.id}
-                          onClick={() => setActiveGame(game)}
-                          className="flex items-center gap-3 w-full p-3 rounded-lg border border-border bg-card hover:bg-primary/5 hover:border-primary/30 transition-all text-left group"
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-foreground text-sm truncate">{game.title}</p>
-                            <p className="text-xs text-muted-foreground truncate mt-0.5">
-                              {game.level || 'All levels'}{game.description ? ` • ${game.description}` : ''}
-                            </p>
-                          </div>
-                          <Play className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                        </motion.button>
-                      ))}
-                    </div>
-                  </motion.div>
-                );
-              });
-            })()}
+                    <Play className="absolute bottom-2 right-2 w-5 h-5 text-white/60 group-hover:text-white group-hover:scale-110 transition-all" />
+                  </div>
+                  {/* Card body */}
+                  <div className="p-3 flex-1 flex flex-col">
+                    <p className="font-semibold text-foreground text-sm truncate">{game.title}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                      {typeInfo?.name || game.type}
+                    </p>
+                    {game.description && (
+                      <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{game.description}</p>
+                    )}
+                  </div>
+                </motion.button>
+              );
+            })}
           </div>
         )}
       </motion.div>
