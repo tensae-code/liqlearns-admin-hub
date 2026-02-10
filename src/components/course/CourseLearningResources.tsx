@@ -115,6 +115,125 @@ const CourseLearningResources = ({
     console.log('Submitted:', assignmentId, submission);
   };
 
+  // Resources specific to this course
+  const resources: LearningResource[] = [
+    { id: 'assignments', name: 'Assignments', icon: ClipboardList, gradientIndex: 0, count: courseAssignments.length, unlocked: true, requiredModule: 0, isAssignment: true },
+    { id: 'books', name: 'Books', icon: BookOpen, gradientIndex: 1, count: 24, unlocked: true, requiredModule: 0 },
+    { id: 'vocabulary', name: 'Vocabulary', icon: Languages, gradientIndex: 2, count: 156, unlocked: true, requiredModule: 0 },
+    { id: 'notes', name: 'Notes', icon: FileText, gradientIndex: 3, count: 42, unlocked: true, requiredModule: 1 },
+    { id: 'exercise', name: 'Exercises', icon: PenTool, gradientIndex: 0, count: 89, unlocked: completedModules >= 1, requiredModule: 1 },
+    { id: 'stories', name: 'Stories', icon: BookMarked, gradientIndex: 1, count: 18, unlocked: completedModules >= 2, requiredModule: 2 },
+    { id: 'games', name: 'Games', icon: Gamepad2, gradientIndex: 2, count: gameTemplates.length, unlocked: true, requiredModule: 0 },
+    { id: 'videos', name: 'Videos', icon: Video, gradientIndex: 3, count: 67, unlocked: completedModules >= 2, requiredModule: 2 },
+    { id: 'music', name: 'Music', icon: Music, gradientIndex: 0, count: 45, unlocked: completedModules >= 3, requiredModule: 3 },
+    { id: 'live', name: 'Live Sessions', icon: Radio, gradientIndex: 1, count: 5, unlocked: completedModules >= 4, requiredModule: 4 },
+    { id: 'audiobooks', name: 'Audiobooks', icon: Headphones, gradientIndex: 2, count: 28, unlocked: completedModules >= 3, requiredModule: 3 },
+    { id: 'translator', name: 'Translator', icon: Globe, gradientIndex: 3, count: 1, unlocked: true, requiredModule: 0 },
+    { id: 'movies', name: 'Movies', icon: Film, gradientIndex: 0, count: 12, unlocked: completedModules >= 5, requiredModule: 5 },
+  ];
+
+  const handleResourceClick = (resource: LearningResource) => {
+    if (resource.id === 'games' && gameTemplates.length > 0) {
+      setShowGames(true);
+    } else if (resource.isAssignment && courseAssignments.length > 0) {
+      setSelectedAssignment(courseAssignments[0]);
+      setSubmissionModalOpen(true);
+    } else {
+      onResourceClick?.(resource);
+    }
+  };
+
+  const getGameTypeInfo = (typeId: string) => {
+    return GAME_TYPES.find(g => g.id === typeId);
+  };
+
+  // If playing a game
+  if (activeGame) {
+    return (
+      <motion.div
+        className="bg-card rounded-xl border border-border p-5"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <Button variant="ghost" size="sm" onClick={() => setActiveGame(null)}>
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back to Games
+          </Button>
+          <h3 className="text-lg font-display font-semibold text-foreground">{activeGame.title}</h3>
+        </div>
+        <GamePlayer template={activeGame} onComplete={(score, maxScore) => {
+          console.log('Game completed:', score, '/', maxScore);
+        }} />
+      </motion.div>
+    );
+  }
+
+  // If showing game list
+  if (showGames) {
+    return (
+      <motion.div
+        className="bg-card rounded-xl border border-border p-5"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <Button variant="ghost" size="sm" onClick={() => setShowGames(false)}>
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back
+          </Button>
+          <h3 className="text-lg font-display font-semibold text-foreground">
+            Games ({gameTemplates.length})
+          </h3>
+        </div>
+
+        {loadingGames ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : gameTemplates.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Gamepad2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>No games available for this course yet.</p>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {gameTemplates.map((game, i) => {
+              const typeInfo = getGameTypeInfo(game.type);
+              return (
+                <motion.button
+                  key={game.id}
+                  onClick={() => setActiveGame(game)}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-accent/30 hover:shadow-md transition-all text-left group"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className={cn(
+                    'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br',
+                    typeInfo?.color || 'from-accent to-accent/60'
+                  )}>
+                    <Gamepad2 className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-foreground truncate">{game.title}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {typeInfo?.name || game.type} • {game.level || 'All levels'}
+                    </p>
+                    {game.description && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{game.description}</p>
+                    )}
+                  </div>
+                  <Play className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors shrink-0" />
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       className="bg-card rounded-xl border border-border p-5"
