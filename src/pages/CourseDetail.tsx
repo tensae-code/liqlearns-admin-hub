@@ -11,6 +11,9 @@ import CourseLearningResources from '@/components/course/CourseLearningResources
 import CourseReviews from '@/components/course/CourseReviews';
 import CourseImageGallery from '@/components/course/CourseImageGallery';
 import { supabase } from '@/integrations/supabase/client';
+import { useCoursePurchase } from '@/hooks/useCoursePurchase';
+import { useWallet } from '@/hooks/useWallet';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Play,
@@ -32,7 +35,9 @@ import {
   Award,
   Presentation,
   Layers,
-  AlertCircle
+  AlertCircle,
+  Wallet,
+  ShoppingCart
 } from 'lucide-react';
 
 interface LessonBreak {
@@ -94,6 +99,7 @@ interface CourseData {
   badge_name: string | null;
   thumbnail_url: string | null;
   gallery_images: string[] | null;
+  price: number | null;
   instructor?: {
     id: string;
     full_name: string | null;
@@ -106,6 +112,8 @@ const CourseDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const isPreview = searchParams.get('preview') === 'true';
+  const { purchaseCourse } = useCoursePurchase();
+  const { balance } = useWallet();
   
   const [activeTab, setActiveTab] = useState<'lessons' | 'resources' | 'reviews'>('lessons');
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -113,6 +121,7 @@ const CourseDetail = () => {
   const [modules, setModules] = useState<ModuleData[]>([]);
   const [allResources, setAllResources] = useState<CourseResource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const [enrollmentCount, setEnrollmentCount] = useState(0);
 
   // Fetch real course data with parallel requests
@@ -725,6 +734,52 @@ const CourseDetail = () => {
               Complete modules to level up your badge!
             </p>
           </motion.div>
+
+          {/* Purchase Card */}
+          {course.price && course.price > 0 && !isPreview && (
+            <motion.div
+              className="bg-card rounded-xl border border-border p-5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+            >
+              <div className="text-center mb-3">
+                <p className="text-2xl font-display font-bold text-foreground">{course.price.toLocaleString()} ETB</p>
+                <p className="text-xs text-muted-foreground">One-time purchase</p>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-3 p-2 bg-muted/30 rounded-lg">
+                <span className="flex items-center gap-1"><Wallet className="w-3 h-3" /> Your Balance</span>
+                <span className="font-medium text-foreground">{balance.toLocaleString()} ETB</span>
+              </div>
+              <Button
+                className="w-full"
+                variant="hero"
+                disabled={isPurchasing || balance < (course.price || 0)}
+                onClick={async () => {
+                  if (!id || !course.price) return;
+                  setIsPurchasing(true);
+                  const result = await purchaseCourse(id, course.price);
+                  setIsPurchasing(false);
+                  if (!result.success) {
+                    toast.error(result.error || 'Purchase failed');
+                  }
+                }}
+              >
+                {isPurchasing ? (
+                  <><span className="animate-spin mr-2">⏳</span> Processing...</>
+                ) : balance < (course.price || 0) ? (
+                  'Insufficient Balance'
+                ) : (
+                  <><ShoppingCart className="w-4 h-4 mr-2" /> Buy Course</>
+                )}
+              </Button>
+              {balance < (course.price || 0) && (
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Top up your wallet to purchase this course
+                </p>
+              )}
+            </motion.div>
+          )}
 
           {/* Quick Stats */}
           <motion.div
