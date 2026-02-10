@@ -171,6 +171,56 @@ export const GAME_TYPES = [
     subLevels: ['writing'],
     configFields: ['typeRacerTexts'],
   },
+  {
+    id: 'listen_spell',
+    name: 'Listen & Spell',
+    description: 'Listen to a word or phrase spoken aloud, then type what you hear.',
+    icon: 'Headphones',
+    color: 'from-sky-500 to-indigo-400',
+    levels: ['beginner', 'basics', 'advanced', 'pro'],
+    subLevels: ['hearing', 'writing'],
+    configFields: ['listenSpellItems'],
+  },
+  {
+    id: 'rhyme_time',
+    name: 'Rhyme Time',
+    description: 'Identify which words rhyme with the target word.',
+    icon: 'Music',
+    color: 'from-pink-500 to-rose-400',
+    levels: ['beginner', 'basics', 'advanced'],
+    subLevels: ['reading', 'hearing'],
+    configFields: ['rhymeRounds'],
+  },
+  {
+    id: 'categorize',
+    name: 'Categorize',
+    description: 'Sort items into the correct category buckets.',
+    icon: 'FolderOpen',
+    color: 'from-green-500 to-emerald-400',
+    levels: ['beginner', 'basics', 'advanced', 'pro'],
+    subLevels: ['reading'],
+    configFields: ['categorizeBuckets', 'categorizeItems'],
+  },
+  {
+    id: 'poll',
+    name: 'Poll / Vote',
+    description: 'Answer opinion polls or knowledge-check votes with live results.',
+    icon: 'BarChart3',
+    color: 'from-blue-600 to-indigo-500',
+    levels: ['beginner', 'basics', 'advanced'],
+    subLevels: ['reading'],
+    configFields: ['pollQuestions'],
+  },
+  {
+    id: 'dialogue',
+    name: 'Dialogue Builder',
+    description: 'Practice conversations by choosing the right response in a dialogue.',
+    icon: 'MessageSquare',
+    color: 'from-amber-600 to-orange-500',
+    levels: ['beginner', 'basics', 'advanced', 'pro'],
+    subLevels: ['reading', 'speaking'],
+    configFields: ['dialogueScenarios'],
+  },
 ] as const;
 
 export type GameType = typeof GAME_TYPES[number]['id'];
@@ -262,6 +312,22 @@ export interface GameConfig {
 
   // Type Racer
   typeRacerTexts?: { text: string; difficulty?: string }[];
+
+  // Listen & Spell
+  listenSpellItems?: { id: string; text: string; audioUrl?: string; hint?: string }[];
+
+  // Rhyme Time
+  rhymeRounds?: { id: string; targetWord: string; options: { id: string; text: string; isRhyme: boolean }[] }[];
+
+  // Categorize
+  categorizeBuckets?: { id: string; name: string; color?: string }[];
+  categorizeItems?: { id: string; text: string; bucketId: string }[];
+
+  // Poll / Vote
+  pollQuestions?: { id: string; question: string; options: { id: string; text: string }[]; correctId?: string }[];
+
+  // Dialogue Builder
+  dialogueScenarios?: { id: string; scenario: string; turns: { speaker: 'npc' | 'player'; text?: string; options?: { id: string; text: string; isCorrect: boolean }[] }[] }[];
 }
 
 export interface GameItem {
