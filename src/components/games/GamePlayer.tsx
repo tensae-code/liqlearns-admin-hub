@@ -4,7 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { 
   Grid3X3, Brain, GripVertical, TextCursorInput, Search, 
-  Pencil, Mic, Timer, CircleCheck, Gamepad2 
+  Pencil, Mic, Timer, CircleCheck, Gamepad2,
+  Link, FolderInput, ListOrdered, Layers, ToggleLeft,
+  MousePointerClick, Hash, CircleDot
 } from 'lucide-react';
 import { GAME_TYPES } from '@/lib/gameTypes';
 import type { GameTemplate } from '@/hooks/useGameTemplates';
@@ -17,10 +19,19 @@ import TracingPlayer from './TracingPlayer';
 import RecordingPlayer from './RecordingPlayer';
 import TimerChallengePlayer from './TimerChallengePlayer';
 import QuizPlayer from './QuizPlayer';
+import MatchingPlayer from './MatchingPlayer';
+import SortingPlayer from './SortingPlayer';
+import SequencingPlayer from './SequencingPlayer';
+import FlashcardsPlayer from './FlashcardsPlayer';
+import TrueFalsePlayer from './TrueFalsePlayer';
+import HotspotPlayer from './HotspotPlayer';
+import CrosswordPlayer from './CrosswordPlayer';
+import SpinWheelPlayer from './SpinWheelPlayer';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Grid3X3, Brain, GripVertical, TextCursorInput, Search,
-  Pencil, Mic, Timer, CircleCheck,
+  Pencil, Mic, Timer, CircleCheck, Link, FolderInput,
+  ListOrdered, Layers, ToggleLeft, MousePointerClick, Hash, CircleDot,
 };
 
 interface GamePlayerProps {
@@ -52,6 +63,22 @@ const GamePlayer = ({ template, onComplete }: GamePlayerProps) => {
         return <TimerChallengePlayer config={template.config} onComplete={onComplete} />;
       case 'quiz':
         return <QuizPlayer config={template.config} onComplete={onComplete} />;
+      case 'matching':
+        return <MatchingPlayer config={template.config} onComplete={onComplete} />;
+      case 'sorting':
+        return <SortingPlayer config={template.config} onComplete={onComplete} />;
+      case 'sequencing':
+        return <SequencingPlayer config={template.config} onComplete={onComplete} />;
+      case 'flashcards':
+        return <FlashcardsPlayer config={template.config} onComplete={onComplete} />;
+      case 'true_false':
+        return <TrueFalsePlayer config={template.config} onComplete={onComplete} />;
+      case 'hotspot':
+        return <HotspotPlayer config={template.config} onComplete={onComplete} />;
+      case 'crossword':
+        return <CrosswordPlayer config={template.config} onComplete={onComplete} />;
+      case 'spin_wheel':
+        return <SpinWheelPlayer config={template.config} onComplete={onComplete} />;
       default:
         return <p className="text-center text-muted-foreground py-8">Unknown game type</p>;
     }
