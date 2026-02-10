@@ -1093,6 +1093,17 @@ const TeacherDashboard = () => {
             </motion.div>
           )}
 
+          {activeTab === 'games' && (
+            <motion.div
+              key="games"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <GameTemplateCatalog />
+            </motion.div>
+          )}
+
           {activeTab === 'earnings' && (
             <motion.div
               key="earnings"
