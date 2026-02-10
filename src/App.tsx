@@ -138,6 +138,9 @@ const AppRoutes = () => (
       </ProtectedRoute>
     } />
     
+    {/* Shareable Game Route */}
+    <Route path="/game/:shareCode" element={<GamePage />} />
+    
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
