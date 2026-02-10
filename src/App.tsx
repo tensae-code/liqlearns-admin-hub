@@ -55,6 +55,9 @@ const AppRoutes = () => (
     <Route path="/courses" element={<Courses />} />
     <Route path="/enterprise" element={<EnterpriseDashboard />} />
     <Route path="/enterprise/analytics" element={<EnterpriseAnalytics />} />
+    <Route path="/enterprise/team" element={<Navigate to="/enterprise?tab=team" replace />} />
+    <Route path="/enterprise/courses" element={<Navigate to="/enterprise?tab=courses" replace />} />
+    <Route path="/enterprise/paths" element={<Navigate to="/enterprise?tab=paths" replace />} />
     <Route path="/marketplace" element={<Marketplace />} />
     <Route path="/business" element={<BusinessDashboard />} />
     <Route path="/quest" element={<Quest />} />
