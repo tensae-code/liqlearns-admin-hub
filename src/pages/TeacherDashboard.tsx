@@ -47,7 +47,8 @@ import {
   Loader2,
   History,
   RefreshCw,
-  UserCircle
+  UserCircle,
+  Gamepad2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
