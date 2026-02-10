@@ -20,7 +20,10 @@ import {
   ArrowLeft,
   Play,
   Trophy,
-  Loader2
+  Loader2,
+  Grid3X3, Brain, GripVertical, TextCursorInput, Search,
+  Pencil, Mic, Timer, CircleCheck, Link, FolderInput,
+  ListOrdered, Layers, ToggleLeft, MousePointerClick, Hash, CircleDot
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -230,42 +233,57 @@ const CourseLearningResources = ({
             <p>No games available for this course yet.</p>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
             {gameTemplates.map((game, i) => {
               const typeInfo = getGameTypeInfo(game.type);
+              const GAME_ICON_MAP: Record<string, React.ElementType> = {
+                Grid3X3, Brain, GripVertical, TextCursorInput, Search,
+                Pencil, Mic, Timer, CircleCheck, Link, FolderInput,
+                ListOrdered, Layers, ToggleLeft, MousePointerClick, Hash, CircleDot,
+              };
+              const GameIcon = typeInfo ? (GAME_ICON_MAP[typeInfo.icon] || Gamepad2) : Gamepad2;
+              
               return (
                 <motion.button
                   key={game.id}
                   onClick={() => setActiveGame(game)}
-                  className="flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all text-left group"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  className="relative rounded-xl overflow-hidden border border-border hover:shadow-lg hover:border-primary/30 transition-all text-left group"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ y: -3 }}
+                  whileTap={{ scale: 0.97 }}
                 >
-                  {/* Card header with gradient */}
+                  {/* Full card gradient background */}
                   <div className={cn(
-                    'h-20 bg-gradient-to-br flex items-center justify-center relative',
+                    'h-32 bg-gradient-to-br relative flex flex-col justify-between p-3',
                     typeInfo?.color || 'from-accent to-accent/60'
                   )}>
-                    <Gamepad2 className="w-8 h-8 text-white/80" />
-                    <div className="absolute top-2 right-2">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-medium capitalize">
+                    {/* Icon watermark */}
+                    <GameIcon className="absolute right-2 top-2 w-12 h-12 text-white/15" />
+                    
+                    {/* Level badge */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-medium capitalize backdrop-blur-sm">
                         {game.level || 'All'}
                       </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/15 text-white/80 font-medium backdrop-blur-sm">
+                        {typeInfo?.name || game.type}
+                      </span>
                     </div>
-                    <Play className="absolute bottom-2 right-2 w-5 h-5 text-white/60 group-hover:text-white group-hover:scale-110 transition-all" />
-                  </div>
-                  {/* Card body */}
-                  <div className="p-3 flex-1 flex flex-col">
-                    <p className="font-semibold text-foreground text-sm truncate">{game.title}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                      {typeInfo?.name || game.type}
-                    </p>
-                    {game.description && (
-                      <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{game.description}</p>
-                    )}
+                    
+                    {/* Text overlay at bottom */}
+                    <div>
+                      <p className="font-bold text-white text-sm leading-tight drop-shadow-sm">{game.title}</p>
+                      {game.description && (
+                        <p className="text-[10px] text-white/70 mt-0.5 line-clamp-1">{game.description}</p>
+                      )}
+                    </div>
+                    
+                    {/* Play button */}
+                    <div className="absolute bottom-2.5 right-2.5 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/40 transition-all">
+                      <Play className="w-3.5 h-3.5 text-white fill-white" />
+                    </div>
                   </div>
                 </motion.button>
               );
