@@ -344,6 +344,48 @@ export type Database = {
           },
         ]
       }
+      commission_groups: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          l1_percent: number
+          l2_cap: number
+          l2_percent: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          l1_percent?: number
+          l2_cap?: number
+          l2_percent?: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          l1_percent?: number
+          l2_cap?: number
+          l2_percent?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       community_post_comments: {
         Row: {
           content: string
@@ -2238,6 +2280,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           birthday: string | null
+          commission_group_id: string | null
           created_at: string
           current_streak: number
           email: string
@@ -2268,6 +2311,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           birthday?: string | null
+          commission_group_id?: string | null
           created_at?: string
           current_streak?: number
           email: string
@@ -2298,6 +2342,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           birthday?: string | null
+          commission_group_id?: string | null
           created_at?: string
           current_streak?: number
           email?: string
@@ -2325,6 +2370,13 @@ export type Database = {
           xp_points?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_commission_group_id_fkey"
+            columns: ["commission_group_id"]
+            isOneToOne: false
+            referencedRelation: "commission_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_held_by_fkey"
             columns: ["held_by"]

@@ -29,6 +29,7 @@ import {
   Shield,
   Baby,
   BarChart3,
+  Percent,
   FileText,
   UserCheck,
   Mail,
@@ -63,6 +64,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
       return [
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & insights', path: '/ceo' },
         { icon: Crown, label: 'Subscriptions', description: 'User plans', path: '/ceo?tab=subscriptions' },
+        { icon: Percent, label: 'Commissions', description: 'Group rates', path: '/ceo?tab=commissions' },
         { icon: Lightbulb, label: 'Skills', description: 'Skill approvals', path: '/ceo?tab=skills' },
         { icon: Shield, label: 'Controls', description: 'Platform controls', path: '/ceo?tab=controls' },
         { icon: FolderTree, label: 'Categories', description: 'Course categories', path: '/ceo?tab=categories' },
