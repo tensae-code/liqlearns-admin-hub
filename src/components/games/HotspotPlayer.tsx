@@ -76,7 +76,7 @@ const HotspotPlayer = ({ config, onComplete }: HotspotPlayerProps) => {
         onClick={handleClick}
         className="relative rounded-xl overflow-hidden border border-border cursor-crosshair"
       >
-        <img src={imageUrl} alt="Hotspot" className="w-full block" />
+        <img src={`${imageUrl}?v=2`} alt="Hotspot" className="w-full block" />
         {/* Show found markers */}
         {hotspots.filter(h => found.has(h.id)).map(h => (
           <motion.div
