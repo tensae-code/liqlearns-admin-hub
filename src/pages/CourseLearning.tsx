@@ -20,7 +20,7 @@ import { ParsedSlide } from '@/lib/pptxParser';
 
 interface SlideResource {
   id: string;
-  type: 'video' | 'audio' | 'quiz' | 'flashcard';
+  type: 'video' | 'audio' | 'quiz' | 'flashcard' | 'game';
   title: string;
   showAfterSlide: number;
   showBeforeSlide: number;
