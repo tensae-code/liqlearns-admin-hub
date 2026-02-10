@@ -114,9 +114,9 @@ const TeacherDashboard = () => {
   const requestDifferentReviewer = useRequestDifferentReviewer();
   
   // Get active tab from URL query param, default to 'overview'
-  const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'assignments' | 'earnings') || 'overview';
+  const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'assignments' | 'games' | 'earnings') || 'overview';
   
-  const setActiveTab = (tab: 'overview' | 'courses' | 'students' | 'assignments' | 'earnings') => {
+  const setActiveTab = (tab: 'overview' | 'courses' | 'students' | 'assignments' | 'games' | 'earnings') => {
     setSearchParams({ tab });
   };
   
