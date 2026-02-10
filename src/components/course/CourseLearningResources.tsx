@@ -147,6 +147,20 @@ const CourseLearningResources = ({
     return GAME_TYPES.find(g => g.id === typeId);
   };
 
+  const activeGameIndex = activeGame ? gameTemplates.findIndex(g => g.id === activeGame.id) : -1;
+
+  const goToNextGame = () => {
+    if (activeGameIndex < gameTemplates.length - 1) {
+      setActiveGame(gameTemplates[activeGameIndex + 1]);
+    }
+  };
+
+  const goToPrevGame = () => {
+    if (activeGameIndex > 0) {
+      setActiveGame(gameTemplates[activeGameIndex - 1]);
+    }
+  };
+
   // If playing a game
   if (activeGame) {
     return (
@@ -159,11 +173,20 @@ const CourseLearningResources = ({
           <Button variant="ghost" size="sm" onClick={() => setActiveGame(null)}>
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Games
           </Button>
-          <h3 className="text-lg font-display font-semibold text-foreground">{activeGame.title}</h3>
+          <h3 className="text-lg font-display font-semibold text-foreground flex-1 truncate">{activeGame.title}</h3>
+          <span className="text-xs text-muted-foreground shrink-0">{activeGameIndex + 1}/{gameTemplates.length}</span>
         </div>
         <GamePlayer template={activeGame} onComplete={(score, maxScore) => {
           console.log('Game completed:', score, '/', maxScore);
         }} />
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+          <Button variant="outline" size="sm" onClick={goToPrevGame} disabled={activeGameIndex <= 0}>
+            <ArrowLeft className="w-4 h-4 mr-1" /> Previous
+          </Button>
+          <Button size="sm" onClick={goToNextGame} disabled={activeGameIndex >= gameTemplates.length - 1}>
+            Next <Play className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
       </motion.div>
     );
   }
