@@ -39,11 +39,12 @@ interface ModuleData {
   filePath: string;
 }
 
-const resourceIcons = {
+const resourceIcons: Record<string, string> = {
   video: '🎬',
   audio: '🎧',
   quiz: '📝',
-  flashcard: '🃏'
+  flashcard: '🃏',
+  game: '🎮'
 };
 
 const CourseLearning = () => {
