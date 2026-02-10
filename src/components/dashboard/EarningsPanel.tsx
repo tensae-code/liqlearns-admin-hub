@@ -10,7 +10,8 @@ import {
   TrendingUp,
   ChevronRight,
   Plus,
-  Loader2
+  Loader2,
+  Banknote
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ import TopUpModal from './earnings/TopUpModal';
 import SendMoneyModal from './earnings/SendMoneyModal';
 import ScanQRModal from './earnings/ScanQRModal';
 import RequestMoneyModal from './earnings/RequestMoneyModal';
+import WithdrawModal from './earnings/WithdrawModal';
 import { useWallet } from '@/hooks/useWallet';
 import { useProfile } from '@/hooks/useProfile';
 import { formatDistanceToNow } from 'date-fns';
@@ -41,6 +43,7 @@ const EarningsPanel = ({
   const [sendOpen, setSendOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   // Use wallet data if available, otherwise use props
   const totalEarnings = wallet?.total_earned || propTotalEarnings;
@@ -123,7 +126,7 @@ const EarningsPanel = ({
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-4 gap-1 md:gap-2 p-3 md:p-4 border-b border-border">
+      <div className="grid grid-cols-5 gap-1 md:gap-2 p-3 md:p-4 border-b border-border">
         <Button 
           variant="ghost" 
           className="flex flex-col items-center gap-0.5 md:gap-1 h-auto py-2 md:py-3 px-1"
@@ -164,6 +167,16 @@ const EarningsPanel = ({
           </div>
           <span className="text-[10px] md:text-xs text-muted-foreground">Request</span>
         </Button>
+        <Button 
+          variant="ghost" 
+          className="flex flex-col items-center gap-0.5 md:gap-1 h-auto py-2 md:py-3 px-1"
+          onClick={() => setWithdrawOpen(true)}
+        >
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-muted flex items-center justify-center text-success">
+            <Banknote className="w-4 h-4 md:w-5 md:h-5" />
+          </div>
+          <span className="text-[10px] md:text-xs text-muted-foreground">Withdraw</span>
+        </Button>
       </div>
 
       {/* Modals */}
@@ -175,6 +188,11 @@ const EarningsPanel = ({
         onOpenChange={setRequestOpen} 
         availableBalance={availableBalance}
         pendingBalance={pendingEarnings}
+      />
+      <WithdrawModal
+        open={withdrawOpen}
+        onOpenChange={setWithdrawOpen}
+        availableBalance={availableBalance}
       />
 
       {/* Tabs */}

@@ -546,6 +546,146 @@ export type Database = {
           },
         ]
       }
+      course_purchases: {
+        Row: {
+          amount: number
+          buyer_id: string
+          course_id: string
+          created_at: string
+          id: string
+          instructor_id: string | null
+          instructor_share: number
+          l1_commission: number
+          l1_referrer_id: string | null
+          l2_commission: number
+          l2_referrer_id: string | null
+          platform_share: number
+          status: string
+        }
+        Insert: {
+          amount: number
+          buyer_id: string
+          course_id: string
+          created_at?: string
+          id?: string
+          instructor_id?: string | null
+          instructor_share?: number
+          l1_commission?: number
+          l1_referrer_id?: string | null
+          l2_commission?: number
+          l2_referrer_id?: string | null
+          platform_share?: number
+          status?: string
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          instructor_id?: string | null
+          instructor_share?: number
+          l1_commission?: number
+          l1_referrer_id?: string | null
+          l2_commission?: number
+          l2_referrer_id?: string | null
+          platform_share?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_purchases_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_l1_referrer_id_fkey"
+            columns: ["l1_referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_l1_referrer_id_fkey"
+            columns: ["l1_referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_l1_referrer_id_fkey"
+            columns: ["l1_referrer_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_l2_referrer_id_fkey"
+            columns: ["l2_referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_l2_referrer_id_fkey"
+            columns: ["l2_referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_l2_referrer_id_fkey"
+            columns: ["l2_referrer_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_resources: {
         Row: {
           content: Json | null
@@ -3596,6 +3736,91 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_requests: {
+        Row: {
+          account_info: string | null
+          amount: number
+          created_at: string
+          id: string
+          method: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_info?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          method?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_info?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawal_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawal_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawal_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_with_age"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawal_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawal_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       profile_with_age: {
@@ -3791,6 +4016,19 @@ export type Database = {
       is_session_participant: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: boolean
+      }
+      process_withdrawal: {
+        Args: {
+          p_action: string
+          p_rejection_reason?: string
+          p_request_id: string
+          p_reviewer_id: string
+        }
+        Returns: Json
+      }
+      purchase_course: {
+        Args: { p_amount: number; p_buyer_id: string; p_course_id: string }
+        Returns: Json
       }
       transfer_money: {
         Args: {
