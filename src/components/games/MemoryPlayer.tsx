@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { RotateCcw, Trophy } from 'lucide-react';
@@ -28,16 +28,27 @@ const MemoryPlayer = ({ config, onComplete }: MemoryPlayerProps) => {
   const [locked, setLocked] = useState(false);
 
   useEffect(() => {
+    initCards();
+  }, [pairs]);
+
+  const initCards = () => {
     const allCards: Card[] = [];
     pairs.forEach((pair, idx) => {
       allCards.push({ id: `a-${idx}`, pairIndex: idx, text: pair.a, side: 'a', flipped: false, matched: false });
       allCards.push({ id: `b-${idx}`, pairIndex: idx, text: pair.b, side: 'b', flipped: false, matched: false });
     });
-    setCards(allCards.sort(() => Math.random() - 0.5));
+    // Fisher-Yates shuffle for better randomization
+    const shuffled = [...allCards];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    setCards(shuffled);
     setFlippedIds([]);
     setMoves(0);
     setMatched(0);
-  }, [pairs]);
+    setLocked(false);
+  };
 
   const handleFlip = (cardId: string) => {
     if (locked) return;
@@ -57,7 +68,6 @@ const MemoryPlayer = ({ config, onComplete }: MemoryPlayerProps) => {
       const secondCard = cardId === second.id ? card : second;
 
       if (firstCard.pairIndex === secondCard.pairIndex && firstCard.side !== secondCard.side) {
-        // Match!
         setTimeout(() => {
           setCards(prev => prev.map(c =>
             c.pairIndex === firstCard.pairIndex ? { ...c, matched: true, flipped: true } : c
@@ -84,35 +94,33 @@ const MemoryPlayer = ({ config, onComplete }: MemoryPlayerProps) => {
     }
   };
 
-  const reset = () => {
-    const allCards: Card[] = [];
-    pairs.forEach((pair, idx) => {
-      allCards.push({ id: `a-${idx}`, pairIndex: idx, text: pair.a, side: 'a', flipped: false, matched: false });
-      allCards.push({ id: `b-${idx}`, pairIndex: idx, text: pair.b, side: 'b', flipped: false, matched: false });
-    });
-    setCards(allCards.sort(() => Math.random() - 0.5));
-    setFlippedIds([]);
-    setMoves(0);
-    setMatched(0);
-    setLocked(false);
-  };
+  // Determine grid columns based on count and text length
+  const maxTextLen = Math.max(...cards.map(c => c.text.length), 1);
+  const cols = maxTextLen > 8
+    ? (cards.length <= 8 ? 2 : 3)
+    : (cards.length <= 8 ? 4 : cards.length <= 12 ? 4 : 6);
 
-  const cols = cards.length <= 8 ? 4 : cards.length <= 12 ? 4 : 6;
   const isComplete = matched === pairs.length && pairs.length > 0;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Moves: <span className="font-bold text-foreground">{moves}</span></p>
-        <p className="text-sm text-muted-foreground">Matched: <span className="font-bold text-foreground">{matched}/{pairs.length}</span></p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-muted-foreground">Moves: <span className="font-bold text-foreground">{moves}</span></p>
+          <p className="text-sm text-muted-foreground">Matched: <span className="font-bold text-foreground">{matched}/{pairs.length}</span></p>
+        </div>
+        <Button size="sm" variant="outline" onClick={initCards} className="h-7 px-2 text-xs">
+          <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+        </Button>
       </div>
 
-      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+      <div className="grid gap-2.5" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
         {cards.map(card => (
           <motion.button
             key={card.id}
             className={cn(
-              'aspect-square rounded-xl border-2 flex items-center justify-center text-sm font-bold transition-all p-1',
+              'rounded-xl border-2 flex items-center justify-center font-bold transition-all p-2',
+              maxTextLen > 8 ? 'min-h-[70px] text-xs' : 'aspect-square text-sm',
               card.matched
                 ? 'bg-success/20 border-success text-success'
                 : card.flipped
@@ -122,7 +130,9 @@ const MemoryPlayer = ({ config, onComplete }: MemoryPlayerProps) => {
             whileTap={!card.flipped && !card.matched ? { scale: 0.9 } : {}}
             onClick={() => handleFlip(card.id)}
           >
-            {card.flipped || card.matched ? card.text : '?'}
+            <span className="break-words text-center leading-tight">
+              {card.flipped || card.matched ? card.text : '?'}
+            </span>
           </motion.button>
         ))}
       </div>
@@ -136,7 +146,7 @@ const MemoryPlayer = ({ config, onComplete }: MemoryPlayerProps) => {
           <Trophy className="w-8 h-8 text-success mx-auto mb-2" />
           <p className="font-bold text-foreground">All Matched! 🎉</p>
           <p className="text-sm text-muted-foreground">Completed in {moves} moves</p>
-          <Button size="sm" variant="outline" className="mt-3" onClick={reset}>
+          <Button size="sm" variant="outline" className="mt-3" onClick={initCards}>
             <RotateCcw className="w-4 h-4 mr-1" /> Play Again
           </Button>
         </motion.div>
