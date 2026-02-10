@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, RotateCcw, Eraser } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Eraser, Image as ImageIcon } from 'lucide-react';
 import type { GameConfig } from '@/lib/gameTypes';
 
 interface TracingPlayerProps {
@@ -16,12 +16,13 @@ const TracingPlayer = ({ config, onComplete }: TracingPlayerProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
 
   const current = tracingItems[currentIdx];
 
   useEffect(() => {
     clearCanvas();
-  }, [currentIdx]);
+  }, [currentIdx, showGuide]);
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -30,10 +31,10 @@ const TracingPlayer = ({ config, onComplete }: TracingPlayerProps) => {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw guide text
-    if (current?.text) {
-      ctx.font = '72px serif';
-      ctx.fillStyle = 'rgba(150, 150, 150, 0.25)';
+    // Draw guide text (large, faded)
+    if (current?.text && showGuide) {
+      ctx.font = 'bold 140px serif';
+      ctx.fillStyle = 'rgba(150, 150, 150, 0.2)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(current.text, canvas.width / 2, canvas.height / 2);
@@ -61,8 +62,9 @@ const TracingPlayer = ({ config, onComplete }: TracingPlayerProps) => {
     const pos = getPos(e);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 6;
     ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     ctx.strokeStyle = 'hsl(var(--primary))';
   };
 
@@ -98,15 +100,28 @@ const TracingPlayer = ({ config, onComplete }: TracingPlayerProps) => {
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <p className="text-sm text-muted-foreground">Trace: <span className="font-bold text-foreground text-lg">{current?.text}</span></p>
+        <p className="text-sm text-muted-foreground">Trace: <span className="font-bold text-foreground text-2xl">{current?.text}</span></p>
         <p className="text-xs text-muted-foreground">{currentIdx + 1} / {tracingItems.length}</p>
       </div>
 
-      <div className="relative mx-auto border-2 border-border rounded-xl overflow-hidden bg-card" style={{ maxWidth: 400 }}>
+      {/* Guide image/gif if available */}
+      {current?.backgroundImage && (
+        <div className="flex justify-center">
+          <div className="rounded-xl border border-border overflow-hidden bg-muted/30 max-w-[500px]">
+            <img
+              src={current.backgroundImage}
+              alt={`Guide for ${current.text}`}
+              className="max-h-40 w-auto object-contain mx-auto"
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="relative mx-auto border-2 border-border rounded-xl overflow-hidden bg-card" style={{ maxWidth: 560 }}>
         <canvas
           ref={canvasRef}
-          width={400}
-          height={300}
+          width={560}
+          height={420}
           className="w-full touch-none cursor-crosshair"
           onMouseDown={startDraw}
           onMouseMove={draw}
@@ -123,6 +138,9 @@ const TracingPlayer = ({ config, onComplete }: TracingPlayerProps) => {
           <ChevronLeft className="w-4 h-4 mr-1" /> Prev
         </Button>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowGuide(!showGuide)}>
+            <ImageIcon className="w-4 h-4 mr-1" /> {showGuide ? 'Hide' : 'Show'} Guide
+          </Button>
           <Button variant="outline" size="sm" onClick={clearCanvas}>
             <Eraser className="w-4 h-4 mr-1" /> Clear
           </Button>
