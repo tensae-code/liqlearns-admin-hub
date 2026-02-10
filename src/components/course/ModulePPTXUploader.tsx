@@ -55,6 +55,8 @@ import {
 import { toast } from 'sonner';
 import { parsePPTX, ParsedPresentation, ParsedSlide } from '@/lib/pptxParser';
 import SlideRenderer from './SlideRenderer';
+import GameTemplateCatalog from '@/components/teacher/GameTemplateCatalog';
+import type { GameTemplate } from '@/hooks/useGameTemplates';
 
 type ResourceType = 'video' | 'audio' | 'quiz' | 'flashcard' | 'game' | 'simulation' | 'document' | 'image' | 'link' | 'embed' | 'code' | 'discussion' | 'assignment';
 
