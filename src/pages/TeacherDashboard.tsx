@@ -443,7 +443,7 @@ const TeacherDashboard = () => {
     }
   };
 
-  const tabs = ['overview', 'courses', 'students', 'assignments', 'earnings'] as const;
+  const tabs = ['overview', 'courses', 'students', 'assignments', 'games', 'earnings'] as const;
 
 
   // Get courses under review with reviewer info
