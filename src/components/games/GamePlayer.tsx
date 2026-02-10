@@ -6,7 +6,8 @@ import {
   Grid3X3, Brain, GripVertical, TextCursorInput, Search, 
   Pencil, Mic, Timer, CircleCheck, Gamepad2,
   Link, FolderInput, ListOrdered, Layers, ToggleLeft,
-  MousePointerClick, Hash, CircleDot
+  MousePointerClick, Hash, CircleDot, Shuffle, Tag,
+  HelpCircle, Images, Keyboard
 } from 'lucide-react';
 import { GAME_TYPES } from '@/lib/gameTypes';
 import type { GameTemplate } from '@/hooks/useGameTemplates';
@@ -30,11 +31,17 @@ import SpinWheelPlayer from './SpinWheelPlayer';
 import HangmanPlayer from './HangmanPlayer';
 import SentenceBuilderPlayer from './SentenceBuilderPlayer';
 import OddOneOutPlayer from './OddOneOutPlayer';
+import WordUnscramblePlayer from './WordUnscramblePlayer';
+import LabelingPlayer from './LabelingPlayer';
+import RiddlePlayer from './RiddlePlayer';
+import PictureSequencePlayer from './PictureSequencePlayer';
+import TypeRacerPlayer from './TypeRacerPlayer';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Grid3X3, Brain, GripVertical, TextCursorInput, Search,
   Pencil, Mic, Timer, CircleCheck, Link, FolderInput,
   ListOrdered, Layers, ToggleLeft, MousePointerClick, Hash, CircleDot,
+  Shuffle, Tag, HelpCircle, Images, Keyboard,
 };
 
 interface GamePlayerProps {
@@ -88,6 +95,16 @@ const GamePlayer = ({ template, onComplete }: GamePlayerProps) => {
         return <SentenceBuilderPlayer config={template.config} onComplete={onComplete} />;
       case 'odd_one_out':
         return <OddOneOutPlayer config={template.config} onComplete={onComplete} />;
+      case 'word_unscramble':
+        return <WordUnscramblePlayer config={template.config} onComplete={onComplete} />;
+      case 'labeling':
+        return <LabelingPlayer config={template.config} onComplete={onComplete} />;
+      case 'riddle':
+        return <RiddlePlayer config={template.config} onComplete={onComplete} />;
+      case 'picture_sequence':
+        return <PictureSequencePlayer config={template.config} onComplete={onComplete} />;
+      case 'type_racer':
+        return <TypeRacerPlayer config={template.config} onComplete={onComplete} />;
       default:
         return <p className="text-center text-muted-foreground py-8">Unknown game type</p>;
     }

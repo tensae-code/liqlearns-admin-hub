@@ -121,6 +121,56 @@ export const GAME_TYPES = [
     subLevels: ['reading'],
     configFields: ['oddOneOutRounds'],
   },
+  {
+    id: 'word_unscramble',
+    name: 'Word Unscramble',
+    description: 'Rearrange scrambled letters to form the correct word.',
+    icon: 'Shuffle',
+    color: 'from-lime-500 to-green-400',
+    levels: ['beginner', 'basics', 'advanced', 'pro'],
+    subLevels: ['reading', 'writing'],
+    configFields: ['unscrambleWords'],
+  },
+  {
+    id: 'labeling',
+    name: 'Labeling',
+    description: 'Label parts of a diagram or image by placing tags in the right spots.',
+    icon: 'Tag',
+    color: 'from-teal-500 to-cyan-400',
+    levels: ['beginner', 'basics', 'advanced'],
+    subLevels: ['reading'],
+    configFields: ['labelingImage', 'labels'],
+  },
+  {
+    id: 'riddle',
+    name: 'Riddle',
+    description: 'Solve riddles and brain teasers with optional progressive hints.',
+    icon: 'HelpCircle',
+    color: 'from-violet-500 to-purple-400',
+    levels: ['beginner', 'basics', 'advanced', 'pro'],
+    subLevels: ['reading'],
+    configFields: ['riddles'],
+  },
+  {
+    id: 'picture_sequence',
+    name: 'Picture Sequence',
+    description: 'Arrange pictures in the correct chronological or logical order.',
+    icon: 'Images',
+    color: 'from-fuchsia-500 to-pink-400',
+    levels: ['beginner', 'basics', 'advanced'],
+    subLevels: ['reading'],
+    configFields: ['sequencePictures'],
+  },
+  {
+    id: 'type_racer',
+    name: 'Type Racer',
+    description: 'Type text as fast and accurately as possible to measure your WPM.',
+    icon: 'Keyboard',
+    color: 'from-red-500 to-orange-400',
+    levels: ['beginner', 'basics', 'advanced', 'pro'],
+    subLevels: ['writing'],
+    configFields: ['typeRacerTexts'],
+  },
 ] as const;
 
 export type GameType = typeof GAME_TYPES[number]['id'];
@@ -196,6 +246,22 @@ export interface GameConfig {
 
   // Odd One Out
   oddOneOutRounds?: { id: string; question?: string; items: { id: string; text: string }[]; oddId: string; explanation?: string }[];
+
+  // Word Unscramble
+  unscrambleWords?: { word: string; hint?: string }[];
+
+  // Labeling
+  labelingImage?: string;
+  labels?: { id: string; text: string; x: number; y: number }[];
+
+  // Riddle
+  riddles?: { question: string; answer: string; hints?: string[] }[];
+
+  // Picture Sequence
+  sequencePictures?: { id: string; imageUrl?: string; label: string; correctOrder: number }[];
+
+  // Type Racer
+  typeRacerTexts?: { text: string; difficulty?: string }[];
 }
 
 export interface GameItem {
