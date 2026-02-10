@@ -67,6 +67,29 @@ const CourseLearningResources = ({
 }: CourseLearningResourcesProps) => {
   const [submissionModalOpen, setSubmissionModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const [showGames, setShowGames] = useState(false);
+  const [gameTemplates, setGameTemplates] = useState<GameTemplate[]>([]);
+  const [loadingGames, setLoadingGames] = useState(false);
+  const [activeGame, setActiveGame] = useState<GameTemplate | null>(null);
+
+  // Fetch game templates for this course
+  useEffect(() => {
+    const fetchGames = async () => {
+      if (!courseId) return;
+      setLoadingGames(true);
+      const { data, error } = await supabase
+        .from('game_templates')
+        .select('*')
+        .eq('course_id', courseId)
+        .eq('is_published', true)
+        .order('created_at');
+      if (!error && data) {
+        setGameTemplates(data.map(d => ({ ...d, config: (d.config || {}) as GameConfig })) as GameTemplate[]);
+      }
+      setLoadingGames(false);
+    };
+    fetchGames();
+  }, [courseId]);
 
   // Mock assignments for this course
   const courseAssignments: Assignment[] = [
@@ -88,36 +111,8 @@ const CourseLearningResources = ({
     }
   ];
 
-  // Resources specific to this course - using gradient indices for consistent styling
-  const resources: LearningResource[] = [
-    { id: 'assignments', name: 'Assignments', icon: ClipboardList, gradientIndex: 0, count: courseAssignments.length, unlocked: true, requiredModule: 0, isAssignment: true },
-    { id: 'books', name: 'Books', icon: BookOpen, gradientIndex: 1, count: 24, unlocked: true, requiredModule: 0 },
-    { id: 'vocabulary', name: 'Vocabulary', icon: Languages, gradientIndex: 2, count: 156, unlocked: true, requiredModule: 0 },
-    { id: 'notes', name: 'Notes', icon: FileText, gradientIndex: 3, count: 42, unlocked: true, requiredModule: 1 },
-    { id: 'exercise', name: 'Exercises', icon: PenTool, gradientIndex: 0, count: 89, unlocked: completedModules >= 1, requiredModule: 1 },
-    { id: 'stories', name: 'Stories', icon: BookMarked, gradientIndex: 1, count: 18, unlocked: completedModules >= 2, requiredModule: 2 },
-    { id: 'games', name: 'Games', icon: Gamepad2, gradientIndex: 2, count: 32, unlocked: completedModules >= 1, requiredModule: 1 },
-    { id: 'videos', name: 'Videos', icon: Video, gradientIndex: 3, count: 67, unlocked: completedModules >= 2, requiredModule: 2 },
-    { id: 'music', name: 'Music', icon: Music, gradientIndex: 0, count: 45, unlocked: completedModules >= 3, requiredModule: 3 },
-    { id: 'live', name: 'Live Sessions', icon: Radio, gradientIndex: 1, count: 5, unlocked: completedModules >= 4, requiredModule: 4 },
-    { id: 'audiobooks', name: 'Audiobooks', icon: Headphones, gradientIndex: 2, count: 28, unlocked: completedModules >= 3, requiredModule: 3 },
-    { id: 'translator', name: 'Translator', icon: Globe, gradientIndex: 3, count: 1, unlocked: true, requiredModule: 0 },
-    { id: 'movies', name: 'Movies', icon: Film, gradientIndex: 0, count: 12, unlocked: completedModules >= 5, requiredModule: 5 },
-  ];
-
-  const handleResourceClick = (resource: LearningResource) => {
-    if (resource.isAssignment && courseAssignments.length > 0) {
-      // For now, open the first assignment - in real app, show a list
-      setSelectedAssignment(courseAssignments[0]);
-      setSubmissionModalOpen(true);
-    } else {
-      onResourceClick?.(resource);
-    }
-  };
-
   const handleSubmit = (assignmentId: string, submission: { type: string; content: string; fileUrl?: string }) => {
     console.log('Submitted:', assignmentId, submission);
-    // In real app, send to backend
   };
 
   return (
