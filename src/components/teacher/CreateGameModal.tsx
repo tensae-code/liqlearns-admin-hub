@@ -583,7 +583,7 @@ const CreateGameModal = ({
               <Select value={subLevel} onValueChange={setSubLevel}>
                 <SelectTrigger className="mt-1"><SelectValue placeholder="Select sub-level" /></SelectTrigger>
                 <SelectContent>
-                  {SUB_LEVELS.filter(sl => typeInfo.subLevels.includes(sl.id as any)).map(sl => (
+                  {SUB_LEVELS.filter(sl => (typeInfo.subLevels as readonly string[]).includes(sl.id)).map(sl => (
                     <SelectItem key={sl.id} value={sl.id}>{sl.name}</SelectItem>
                   ))}
                 </SelectContent>
