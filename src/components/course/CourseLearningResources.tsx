@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BookOpen, 
   Languages, 
@@ -16,12 +16,21 @@ import {
   Lock,
   Download,
   ClipboardList,
-  Send
+  Send,
+  ArrowLeft,
+  Play,
+  Trophy,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getGradient } from '@/lib/theme';
 import AssignmentSubmissionModal from './AssignmentSubmissionModal';
+import { supabase } from '@/integrations/supabase/client';
+import GamePlayer from '@/components/games/GamePlayer';
+import type { GameTemplate } from '@/hooks/useGameTemplates';
+import type { GameConfig } from '@/lib/gameTypes';
+import { GAME_TYPES } from '@/lib/gameTypes';
 
 interface LearningResource {
   id: string;
