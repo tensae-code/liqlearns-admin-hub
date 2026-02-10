@@ -27,6 +27,9 @@ import TrueFalsePlayer from './TrueFalsePlayer';
 import HotspotPlayer from './HotspotPlayer';
 import CrosswordPlayer from './CrosswordPlayer';
 import SpinWheelPlayer from './SpinWheelPlayer';
+import HangmanPlayer from './HangmanPlayer';
+import SentenceBuilderPlayer from './SentenceBuilderPlayer';
+import OddOneOutPlayer from './OddOneOutPlayer';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Grid3X3, Brain, GripVertical, TextCursorInput, Search,
@@ -79,6 +82,12 @@ const GamePlayer = ({ template, onComplete }: GamePlayerProps) => {
         return <CrosswordPlayer config={template.config} onComplete={onComplete} />;
       case 'spin_wheel':
         return <SpinWheelPlayer config={template.config} onComplete={onComplete} />;
+      case 'hangman':
+        return <HangmanPlayer config={template.config} onComplete={onComplete} />;
+      case 'sentence_builder':
+        return <SentenceBuilderPlayer config={template.config} onComplete={onComplete} />;
+      case 'odd_one_out':
+        return <OddOneOutPlayer config={template.config} onComplete={onComplete} />;
       default:
         return <p className="text-center text-muted-foreground py-8">Unknown game type</p>;
     }

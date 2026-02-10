@@ -91,6 +91,36 @@ export const GAME_TYPES = [
     subLevels: ['reading', 'hearing'],
     configFields: ['questions'],
   },
+  {
+    id: 'hangman',
+    name: 'Hangman',
+    description: 'Guess the word letter by letter before the figure is complete.',
+    icon: 'Hash',
+    color: 'from-slate-500 to-zinc-400',
+    levels: ['beginner', 'basics', 'advanced', 'pro'],
+    subLevels: ['reading'],
+    configFields: ['hangmanWords'],
+  },
+  {
+    id: 'sentence_builder',
+    name: 'Sentence Builder',
+    description: 'Arrange scrambled words to form correct sentences.',
+    icon: 'ListOrdered',
+    color: 'from-sky-500 to-blue-400',
+    levels: ['beginner', 'basics', 'advanced', 'pro'],
+    subLevels: ['reading', 'writing'],
+    configFields: ['sentenceItems'],
+  },
+  {
+    id: 'odd_one_out',
+    name: 'Odd One Out',
+    description: 'Pick the item that doesn\'t belong in the group.',
+    icon: 'CircleDot',
+    color: 'from-amber-500 to-yellow-400',
+    levels: ['beginner', 'basics', 'advanced'],
+    subLevels: ['reading'],
+    configFields: ['oddOneOutRounds'],
+  },
 ] as const;
 
 export type GameType = typeof GAME_TYPES[number]['id'];
@@ -157,6 +187,15 @@ export interface GameConfig {
 
   // Spin the Wheel
   wheelSegments?: { id: string; text: string; color?: string }[];
+
+  // Hangman
+  hangmanWords?: { word: string; hint?: string }[];
+
+  // Sentence Builder
+  sentenceItems?: { id: string; words: string[]; hint?: string }[];
+
+  // Odd One Out
+  oddOneOutRounds?: { id: string; question?: string; items: { id: string; text: string }[]; oddId: string; explanation?: string }[];
 }
 
 export interface GameItem {
