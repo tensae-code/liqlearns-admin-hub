@@ -22,7 +22,8 @@ import {
   Library,
   Flame,
   Star,
-  Briefcase
+  Briefcase,
+  Shield
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -57,6 +58,7 @@ const navItems: NavItem[] = [
   { icon: Calendar, label: 'Events', path: '/events' },
   { icon: MessageSquare, label: 'Messages', path: '/messages' },
   { icon: Users, label: 'Community', path: '/community' },
+  { icon: Shield, label: 'Clans', path: '/clans' },
   { icon: Trophy, label: 'Profile', path: '/profile' },
   { icon: HelpCircle, label: 'Help', path: '/help' },
   { icon: Settings, label: 'Settings', path: '/settings' },
