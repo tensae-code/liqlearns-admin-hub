@@ -159,6 +159,7 @@ const ChatWindow = ({
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [pendingMediaFile, setPendingMediaFile] = useState<File | null>(null);
+  const [highlightedChain, setHighlightedChain] = useState<string[] | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -433,8 +434,8 @@ const ChatWindow = ({
     }
   }, []);
 
+
   // Navigate to and highlight an entire reply chain
-  const [highlightedChain, setHighlightedChain] = useState<string[] | null>(null);
 
   const navigateToReplyChain = useCallback((messageIds: string[]) => {
     if (messageIds.length > 0) {
