@@ -48,6 +48,7 @@ const Settings = () => {
     username: '',
     phone: '',
     bio: '',
+    nickname: '',
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [notifications, setNotifications] = useState({
@@ -159,6 +160,7 @@ const Settings = () => {
       if (formData.username) updates.username = formData.username;
       if (formData.phone) updates.phone = formData.phone;
       if (formData.bio) updates.bio = formData.bio;
+      if (formData.nickname !== '') updates.nickname = formData.nickname || null;
 
       if (Object.keys(updates).length === 0) {
         toast.info('No changes to save');
@@ -349,6 +351,15 @@ const Settings = () => {
                     placeholder="Tell us about yourself" 
                     defaultValue={profile?.bio || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nickname">Nickname (shown in groups)</Label>
+                  <Input 
+                    id="nickname" 
+                    placeholder="Set a nickname for group chats" 
+                    defaultValue={(profile as any)?.nickname || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nickname: e.target.value }))}
                   />
                 </div>
               </div>

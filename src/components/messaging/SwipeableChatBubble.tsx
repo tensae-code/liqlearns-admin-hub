@@ -33,8 +33,10 @@ interface SwipeableChatBubbleProps {
   replyTo?: {
     content: string;
     senderName: string;
+    messageId?: string;
   };
   highlightId?: string;
+  onNavigateToMessage?: (messageId: string) => void;
 }
 
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
@@ -56,6 +58,7 @@ const SwipeableChatBubble = ({
   messageId,
   replyTo,
   highlightId,
+  onNavigateToMessage,
 }: SwipeableChatBubbleProps) => {
   const isHighlighted = highlightId === messageId;
   const [showOptions, setShowOptions] = useState(false);
@@ -179,20 +182,29 @@ const SwipeableChatBubble = ({
           </span>
         )}
 
-        {/* Reply preview - matching input area style */}
+        {/* Reply preview - compact with navigation arrow */}
         {replyTo && (
-          <div className={cn(
-            "px-2 py-1.5 rounded-lg mb-1 flex items-center gap-2",
-            isSender 
-              ? "bg-[hsl(var(--accent))]/30" 
-              : "bg-muted/70"
-          )}>
-            <div className="w-0.5 h-8 bg-accent rounded-full shrink-0" />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (replyTo.messageId && onNavigateToMessage) {
+                onNavigateToMessage(replyTo.messageId);
+              }
+            }}
+            className={cn(
+              "px-2 py-1 rounded-lg mb-0.5 flex items-center gap-1.5 text-left w-full cursor-pointer hover:opacity-80 transition-opacity",
+              isSender 
+                ? "bg-[hsl(var(--accent))]/30" 
+                : "bg-muted/70"
+            )}
+          >
+            <Reply className="w-3 h-3 text-accent shrink-0" />
+            <div className="w-0.5 h-6 bg-accent rounded-full shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium text-accent">{replyTo.senderName}</p>
-              <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
+              <p className="text-[9px] font-medium text-accent leading-tight">{replyTo.senderName}</p>
+              <p className="text-[10px] text-muted-foreground truncate leading-tight">{replyTo.content}</p>
             </div>
-          </div>
+          </button>
         )}
         
         <div className="flex items-center gap-1">

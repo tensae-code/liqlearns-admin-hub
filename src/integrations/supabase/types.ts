@@ -2723,6 +2723,7 @@ export type Database = {
           is_on_hold: boolean | null
           last_login_date: string | null
           longest_streak: number
+          nickname: string | null
           phone: string | null
           sponsor_id: string | null
           subscription_ends_at: string | null
@@ -2754,6 +2755,7 @@ export type Database = {
           is_on_hold?: boolean | null
           last_login_date?: string | null
           longest_streak?: number
+          nickname?: string | null
           phone?: string | null
           sponsor_id?: string | null
           subscription_ends_at?: string | null
@@ -2785,6 +2787,7 @@ export type Database = {
           is_on_hold?: boolean | null
           last_login_date?: string | null
           longest_streak?: number
+          nickname?: string | null
           phone?: string | null
           sponsor_id?: string | null
           subscription_ends_at?: string | null

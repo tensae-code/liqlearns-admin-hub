@@ -64,7 +64,9 @@ export interface Message {
   replyTo?: {
     content: string;
     senderName: string;
+    messageId?: string;
   };
+  replyToMessageId?: string;
   mediaOptions?: MediaOptions;
 }
 
@@ -937,6 +939,7 @@ const ChatWindow = ({
                       isPinned={isMessagePinned(msg.id)}
                       replyTo={msg.replyTo}
                       highlightId={highlightedMessageId || undefined}
+                      onNavigateToMessage={navigateToMessage}
                     />
                   );
                 })}
