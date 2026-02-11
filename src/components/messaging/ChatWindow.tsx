@@ -90,6 +90,7 @@ interface ChatWindowProps {
   isMobile?: boolean;
   onDeleteMessage?: (messageId: string) => void;
   onForwardMessage?: (content: string) => void;
+  onSaveMessage?: (msg: Message) => void;
   currentChannelName?: string;
   currentChannelId?: string | null;
 }
@@ -145,6 +146,7 @@ const ChatWindow = ({
   isMobile,
   onDeleteMessage,
   onForwardMessage,
+  onSaveMessage,
   currentChannelName,
   currentChannelId,
 }: ChatWindowProps) => {
@@ -988,6 +990,7 @@ const ChatWindow = ({
                       isLastInGroup={msgIndex === group.messages.length - 1}
                       onDelete={onDeleteMessage ? () => onDeleteMessage(msg.id) : undefined}
                       onForward={onForwardMessage ? () => onForwardMessage(msg.content) : undefined}
+                      onSave={onSaveMessage ? () => onSaveMessage(msg) : undefined}
                       onReply={() => setReplyingTo(msg)}
                       onPin={() => pinMessage(msg.id)}
                       onUnpin={() => unpinMessage(msg.id)}

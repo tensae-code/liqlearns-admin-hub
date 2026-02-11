@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck, Trash2, MoreVertical, Reply, Pin, Forward } from 'lucide-react';
+import { Check, CheckCheck, Trash2, MoreVertical, Reply, Pin, Forward, Bookmark } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,7 @@ interface SwipeableChatBubbleProps {
   isLastInGroup?: boolean;
   onDelete?: () => void;
   onForward?: () => void;
+  onSave?: () => void;
   onReply?: () => void;
   onPin?: () => void;
   onUnpin?: () => void;
@@ -57,6 +58,7 @@ const SwipeableChatBubble = ({
   isLastInGroup = true,
   onDelete,
   onForward,
+  onSave,
   onReply,
   onPin,
   onUnpin,
@@ -257,6 +259,12 @@ const SwipeableChatBubble = ({
                     Forward
                   </DropdownMenuItem>
                 )}
+                {onSave && (
+                  <DropdownMenuItem onClick={onSave} className="cursor-pointer">
+                    <Bookmark className="w-4 h-4 mr-2" />
+                    Save
+                  </DropdownMenuItem>
+                )}
                 {onDelete && (
                   <>
                     <DropdownMenuSeparator />
@@ -344,6 +352,12 @@ const SwipeableChatBubble = ({
                   <DropdownMenuItem onClick={onForward} className="cursor-pointer">
                     <Forward className="w-4 h-4 mr-2" />
                     Forward
+                  </DropdownMenuItem>
+                )}
+                {onSave && (
+                  <DropdownMenuItem onClick={onSave} className="cursor-pointer">
+                    <Bookmark className="w-4 h-4 mr-2" />
+                    Save
                   </DropdownMenuItem>
                 )}
                 {onDelete && (

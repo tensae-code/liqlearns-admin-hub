@@ -3418,6 +3418,48 @@ export type Database = {
           },
         ]
       }
+      saved_messages: {
+        Row: {
+          content: string
+          created_at: string
+          duration_seconds: number | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          message_type: string
+          original_sender_name: string | null
+          original_timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          duration_seconds?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          message_type?: string
+          original_sender_name?: string | null
+          original_timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          duration_seconds?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          message_type?: string
+          original_sender_name?: string | null
+          original_timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       skill_suggestion_votes: {
         Row: {
           created_at: string
