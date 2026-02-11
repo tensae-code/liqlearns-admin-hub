@@ -44,33 +44,51 @@ import SupportDashboard from "./pages/SupportDashboard";
 import NotFound from "./pages/NotFound";
 import GamePage from "./pages/GamePage";
 import { Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { ReactNode } from "react";
 
 const queryClient = new QueryClient();
 
+// Redirects logged-in users from landing to their dashboard
+const LandingRedirect = () => {
+  const { user, loading, getDashboardPath } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin" /></div>;
+  if (user) return <Navigate to={getDashboardPath()} replace />;
+  return <Index />;
+};
+
+// Requires auth for all dashboard pages
+const RequireAuth = ({ children }: { children: ReactNode }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin" /></div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+};
+
 const AppRoutes = () => (
   <Routes>
-    <Route path="/" element={<Index />} />
+    <Route path="/" element={<LandingRedirect />} />
     <Route path="/auth" element={<Auth />} />
-    <Route path="/dashboard" element={<Dashboard />} />
-    <Route path="/dashboard/kids" element={<UnderageDashboard />} />
-    <Route path="/courses" element={<Courses />} />
-    <Route path="/enterprise" element={<EnterpriseDashboard />} />
-    <Route path="/enterprise/analytics" element={<EnterpriseAnalytics />} />
+    <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+    <Route path="/dashboard/kids" element={<RequireAuth><UnderageDashboard /></RequireAuth>} />
+    <Route path="/courses" element={<RequireAuth><Courses /></RequireAuth>} />
+    <Route path="/enterprise" element={<RequireAuth><EnterpriseDashboard /></RequireAuth>} />
+    <Route path="/enterprise/analytics" element={<RequireAuth><EnterpriseAnalytics /></RequireAuth>} />
     <Route path="/enterprise/team" element={<Navigate to="/enterprise?tab=team" replace />} />
     <Route path="/enterprise/courses" element={<Navigate to="/enterprise?tab=courses" replace />} />
     <Route path="/enterprise/paths" element={<Navigate to="/enterprise?tab=paths" replace />} />
-    <Route path="/marketplace" element={<Marketplace />} />
-    <Route path="/business" element={<BusinessDashboard />} />
-    <Route path="/quest" element={<Quest />} />
-    <Route path="/study-rooms" element={<StudyRooms />} />
-    <Route path="/messages" element={<Messages />} />
-    <Route path="/events" element={<Events />} />
-    <Route path="/community" element={<Community />} />
-    <Route path="/help" element={<Help />} />
-    <Route path="/settings" element={<Settings />} />
-    <Route path="/profile" element={<Profile />} />
-    <Route path="/course/:id" element={<CourseDetail />} />
-    <Route path="/course/:id/learn" element={<CourseLearning />} />
+    <Route path="/marketplace" element={<RequireAuth><Marketplace /></RequireAuth>} />
+    <Route path="/business" element={<RequireAuth><BusinessDashboard /></RequireAuth>} />
+    <Route path="/quest" element={<RequireAuth><Quest /></RequireAuth>} />
+    <Route path="/study-rooms" element={<RequireAuth><StudyRooms /></RequireAuth>} />
+    <Route path="/messages" element={<RequireAuth><Messages /></RequireAuth>} />
+    <Route path="/events" element={<RequireAuth><Events /></RequireAuth>} />
+    <Route path="/community" element={<RequireAuth><Community /></RequireAuth>} />
+    <Route path="/help" element={<RequireAuth><Help /></RequireAuth>} />
+    <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
+    <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+    <Route path="/course/:id" element={<RequireAuth><CourseDetail /></RequireAuth>} />
+    <Route path="/course/:id/learn" element={<RequireAuth><CourseLearning /></RequireAuth>} />
     <Route path="/referrals" element={<Navigate to="/business" replace />} />
     
     {/* Protected Teacher Routes */}
