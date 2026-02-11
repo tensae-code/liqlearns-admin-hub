@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import usePresence from '@/hooks/usePresence';
 import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
+import { useMessagingSettings } from '@/hooks/useMessagingSettings';
 import MessageSettingsModal from './MessageSettingsModal';
 
 export interface Conversation {
@@ -60,8 +61,9 @@ const ConversationList = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [requestCount, setRequestCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const { settings: msgSettings } = useMessagingSettings();
 
-  // Fetch pending request count
+  // Fetch pending request count (message requests + friend requests)
   useEffect(() => {
     const fetchRequestCount = async () => {
       if (!user) return;
@@ -70,16 +72,24 @@ const ConversationList = ({
         .from('profiles')
         .select('id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (myProfile) {
-        const { count } = await supabase
+        // Count pending message requests
+        const { count: msgCount } = await supabase
           .from('message_requests')
           .select('id', { count: 'exact', head: true })
           .eq('receiver_id', myProfile.id)
           .eq('status', 'pending');
 
-        setRequestCount(count || 0);
+        // Count pending friend requests (where I'm the addressee)
+        const { count: friendCount } = await supabase
+          .from('friendships')
+          .select('id', { count: 'exact', head: true })
+          .eq('addressee_id', myProfile.id)
+          .eq('status', 'pending');
+
+        setRequestCount((msgCount || 0) + (friendCount || 0));
       }
     };
 
@@ -220,9 +230,9 @@ const ConversationList = ({
 
             // Activity text
             let activityText = '';
-            if (typingUsersForConv.length === 1) {
+            if (msgSettings.show_activity && typingUsersForConv.length === 1) {
               activityText = `${typingUsersForConv[0].name.split(' ')[0]} typing...`;
-            } else if (typingUsersForConv.length > 1) {
+            } else if (msgSettings.show_activity && typingUsersForConv.length > 1) {
               activityText = `${typingUsersForConv.length} typing...`;
             }
 
@@ -252,7 +262,7 @@ const ConversationList = ({
                       {conv.type === 'group' ? <Users className="w-5 h-5" /> : conv.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  {conv.type === 'dm' && (conv.isOnline || isUserOnline(conv.id.replace('dm_', ''))) && (
+                  {msgSettings.show_status && conv.type === 'dm' && (conv.isOnline || isUserOnline(conv.id.replace('dm_', ''))) && (
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card animate-pulse" />
                   )}
                 </div>

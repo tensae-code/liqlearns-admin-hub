@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { motion, useMotionValue, useTransform, useAnimation, PanInfo } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Check, CheckCheck, Trash2, MoreVertical, Reply, Pin } from 'lucide-react';
+import { Check, CheckCheck, Trash2, MoreVertical, Reply, Pin, Forward } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,7 @@ interface SwipeableChatBubbleProps {
   isFirstInGroup?: boolean;
   isLastInGroup?: boolean;
   onDelete?: () => void;
+  onForward?: () => void;
   onReply?: () => void;
   onPin?: () => void;
   onUnpin?: () => void;
@@ -40,6 +41,7 @@ interface SwipeableChatBubbleProps {
   highlightId?: string | string[];
   onNavigateToMessage?: (messageId: string) => void;
   onNavigateToReplyChain?: (messageIds: string[]) => void;
+  fontSize?: number;
 }
 
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
@@ -54,6 +56,7 @@ const SwipeableChatBubble = ({
   isFirstInGroup = true,
   isLastInGroup = true,
   onDelete,
+  onForward,
   onReply,
   onPin,
   onUnpin,
@@ -64,6 +67,7 @@ const SwipeableChatBubble = ({
   highlightId,
   onNavigateToMessage,
   onNavigateToReplyChain,
+  fontSize,
 }: SwipeableChatBubbleProps) => {
   const isHighlighted = Array.isArray(highlightId) 
     ? highlightId.includes(messageId || '') 
@@ -215,7 +219,7 @@ const SwipeableChatBubble = ({
         
         <div className="flex items-center gap-1">
           {/* Delete option for sender messages */}
-          {isSender && showOptions && (onDelete || onPin || onUnpin) && (
+          {isSender && showOptions && (onDelete || onPin || onUnpin || onForward) && (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <button 
@@ -247,6 +251,12 @@ const SwipeableChatBubble = ({
                     </DropdownMenuItem>
                   )
                 )}
+                {onForward && (
+                  <DropdownMenuItem onClick={onForward} className="cursor-pointer">
+                    <Forward className="w-4 h-4 mr-2" />
+                    Forward
+                  </DropdownMenuItem>
+                )}
                 {onDelete && (
                   <>
                     <DropdownMenuSeparator />
@@ -272,7 +282,7 @@ const SwipeableChatBubble = ({
               : "bg-muted text-foreground"
           )}>
             <div className="flex items-end gap-1">
-              <p className="text-[15px] leading-[1.35] whitespace-pre-wrap break-words flex-1">
+              <p className="leading-[1.35] whitespace-pre-wrap break-words flex-1" style={{ fontSize: `${fontSize || 15}px` }}>
                 {message}
                 {isSender && isLastInGroup && (
                   <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-1">
@@ -298,7 +308,7 @@ const SwipeableChatBubble = ({
           </div>
 
           {/* Delete option for received messages */}
-          {!isSender && showOptions && (onDelete || onReply || onPin || onUnpin) && (
+          {!isSender && showOptions && (onDelete || onReply || onPin || onUnpin || onForward) && (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <button 
@@ -329,6 +339,12 @@ const SwipeableChatBubble = ({
                       Pin message
                     </DropdownMenuItem>
                   )
+                )}
+                {onForward && (
+                  <DropdownMenuItem onClick={onForward} className="cursor-pointer">
+                    <Forward className="w-4 h-4 mr-2" />
+                    Forward
+                  </DropdownMenuItem>
                 )}
                 {onDelete && (
                   <>

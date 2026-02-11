@@ -13,7 +13,7 @@ import CreateChannelModal from '@/components/messaging/CreateChannelModal';
 import ManageMemberModal from '@/components/messaging/ManageMemberModal';
 import AddMembersModal from '@/components/messaging/AddMembersModal';
 import ClubRoomView from '@/components/messaging/ClubRoomView';
-import InCallBanner from '@/components/messaging/InCallBanner';
+import ForwardMessageModal from '@/components/messaging/ForwardMessageModal';
 import useMessaging from '@/hooks/useMessaging';
 import usePresence from '@/hooks/usePresence';
 import { useAuth } from '@/contexts/AuthContext';
@@ -62,6 +62,8 @@ const Messages = () => {
   const [searchUsers, setSearchUsers] = useState<UserSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showForward, setShowForward] = useState(false);
+  const [forwardContent, setForwardContent] = useState('');
   const [localMessages, setLocalMessages] = useState(messages);
   const [searchParams, setSearchParams] = useSearchParams();
   const dmAutoOpenHandled = useRef(false);
@@ -99,10 +101,53 @@ const Messages = () => {
     return conv;
   });
 
-  // Handle delete message
-  const handleDeleteMessage = (messageId: string) => {
+  // Handle delete message - persist to DB
+  const handleDeleteMessage = async (messageId: string) => {
     setLocalMessages(prev => prev.filter(m => m.id !== messageId));
+    
+    if (currentConversation) {
+      const [type] = currentConversation.id.split('_');
+      if (type === 'dm') {
+        await supabase.from('direct_messages').delete().eq('id', messageId);
+      } else if (type === 'group') {
+        await supabase.from('group_messages').delete().eq('id', messageId);
+      }
+    }
     toast.success('Message deleted');
+  };
+
+  // Handle forward message
+  const handleForwardMessage = (content: string) => {
+    setForwardContent(content);
+    setShowForward(true);
+  };
+
+  const handleForwardToConversation = async (conversationId: string, content: string) => {
+    const [type, id] = conversationId.split('_');
+    if (type === 'dm') {
+      await supabase.from('direct_messages').insert({
+        sender_id: user!.id,
+        receiver_id: id,
+        content,
+        message_type: 'text',
+      });
+    } else if (type === 'group' && profile) {
+      const { data: channel } = await supabase
+        .from('group_channels')
+        .select('id')
+        .eq('group_id', id)
+        .eq('is_default', true)
+        .maybeSingle();
+      
+      if (channel) {
+        await supabase.from('group_messages').insert({
+          channel_id: channel.id,
+          sender_id: profile.id,
+          content,
+          message_type: 'text',
+        });
+      }
+    }
   };
 
   const handleSelectConversation = async (conversation: Conversation) => {
@@ -193,9 +238,6 @@ const Messages = () => {
 
   return (
     <DashboardLayout>
-      {/* In-call banner */}
-      <InCallBanner />
-      
       <motion.div
         className="h-[calc(100dvh-8rem)] md:h-[calc(100vh-5.5rem)] flex overflow-hidden rounded-xl border border-border bg-card -m-4 md:-m-6"
         initial={{ opacity: 0, y: 20 }}
@@ -231,6 +273,7 @@ const Messages = () => {
             onViewInfo={currentConversation?.type === 'group' ? () => setShowGroupInfo(true) : undefined}
             isMobile={isMobile}
             onDeleteMessage={handleDeleteMessage}
+            onForwardMessage={handleForwardMessage}
             currentChannelName={currentConversation?.type === 'group' ? currentChannel.channelName : undefined}
             currentChannelId={currentConversation?.type === 'group' ? currentChannel.channelId : undefined}
           />
@@ -372,6 +415,15 @@ const Messages = () => {
           />
         </div>
       )}
+
+      {/* Forward Message Modal */}
+      <ForwardMessageModal
+        open={showForward}
+        onOpenChange={setShowForward}
+        messageContent={forwardContent}
+        conversations={conversations}
+        onForward={handleForwardToConversation}
+      />
     </DashboardLayout>
   );
 };

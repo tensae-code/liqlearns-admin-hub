@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import QuickAccessButton from '@/components/quick-access/QuickAccessButton';
 import FloatingStudyRoom from '@/components/study-rooms/FloatingStudyRoom';
+import InCallBanner from '@/components/messaging/InCallBanner';
 import { usePlatformSettings } from '@/contexts/PlatformSettingsContext';
 import useScreenshotProtection from '@/hooks/useScreenshotProtection';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
  * Global floating elements that persist across authenticated routes only
  * - QuickAccessButton: Quick action menu (hidden on landing/auth pages)
  * - FloatingStudyRoom: Shows when user is in popout mode
+ * - InCallBanner: Shows when user is in an active call (global across all pages)
  * - Screenshot Protection: Applied based on CEO settings
  */
 const GlobalFloatingElements = () => {
@@ -32,6 +34,9 @@ const GlobalFloatingElements = () => {
 
   return (
     <>
+      {/* Global In-Call Banner - shows on all pages when in a call */}
+      {!shouldHideQuickAccess && <InCallBanner />}
+      
       {/* Floating Study Room - renders when in popout mode */}
       <FloatingStudyRoom />
       
