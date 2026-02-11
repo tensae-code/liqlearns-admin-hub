@@ -168,8 +168,19 @@ const Battles = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-foreground truncate">
-                            {battle.challenger_profile?.full_name || 'Unknown'}
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm text-foreground truncate">
+                              {battle.challenger_profile?.full_name || 'Unknown'}
+                            </span>
+                            {(battle as any).challenger_rank && (() => {
+                              const rank = getRankTitle((battle as any).challenger_rank);
+                              return (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
+                                  <Crown className={`w-2.5 h-2.5 ${rank.color}`} />
+                                  <span className={rank.color}>{rank.title}</span>
+                                </Badge>
+                              );
+                            })()}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Coins className="w-3 h-3 text-yellow-500" />

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
+import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,7 +12,8 @@ import type { GameTemplate } from '@/hooks/useGameTemplates';
 import { toast } from 'sonner';
 import {
   Mic, MicOff, Volume2, VolumeX, Send, MessageSquare, X,
-  Trophy, Clock, Swords, ChevronUp, ChevronDown, Loader2
+  Trophy, Clock, Swords, Loader2, Phone, PhoneOff,
+  CheckCircle2, XCircle, RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Battle, BattleMessage } from '@/hooks/useBattles';
@@ -23,8 +25,16 @@ interface BattlePlayViewProps {
   onComplete: (score: number, timeSeconds: number) => void;
 }
 
+interface ReviewItem {
+  question: string;
+  yourAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+}
+
 const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) => {
   const { profile } = useProfile();
+  const livekit = useOptionalLiveKitContext();
   const [messages, setMessages] = useState<BattleMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
@@ -32,15 +42,73 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
   const [loading, setLoading] = useState(true);
   const [startTime] = useState(Date.now());
   const [opponentMuted, setOpponentMuted] = useState(false);
+  const [myMicOn, setMyMicOn] = useState(false);
+  const [voiceConnected, setVoiceConnected] = useState(false);
   const [myScore, setMyScore] = useState<number | null>(null);
   const [opponentScore, setOpponentScore] = useState<number | null>(null);
   const [completed, setCompleted] = useState(false);
+  const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
+  const [showReview, setShowReview] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isChallenger = battle.challenger_id === profile?.id;
   const opponentName = isChallenger
     ? (battle.opponent_profile?.full_name || 'Opponent')
     : (battle.challenger_profile?.full_name || 'Opponent');
+
+  // Connect voice chat if enabled
+  useEffect(() => {
+    if (!battle.voice_enabled || !livekit || !profile?.id) return;
+    
+    const connectVoice = async () => {
+      try {
+        const roomName = `battle:${battle.id}`;
+        await livekit.connect(roomName, 'dm' as any, battle.id, 'speaker');
+        setVoiceConnected(true);
+        setMyMicOn(true);
+      } catch (err) {
+        console.error('Voice connect failed:', err);
+      }
+    };
+    connectVoice();
+
+    return () => {
+      if (voiceConnected && livekit) {
+        livekit.disconnect();
+        setVoiceConnected(false);
+      }
+    };
+  }, [battle.voice_enabled, battle.id, profile?.id]);
+
+  const toggleMyMic = () => {
+    if (livekit) {
+      livekit.toggleMute();
+      setMyMicOn(!myMicOn);
+    }
+  };
+
+  const toggleOpponentMute = () => {
+    // Mute opponent audio locally using room reference
+    if (livekit?.room) {
+      const room = livekit.room;
+      room.remoteParticipants.forEach(p => {
+        p.audioTrackPublications.forEach(pub => {
+          if (pub.track) {
+            (pub.track.mediaStreamTrack as MediaStreamTrack).enabled = opponentMuted; // toggle: if currently muted, enable
+          }
+        });
+      });
+    }
+    setOpponentMuted(!opponentMuted);
+  };
+
+  const disconnectVoice = () => {
+    if (livekit) {
+      livekit.disconnect();
+      setVoiceConnected(false);
+      setMyMicOn(false);
+    }
+  };
 
   // Fetch game template
   useEffect(() => {
@@ -72,7 +140,6 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
         .order('created_at', { ascending: true })
         .limit(100);
       if (data) {
-        // Fetch sender profiles
         const senderIds = [...new Set(data.map(m => m.sender_id))];
         const { data: profiles } = await supabase
           .from('profiles')
@@ -148,11 +215,28 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
   };
 
   const handleGameComplete = async (score: number, maxScore: number) => {
-    if (myScore !== null) return; // Already submitted
+    if (myScore !== null) return;
     const timeSeconds = Math.floor((Date.now() - startTime) / 1000);
     setMyScore(score);
 
-    // Update battle with score
+    // Build review items from game config
+    if (gameTemplate?.config) {
+      const config = gameTemplate.config as any;
+      const items: ReviewItem[] = [];
+      
+      if (config.questions) {
+        config.questions.forEach((q: any, i: number) => {
+          items.push({
+            question: q.question || q.text || `Question ${i + 1}`,
+            yourAnswer: q.userAnswer || '—',
+            correctAnswer: q.correctAnswer || q.answer || '—',
+            isCorrect: q.userAnswer === q.correctAnswer || q.answer,
+          });
+        });
+      }
+      if (items.length > 0) setReviewItems(items);
+    }
+
     const updateField = isChallenger
       ? { challenger_score: score, challenger_time_seconds: timeSeconds }
       : { opponent_score: score, opponent_time_seconds: timeSeconds };
@@ -162,7 +246,6 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
       status: 'in_progress',
     }).eq('id', battle.id);
 
-    // Check if both players done - determine winner
     const { data: currentBattle } = await supabase
       .from('battles')
       .select('*')
@@ -174,25 +257,21 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
       const oScore = isChallenger ? currentBattle.opponent_score : score;
 
       if (cScore !== null && oScore !== null) {
-        // Both done - determine winner
         let winnerId: string | null = null;
         if (cScore > oScore) winnerId = currentBattle.challenger_id;
         else if (oScore > cScore) winnerId = currentBattle.opponent_id;
 
-        // Update battle as completed
         await supabase.from('battles').update({
           status: 'completed',
           winner_id: winnerId,
           completed_at: new Date().toISOString(),
         }).eq('id', battle.id);
 
-        // Update wallets via individual queries
         const stake = currentBattle.stake_amount;
         if (winnerId) {
           const loserId = winnerId === currentBattle.challenger_id
             ? currentBattle.opponent_id
             : currentBattle.challenger_id;
-          // Get current wallets and update
           const { data: winnerWallet } = await supabase.from('battle_wallets').select('*').eq('user_id', winnerId).single();
           const { data: loserWallet } = loserId ? await supabase.from('battle_wallets').select('*').eq('user_id', loserId).single() : { data: null };
           if (winnerWallet) {
@@ -214,6 +293,11 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
         }
 
         setCompleted(true);
+        // Disconnect voice when battle ends
+        if (voiceConnected && livekit) {
+          livekit.disconnect();
+          setVoiceConnected(false);
+        }
       }
     }
 
@@ -228,16 +312,16 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
     );
   }
 
-  // Results screen
+  // Results screen with review
   if (completed || myScore !== null) {
     const won = battle.winner_id === profile?.id;
     const draw = !battle.winner_id && completed;
     return (
-      <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="max-w-md w-full"
+          className="max-w-lg w-full my-8"
         >
           <div className={`rounded-2xl border p-6 text-center space-y-4 ${
             won ? 'bg-green-500/10 border-green-500/30' :
@@ -270,6 +354,77 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
                 </span>
               </div>
             )}
+
+            {/* Game Review Section */}
+            {reviewItems.length > 0 && (
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowReview(!showReview)}
+                  className="gap-1"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  {showReview ? 'Hide Review' : 'Review Answers'}
+                </Button>
+                <AnimatePresence>
+                  {showReview && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-3 space-y-2 text-left max-h-60 overflow-y-auto">
+                        {reviewItems.map((item, i) => (
+                          <div key={i} className={`p-2.5 rounded-lg border text-xs ${
+                            item.isCorrect
+                              ? 'bg-green-500/5 border-green-500/20'
+                              : 'bg-red-500/5 border-red-500/20'
+                          }`}>
+                            <div className="flex items-start gap-2">
+                              {item.isCorrect
+                                ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
+                                : <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
+                              }
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-foreground">{item.question}</p>
+                                {!item.isCorrect && (
+                                  <>
+                                    <p className="text-red-500 mt-0.5">Your: {item.yourAnswer}</p>
+                                    <p className="text-green-600 mt-0.5">Correct: {item.correctAnswer}</p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Chat history in results */}
+            {messages.length > 0 && (
+              <div className="pt-2">
+                <p className="text-xs text-muted-foreground mb-2">Battle Chat ({messages.length} messages)</p>
+                <ScrollArea className="max-h-32 text-left">
+                  <div className="space-y-1">
+                    {messages.map(msg => (
+                      <div key={msg.id} className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                          {msg.sender_profile?.full_name || 'Unknown'}:
+                        </span>{' '}
+                        {msg.content}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+
             <Button onClick={onClose} className="w-full">
               Back to Arena
             </Button>
@@ -290,20 +445,65 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
           <Swords className="w-5 h-5 text-accent" />
           <span className="font-semibold text-sm text-foreground">vs {opponentName}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
             {battle.stake_amount} BP
           </Badge>
+
+          {/* Voice controls */}
           {battle.voice_enabled && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="w-8 h-8"
-              onClick={() => setOpponentMuted(!opponentMuted)}
-            >
-              {opponentMuted ? <VolumeX className="w-4 h-4 text-red-500" /> : <Volume2 className="w-4 h-4" />}
-            </Button>
+            <div className="flex items-center gap-1">
+              {voiceConnected ? (
+                <>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="w-8 h-8"
+                    onClick={toggleMyMic}
+                    title={myMicOn ? 'Mute yourself' : 'Unmute yourself'}
+                  >
+                    {myMicOn ? <Mic className="w-4 h-4 text-green-500" /> : <MicOff className="w-4 h-4 text-red-500" />}
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="w-8 h-8"
+                    onClick={toggleOpponentMute}
+                    title={opponentMuted ? 'Unmute opponent' : 'Mute opponent'}
+                  >
+                    {opponentMuted ? <VolumeX className="w-4 h-4 text-red-500" /> : <Volume2 className="w-4 h-4" />}
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="w-8 h-8 text-red-500 hover:text-red-600"
+                    onClick={disconnectVoice}
+                    title="Leave voice"
+                  >
+                    <PhoneOff className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1 text-green-600 border-green-500/30"
+                  onClick={async () => {
+                    if (livekit && profile?.id) {
+                      try {
+                        await livekit.connect(`battle:${battle.id}`, 'dm' as any, battle.id, 'speaker');
+                        setVoiceConnected(true);
+                        setMyMicOn(true);
+                      } catch { toast.error('Voice connect failed'); }
+                    }
+                  }}
+                >
+                  <Phone className="w-3 h-3" /> Join Voice
+                </Button>
+              )}
+            </div>
           )}
+
           <Button
             size="icon"
             variant="ghost"
@@ -311,6 +511,9 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
             onClick={() => setChatOpen(!chatOpen)}
           >
             <MessageSquare className={`w-4 h-4 ${chatOpen ? 'text-accent' : ''}`} />
+            {messages.length > 0 && !chatOpen && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-accent rounded-full" />
+            )}
           </Button>
         </div>
       </div>
