@@ -643,9 +643,9 @@ const ChatWindow = ({
             </div>
             
             <div className={`flex items-center gap-1 ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
-              <span className="text-xs">
-                {msg.durationSeconds ? formatVoiceDuration(msg.durationSeconds) : '0:00'}
-              </span>
+              {msg.durationSeconds ? (
+                <span className="text-xs">{formatVoiceDuration(msg.durationSeconds)}</span>
+              ) : null}
               {isSender && (
                 msg.isRead === true 
                   ? <CheckCheck className="w-3 h-3 text-primary" />
