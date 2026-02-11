@@ -233,7 +233,7 @@ const ConversationList = ({
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-foreground truncate">{conv.name}</span>
+                  <span className="font-medium text-foreground truncate">{conv.name?.split(' ')[0]}</span>
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="text-[10px] text-muted-foreground">{conv.lastMessageTime}</span>
                     {/* Message status indicator */}
