@@ -71,6 +71,7 @@ const WordSearchPlayer = ({ config, onComplete }: WordSearchPlayerProps) => {
   const [startCell, setStartCell] = useState<[number, number] | null>(null);
   const [endCell, setEndCell] = useState<[number, number] | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const { grid: g, placements: p } = generateGrid(words, size);
@@ -82,7 +83,6 @@ const WordSearchPlayer = ({ config, onComplete }: WordSearchPlayerProps) => {
 
   const cellKey = (r: number, c: number) => `${r}-${c}`;
 
-  // Compute line cells between start and end (straight lines only: horizontal, vertical, diagonal)
   const getLineCells = (start: [number, number], end: [number, number]): [number, number][] => {
     if (!start || !end) return [];
     const dr = end[0] - start[0];
@@ -93,48 +93,48 @@ const WordSearchPlayer = ({ config, onComplete }: WordSearchPlayerProps) => {
     const stepR = dr === 0 ? 0 : dr / Math.abs(dr);
     const stepC = dc === 0 ? 0 : dc / Math.abs(dc);
 
-    // Only allow straight lines (horizontal, vertical, diagonal)
     if (Math.abs(dr) !== 0 && Math.abs(dc) !== 0 && Math.abs(dr) !== Math.abs(dc)) {
-      // Snap to closest valid direction
       if (Math.abs(dr) > Math.abs(dc)) {
-        // Vertical-ish
         const cells: [number, number][] = [];
-        for (let i = 0; i <= Math.abs(dr); i++) {
-          cells.push([start[0] + stepR * i, start[1]]);
-        }
+        for (let i = 0; i <= Math.abs(dr); i++) cells.push([start[0] + stepR * i, start[1]]);
         return cells;
       } else {
-        // Horizontal-ish
         const cells: [number, number][] = [];
-        for (let i = 0; i <= Math.abs(dc); i++) {
-          cells.push([start[0], start[1] + stepC * i]);
-        }
+        for (let i = 0; i <= Math.abs(dc); i++) cells.push([start[0], start[1] + stepC * i]);
         return cells;
       }
     }
 
     const cells: [number, number][] = [];
-    for (let i = 0; i <= len; i++) {
-      cells.push([start[0] + stepR * i, start[1] + stepC * i]);
-    }
+    for (let i = 0; i <= len; i++) cells.push([start[0] + stepR * i, start[1] + stepC * i]);
     return cells;
   };
 
   const selectedCells = startCell && endCell ? getLineCells(startCell, endCell) : startCell ? [startCell] : [];
   const selectedSet = new Set(selectedCells.map(([r, c]) => cellKey(r, c)));
 
-  const handleMouseDown = (r: number, c: number) => {
+  // Get cell coordinates from a touch point
+  const getCellFromTouch = useCallback((clientX: number, clientY: number): [number, number] | null => {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (!el) return null;
+    const row = el.getAttribute('data-row');
+    const col = el.getAttribute('data-col');
+    if (row === null || col === null) return null;
+    return [parseInt(row), parseInt(col)];
+  }, []);
+
+  const handleStart = (r: number, c: number) => {
     setIsSelecting(true);
     setStartCell([r, c]);
     setEndCell([r, c]);
   };
 
-  const handleMouseEnter = (r: number, c: number) => {
+  const handleMove = (r: number, c: number) => {
     if (!isSelecting) return;
     setEndCell([r, c]);
   };
 
-  const handleMouseUp = () => {
+  const handleEnd = useCallback(() => {
     setIsSelecting(false);
     if (!startCell || !endCell) return;
 
@@ -148,12 +148,9 @@ const WordSearchPlayer = ({ config, onComplete }: WordSearchPlayerProps) => {
         setFoundWords(prev => {
           const next = new Set(prev);
           next.add(w);
-          if (next.size === upperWords.length) {
-            onComplete?.(next.size, upperWords.length);
-          }
+          if (next.size === upperWords.length) onComplete?.(next.size, upperWords.length);
           return next;
         });
-        // Mark found cells
         setFoundCells(prev => {
           const next = new Set(prev);
           cells.forEach(([r, c]) => next.add(cellKey(r, c)));
@@ -164,7 +161,20 @@ const WordSearchPlayer = ({ config, onComplete }: WordSearchPlayerProps) => {
     }
     setStartCell(null);
     setEndCell(null);
-  };
+  }, [startCell, endCell, grid, words, onComplete]);
+
+  // Touch move handler on the grid container
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const cell = getCellFromTouch(touch.clientX, touch.clientY);
+    if (cell) handleMove(cell[0], cell[1]);
+  }, [isSelecting, getCellFromTouch]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    handleEnd();
+  }, [handleEnd]);
 
   const reset = () => {
     const { grid: g, placements: p } = generateGrid(words, size);
@@ -216,9 +226,12 @@ const WordSearchPlayer = ({ config, onComplete }: WordSearchPlayerProps) => {
 
       {/* Grid */}
       <div
-        className="inline-grid gap-0.5 select-none touch-none"
-        style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
+        ref={gridRef}
+        className="inline-grid gap-0.5 select-none"
+        style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`, touchAction: 'none' }}
         onMouseLeave={() => { setIsSelecting(false); setStartCell(null); setEndCell(null); }}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {grid.map((row, r) =>
           row.map((cell, c) => {
@@ -228,6 +241,8 @@ const WordSearchPlayer = ({ config, onComplete }: WordSearchPlayerProps) => {
             return (
               <button
                 key={key}
+                data-row={r}
+                data-col={c}
                 className={cn(
                   'w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-xs font-bold rounded transition-all',
                   isSelected
@@ -236,11 +251,10 @@ const WordSearchPlayer = ({ config, onComplete }: WordSearchPlayerProps) => {
                       ? 'bg-success/20 text-success font-extrabold'
                       : 'bg-muted/40 text-foreground hover:bg-muted'
                 )}
-                onMouseDown={() => handleMouseDown(r, c)}
-                onMouseEnter={() => handleMouseEnter(r, c)}
-                onMouseUp={handleMouseUp}
-                onTouchStart={() => handleMouseDown(r, c)}
-                onTouchEnd={handleMouseUp}
+                onMouseDown={() => handleStart(r, c)}
+                onMouseEnter={() => handleMove(r, c)}
+                onMouseUp={() => handleEnd()}
+                onTouchStart={(e) => { e.preventDefault(); handleStart(r, c); }}
               >
                 {cell}
               </button>
