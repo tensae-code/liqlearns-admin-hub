@@ -4025,6 +4025,45 @@ export type Database = {
           },
         ]
       }
+      user_messaging_settings: {
+        Row: {
+          accept_non_friends: boolean
+          created_at: string
+          font_size: number
+          id: string
+          messages_before_accept: number
+          show_activity: boolean
+          show_avatar: boolean
+          show_status: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accept_non_friends?: boolean
+          created_at?: string
+          font_size?: number
+          id?: string
+          messages_before_accept?: number
+          show_activity?: boolean
+          show_avatar?: boolean
+          show_status?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accept_non_friends?: boolean
+          created_at?: string
+          font_size?: number
+          id?: string
+          messages_before_accept?: number
+          show_activity?: boolean
+          show_avatar?: boolean
+          show_status?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

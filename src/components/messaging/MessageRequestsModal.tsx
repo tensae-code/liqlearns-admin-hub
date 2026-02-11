@@ -8,16 +8,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Check, X, Loader2, Inbox } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Check, X, Loader2, Inbox, MessageSquare, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-interface MessageRequest {
+interface UnifiedRequest {
   id: string;
   sender_id: string;
   created_at: string;
+  type: 'message' | 'friend';
   sender?: {
     full_name: string;
     username: string;
@@ -37,79 +39,102 @@ const MessageRequestsModal = ({
   onAccept,
 }: MessageRequestsModalProps) => {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<MessageRequest[]>([]);
+  const [requests, setRequests] = useState<UnifiedRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open) {
-      fetchRequests();
-    }
+    if (open) fetchRequests();
   }, [open]);
 
   const fetchRequests = async () => {
     if (!user) return;
-
     try {
       setLoading(true);
 
-      // Get my profile ID
       const { data: myProfile } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!myProfile) return;
 
-      // Fetch pending message requests
-      const { data: requestData, error } = await supabase
+      // Fetch message requests
+      const { data: msgRequests } = await supabase
         .from('message_requests')
         .select('id, sender_id, created_at')
         .eq('receiver_id', myProfile.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      // Fetch friend requests (where I'm addressee)
+      const { data: friendRequests } = await supabase
+        .from('friendships')
+        .select('id, requester_id, created_at')
+        .eq('addressee_id', myProfile.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
-      if (requestData && requestData.length > 0) {
-        // Fetch sender profiles
-        const senderIds = requestData.map(r => r.sender_id);
-        const { data: profiles } = await supabase
+      // Collect all sender IDs
+      const allSenderIds = [
+        ...(msgRequests?.map(r => r.sender_id) || []),
+        ...(friendRequests?.map(r => r.requester_id) || []),
+      ];
+
+      let profiles: any[] = [];
+      if (allSenderIds.length > 0) {
+        const { data } = await supabase
           .from('profiles')
           .select('id, full_name, username, avatar_url')
-          .in('id', senderIds);
-
-        const enrichedRequests = requestData.map(req => ({
-          ...req,
-          sender: profiles?.find(p => p.id === req.sender_id),
-        }));
-
-        setRequests(enrichedRequests);
-      } else {
-        setRequests([]);
+          .in('id', allSenderIds);
+        profiles = data || [];
       }
+
+      const unified: UnifiedRequest[] = [
+        ...(msgRequests || []).map(r => ({
+          id: r.id,
+          sender_id: r.sender_id,
+          created_at: r.created_at,
+          type: 'message' as const,
+          sender: profiles.find(p => p.id === r.sender_id),
+        })),
+        ...(friendRequests || []).map(r => ({
+          id: r.id,
+          sender_id: r.requester_id,
+          created_at: r.created_at,
+          type: 'friend' as const,
+          sender: profiles.find(p => p.id === r.requester_id),
+        })),
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setRequests(unified);
     } catch (error) {
-      console.error('Error fetching message requests:', error);
+      console.error('Error fetching requests:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAccept = async (request: MessageRequest) => {
+  const handleAccept = async (request: UnifiedRequest) => {
     try {
       setProcessingId(request.id);
 
-      await supabase
-        .from('message_requests')
-        .update({ status: 'accepted', updated_at: new Date().toISOString() })
-        .eq('id', request.id);
+      if (request.type === 'message') {
+        await supabase
+          .from('message_requests')
+          .update({ status: 'accepted', updated_at: new Date().toISOString() })
+          .eq('id', request.id);
+        toast.success('Message request accepted!');
+      } else {
+        await supabase
+          .from('friendships')
+          .update({ status: 'accepted', updated_at: new Date().toISOString() })
+          .eq('id', request.id);
+        toast.success('Friend request accepted!');
+      }
 
       setRequests(prev => prev.filter(r => r.id !== request.id));
-      toast.success('Request accepted!', {
-        description: `You can now chat with ${request.sender?.full_name}`,
-      });
-
       onAccept?.(request.sender_id);
     } catch (error) {
       console.error('Error accepting request:', error);
@@ -119,14 +144,22 @@ const MessageRequestsModal = ({
     }
   };
 
-  const handleDecline = async (request: MessageRequest) => {
+  const handleDecline = async (request: UnifiedRequest) => {
     try {
       setProcessingId(request.id);
 
-      await supabase
-        .from('message_requests')
-        .update({ status: 'declined', updated_at: new Date().toISOString() })
-        .eq('id', request.id);
+      if (request.type === 'message') {
+        await supabase
+          .from('message_requests')
+          .update({ status: 'declined', updated_at: new Date().toISOString() })
+          .eq('id', request.id);
+      } else {
+        // Delete the friendship record rather than setting invalid status
+        await supabase
+          .from('friendships')
+          .delete()
+          .eq('id', request.id);
+      }
 
       setRequests(prev => prev.filter(r => r.id !== request.id));
       toast.success('Request declined');
@@ -143,16 +176,10 @@ const MessageRequestsModal = ({
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) {
-      return 'Today';
-    } else if (days === 1) {
-      return 'Yesterday';
-    } else if (days < 7) {
-      return `${days} days ago`;
-    } else {
-      return date.toLocaleDateString();
-    }
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    return date.toLocaleDateString();
   };
 
   return (
@@ -161,7 +188,7 @@ const MessageRequestsModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Inbox className="w-5 h-5 text-accent" />
-            Message Requests
+            Requests
           </DialogTitle>
         </DialogHeader>
 
@@ -173,8 +200,8 @@ const MessageRequestsModal = ({
           ) : requests.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
               <Inbox className="w-12 h-12 mb-2 opacity-50" />
-              <p className="text-sm">No message requests</p>
-              <p className="text-xs">When someone sends you a request, it'll appear here</p>
+              <p className="text-sm">No requests</p>
+              <p className="text-xs">Message and friend requests will appear here</p>
             </div>
           ) : (
             <AnimatePresence mode="popLayout">
@@ -196,9 +223,18 @@ const MessageRequestsModal = ({
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {request.sender?.full_name || 'Unknown'}
-                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-medium text-sm truncate">
+                          {request.sender?.full_name || 'Unknown'}
+                        </p>
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 shrink-0">
+                          {request.type === 'friend' ? (
+                            <><UserPlus className="w-2.5 h-2.5 mr-0.5" />Friend</>
+                          ) : (
+                            <><MessageSquare className="w-2.5 h-2.5 mr-0.5" />Message</>
+                          )}
+                        </Badge>
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         @{request.sender?.username} · {formatTime(request.created_at)}
                       </p>

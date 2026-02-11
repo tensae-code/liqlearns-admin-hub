@@ -38,6 +38,7 @@ import { Conversation } from './ConversationList';
 import { toast } from 'sonner';
 import usePresence from '@/hooks/usePresence';
 import { usePinnedMessages } from '@/hooks/usePinnedMessages';
+import { useMessagingSettings } from '@/hooks/useMessagingSettings';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -88,6 +89,7 @@ interface ChatWindowProps {
   onViewInfo?: () => void;
   isMobile?: boolean;
   onDeleteMessage?: (messageId: string) => void;
+  onForwardMessage?: (content: string) => void;
   currentChannelName?: string;
   currentChannelId?: string | null;
 }
@@ -142,6 +144,7 @@ const ChatWindow = ({
   onViewInfo,
   isMobile,
   onDeleteMessage,
+  onForwardMessage,
   currentChannelName,
   currentChannelId,
 }: ChatWindowProps) => {
@@ -169,6 +172,7 @@ const ChatWindow = ({
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   
   const { isUserOnline, getTypingUsersForConversation, sendTypingIndicator } = usePresence();
+  const { settings: msgSettings } = useMessagingSettings();
   
   // Pinned messages hook - use channelId for groups (if available), else fallback to conversation.id
   const conversationIdForPins = conversation?.type === 'dm' 
@@ -961,11 +965,13 @@ const ChatWindow = ({
                       sender={msg.sender}
                       timestamp={formattedTime}
                       isSender={isSender}
-                      showAvatar={msgIndex === group.messages.length - 1}
+                      showAvatar={msgSettings.show_avatar && msgIndex === group.messages.length - 1}
+                      fontSize={msgSettings.font_size}
                       isRead={msg.isRead}
                       isFirstInGroup={msgIndex === 0}
                       isLastInGroup={msgIndex === group.messages.length - 1}
                       onDelete={onDeleteMessage ? () => onDeleteMessage(msg.id) : undefined}
+                      onForward={onForwardMessage ? () => onForwardMessage(msg.content) : undefined}
                       onReply={() => setReplyingTo(msg)}
                       onPin={() => pinMessage(msg.id)}
                       onUnpin={() => unpinMessage(msg.id)}
