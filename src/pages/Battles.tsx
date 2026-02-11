@@ -182,8 +182,8 @@ const Battles = () => {
                     <h1 className="text-xl md:text-2xl font-bold text-foreground">Battle Arena</h1>
                     <p className="text-sm text-muted-foreground">Challenge opponents, win battle points!</p>
                   </div>
-                  <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600" onClick={() => setCreateOpen(true)}>
-                    <Plus className="w-4 h-4 mr-1" /> Challenge
+                  <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 shrink-0" size="sm" onClick={() => setCreateOpen(true)}>
+                    <Plus className="w-4 h-4 mr-1" /> <span className="hidden sm:inline">Challenge</span><span className="sm:hidden">Fight</span>
                   </Button>
                 </div>
               </CardContent>

@@ -324,7 +324,7 @@ export const useMessaging = () => {
               const replyProfile = profiles?.find(p => p.id === replyData.sender_id);
               replyTo = {
                 content: replyData.content,
-                senderName: replyProfile?.full_name || 'Unknown',
+                senderName: (replyProfile as any)?.nickname || (replyProfile?.full_name?.split(' ')[0]) || 'Unknown',
                 messageId: replyData.id,
               };
             }
@@ -334,7 +334,7 @@ export const useMessaging = () => {
               content: msg.content,
               sender: {
                 id: msg.sender_id,
-                name: (msgProfile as any)?.nickname || msgProfile?.full_name || 'Unknown',
+                name: (msgProfile as any)?.nickname || (msgProfile?.full_name?.split(' ')[0]) || 'Unknown',
                 avatar: msgProfile?.avatar_url,
               },
               timestamp: msg.created_at,
@@ -887,13 +887,13 @@ export const useMessaging = () => {
             if (replyMsg) {
               const { data: replyProfile } = await supabase
                 .from('profiles')
-                .select('full_name')
+                .select('full_name, nickname')
                 .eq('id', replyMsg.sender_id)
                 .single();
               
               replyToData = {
                 content: replyMsg.content,
-                senderName: replyProfile?.full_name || 'Unknown',
+                senderName: (replyProfile as any)?.nickname || (replyProfile?.full_name?.split(' ')[0]) || 'Unknown',
                 messageId: payload.new.reply_to_id,
               };
             }
@@ -907,7 +907,7 @@ export const useMessaging = () => {
             content: payload.new.content,
             sender: {
               id: payload.new.sender_id,
-              name: (senderProfile as any)?.nickname || senderProfile?.full_name || 'Unknown',
+              name: (senderProfile as any)?.nickname || (senderProfile?.full_name?.split(' ')[0]) || 'Unknown',
               avatar: senderProfile?.avatar_url,
             },
             timestamp: payload.new.created_at,
