@@ -53,6 +53,10 @@ const MessageSettingsModal = ({ open, onOpenChange }: MessageSettingsModalProps)
               <Label htmlFor="show-avatar" className="text-sm">Show profile pictures</Label>
               <Switch id="show-avatar" checked={settings.show_avatar} onCheckedChange={(v) => updateSettings({ show_avatar: v })} />
             </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="show-name" className="text-sm">Show my name to others</Label>
+              <Switch id="show-name" checked={settings.show_name} onCheckedChange={(v) => updateSettings({ show_name: v })} />
+            </div>
           </div>
 
           <Separator />

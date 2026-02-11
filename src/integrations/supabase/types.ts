@@ -4076,6 +4076,7 @@ export type Database = {
           messages_before_accept: number
           show_activity: boolean
           show_avatar: boolean
+          show_name: boolean
           show_status: boolean
           updated_at: string
           user_id: string
@@ -4088,6 +4089,7 @@ export type Database = {
           messages_before_accept?: number
           show_activity?: boolean
           show_avatar?: boolean
+          show_name?: boolean
           show_status?: boolean
           updated_at?: string
           user_id: string
@@ -4100,6 +4102,7 @@ export type Database = {
           messages_before_accept?: number
           show_activity?: boolean
           show_avatar?: boolean
+          show_name?: boolean
           show_status?: boolean
           updated_at?: string
           user_id?: string
