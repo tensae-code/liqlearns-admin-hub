@@ -274,29 +274,28 @@ const SwipeableChatBubble = ({
           )}>
             <p className="text-[15px] leading-[1.35] whitespace-pre-wrap break-words">
               {message}
-              {/* Reply chain arrow + timestamp inline at bottom-right */}
-              <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-1">
-                {repliedBy && repliedBy.length > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onNavigateToReplyChain) {
-                        onNavigateToReplyChain(repliedBy.map(r => r.id));
-                      }
-                    }}
-                    className="hover:opacity-70 transition-opacity cursor-pointer"
-                  >
-                    <Reply className="w-2.5 h-2.5 opacity-60" />
-                  </button>
-                )}
-                {isSender && isLastInGroup && (
-                  <>
-                    <span className="text-[10px] opacity-70">{timestamp}</span>
-                    {renderStatusIcon()}
-                  </>
-                )}
-              </span>
+              {isSender && isLastInGroup && (
+                <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-1">
+                  <span className="text-[10px] opacity-70">{timestamp}</span>
+                  {renderStatusIcon()}
+                </span>
+              )}
             </p>
+            {repliedBy && repliedBy.length > 0 && (
+              <div className="flex justify-end -mt-0.5 pr-1 pb-0.5">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onNavigateToReplyChain) {
+                      onNavigateToReplyChain(repliedBy.map(r => r.id));
+                    }
+                  }}
+                  className="hover:opacity-70 transition-opacity cursor-pointer"
+                >
+                  <Reply className="w-2.5 h-2.5 opacity-50" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Delete option for received messages */}
