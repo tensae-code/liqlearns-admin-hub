@@ -171,7 +171,17 @@ const ChatWindow = ({
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   
-  const { isUserOnline, getTypingUsersForConversation, sendTypingIndicator } = usePresence();
+  const { isUserOnline, isUserInChat, getTypingUsersForConversation, sendTypingIndicator, setActiveConversation } = usePresence();
+
+  // Track active conversation for "in chat" presence
+  useEffect(() => {
+    if (conversation) {
+      setActiveConversation(conversation.id);
+    }
+    return () => {
+      setActiveConversation(null);
+    };
+  }, [conversation?.id, setActiveConversation]);
   const { settings: msgSettings } = useMessagingSettings();
   
   // Pinned messages hook - use channelId for groups (if available), else fallback to conversation.id
@@ -828,7 +838,9 @@ const ChatWindow = ({
                 : (
                   <>
                     <span className={`w-2 h-2 rounded-full ${isPartnerOnline ? 'bg-success' : 'bg-muted-foreground'}`} />
-                    {isPartnerOnline ? 'Online' : 'Offline'}
+                    {partnerId && conversation && isUserInChat(partnerId, conversation.id) 
+                      ? 'Active now' 
+                      : isPartnerOnline ? 'Online' : 'Offline'}
                   </>
                 )
               }
