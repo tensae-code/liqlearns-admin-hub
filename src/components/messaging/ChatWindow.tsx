@@ -919,6 +919,11 @@ const ChatWindow = ({
                   if (msg.type === 'file' || msg.type === 'image') {
                     return renderFileMessage(msg, isSender);
                   }
+
+                  // Compute messages that replied to this message
+                  const repliedBy = messages
+                    .filter(m => m.replyTo?.messageId === msg.id)
+                    .map(m => ({ id: m.id, senderName: m.sender.name, content: m.content }));
                   
                   return (
                     <SwipeableChatBubble
@@ -938,6 +943,7 @@ const ChatWindow = ({
                       onUnpin={() => unpinMessage(msg.id)}
                       isPinned={isMessagePinned(msg.id)}
                       replyTo={msg.replyTo}
+                      repliedBy={repliedBy.length > 0 ? repliedBy : undefined}
                       highlightId={highlightedMessageId || undefined}
                       onNavigateToMessage={navigateToMessage}
                     />
