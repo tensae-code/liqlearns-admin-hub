@@ -40,7 +40,8 @@ import {
   FolderTree,
   Bot,
   Wallet,
-  Crown
+  Crown,
+  Swords
 } from 'lucide-react';
 import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
 
@@ -144,6 +145,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Mail, label: 'Messages', description: 'Chat with friends', path: '/messages' },
         { icon: Calendar, label: 'Events', description: 'Upcoming events', path: '/events' },
         { icon: ShoppingBag, label: 'Marketplace', description: 'Spend rewards', path: '/marketplace' },
+        { icon: Swords, label: 'Battles', description: 'Challenge others', path: '/battles' },
         { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
