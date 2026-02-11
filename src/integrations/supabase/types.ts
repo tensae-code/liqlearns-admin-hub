@@ -74,6 +74,229 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_messages: {
+        Row: {
+          battle_id: string
+          content: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          battle_id: string
+          content: string
+          created_at?: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          battle_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_messages_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          draws: number
+          id: string
+          losses: number
+          rank_points: number
+          total_lost: number
+          total_won: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          draws?: number
+          id?: string
+          losses?: number
+          rank_points?: number
+          total_lost?: number
+          total_won?: number
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          draws?: number
+          id?: string
+          losses?: number
+          rank_points?: number
+          total_lost?: number
+          total_won?: number
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battles: {
+        Row: {
+          challenger_id: string
+          challenger_score: number | null
+          challenger_time_seconds: number | null
+          completed_at: string | null
+          course_id: string | null
+          created_at: string
+          game_id: string | null
+          id: string
+          is_open: boolean
+          opponent_id: string | null
+          opponent_score: number | null
+          opponent_time_seconds: number | null
+          stake_amount: number
+          started_at: string | null
+          status: string
+          updated_at: string
+          voice_enabled: boolean
+          winner_id: string | null
+        }
+        Insert: {
+          challenger_id: string
+          challenger_score?: number | null
+          challenger_time_seconds?: number | null
+          completed_at?: string | null
+          course_id?: string | null
+          created_at?: string
+          game_id?: string | null
+          id?: string
+          is_open?: boolean
+          opponent_id?: string | null
+          opponent_score?: number | null
+          opponent_time_seconds?: number | null
+          stake_amount?: number
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          voice_enabled?: boolean
+          winner_id?: string | null
+        }
+        Update: {
+          challenger_id?: string
+          challenger_score?: number | null
+          challenger_time_seconds?: number | null
+          completed_at?: string | null
+          course_id?: string | null
+          created_at?: string
+          game_id?: string | null
+          id?: string
+          is_open?: boolean
+          opponent_id?: string | null
+          opponent_score?: number | null
+          opponent_time_seconds?: number | null
+          stake_amount?: number
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          voice_enabled?: boolean
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battles_challenger_id_fkey"
+            columns: ["challenger_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_challenger_id_fkey"
+            columns: ["challenger_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_opponent_id_fkey"
+            columns: ["opponent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_opponent_id_fkey"
+            columns: ["opponent_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brain_bank: {
         Row: {
           category: string | null
