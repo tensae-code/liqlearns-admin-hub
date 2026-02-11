@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -43,6 +43,7 @@ export const useMessaging = () => {
   const { profile, loading: profileLoading } = useProfile();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const messagesRef = useRef<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
@@ -54,7 +55,11 @@ export const useMessaging = () => {
     channelType: 'text',
   });
 
-  // Helper to format time
+  // Keep messagesRef in sync for stale closure avoidance
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   const formatTimeHelper = (dateString?: string): string => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -369,7 +374,7 @@ export const useMessaging = () => {
         // Get replyTo content for optimistic UI
         let replyToData: Message['replyTo'] = undefined;
         if (options?.replyToId) {
-          const replyMsg = messages.find(m => m.id === options.replyToId);
+          const replyMsg = messagesRef.current.find(m => m.id === options.replyToId);
           if (replyMsg) {
             replyToData = {
               content: replyMsg.content,
@@ -446,7 +451,7 @@ export const useMessaging = () => {
           // Get replyTo content for optimistic UI
           let replyToData: Message['replyTo'] = undefined;
           if (options?.replyToId) {
-            const replyMsg = messages.find(m => m.id === options.replyToId);
+            const replyMsg = messagesRef.current.find(m => m.id === options.replyToId);
             if (replyMsg) {
               replyToData = {
                 content: replyMsg.content,

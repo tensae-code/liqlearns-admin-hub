@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ConversationList, { Conversation } from '@/components/messaging/ConversationList';
@@ -61,11 +62,32 @@ const Messages = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [localMessages, setLocalMessages] = useState(messages);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const dmAutoOpenHandled = useRef(false);
 
   // Sync local messages with hook messages
   useEffect(() => {
     setLocalMessages(messages);
   }, [messages]);
+
+  // Auto-open DM from URL param (e.g. /messages?dm=userId from live chat)
+  useEffect(() => {
+    if (dmAutoOpenHandled.current || loading) return;
+    const dmUserId = searchParams.get('dm');
+    if (dmUserId && user) {
+      dmAutoOpenHandled.current = true;
+      // Clear the param from URL
+      setSearchParams({}, { replace: true });
+      // Check if conversation already exists
+      const existing = conversations.find(c => c.id === `dm_${dmUserId}`);
+      if (existing) {
+        handleSelectConversation(existing);
+      } else {
+        startDM(dmUserId);
+        if (isMobile) setShowChat(true);
+      }
+    }
+  }, [searchParams, user, loading, conversations]);
 
   // Update conversations with online status
   const conversationsWithOnlineStatus = conversations.map(conv => {
