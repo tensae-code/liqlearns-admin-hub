@@ -231,6 +231,7 @@ export const useMessaging = () => {
               replyTo = {
                 content: replyMsg.content,
                 senderName: replyProfile?.full_name || 'Unknown',
+                messageId: replyMsg.id,
               };
             }
           }
@@ -308,7 +309,7 @@ export const useMessaging = () => {
           const senderIds = [...new Set(data?.map(m => m.sender_id) || [])];
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, user_id, full_name, avatar_url')
+            .select('id, user_id, full_name, avatar_url, nickname')
             .in('id', senderIds);
 
           const formattedMessages: Message[] = (data || []).map(msg => {
@@ -324,6 +325,7 @@ export const useMessaging = () => {
               replyTo = {
                 content: replyData.content,
                 senderName: replyProfile?.full_name || 'Unknown',
+                messageId: replyData.id,
               };
             }
             
@@ -332,7 +334,7 @@ export const useMessaging = () => {
               content: msg.content,
               sender: {
                 id: msg.sender_id,
-                name: msgProfile?.full_name || 'Unknown',
+                name: (msgProfile as any)?.nickname || msgProfile?.full_name || 'Unknown',
                 avatar: msgProfile?.avatar_url,
               },
               timestamp: msg.created_at,
@@ -789,6 +791,7 @@ export const useMessaging = () => {
                 replyToData = {
                   content: replyMsg.content,
                   senderName: replyProfile?.full_name || 'Unknown',
+                  messageId: payload.new.reply_to_id,
                 };
               }
             }
@@ -868,7 +871,7 @@ export const useMessaging = () => {
           // Fetch sender profile
           const { data: senderProfile } = await supabase
             .from('profiles')
-            .select('full_name, avatar_url')
+            .select('full_name, avatar_url, nickname')
             .eq('id', payload.new.sender_id)
             .single();
 
@@ -891,6 +894,7 @@ export const useMessaging = () => {
               replyToData = {
                 content: replyMsg.content,
                 senderName: replyProfile?.full_name || 'Unknown',
+                messageId: payload.new.reply_to_id,
               };
             }
           }
@@ -903,7 +907,7 @@ export const useMessaging = () => {
             content: payload.new.content,
             sender: {
               id: payload.new.sender_id,
-              name: senderProfile?.full_name || 'Unknown',
+              name: (senderProfile as any)?.nickname || senderProfile?.full_name || 'Unknown',
               avatar: senderProfile?.avatar_url,
             },
             timestamp: payload.new.created_at,

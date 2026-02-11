@@ -282,6 +282,16 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
         let winnerId: string | null = null;
         if (cScore > oScore) winnerId = currentBattle.challenger_id;
         else if (oScore > cScore) winnerId = currentBattle.opponent_id;
+        else {
+          // Tiebreaker: fewer time wins, then fewer moves (approximated by time)
+          const cTime = isChallenger ? timeSeconds : currentBattle.challenger_time_seconds;
+          const oTime = isChallenger ? currentBattle.opponent_time_seconds : timeSeconds;
+          if (cTime !== null && oTime !== null) {
+            if (cTime < oTime) winnerId = currentBattle.challenger_id;
+            else if (oTime < cTime) winnerId = currentBattle.opponent_id;
+            // If still tied, it's a draw (winnerId stays null)
+          }
+        }
 
         await supabase.from('battles').update({
           status: 'completed',
