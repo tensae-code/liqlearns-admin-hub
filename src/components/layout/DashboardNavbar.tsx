@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { cn } from '@/lib/utils';
 import { STAT_GRADIENTS } from '@/lib/theme';
+import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
 import { 
   BookOpen, 
   Search, 
@@ -29,7 +30,9 @@ import {
   FileText,
   HeadphonesIcon,
   Flame,
-  Star
+  Star,
+  Phone,
+  PhoneOff
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -127,6 +130,7 @@ const DashboardNavbar = () => {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const location = useLocation();
+  const liveKitContext = useOptionalLiveKitContext();
 
   const navItems = getNavItemsForRole(userRole);
 
@@ -177,6 +181,9 @@ const DashboardNavbar = () => {
     if (itemPath !== '/ceo' && location.pathname.startsWith(itemPath) && itemPath !== '/') return true;
     return location.pathname === itemPath;
   };
+
+  const isInCall = liveKitContext?.callState?.status === 'connected';
+  const callParticipantCount = isInCall ? (liveKitContext?.remoteParticipants?.length ?? 0) + 1 : 0;
 
   return (
     <nav className="sticky top-0 z-40 bg-gradient-to-r from-primary via-primary/90 to-primary backdrop-blur-lg border-b border-primary-foreground/10">
@@ -304,6 +311,34 @@ const DashboardNavbar = () => {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2 md:gap-3">
+          {/* Ongoing Call Indicator - Telegram style */}
+          {isInCall && (
+            <button
+              onClick={() => {
+                // Navigate to messages if not already there
+                if (location.pathname !== '/messages') {
+                  navigate('/messages');
+                }
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/20 border border-success/30 hover:bg-success/30 transition-colors"
+            >
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <Phone className="w-3.5 h-3.5 text-success" />
+              <span className="text-xs font-medium text-success hidden sm:inline">
+                {callParticipantCount}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  liveKitContext?.endCall();
+                }}
+                className="ml-1 p-0.5 rounded-full hover:bg-destructive/20"
+                title="End call"
+              >
+                <PhoneOff className="w-3 h-3 text-destructive" />
+              </button>
+            </button>
+          )}
           {/* Mobile Search Button */}
           <Button
             variant="ghost"

@@ -765,6 +765,29 @@ export const useMessaging = () => {
               .eq('user_id', payload.new.sender_id)
               .single();
 
+            // Fetch reply_to data if present
+            let replyToData: Message['replyTo'] = undefined;
+            if (payload.new.reply_to_id) {
+              const { data: replyMsg } = await supabase
+                .from('direct_messages')
+                .select('content, sender_id')
+                .eq('id', payload.new.reply_to_id)
+                .single();
+              
+              if (replyMsg) {
+                const { data: replyProfile } = await supabase
+                  .from('profiles')
+                  .select('full_name')
+                  .eq('user_id', replyMsg.sender_id)
+                  .single();
+                
+                replyToData = {
+                  content: replyMsg.content,
+                  senderName: replyProfile?.full_name || 'Unknown',
+                };
+              }
+            }
+
             const msgType = payload.new.message_type || 'text';
             const mediaOpts = payload.new.media_options as Message['mediaOptions'];
             
@@ -784,6 +807,7 @@ export const useMessaging = () => {
               fileSize: payload.new.file_size,
               durationSeconds: payload.new.duration_seconds,
               mediaOptions: mediaOpts,
+              replyTo: replyToData,
             };
             
             setMessages(prev => {
