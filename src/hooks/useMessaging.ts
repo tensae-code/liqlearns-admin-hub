@@ -373,6 +373,39 @@ export const useMessaging = () => {
       console.log('Sending message:', { type, id, messageType, content: content.substring(0, 20) });
 
       if (type === 'dm') {
+        // Privacy enforcement: check receiver's messaging settings
+        const { data: receiverSettings } = await supabase
+          .from('user_messaging_settings')
+          .select('accept_non_friends')
+          .eq('user_id', id) // id is the receiver's auth user_id
+          .maybeSingle();
+
+        if (receiverSettings && !receiverSettings.accept_non_friends) {
+          // Check if we're friends
+          const { data: friendship } = await supabase
+            .from('friendships')
+            .select('id')
+            .eq('status', 'accepted')
+            .or(`and(requester_id.eq.${user.id},addressee_id.eq.${id}),and(requester_id.eq.${id},addressee_id.eq.${user.id})`)
+            .maybeSingle();
+
+          if (!friendship) {
+            // Check if there's an accepted message request
+            const myProfileId = profile.id;
+            const { data: msgRequest } = await supabase
+              .from('message_requests')
+              .select('id')
+              .eq('status', 'accepted')
+              .or(`and(sender_id.eq.${myProfileId},receiver_id.eq.${id}),and(sender_id.eq.${id},receiver_id.eq.${myProfileId})`)
+              .maybeSingle();
+
+            if (!msgRequest) {
+              toast.error('This user only accepts messages from friends');
+              return;
+            }
+          }
+        }
+
         // Get replyTo content for optimistic UI
         let replyToData: Message['replyTo'] = undefined;
         if (options?.replyToId) {

@@ -7,6 +7,7 @@ interface PresenceUser {
   name: string;
   avatar?: string;
   online_at: string;
+  active_conversation?: string; // conversation ID the user is actively viewing
 }
 
 interface TypingUser {
@@ -71,6 +72,7 @@ export const usePresence = (channelName: string = 'online-users') => {
               name: presence.name,
               avatar: presence.avatar,
               online_at: presence.online_at,
+              active_conversation: presence.active_conversation,
             });
           }
         });
@@ -87,6 +89,7 @@ export const usePresence = (channelName: string = 'online-users') => {
               name: presence.name,
               avatar: presence.avatar,
               online_at: presence.online_at,
+              active_conversation: presence.active_conversation,
             });
             return updated;
           });
@@ -156,12 +159,32 @@ export const usePresence = (channelName: string = 'online-users') => {
     return typingUsers.filter(u => u.conversationId === conversationId);
   }, [typingUsers]);
 
+  // Track which conversation the current user is actively viewing
+  const setActiveConversation = useCallback(async (conversationId: string | null) => {
+    if (!user || !myProfile) return;
+    const channel = supabase.channel(channelName);
+    await channel.track({
+      name: myProfile.full_name,
+      avatar: myProfile.avatar_url,
+      online_at: new Date().toISOString(),
+      active_conversation: conversationId || undefined,
+    });
+  }, [user, myProfile, channelName]);
+
+  // Check if a specific user is actively viewing a given conversation
+  const isUserInChat = useCallback((userId: string, conversationId: string): boolean => {
+    const presence = onlineUsers.get(userId);
+    return presence?.active_conversation === conversationId;
+  }, [onlineUsers]);
+
   return {
     onlineUsers: Array.from(onlineUsers.values()),
     typingUsers,
     isUserOnline,
+    isUserInChat,
     getTypingUsersForConversation,
     sendTypingIndicator,
+    setActiveConversation,
   };
 };
 
