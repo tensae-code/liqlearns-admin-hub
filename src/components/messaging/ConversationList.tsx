@@ -308,11 +308,15 @@ const ConversationList = ({
                         </Badge>
                       )}
                       {/* Unread badge - red */}
-                      {(conv.unreadCount ?? 0) > 0 && (
+                      {(conv.unreadCount ?? 0) > 0 ? (
                         <Badge className="bg-destructive text-destructive-foreground text-[10px] h-5 min-w-5 rounded-full">
                           {conv.unreadCount! > 99 ? '99+' : conv.unreadCount}
                         </Badge>
-                      )}
+                      ) : conv.lastMessageIsMine ? (
+                        conv.lastMessageStatus === 'seen' 
+                          ? <CheckCheck className="w-3.5 h-3.5 text-primary" />
+                          : <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                      ) : null}
                     </div>
                   </div>
                   {conv.type === 'group' && conv.members && (
