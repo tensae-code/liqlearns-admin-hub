@@ -106,7 +106,7 @@ export const useBattles = () => {
     }
   }, [profile?.id]);
 
-  // Fetch open battles (matchmaking)
+  // Fetch open battles (matchmaking - sorted by similar rank)
   const fetchOpenBattles = useCallback(async () => {
     if (!profile?.id) return;
     const { data } = await supabase
@@ -125,14 +125,25 @@ export const useBattles = () => {
       const courseIds = data.filter((b: any) => b.course_id).map((b: any) => b.course_id);
       const { data: courses } = courseIds.length ? await supabase.from('courses').select('id, title').in('id', courseIds) : { data: [] };
 
-      setOpenBattles(data.map((b: any) => ({
+      // Fetch challenger wallets for rank-based sorting
+      const challengerIds = data.map((b: any) => b.challenger_id);
+      const { data: wallets } = challengerIds.length ? await supabase.from('battle_wallets').select('user_id, rank_points').in('user_id', challengerIds) : { data: [] };
+
+      const enriched = data.map((b: any) => ({
         ...b,
         challenger_profile: profiles?.find((p: any) => p.id === b.challenger_id),
         game: games?.find((g: any) => g.id === b.game_id),
         course: courses?.find((c: any) => c.id === b.course_id),
-      })));
+        challenger_rank: wallets?.find((w: any) => w.user_id === b.challenger_id)?.rank_points || 1000,
+      }));
+
+      // Sort by closest rank to current user
+      const myRank = wallet?.rank_points || 1000;
+      enriched.sort((a: any, b: any) => Math.abs(a.challenger_rank - myRank) - Math.abs(b.challenger_rank - myRank));
+
+      setOpenBattles(enriched);
     }
-  }, [profile?.id]);
+  }, [profile?.id, wallet?.rank_points]);
 
   // Fetch leaderboard
   const fetchLeaderboard = useCallback(async () => {
