@@ -18,7 +18,8 @@ import {
   Calendar,
   MessageSquare,
   DollarSign,
-  Plus
+  Plus,
+  Shield
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -51,6 +52,7 @@ const navItems: NavItem[] = [
   { icon: DollarSign, label: 'Earnings', path: '/teacher' },
   { icon: Calendar, label: 'Schedule', path: '/events' },
   { icon: MessageSquare, label: 'Community', path: '/community' },
+  { icon: Shield, label: 'Clans', path: '/clans' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 

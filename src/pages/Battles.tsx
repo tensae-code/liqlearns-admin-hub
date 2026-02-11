@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import CreateBattleDialog from '@/components/battles/CreateBattleDialog';
 import BattlePlayView from '@/components/battles/BattlePlayView';
 import ClanWarTab from '@/components/battles/ClanWarTab';
+import ClanInfoPanel from '@/components/battles/ClanInfoPanel';
 import {
   Swords, Trophy, Flame, Shield, Crown, Target, Coins,
   Clock, Users, Mic, MicOff, Plus, Loader2,
@@ -163,7 +164,10 @@ const Battles = () => {
         </div>
 
         {battleMode === 'clan' ? (
-          <ClanWarTab />
+          <div className="space-y-4">
+            <ClanInfoPanel />
+            <ClanWarTab />
+          </div>
         ) : (
         <>
         {/* Header with wallet stats */}
