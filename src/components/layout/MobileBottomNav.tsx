@@ -18,7 +18,8 @@ import {
   ChevronRight,
   FileText,
   Mail,
-  Briefcase
+  Briefcase,
+  Swords
 } from 'lucide-react';
 import {
   Drawer,
@@ -77,7 +78,7 @@ const MobileBottomNav = () => {
           { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
           { icon: BookOpen, label: 'Courses', path: '/courses' },
           { icon: Mail, label: 'Messages', path: '/messages' },
-          { icon: Users, label: 'Community', path: '/community' },
+          { icon: Swords, label: 'Battles', path: '/battles' },
         ];
     }
   };
@@ -181,6 +182,19 @@ const MobileBottomNav = () => {
                   </div>
                 </Link>
               )}
+              <Link
+                to="/community"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-accent" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">Community</span>
+                  <p className="text-xs text-muted-foreground">Discussions & posts</p>
+                </div>
+              </Link>
               <Link
                 to="/courses"
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"

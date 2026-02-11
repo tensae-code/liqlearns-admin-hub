@@ -82,11 +82,11 @@ const ConversationList = ({
           .eq('receiver_id', myProfile.id)
           .eq('status', 'pending');
 
-        // Count pending friend requests (where I'm the addressee)
+        // Count pending friend requests (where I'm the addressee - uses user_id not profile.id)
         const { count: friendCount } = await supabase
           .from('friendships')
           .select('id', { count: 'exact', head: true })
-          .eq('addressee_id', myProfile.id)
+          .eq('addressee_id', user.id)
           .eq('status', 'pending');
 
         setRequestCount((msgCount || 0) + (friendCount || 0));

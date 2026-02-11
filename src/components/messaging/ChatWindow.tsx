@@ -378,7 +378,7 @@ const ChatWindow = ({
   };
 
   // File selection handler
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) { // 10MB limit
@@ -387,11 +387,15 @@ const ChatWindow = ({
         return;
       }
       
-      // Check if it's an image or video for media options
+      // Check if it's an image, video, or audio for special handling
       const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/');
+      const isAudio = file.type.startsWith('audio/');
       if (isMedia) {
         setPendingMediaFile(file);
         setShowMediaOptions(true);
+      } else if (isAudio) {
+        // Upload audio file and send as voice message
+        await handleFileUpload(file);
       } else {
         setPendingFile(file);
       }
@@ -1071,7 +1075,7 @@ const ChatWindow = ({
               ref={fileInputRef}
               onChange={handleFileSelect}
               className="hidden"
-              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
+              accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.mp3,.wav,.ogg,.m4a"
             />
             <Button 
               variant="ghost" 

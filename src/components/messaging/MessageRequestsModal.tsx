@@ -68,27 +68,35 @@ const MessageRequestsModal = ({
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      // Fetch friend requests (where I'm addressee)
+      // Fetch friend requests (where I'm addressee - friendships uses user_id not profile.id)
       const { data: friendRequests } = await supabase
         .from('friendships')
         .select('id, requester_id, created_at')
-        .eq('addressee_id', myProfile.id)
+        .eq('addressee_id', user.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      // Collect all sender IDs
-      const allSenderIds = [
-        ...(msgRequests?.map(r => r.sender_id) || []),
-        ...(friendRequests?.map(r => r.requester_id) || []),
-      ];
+      // Collect all sender IDs (message requests use profile.id, friend requests use user_id)
+      const msgSenderIds = msgRequests?.map(r => r.sender_id) || [];
+      const friendSenderIds = friendRequests?.map(r => r.requester_id) || [];
 
       let profiles: any[] = [];
-      if (allSenderIds.length > 0) {
+      if (msgSenderIds.length > 0) {
         const { data } = await supabase
           .from('profiles')
-          .select('id, full_name, username, avatar_url')
-          .in('id', allSenderIds);
+          .select('id, user_id, full_name, username, avatar_url')
+          .in('id', msgSenderIds);
         profiles = data || [];
+      }
+
+      // For friend requests, look up by user_id 
+      let friendProfiles: any[] = [];
+      if (friendSenderIds.length > 0) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, user_id, full_name, username, avatar_url')
+          .in('user_id', friendSenderIds);
+        friendProfiles = data || [];
       }
 
       const unified: UnifiedRequest[] = [
@@ -104,7 +112,7 @@ const MessageRequestsModal = ({
           sender_id: r.requester_id,
           created_at: r.created_at,
           type: 'friend' as const,
-          sender: profiles.find(p => p.id === r.requester_id),
+          sender: friendProfiles.find(p => p.user_id === r.requester_id),
         })),
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
