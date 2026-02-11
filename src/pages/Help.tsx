@@ -38,7 +38,6 @@ import {
   Send
 } from 'lucide-react';
 import { useSupportTickets } from '@/hooks/useSupportTickets';
-import { useMessaging } from '@/hooks/useMessaging';
 import { toast } from 'sonner';
 
 const faqCategories = [
@@ -141,7 +140,6 @@ const Help = () => {
   });
 
   const { submitTicket, submitting, startLiveChat } = useSupportTickets();
-  const { startDM } = useMessaging();
 
   const activeCategory = faqCategories.find(c => c.id === selectedCategory);
 
@@ -172,8 +170,7 @@ const Help = () => {
   const handleLiveChat = async () => {
     const supportUserId = await startLiveChat();
     if (supportUserId) {
-      await startDM(supportUserId);
-      navigate('/messages');
+      navigate(`/messages?dm=${supportUserId}`);
       toast.success('Connected to support!', {
         description: 'You can now chat with our support team.',
       });
