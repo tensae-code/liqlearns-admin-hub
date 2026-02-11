@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Play, Pause, Maximize2, Minimize2, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Play, Pause, Maximize2, Minimize2, BookOpen, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SlideRenderer from '@/components/course/SlideRenderer';
 import VideoResource from '@/components/course/resources/VideoResource';
@@ -411,6 +411,17 @@ const CourseLearning = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => {
+              const shareText = `📚 ${course?.title}\n📖 ${currentModule?.title} — Slide ${currentSlide}/${totalSlides}\n\nCheck it out on LiqLearns!`;
+              navigate(`/messages?share=${encodeURIComponent(shareText)}`);
+            }}
+            title="Share to Chat"
+          >
+            <Share2 className="w-4 h-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(!isFullscreen)}>
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </Button>
