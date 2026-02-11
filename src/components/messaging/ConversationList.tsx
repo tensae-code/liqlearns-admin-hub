@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Users, User, Plus, Settings, Compass, Inbox, Check, CheckCheck, Phone } from 'lucide-react';
+import { Search, Users, User, Plus, Settings, Compass, Inbox, Check, CheckCheck, Phone, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,6 +97,7 @@ const ConversationList = ({
   }, [user]);
 
   const filteredConversations = conversations.filter(conv => {
+    if (conv.id === 'saved') return filter === 'all' || filter === 'dms';
     const matchesSearch = conv.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filter === 'all' || 
       (filter === 'dms' && conv.type === 'dm') ||
@@ -255,11 +256,13 @@ const ConversationList = ({
                     <AvatarImage src={conv.avatar} />
                     <AvatarFallback className={cn(
                       "text-sm",
-                      conv.type === 'group' 
-                        ? "bg-primary/20 text-primary" 
-                        : "bg-gradient-accent text-accent-foreground"
+                      conv.id === 'saved'
+                        ? "bg-accent/20 text-accent"
+                        : conv.type === 'group' 
+                          ? "bg-primary/20 text-primary" 
+                          : "bg-gradient-accent text-accent-foreground"
                     )}>
-                      {conv.type === 'group' ? <Users className="w-5 h-5" /> : conv.name.charAt(0).toUpperCase()}
+                      {conv.id === 'saved' ? <Bookmark className="w-5 h-5" /> : conv.type === 'group' ? <Users className="w-5 h-5" /> : conv.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   {msgSettings.show_status && conv.type === 'dm' && (conv.isOnline || isUserOnline(conv.id.replace('dm_', ''))) && (

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ConversationList, { Conversation } from '@/components/messaging/ConversationList';
-import ChatWindow from '@/components/messaging/ChatWindow';
+import ChatWindow, { Message } from '@/components/messaging/ChatWindow';
 import CreateGroupModal from '@/components/messaging/CreateGroupModal';
 import NewDMModal, { UserSearchResult } from '@/components/messaging/NewDMModal';
 import GroupInfoSheet, { GroupMember, GroupChannel } from '@/components/messaging/GroupInfoSheet';
@@ -21,6 +21,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
+import { Bookmark } from 'lucide-react';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -92,25 +93,64 @@ const Messages = () => {
     }
   }, [searchParams, user, loading, conversations]);
 
-  // Update conversations with online status
-  const conversationsWithOnlineStatus = conversations.map(conv => {
+  // Saved Messages conversation entry
+  const savedConv: Conversation = {
+    id: 'saved',
+    type: 'dm',
+    name: 'Saved Messages',
+    lastMessage: '',
+    lastMessageTime: '',
+  };
+
+  // Update conversations with online status + prepend Saved Messages
+  const conversationsWithOnlineStatus = [savedConv, ...conversations.map(conv => {
     if (conv.type === 'dm') {
       const partnerId = conv.id.replace('dm_', '');
       return { ...conv, isOnline: isUserOnline(partnerId) };
     }
     return conv;
-  });
+  })];
+
+  // Fetch saved messages when "Saved Messages" is selected
+  const fetchSavedMessages = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('saved_messages')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+
+    const msgs: Message[] = (data || []).map((m: any) => ({
+      id: m.id,
+      content: m.content,
+      sender: {
+        id: user.id,
+        name: m.original_sender_name || 'Saved',
+      },
+      timestamp: m.created_at,
+      type: m.message_type === 'text' ? 'message' : m.message_type,
+      fileUrl: m.file_url,
+      fileName: m.file_name,
+      fileSize: m.file_size,
+      durationSeconds: m.duration_seconds,
+    }));
+    setLocalMessages(msgs);
+  };
 
   // Handle delete message - persist to DB
   const handleDeleteMessage = async (messageId: string) => {
     setLocalMessages(prev => prev.filter(m => m.id !== messageId));
     
     if (currentConversation) {
-      const [type] = currentConversation.id.split('_');
-      if (type === 'dm') {
-        await supabase.from('direct_messages').delete().eq('id', messageId);
-      } else if (type === 'group') {
-        await supabase.from('group_messages').delete().eq('id', messageId);
+      if (currentConversation.id === 'saved') {
+        await supabase.from('saved_messages').delete().eq('id', messageId);
+      } else {
+        const [type] = currentConversation.id.split('_');
+        if (type === 'dm') {
+          await supabase.from('direct_messages').delete().eq('id', messageId);
+        } else if (type === 'group') {
+          await supabase.from('group_messages').delete().eq('id', messageId);
+        }
       }
     }
     toast.success('Message deleted');
@@ -122,7 +162,39 @@ const Messages = () => {
     setShowForward(true);
   };
 
+  // Handle save message
+  const handleSaveMessage = async (msg: Message) => {
+    if (!user) return;
+    const { error } = await supabase.from('saved_messages').insert({
+      user_id: user.id,
+      content: msg.content,
+      original_sender_name: msg.sender.name,
+      original_timestamp: msg.timestamp,
+      message_type: msg.type === 'message' ? 'text' : (msg.type || 'text'),
+      file_url: msg.fileUrl,
+      file_name: msg.fileName,
+      file_size: msg.fileSize,
+      duration_seconds: msg.durationSeconds,
+    });
+    if (error) {
+      toast.error('Failed to save message');
+    } else {
+      toast.success('Message saved');
+    }
+  };
+
+  // Handle forward to conversation (including "saved")
   const handleForwardToConversation = async (conversationId: string, content: string) => {
+    if (conversationId === 'saved') {
+      if (!user) return;
+      await supabase.from('saved_messages').insert({
+        user_id: user.id,
+        content,
+        original_sender_name: 'Forwarded',
+        message_type: 'text',
+      });
+      return;
+    }
     const underscoreIdx = conversationId.indexOf('_');
     const type = conversationId.substring(0, underscoreIdx);
     const id = conversationId.substring(underscoreIdx + 1);
@@ -154,11 +226,16 @@ const Messages = () => {
 
   const handleSelectConversation = async (conversation: Conversation) => {
     setCurrentConversation(conversation);
-    await fetchMessages(conversation.id);
     
-    if (conversation.type === 'group') {
-      const groupId = conversation.id.replace('group_', '');
-      await fetchGroupDetails(groupId);
+    if (conversation.id === 'saved') {
+      await fetchSavedMessages();
+    } else {
+      await fetchMessages(conversation.id);
+      
+      if (conversation.type === 'group') {
+        const groupId = conversation.id.replace('group_', '');
+        await fetchGroupDetails(groupId);
+      }
     }
     
     if (isMobile) {
@@ -276,6 +353,7 @@ const Messages = () => {
             isMobile={isMobile}
             onDeleteMessage={handleDeleteMessage}
             onForwardMessage={handleForwardMessage}
+            onSaveMessage={handleSaveMessage}
             currentChannelName={currentConversation?.type === 'group' ? currentChannel.channelName : undefined}
             currentChannelId={currentConversation?.type === 'group' ? currentChannel.channelId : undefined}
           />
