@@ -316,9 +316,9 @@ const Messages = () => {
   };
 
   return (
-    <DashboardLayout noPadding>
+    <DashboardLayout>
       <motion.div
-        className="h-full flex overflow-hidden md:rounded-xl md:border md:border-border bg-card md:-m-6"
+        className="h-[calc(100dvh-7rem)] md:h-[calc(100vh-5.5rem)] flex overflow-hidden rounded-xl border border-border bg-card -m-4 md:-m-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
