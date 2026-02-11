@@ -161,13 +161,13 @@ const ClanPopup = ({ isOpen, onClose }: ClanPopupProps) => {
                   </div>
                   <div className="p-2 rounded-lg bg-muted/50">
                     <Award className="w-4 h-4 mx-auto text-gold mb-1" />
-                    <p className="text-lg font-bold text-foreground">--</p>
+                    <p className="text-lg font-bold text-foreground">{selectedClan.clan_xp?.toLocaleString() || '0'}</p>
                     <p className="text-[10px] text-muted-foreground">Team XP</p>
                   </div>
                   <div className="p-2 rounded-lg bg-muted/50">
                     <Trophy className="w-4 h-4 mx-auto text-accent mb-1" />
-                    <p className="text-lg font-bold text-foreground">--</p>
-                    <p className="text-[10px] text-muted-foreground">Rank</p>
+                    <p className="text-lg font-bold text-foreground">Lv.{selectedClan.clan_level || 1}</p>
+                    <p className="text-[10px] text-muted-foreground">Level</p>
                   </div>
                 </div>
 
