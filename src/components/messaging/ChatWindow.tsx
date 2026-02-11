@@ -23,7 +23,9 @@ import {
   Pause,
   FileIcon,
   Download,
-  Loader2
+  Loader2,
+  Check,
+  CheckCheck
 } from 'lucide-react';
 import SwipeableChatBubble from './SwipeableChatBubble';
 import EmojiPicker from './EmojiPicker';
@@ -640,9 +642,18 @@ const ChatWindow = ({
               </div>
             </div>
             
-            <span className={`text-xs ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
-              {msg.durationSeconds ? formatVoiceDuration(msg.durationSeconds) : '0:00'}
-            </span>
+            <div className={`flex items-center gap-1 ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
+              <span className="text-xs">
+                {msg.durationSeconds ? formatVoiceDuration(msg.durationSeconds) : '0:00'}
+              </span>
+              {isSender && (
+                msg.isRead === true 
+                  ? <CheckCheck className="w-3 h-3 text-primary" />
+                  : msg.isRead === false 
+                    ? <CheckCheck className="w-3 h-3" />
+                    : <Check className="w-3 h-3" />
+              )}
+            </div>
           </div>
           {/* Reply button on hover */}
           <button
