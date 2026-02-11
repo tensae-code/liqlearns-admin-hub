@@ -272,17 +272,17 @@ const SwipeableChatBubble = ({
               ? "bg-[hsl(var(--accent))] text-accent-foreground" 
               : "bg-muted text-foreground"
           )}>
-            <p className="text-[15px] leading-[1.35] whitespace-pre-wrap break-words">
-              {message}
-              {isSender && isLastInGroup && (
-                <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-1">
-                  <span className="text-[10px] opacity-70">{timestamp}</span>
-                  {renderStatusIcon()}
-                </span>
-              )}
-            </p>
-            {repliedBy && repliedBy.length > 0 && (
-              <div className="flex justify-end -mt-0.5 pr-1 pb-0.5">
+            <div className="flex items-end gap-1">
+              <p className="text-[15px] leading-[1.35] whitespace-pre-wrap break-words flex-1">
+                {message}
+                {isSender && isLastInGroup && (
+                  <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-1">
+                    <span className="text-[10px] opacity-70">{timestamp}</span>
+                    {renderStatusIcon()}
+                  </span>
+                )}
+              </p>
+              {repliedBy && repliedBy.length > 0 && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -290,12 +290,12 @@ const SwipeableChatBubble = ({
                       onNavigateToReplyChain(repliedBy.map(r => r.id));
                     }
                   }}
-                  className="hover:opacity-70 transition-opacity cursor-pointer"
+                  className="hover:opacity-70 transition-opacity cursor-pointer shrink-0 mb-0.5"
                 >
                   <Reply className="w-2.5 h-2.5 opacity-50" />
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Delete option for received messages */}
