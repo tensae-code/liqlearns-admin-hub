@@ -300,15 +300,15 @@ const ChatWindow = ({
       
       if (error) throw error;
       
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = await supabase.storage
         .from('message-attachments')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 86400); // 24 hour expiry
       
       const isImage = file.type.startsWith('image/');
       
       onSendMessage(file.name, {
         type: isImage ? 'image' : 'file',
-        fileUrl: urlData.publicUrl,
+        fileUrl: urlData?.signedUrl || '',
         fileName: file.name,
         fileSize: file.size,
       });
@@ -338,13 +338,13 @@ const ChatWindow = ({
       
       if (error) throw error;
       
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = await supabase.storage
         .from('message-attachments')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 86400); // 24 hour expiry
       
       onSendMessage('Voice message', {
         type: 'voice',
-        fileUrl: urlData.publicUrl,
+        fileUrl: urlData?.signedUrl || '',
         durationSeconds,
       });
       
@@ -397,15 +397,15 @@ const ChatWindow = ({
       
       if (error) throw error;
       
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = await supabase.storage
         .from('message-attachments')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 86400); // 24 hour expiry
       
       const isImage = pendingMediaFile.type.startsWith('image/');
       
       onSendMessage(pendingMediaFile.name, {
         type: isImage ? 'image' : 'file',
-        fileUrl: urlData.publicUrl,
+        fileUrl: urlData?.signedUrl || '',
         fileName: pendingMediaFile.name,
         fileSize: pendingMediaFile.size,
         mediaOptions: options,
