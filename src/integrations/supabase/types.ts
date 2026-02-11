@@ -131,13 +131,6 @@ export type Database = {
             foreignKeyName: "brain_bank_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "brain_bank_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -189,13 +182,6 @@ export type Database = {
             foreignKeyName: "call_logs_caller_id_fkey"
             columns: ["caller_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "call_logs_caller_id_fkey"
-            columns: ["caller_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -211,13 +197,6 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "call_logs_receiver_id_fkey"
-            columns: ["receiver_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -270,13 +249,6 @@ export type Database = {
             foreignKeyName: "clan_members_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clan_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -321,13 +293,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "clans_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "clans_owner_id_fkey"
             columns: ["owner_id"]
@@ -423,13 +388,6 @@ export type Database = {
             foreignKeyName: "community_post_comments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "community_post_comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -467,13 +425,6 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "community_posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "community_post_likes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -524,13 +475,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "community_posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "community_posts_user_id_fkey"
             columns: ["user_id"]
@@ -639,13 +583,6 @@ export type Database = {
             foreignKeyName: "course_purchases_buyer_id_fkey"
             columns: ["buyer_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_purchases_buyer_id_fkey"
-            columns: ["buyer_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -667,13 +604,6 @@ export type Database = {
             foreignKeyName: "course_purchases_instructor_id_fkey"
             columns: ["instructor_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_purchases_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -688,13 +618,6 @@ export type Database = {
             foreignKeyName: "course_purchases_l1_referrer_id_fkey"
             columns: ["l1_referrer_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_purchases_l1_referrer_id_fkey"
-            columns: ["l1_referrer_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -703,13 +626,6 @@ export type Database = {
             columns: ["l1_referrer_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_purchases_l2_referrer_id_fkey"
-            columns: ["l2_referrer_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -837,13 +753,6 @@ export type Database = {
             foreignKeyName: "course_review_comments_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_review_comments_reviewer_id_fkey"
-            columns: ["reviewer_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -934,13 +843,6 @@ export type Database = {
             foreignKeyName: "courses_instructor_id_fkey"
             columns: ["instructor_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "courses_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -949,13 +851,6 @@ export type Database = {
             columns: ["instructor_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "courses_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -1103,13 +998,6 @@ export type Database = {
             foreignKeyName: "enrollments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "enrollments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1165,13 +1053,6 @@ export type Database = {
             foreignKeyName: "enterprise_analytics_events_enterprise_id_fkey"
             columns: ["enterprise_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "enterprise_analytics_events_enterprise_id_fkey"
-            columns: ["enterprise_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1187,13 +1068,6 @@ export type Database = {
             columns: ["learning_path_id"]
             isOneToOne: false
             referencedRelation: "learning_paths"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "enterprise_analytics_events_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -1312,13 +1186,6 @@ export type Database = {
             foreignKeyName: "game_attempts_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "game_attempts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1392,13 +1259,6 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "game_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -1770,13 +1630,6 @@ export type Database = {
             foreignKeyName: "learning_path_progress_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "learning_path_progress_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1831,13 +1684,6 @@ export type Database = {
             foreignKeyName: "learning_paths_enterprise_id_fkey"
             columns: ["enterprise_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "learning_paths_enterprise_id_fkey"
-            columns: ["enterprise_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1884,13 +1730,6 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lesson_progress_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -2215,13 +2054,6 @@ export type Database = {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2264,13 +2096,6 @@ export type Database = {
             foreignKeyName: "parent_children_child_id_fkey"
             columns: ["child_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "parent_children_child_id_fkey"
-            columns: ["child_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2279,13 +2104,6 @@ export type Database = {
             columns: ["child_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "parent_children_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -2535,13 +2353,6 @@ export type Database = {
             foreignKeyName: "profiles_held_by_fkey"
             columns: ["held_by"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_held_by_fkey"
-            columns: ["held_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2550,13 +2361,6 @@ export type Database = {
             columns: ["held_by"]
             isOneToOne: false
             referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_sponsor_id_fkey"
-            columns: ["sponsor_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -2621,13 +2425,6 @@ export type Database = {
             columns: ["question_id"]
             isOneToOne: false
             referencedRelation: "quest_board_questions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_board_answers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -2703,13 +2500,6 @@ export type Database = {
             foreignKeyName: "quest_board_questions_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_board_questions_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2718,13 +2508,6 @@ export type Database = {
             columns: ["approved_by"]
             isOneToOne: false
             referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quest_board_questions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -2777,13 +2560,6 @@ export type Database = {
             columns: ["quiz_id"]
             isOneToOne: false
             referencedRelation: "quizzes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quiz_attempts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -2950,13 +2726,6 @@ export type Database = {
             foreignKeyName: "referral_rewards_earner_id_fkey"
             columns: ["earner_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "referral_rewards_earner_id_fkey"
-            columns: ["earner_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2965,13 +2734,6 @@ export type Database = {
             columns: ["earner_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "referral_rewards_source_user_id_fkey"
-            columns: ["source_user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -3022,13 +2784,6 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "referral_settings_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "referral_settings_updated_by_fkey"
             columns: ["updated_by"]
@@ -3085,13 +2840,6 @@ export type Database = {
             columns: ["current_rank_id"]
             isOneToOne: false
             referencedRelation: "referral_ranks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "referral_stats_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -3245,13 +2993,6 @@ export type Database = {
             foreignKeyName: "skill_suggestion_votes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "skill_suggestion_votes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3318,13 +3059,6 @@ export type Database = {
             foreignKeyName: "skill_suggestions_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "skill_suggestions_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3333,13 +3067,6 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "skill_suggestions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -3394,13 +3121,6 @@ export type Database = {
             foreignKeyName: "student_enterprise_memberships_enterprise_id_fkey"
             columns: ["enterprise_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "student_enterprise_memberships_enterprise_id_fkey"
-            columns: ["enterprise_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3409,13 +3129,6 @@ export type Database = {
             columns: ["enterprise_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "student_enterprise_memberships_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -3650,13 +3363,6 @@ export type Database = {
             foreignKeyName: "support_tickets_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "support_tickets_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3671,13 +3377,6 @@ export type Database = {
             foreignKeyName: "support_tickets_resolved_by_fkey"
             columns: ["resolved_by"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "support_tickets_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3686,13 +3385,6 @@ export type Database = {
             columns: ["resolved_by"]
             isOneToOne: false
             referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "support_tickets_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -3787,13 +3479,6 @@ export type Database = {
             foreignKeyName: "user_badges_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_badges_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3865,13 +3550,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "user_hashtag_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "user_hashtag_preferences_user_id_fkey"
             columns: ["user_id"]
@@ -3987,13 +3665,6 @@ export type Database = {
             foreignKeyName: "withdrawal_requests_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "withdrawal_requests_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4002,13 +3673,6 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "withdrawal_requests_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
             referencedColumns: ["id"]
           },
           {
@@ -4029,103 +3693,6 @@ export type Database = {
       }
     }
     Views: {
-      profile_with_age: {
-        Row: {
-          age: number | null
-          avatar_url: string | null
-          bio: string | null
-          birthday: string | null
-          created_at: string | null
-          current_streak: number | null
-          email: string | null
-          full_name: string | null
-          id: string | null
-          is_underage: boolean | null
-          last_login_date: string | null
-          longest_streak: number | null
-          phone: string | null
-          sponsor_id: string | null
-          subscription_ends_at: string | null
-          subscription_plan: string | null
-          subscription_status: string | null
-          trial_ends_at: string | null
-          updated_at: string | null
-          user_id: string | null
-          username: string | null
-          xp_points: number | null
-        }
-        Insert: {
-          age?: never
-          avatar_url?: string | null
-          bio?: string | null
-          birthday?: string | null
-          created_at?: string | null
-          current_streak?: number | null
-          email?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_underage?: never
-          last_login_date?: string | null
-          longest_streak?: number | null
-          phone?: string | null
-          sponsor_id?: string | null
-          subscription_ends_at?: string | null
-          subscription_plan?: string | null
-          subscription_status?: string | null
-          trial_ends_at?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-          username?: string | null
-          xp_points?: number | null
-        }
-        Update: {
-          age?: never
-          avatar_url?: string | null
-          bio?: string | null
-          birthday?: string | null
-          created_at?: string | null
-          current_streak?: number | null
-          email?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_underage?: never
-          last_login_date?: string | null
-          longest_streak?: number | null
-          phone?: string | null
-          sponsor_id?: string | null
-          subscription_ends_at?: string | null
-          subscription_plan?: string | null
-          subscription_status?: string | null
-          trial_ends_at?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-          username?: string | null
-          xp_points?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_sponsor_id_fkey"
-            columns: ["sponsor_id"]
-            isOneToOne: false
-            referencedRelation: "profile_with_age"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_sponsor_id_fkey"
-            columns: ["sponsor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_sponsor_id_fkey"
-            columns: ["sponsor_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       public_profiles: {
         Row: {
           avatar_url: string | null
