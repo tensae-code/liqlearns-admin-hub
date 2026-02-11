@@ -276,13 +276,30 @@ const SwipeableChatBubble = ({
               {message}
             </p>
             
-            {/* Inline timestamp for sender with delivery status */}
-            {isSender && isLastInGroup && (
-              <span className="inline-flex items-center gap-0.5 float-right ml-2 mt-1">
-                <span className="text-[10px] opacity-70">{timestamp}</span>
-                {renderStatusIcon()}
-              </span>
-            )}
+            <div className="flex items-center justify-between mt-0.5">
+              {/* Reply chain arrow inside bubble */}
+              {repliedBy && repliedBy.length > 0 ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onNavigateToReplyChain) {
+                      onNavigateToReplyChain(repliedBy.map(r => r.id));
+                    }
+                  }}
+                  className="p-0.5 rounded-full hover:opacity-70 transition-opacity cursor-pointer"
+                >
+                  <Reply className="w-3 h-3 opacity-70" />
+                </button>
+              ) : <span />}
+
+              {/* Inline timestamp for sender with delivery status */}
+              {isSender && isLastInGroup && (
+                <span className="inline-flex items-center gap-0.5 ml-2">
+                  <span className="text-[10px] opacity-70">{timestamp}</span>
+                  {renderStatusIcon()}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Delete option for received messages */}
@@ -334,23 +351,6 @@ const SwipeableChatBubble = ({
             </DropdownMenu>
           )}
         </div>
-        
-        {/* "Replied by" arrow - shows on original messages that have replies */}
-        {repliedBy && repliedBy.length > 0 && (
-          <button
-            onClick={() => {
-              if (onNavigateToReplyChain) {
-                onNavigateToReplyChain(repliedBy.map(r => r.id));
-              }
-            }}
-            className={cn(
-              "mt-0.5 p-1 rounded-full hover:bg-accent/10 transition-colors cursor-pointer w-fit",
-              isSender ? "ml-auto mr-1" : "ml-3"
-            )}
-          >
-            <Reply className="w-3.5 h-3.5 text-accent" />
-          </button>
-        )}
 
         {/* Timestamp for receiver - only on last in group */}
         {!isSender && isLastInGroup && (
