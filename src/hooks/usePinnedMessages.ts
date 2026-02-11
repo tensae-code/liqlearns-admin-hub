@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -20,6 +20,12 @@ export const usePinnedMessages = (channelId?: string | null, conversationId?: st
   const { profile } = useProfile();
   const [pinnedMessages, setPinnedMessages] = useState<PinnedMessage[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Use refs to always have current values in callbacks
+  const channelIdRef = useRef(channelId);
+  const conversationIdRef = useRef(conversationId);
+  channelIdRef.current = channelId;
+  conversationIdRef.current = conversationId;
 
   // Fetch pinned messages for the channel or conversation
   const fetchPinnedMessages = useCallback(async () => {
@@ -56,6 +62,10 @@ export const usePinnedMessages = (channelId?: string | null, conversationId?: st
       toast.error('Please sign in to pin messages');
       return false;
     }
+
+    // Use refs to get current values
+    const currentChannelId = channelIdRef.current;
+    const currentConversationId = conversationIdRef.current;
     
     try {
       const insertData: any = {
@@ -63,10 +73,10 @@ export const usePinnedMessages = (channelId?: string | null, conversationId?: st
         pinned_by: profile.id,
       };
       
-      if (channelId) {
-        insertData.channel_id = channelId;
-      } else if (conversationId) {
-        insertData.conversation_id = conversationId;
+      if (currentChannelId) {
+        insertData.channel_id = currentChannelId;
+      } else if (currentConversationId) {
+        insertData.conversation_id = currentConversationId;
       }
       
       const { error } = await supabase
@@ -90,7 +100,7 @@ export const usePinnedMessages = (channelId?: string | null, conversationId?: st
       toast.error('Failed to pin message');
       return false;
     }
-  }, [profile?.id, channelId, conversationId, fetchPinnedMessages]);
+  }, [profile?.id, fetchPinnedMessages]);
 
   // Unpin a message
   const unpinMessage = useCallback(async (messageId: string) => {
