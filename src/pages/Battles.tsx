@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useBattles } from '@/hooks/useBattles';
 import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,10 +14,12 @@ import BattlePlayView from '@/components/battles/BattlePlayView';
 import {
   Swords, Trophy, Flame, Shield, Crown, Target, Coins,
   Clock, Users, Mic, MicOff, Plus, Loader2,
-  TrendingUp, TrendingDown, Minus, ChevronRight, Zap, Gamepad2
+  TrendingUp, TrendingDown, Minus, ChevronRight, Zap, Gamepad2,
+  BarChart3
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 import type { Battle } from '@/hooks/useBattles';
 
 const Battles = () => {
@@ -27,6 +30,71 @@ const Battles = () => {
   } = useBattles();
   const [createOpen, setCreateOpen] = useState(false);
   const [activeBattle, setActiveBattle] = useState<Battle | null>(null);
+
+  // Battle notifications - listen for incoming challenges & results
+  useEffect(() => {
+    if (!profile?.id) return;
+    const channel = supabase
+      .channel('battle-notifications')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'battles',
+        filter: `opponent_id=eq.${profile.id}`,
+      }, (payload) => {
+        const b = payload.new as any;
+        if (b.status === 'completed' && b.winner_id === profile.id) {
+          toast.success(`🏆 You won! +${b.stake_amount} BP`);
+        } else if (b.status === 'completed' && b.winner_id && b.winner_id !== profile.id) {
+          toast('😤 You lost the battle', { description: `-${b.stake_amount} BP` });
+        } else if (b.status === 'completed' && !b.winner_id) {
+          toast('🤝 Battle ended in a draw!');
+        }
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'battles',
+        filter: `opponent_id=eq.${profile.id}`,
+      }, (payload) => {
+        const b = payload.new as any;
+        toast('⚔️ New Battle Challenge!', {
+          description: `Someone challenged you for ${b.stake_amount} BP!`,
+          action: { label: 'View', onClick: () => {} },
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.id]);
+  const handleRematch = async (battle: Battle) => {
+    if (!profile?.id || !wallet) return;
+    const opponentId = battle.challenger_id === profile.id ? battle.opponent_id : battle.challenger_id;
+    const result = await createBattle({
+      opponentId: opponentId || undefined,
+      gameId: battle.game_id || undefined,
+      courseId: battle.course_id || undefined,
+      stakeAmount: battle.stake_amount,
+      isOpen: false,
+      voiceEnabled: battle.voice_enabled,
+    });
+    if (result) {
+      setActiveBattle(null);
+      toast.success('Rematch challenge sent!');
+    }
+  };
+
+  // Calculate win rate for stats
+  const totalGames = (wallet?.wins || 0) + (wallet?.losses || 0) + (wallet?.draws || 0);
+  const winRate = totalGames > 0 ? Math.round(((wallet?.wins || 0) / totalGames) * 100) : 0;
+  const currentStreak = (() => {
+    let streak = 0;
+    for (const b of myBattles) {
+      if (b.status !== 'completed') continue;
+      if (b.winner_id === profile?.id) streak++;
+      else break;
+    }
+    return streak;
+  })();
 
   const rankInfo = wallet ? getRankTitle(wallet.rank_points) : { title: 'Rookie', color: 'text-muted-foreground' };
 
@@ -130,6 +198,36 @@ const Battles = () => {
             </Card>
           </motion.div>
         </div>
+
+        {/* Quick Stats Bar */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <div className="grid grid-cols-4 gap-3">
+            <Card className="p-3 text-center">
+              <div className="text-lg font-bold text-foreground">{winRate}%</div>
+              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
+                <BarChart3 className="w-3 h-3" /> Win Rate
+              </div>
+            </Card>
+            <Card className="p-3 text-center">
+              <div className="text-lg font-bold text-foreground">{totalGames}</div>
+              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
+                <Swords className="w-3 h-3" /> Total
+              </div>
+            </Card>
+            <Card className="p-3 text-center">
+              <div className="text-lg font-bold text-orange-500">{currentStreak}</div>
+              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
+                <Flame className="w-3 h-3" /> Streak
+              </div>
+            </Card>
+            <Card className="p-3 text-center">
+              <div className="text-lg font-bold text-foreground">{wallet?.total_won?.toFixed(0) || 0}</div>
+              <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
+                <Coins className="w-3 h-3" /> Won
+              </div>
+            </Card>
+          </div>
+        </motion.div>
 
         {/* Tabs */}
         <Tabs defaultValue="arena" className="space-y-4">
@@ -354,6 +452,7 @@ const Battles = () => {
           battle={activeBattle}
           onClose={() => setActiveBattle(null)}
           onComplete={() => {}}
+          onRematch={handleRematch}
         />
       )}
     </DashboardLayout>
