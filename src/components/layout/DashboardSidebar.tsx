@@ -146,6 +146,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Calendar, label: 'Events', description: 'Upcoming events', path: '/events' },
         { icon: ShoppingBag, label: 'Marketplace', description: 'Spend rewards', path: '/marketplace' },
         { icon: Swords, label: 'Battles', description: 'Challenge others', path: '/battles' },
+        { icon: Shield, label: 'Clans', description: 'Join a team', path: '/clans' },
         { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];

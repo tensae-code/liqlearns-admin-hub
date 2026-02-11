@@ -119,7 +119,12 @@ const ClanWarTab = () => {
         <CardContent className="py-12 text-center">
           <Shield className="w-14 h-14 mx-auto mb-3 text-muted-foreground opacity-30" />
           <p className="font-medium text-foreground">Join a clan first!</p>
-          <p className="text-sm text-muted-foreground mt-1">Head to the Dashboard to create or join a clan, then come back to challenge other clans.</p>
+          <p className="text-sm text-muted-foreground mt-1">Create or join a clan to start clan wars.</p>
+          <a href="/clans">
+            <Button className="mt-4 bg-gradient-to-r from-violet-500 to-purple-600 text-white">
+              <Shield className="w-4 h-4 mr-1" /> Browse Clans
+            </Button>
+          </a>
         </CardContent>
       </Card>
     );

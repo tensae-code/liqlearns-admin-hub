@@ -438,6 +438,133 @@ export type Database = {
           },
         ]
       }
+      clan_battle_log: {
+        Row: {
+          battle_id: string | null
+          clan_id: string
+          created_at: string | null
+          description: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          war_id: string | null
+          xp_earned: number | null
+        }
+        Insert: {
+          battle_id?: string | null
+          clan_id: string
+          created_at?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          war_id?: string | null
+          xp_earned?: number | null
+        }
+        Update: {
+          battle_id?: string | null
+          clan_id?: string
+          created_at?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          war_id?: string | null
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_battle_log_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_battle_log_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_battle_log_war_id_fkey"
+            columns: ["war_id"]
+            isOneToOne: false
+            referencedRelation: "clan_wars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clan_join_requests: {
+        Row: {
+          clan_id: string
+          created_at: string | null
+          id: string
+          message: string | null
+          reviewed_by: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          clan_id: string
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          clan_id?: string
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_join_requests_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_join_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_join_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_join_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_join_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clan_members: {
         Row: {
           clan_id: string
@@ -672,9 +799,18 @@ export type Database = {
       clans: {
         Row: {
           avatar_url: string | null
+          badge_color: string | null
+          badge_icon: string | null
+          clan_level: number | null
+          clan_xp: number | null
           created_at: string
           description: string | null
+          enterprise_id: string | null
           id: string
+          invite_code: string | null
+          is_recruiting: boolean | null
+          max_members: number | null
+          min_level: number | null
           name: string
           owner_id: string
           owner_type: string
@@ -682,9 +818,18 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          badge_color?: string | null
+          badge_icon?: string | null
+          clan_level?: number | null
+          clan_xp?: number | null
           created_at?: string
           description?: string | null
+          enterprise_id?: string | null
           id?: string
+          invite_code?: string | null
+          is_recruiting?: boolean | null
+          max_members?: number | null
+          min_level?: number | null
           name: string
           owner_id: string
           owner_type: string
@@ -692,15 +837,38 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          badge_color?: string | null
+          badge_icon?: string | null
+          clan_level?: number | null
+          clan_xp?: number | null
           created_at?: string
           description?: string | null
+          enterprise_id?: string | null
           id?: string
+          invite_code?: string | null
+          is_recruiting?: boolean | null
+          max_members?: number | null
+          min_level?: number | null
           name?: string
           owner_id?: string
           owner_type?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "clans_enterprise_id_fkey"
+            columns: ["enterprise_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clans_enterprise_id_fkey"
+            columns: ["enterprise_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clans_owner_id_fkey"
             columns: ["owner_id"]
@@ -2524,6 +2692,101 @@ export type Database = {
           {
             foreignKeyName: "parent_children_parent_id_fkey"
             columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parties: {
+        Row: {
+          clan_id: string
+          created_at: string | null
+          created_by: string
+          id: string
+          max_members: number | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          clan_id: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          max_members?: number | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          clan_id?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          max_members?: number | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parties_clan_id_fkey"
+            columns: ["clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parties_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parties_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      party_members: {
+        Row: {
+          id: string
+          joined_at: string | null
+          party_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          party_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          party_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_members_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "party_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "party_members_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
