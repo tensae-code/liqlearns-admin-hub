@@ -228,6 +228,7 @@ const Messages = () => {
             isMobile={isMobile}
             onDeleteMessage={handleDeleteMessage}
             currentChannelName={currentConversation?.type === 'group' ? currentChannel.channelName : undefined}
+            currentChannelId={currentConversation?.type === 'group' ? currentChannel.channelId : undefined}
           />
         )}
       </motion.div>
