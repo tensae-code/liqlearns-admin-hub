@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import {
   Mic, MicOff, Volume2, VolumeX, Send, MessageSquare, X,
   Trophy, Clock, Swords, Loader2, Phone, PhoneOff,
-  CheckCircle2, XCircle, RotateCcw
+  CheckCircle2, XCircle, RotateCcw, RefreshCw, Timer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Battle, BattleMessage } from '@/hooks/useBattles';
@@ -23,6 +23,7 @@ interface BattlePlayViewProps {
   battle: Battle;
   onClose: () => void;
   onComplete: (score: number, timeSeconds: number) => void;
+  onRematch?: (battle: Battle) => void;
 }
 
 interface ReviewItem {
@@ -32,7 +33,9 @@ interface ReviewItem {
   isCorrect: boolean;
 }
 
-const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) => {
+const BATTLE_TIME_LIMIT = 300; // 5 minutes
+
+const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayViewProps) => {
   const { profile } = useProfile();
   const livekit = useOptionalLiveKitContext();
   const [messages, setMessages] = useState<BattleMessage[]>([]);
@@ -49,7 +52,9 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
   const [completed, setCompleted] = useState(false);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [showReview, setShowReview] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(BATTLE_TIME_LIMIT);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const isChallenger = battle.challenger_id === profile?.id;
   const opponentName = isChallenger
@@ -198,6 +203,23 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
 
     return () => { supabase.removeChannel(channel); };
   }, [battle.id, isChallenger]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (myScore !== null || completed) return;
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          // Time's up - auto-submit with score 0
+          clearInterval(timerRef.current!);
+          handleGameComplete(0, 0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [myScore, completed]);
 
   // Auto scroll messages
   useEffect(() => {
@@ -425,9 +447,16 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
               </div>
             )}
 
-            <Button onClick={onClose} className="w-full">
-              Back to Arena
-            </Button>
+            <div className="flex gap-2">
+              {completed && onRematch && (
+                <Button variant="outline" className="flex-1 gap-1" onClick={() => onRematch(battle)}>
+                  <RefreshCw className="w-4 h-4" /> Rematch
+                </Button>
+              )}
+              <Button onClick={onClose} className={completed && onRematch ? 'flex-1' : 'w-full'}>
+                Back to Arena
+              </Button>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -448,6 +477,16 @@ const BattlePlayView = ({ battle, onClose, onComplete }: BattlePlayViewProps) =>
         <div className="flex items-center gap-1.5">
           <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
             {battle.stake_amount} BP
+          </Badge>
+
+          {/* Countdown Timer */}
+          <Badge variant="outline" className={`gap-1 font-mono ${
+            timeLeft <= 30 ? 'bg-red-500/10 text-red-500 border-red-500/30 animate-pulse' :
+            timeLeft <= 60 ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' :
+            'bg-muted text-foreground border-border'
+          }`}>
+            <Timer className="w-3 h-3" />
+            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
           </Badge>
 
           {/* Voice controls */}
