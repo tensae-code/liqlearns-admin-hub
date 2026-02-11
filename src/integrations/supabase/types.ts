@@ -484,6 +484,191 @@ export type Database = {
           },
         ]
       }
+      clan_war_rounds: {
+        Row: {
+          battle_id: string | null
+          challenger_player_id: string | null
+          challenger_score: number | null
+          completed_at: string | null
+          created_at: string
+          game_id: string | null
+          id: string
+          opponent_player_id: string | null
+          opponent_score: number | null
+          round_number: number
+          status: string
+          war_id: string
+          winner_player_id: string | null
+        }
+        Insert: {
+          battle_id?: string | null
+          challenger_player_id?: string | null
+          challenger_score?: number | null
+          completed_at?: string | null
+          created_at?: string
+          game_id?: string | null
+          id?: string
+          opponent_player_id?: string | null
+          opponent_score?: number | null
+          round_number?: number
+          status?: string
+          war_id: string
+          winner_player_id?: string | null
+        }
+        Update: {
+          battle_id?: string | null
+          challenger_player_id?: string | null
+          challenger_score?: number | null
+          completed_at?: string | null
+          created_at?: string
+          game_id?: string | null
+          id?: string
+          opponent_player_id?: string | null
+          opponent_score?: number | null
+          round_number?: number
+          status?: string
+          war_id?: string
+          winner_player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_war_rounds_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_rounds_challenger_player_id_fkey"
+            columns: ["challenger_player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_rounds_challenger_player_id_fkey"
+            columns: ["challenger_player_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_rounds_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "game_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_rounds_opponent_player_id_fkey"
+            columns: ["opponent_player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_rounds_opponent_player_id_fkey"
+            columns: ["opponent_player_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_rounds_war_id_fkey"
+            columns: ["war_id"]
+            isOneToOne: false
+            referencedRelation: "clan_wars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_rounds_winner_player_id_fkey"
+            columns: ["winner_player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_rounds_winner_player_id_fkey"
+            columns: ["winner_player_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clan_wars: {
+        Row: {
+          challenger_clan_id: string
+          challenger_score: number
+          completed_at: string | null
+          created_at: string
+          game_ids: string[] | null
+          id: string
+          opponent_clan_id: string
+          opponent_score: number
+          stake_per_member: number
+          started_at: string | null
+          status: string
+          total_games: number
+          updated_at: string
+          winner_clan_id: string | null
+        }
+        Insert: {
+          challenger_clan_id: string
+          challenger_score?: number
+          completed_at?: string | null
+          created_at?: string
+          game_ids?: string[] | null
+          id?: string
+          opponent_clan_id: string
+          opponent_score?: number
+          stake_per_member?: number
+          started_at?: string | null
+          status?: string
+          total_games?: number
+          updated_at?: string
+          winner_clan_id?: string | null
+        }
+        Update: {
+          challenger_clan_id?: string
+          challenger_score?: number
+          completed_at?: string | null
+          created_at?: string
+          game_ids?: string[] | null
+          id?: string
+          opponent_clan_id?: string
+          opponent_score?: number
+          stake_per_member?: number
+          started_at?: string | null
+          status?: string
+          total_games?: number
+          updated_at?: string
+          winner_clan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_wars_challenger_clan_id_fkey"
+            columns: ["challenger_clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_wars_opponent_clan_id_fkey"
+            columns: ["opponent_clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_wars_winner_clan_id_fkey"
+            columns: ["winner_clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clans: {
         Row: {
           avatar_url: string | null
@@ -2406,6 +2591,54 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      player_game_elo: {
+        Row: {
+          elo_rating: number
+          game_type: string
+          games_played: number
+          id: string
+          losses: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          elo_rating?: number
+          game_type: string
+          games_played?: number
+          id?: string
+          losses?: number
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          elo_rating?: number
+          game_type?: string
+          games_played?: number
+          id?: string
+          losses?: number
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_game_elo_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_game_elo_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       presentation_progress: {
         Row: {
