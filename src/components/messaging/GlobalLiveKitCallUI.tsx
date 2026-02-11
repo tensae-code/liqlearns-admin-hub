@@ -12,10 +12,11 @@ import {
   X,
   User,
   Camera,
-  ChevronUp,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
 import { cn } from '@/lib/utils';
 import {
@@ -25,11 +26,65 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+// Component to render a single remote participant's video/audio
+const RemoteParticipantView: React.FC<{
+  participant: { id: string; name: string; avatarUrl?: string; isVideoOn: boolean; isMuted: boolean };
+  attachVideoToElement?: (id: string, el: HTMLVideoElement | null, type: 'camera' | 'screen') => void;
+  attachRemoteAudio?: (id: string, el: HTMLAudioElement | null) => void;
+  isLarge?: boolean;
+}> = ({ participant, attachVideoToElement, attachRemoteAudio, isLarge }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current && participant.isVideoOn && attachVideoToElement) {
+      attachVideoToElement(participant.id, videoRef.current, 'camera');
+    }
+  }, [participant.id, participant.isVideoOn, attachVideoToElement]);
+
+  useEffect(() => {
+    if (audioRef.current && attachRemoteAudio) {
+      attachRemoteAudio(participant.id, audioRef.current);
+    }
+  }, [participant.id, attachRemoteAudio]);
+
+  return (
+    <div className={cn(
+      "relative bg-muted rounded-lg overflow-hidden flex items-center justify-center",
+      isLarge ? "aspect-[4/3]" : "aspect-square"
+    )}>
+      {participant.isVideoOn ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          className="w-full h-full object-contain bg-black"
+        />
+      ) : (
+        <Avatar className={cn(isLarge ? "h-16 w-16" : "h-12 w-12")}>
+          <AvatarImage src={participant.avatarUrl} />
+          <AvatarFallback className="text-lg">
+            {participant.name?.charAt(0) || <User className="h-6 w-6" />}
+          </AvatarFallback>
+        </Avatar>
+      )}
+      {/* Name + mute indicator */}
+      <div className="absolute bottom-0 inset-x-0 bg-black/60 px-2 py-1 flex items-center gap-1">
+        {participant.isMuted ? (
+          <MicOff className="h-3 w-3 text-destructive" />
+        ) : (
+          <Mic className="h-3 w-3 text-success" />
+        )}
+        <span className="text-[10px] text-white truncate">{participant.name}</span>
+      </div>
+      <audio ref={audioRef} autoPlay className="hidden" />
+    </div>
+  );
+};
+
 const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
   const context = useOptionalLiveKitContext();
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
 
@@ -41,30 +96,12 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
   const attachLocalVideoToElement = context?.attachLocalVideoToElement;
   const attachRemoteAudio = context?.attachRemoteAudio;
 
-  // Attach local video - MUST be before early return (hooks can't be conditional)
+  // Attach local video
   useEffect(() => {
     if (localVideoRef.current && isVideoOn && attachLocalVideoToElement) {
       attachLocalVideoToElement(localVideoRef.current);
     }
   }, [isVideoOn, attachLocalVideoToElement, localParticipant]);
-
-  // Attach remote video - MUST be before early return
-  useEffect(() => {
-    if (remoteVideoRef.current && remoteParticipants.length > 0 && attachVideoToElement) {
-      const firstRemote = remoteParticipants[0];
-      if (firstRemote.isVideoOn) {
-        attachVideoToElement(firstRemote.id, remoteVideoRef.current, 'camera');
-      }
-    }
-  }, [remoteParticipants, attachVideoToElement]);
-
-  // Attach remote audio for incoming call sound - MUST be before early return
-  useEffect(() => {
-    if (remoteAudioRef.current && remoteParticipants.length > 0 && attachRemoteAudio) {
-      const firstRemote = remoteParticipants[0];
-      attachRemoteAudio(firstRemote.id, remoteAudioRef.current);
-    }
-  }, [remoteParticipants, attachRemoteAudio]);
 
   // Enumerate cameras when video is on
   useEffect(() => {
@@ -106,6 +143,9 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     switchCamera,
   } = context;
 
+  const isGroupCall = callState.roomContext === 'group';
+  const totalParticipants = remoteParticipants.length + 1; // +1 for self
+
   // Format duration
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -133,7 +173,7 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     }
   };
 
-  // Get peer info
+  // Get peer info (for DM calls)
   const peer = callState.peer || (remoteParticipants[0] ? {
     id: remoteParticipants[0].id,
     name: remoteParticipants[0].name,
@@ -157,9 +197,8 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
 
   const isCallActive = callState.status === 'connecting' || callState.status === 'connected';
   const isRinging = callState.status === 'ringing';
-  const hasRemoteVideo = remoteParticipants[0]?.isVideoOn;
 
-  // ============ INCOMING CALL POPUP (Swipe to dismiss) ============
+  // ============ INCOMING CALL POPUP ============
   if (incomingCall && callState.status === 'idle') {
     return (
       <motion.div
@@ -171,21 +210,18 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.3}
         onDragEnd={(_, info) => {
-          // Swipe up to dismiss
           if (info.offset.y < -80 || info.velocity.y < -500) {
             rejectIncomingCall();
           }
         }}
         className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-sm cursor-grab active:cursor-grabbing touch-none"
       >
-        {/* Swipe indicator */}
         <div className="flex justify-center mb-2">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
         
         <div className="bg-card border rounded-2xl shadow-2xl overflow-hidden">
           <div className="p-5 flex items-center gap-4">
-            {/* Avatar with pulse */}
             <div className="relative flex-shrink-0">
               <motion.div
                 className="absolute inset-0 rounded-full bg-success/30"
@@ -200,7 +236,6 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
               </Avatar>
             </div>
 
-            {/* Caller info */}
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold truncate">{incomingCall.callerName}</h3>
               <motion.p 
@@ -212,7 +247,6 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
               </motion.p>
             </div>
 
-            {/* Action buttons */}
             <div className="flex gap-2 flex-shrink-0">
               <Button
                 variant="destructive"
@@ -237,7 +271,6 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
             </div>
           </div>
           
-          {/* Swipe hint text for mobile */}
           <p className="text-xs text-center text-muted-foreground pb-2 sm:hidden">
             Swipe up to dismiss
           </p>
@@ -261,14 +294,10 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
             className="rounded-full h-14 w-14 shadow-xl relative overflow-hidden bg-primary"
             onClick={toggleMinimize}
           >
-            {hasRemoteVideo ? (
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+            {isGroupCall ? (
+              <div className="flex items-center justify-center">
+                <Users className="h-6 w-6" />
+              </div>
             ) : (
               <Avatar className="h-10 w-10">
                 <AvatarImage src={peer?.avatar} />
@@ -279,7 +308,7 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
           
           {/* Duration badge */}
           <div className="absolute -top-1 -right-1 bg-success text-success-foreground text-xs px-1.5 py-0.5 rounded-full font-medium">
-            {formatDuration(callDuration)}
+            {isGroupCall ? totalParticipants : formatDuration(callDuration)}
           </div>
 
           {/* Hover controls */}
@@ -326,29 +355,57 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     );
   }
 
-  // ============ POPUP CALL WINDOW (Smaller design) ============
+  // ============ POPUP CALL WINDOW ============
+  // Determine grid layout for group calls
+  const getGridClass = () => {
+    if (!isGroupCall || remoteParticipants.length <= 1) return '';
+    if (remoteParticipants.length <= 3) return 'grid grid-cols-2 gap-1';
+    return 'grid grid-cols-2 gap-1';
+  };
+
   return (
     <motion.div
       ref={ref}
       initial={{ opacity: 0, y: 50, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="fixed bottom-24 md:bottom-4 right-2 md:right-4 left-2 md:left-auto z-50 md:w-[360px]"
+      className={cn(
+        "fixed bottom-20 md:bottom-4 z-50",
+        isGroupCall && remoteParticipants.length > 1
+          ? "right-1 left-1 md:left-auto md:right-4 md:w-[420px]"
+          : "right-1 left-1 md:left-auto md:right-4 md:w-[360px]"
+      )}
     >
       <div className="bg-card border rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b bg-muted/50">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={peer?.avatar} />
-              <AvatarFallback>{peer?.name?.charAt(0) || 'U'}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <h4 className="font-medium text-sm truncate">{peer?.name || 'Unknown'}</h4>
-              <p className="text-xs text-muted-foreground">{getStatusText()}</p>
-            </div>
+          <div className="flex items-center gap-2 min-w-0">
+            {isGroupCall ? (
+              <>
+                <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-medium text-sm truncate">Group Call</h4>
+                  <p className="text-xs text-muted-foreground">
+                    {totalParticipants} participant{totalParticipants !== 1 ? 's' : ''} • {getStatusText()}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarImage src={peer?.avatar} />
+                  <AvatarFallback>{peer?.name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <h4 className="font-medium text-sm truncate">{peer?.name || 'Unknown'}</h4>
+                  <p className="text-xs text-muted-foreground">{getStatusText()}</p>
+                </div>
+              </>
+            )}
           </div>
           
-          <div className="flex gap-1">
+          <div className="flex gap-1 shrink-0">
             {isCallActive && (
               <Button
                 variant="ghost"
@@ -371,65 +428,114 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
         </div>
 
         {/* Video/Avatar area */}
-        <div className="relative aspect-[4/3] bg-muted">
-          {hasRemoteVideo ? (
-            <video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-              className="w-full h-full object-contain bg-black"
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-              <div className="relative">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={peer?.avatar} />
-                  <AvatarFallback className="text-2xl">
-                    {peer?.name?.charAt(0) || <User className="h-10 w-10" />}
-                  </AvatarFallback>
-                </Avatar>
-                
-                {/* Ringing animation */}
-                {isRinging && (
-                  <>
-                    <motion.div
-                      className="absolute inset-0 rounded-full border-2 border-primary/50"
-                      animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
-                      transition={{ duration: 1.2, repeat: Infinity }}
+        <div className="relative bg-muted">
+          {isGroupCall && remoteParticipants.length > 0 ? (
+            /* Group call grid: show all remote participants + local PiP */
+            <div className="p-1">
+              <div className={getGridClass()}>
+                {remoteParticipants.map((rp) => (
+                  <RemoteParticipantView
+                    key={rp.id}
+                    participant={rp}
+                    attachVideoToElement={attachVideoToElement}
+                    attachRemoteAudio={attachRemoteAudio}
+                    isLarge={remoteParticipants.length === 1}
+                  />
+                ))}
+                {/* Show self in grid too for group calls */}
+                <div className="relative bg-muted rounded-lg overflow-hidden flex items-center justify-center aspect-square">
+                  {isVideoOn ? (
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-contain bg-black"
+                      style={{ transform: 'scaleX(-1)' }}
                     />
-                    <motion.div
-                      className="absolute inset-0 rounded-full border-2 border-primary/50"
-                      animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
-                      transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
-                    />
-                  </>
-                )}
+                  ) : (
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback className="text-sm">You</AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div className="absolute bottom-0 inset-x-0 bg-black/60 px-2 py-1 flex items-center gap-1">
+                    {isMuted ? (
+                      <MicOff className="h-3 w-3 text-destructive" />
+                    ) : (
+                      <Mic className="h-3 w-3 text-success" />
+                    )}
+                    <span className="text-[10px] text-white">You</span>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">{getStatusText()}</p>
+            </div>
+          ) : (
+            /* DM call or group call with 0 remote: single view */
+            <div className="aspect-[4/3]">
+              {remoteParticipants[0]?.isVideoOn ? (
+                <RemoteParticipantView
+                  participant={remoteParticipants[0]}
+                  attachVideoToElement={attachVideoToElement}
+                  attachRemoteAudio={attachRemoteAudio}
+                  isLarge
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                  <div className="relative">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage src={peer?.avatar} />
+                      <AvatarFallback className="text-2xl">
+                        {peer?.name?.charAt(0) || <User className="h-10 w-10" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    {isRinging && (
+                      <>
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-2 border-primary/50"
+                          animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
+                          transition={{ duration: 1.2, repeat: Infinity }}
+                        />
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-2 border-primary/50"
+                          animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
+                          transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
+                        />
+                      </>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{getStatusText()}</p>
+                </div>
+              )}
+
+              {/* Local video PiP for DM calls */}
+              {isVideoOn && isCallActive && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="absolute bottom-2 right-2 w-20 aspect-video bg-muted rounded-lg overflow-hidden shadow-lg border border-background"
+                >
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-contain bg-black"
+                    style={{ transform: 'scaleX(-1)' }}
+                  />
+                </motion.div>
+              )}
+
+              {/* Audio elements for DM remote participants */}
+              {remoteParticipants.length > 0 && !isGroupCall && (
+                <RemoteAudioOnly 
+                  participant={remoteParticipants[0]} 
+                  attachRemoteAudio={attachRemoteAudio} 
+                />
+              )}
             </div>
           )}
-
-          {/* Local video PiP */}
-          {isVideoOn && isCallActive && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="absolute bottom-2 right-2 w-20 aspect-video bg-muted rounded-lg overflow-hidden shadow-lg border border-background"
-            >
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-contain bg-black"
-                style={{ transform: 'scaleX(-1)' }}
-              />
-            </motion.div>
-          )}
         </div>
-
-        {/* Hidden audio element for remote audio */}
-        <audio ref={remoteAudioRef} autoPlay className="hidden" />
 
         {/* Controls */}
         <div className="p-3 flex items-center justify-center gap-2 md:gap-3 bg-muted/30">
@@ -453,7 +559,6 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
                 {isVideoOn ? <Video className="h-4 w-4 md:h-5 md:w-5" /> : <VideoOff className="h-4 w-4 md:h-5 md:w-5" />}
               </Button>
               
-              {/* Camera Selection Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -500,7 +605,6 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
             </>
           )}
 
-          {/* END CALL BUTTON */}
           <Button
             variant="destructive"
             size="icon"
@@ -514,6 +618,22 @@ const GlobalLiveKitCallUI = forwardRef<HTMLDivElement>((_, ref) => {
     </motion.div>
   );
 });
+
+// Hidden audio-only component for DM calls 
+const RemoteAudioOnly: React.FC<{
+  participant: { id: string };
+  attachRemoteAudio?: (id: string, el: HTMLAudioElement | null) => void;
+}> = ({ participant, attachRemoteAudio }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  
+  useEffect(() => {
+    if (audioRef.current && attachRemoteAudio) {
+      attachRemoteAudio(participant.id, audioRef.current);
+    }
+  }, [participant.id, attachRemoteAudio]);
+
+  return <audio ref={audioRef} autoPlay className="hidden" />;
+};
 
 GlobalLiveKitCallUI.displayName = 'GlobalLiveKitCallUI';
 

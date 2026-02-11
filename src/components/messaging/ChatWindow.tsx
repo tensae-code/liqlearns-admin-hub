@@ -829,6 +829,40 @@ const ChatWindow = ({
         </div>
       </div>
 
+      {/* Ongoing group call banner */}
+      {conversation.type === 'group' && liveKitContext?.callState?.status === 'connected' && 
+       liveKitContext.callState.roomContext === 'group' && 
+       liveKitContext.callState.contextId === conversation.id.replace('group_', '') && (
+        <div className="flex items-center justify-between px-3 py-2 bg-success/10 border-b border-success/20 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span className="text-sm font-medium text-success">
+              Ongoing Call
+            </span>
+            <Badge variant="secondary" className="text-[10px] gap-1">
+              <Users className="w-3 h-3" />
+              {(liveKitContext.remoteParticipants?.length ?? 0) + 1}
+            </Badge>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-destructive hover:text-destructive"
+            onClick={() => liveKitContext.endCall()}
+          >
+            Leave
+          </Button>
+        </div>
+      )}
+
+      {/* Join call banner - show when there's a group call in this GC that we're NOT in */}
+      {conversation.type === 'group' && liveKitContext && 
+       (liveKitContext.callState.status === 'idle' || 
+        (liveKitContext.callState.status === 'connected' && liveKitContext.callState.contextId !== conversation.id.replace('group_', ''))) &&
+       liveKitContext.callState.roomContext !== 'group' && (
+        <></>
+      )}
+
       {/* Pinned Messages Bar */}
       <AnimatePresence>
         {pinnedMessages.length > 0 && (
