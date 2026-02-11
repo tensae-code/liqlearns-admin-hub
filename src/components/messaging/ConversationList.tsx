@@ -275,14 +275,6 @@ const ConversationList = ({
                     <span className="font-medium text-foreground truncate">{conv.name?.split(' ')[0]}</span>
                     <div className="flex items-center gap-1 shrink-0">
                       <span className="text-[10px] text-muted-foreground">{conv.lastMessageTime}</span>
-                      {/* Message status indicator */}
-                      {conv.type === 'dm' && conv.lastMessageIsMine && (
-                        conv.lastMessageStatus === 'seen' ? (
-                          <CheckCheck className="w-3 h-3 text-primary" />
-                        ) : (
-                          <Check className="w-3 h-3 text-muted-foreground" />
-                        )
-                      )}
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-0.5">
