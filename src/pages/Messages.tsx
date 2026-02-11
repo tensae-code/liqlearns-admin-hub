@@ -501,7 +501,7 @@ const Messages = () => {
         open={showForward}
         onOpenChange={setShowForward}
         messageContent={forwardContent}
-        conversations={conversations}
+        conversations={conversationsWithOnlineStatus}
         onForward={handleForwardToConversation}
       />
     </DashboardLayout>

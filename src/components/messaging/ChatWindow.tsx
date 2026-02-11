@@ -657,11 +657,76 @@ const ChatWindow = ({
     );
   };
 
+  // Render audio file message (mp3, wav, etc. sent as attachments)
+  const renderAudioFileMessage = (msg: Message, isSender: boolean) => {
+    const isPlaying = playingAudioId === msg.id;
+    return (
+      <motion.div
+        key={msg.id}
+        id={`message-${msg.id}`}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-2 group`}
+      >
+        <div className="max-w-[300px] flex flex-col">
+          <div 
+            className={`flex items-center gap-3 px-4 py-3 rounded-2xl ${
+              isSender 
+                ? 'bg-[hsl(var(--accent))] text-accent-foreground' 
+                : 'bg-muted text-foreground'
+            }`}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full shrink-0"
+              onClick={() => msg.fileUrl && toggleAudioPlayback(msg.id, msg.fileUrl)}
+            >
+              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+            </Button>
+            
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{msg.fileName || 'Audio'}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex items-center gap-0.5 flex-1">
+                  {Array.from({ length: 20 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-1 rounded-full ${isSender ? 'bg-accent-foreground/40' : 'bg-foreground/25'}`}
+                      style={{ height: `${Math.random() * 12 + 3}px` }}
+                    />
+                  ))}
+                </div>
+                {msg.fileSize && (
+                  <span className={`text-[10px] shrink-0 ${isSender ? 'text-accent-foreground/60' : 'text-muted-foreground'}`}>
+                    {formatFileSize(msg.fileSize)}
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            {msg.fileUrl && (
+              <a href={msg.fileUrl} download={msg.fileName} className="shrink-0">
+                <Download className={`w-4 h-4 ${isSender ? 'text-accent-foreground/70' : 'text-muted-foreground'}`} />
+              </a>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
   // Render file message with reply support
   const renderFileMessage = (msg: Message, isSender: boolean) => {
     const isImage = msg.type === 'image';
     const isVideo = msg.fileName?.match(/\.(mp4|webm|mov|avi)$/i);
+    const isAudioFile = msg.fileName?.match(/\.(mp3|wav|ogg|m4a|aac|flac|wma)$/i);
     const hasMediaOptions = msg.mediaOptions && (msg.mediaOptions.viewOnce || msg.mediaOptions.blur);
+    
+    // Render audio files with player
+    if (isAudioFile && msg.fileUrl) {
+      return renderAudioFileMessage(msg, isSender);
+    }
     
     // Reply preview component reused across all file types
     const ReplyPreview = () => msg.replyTo ? (

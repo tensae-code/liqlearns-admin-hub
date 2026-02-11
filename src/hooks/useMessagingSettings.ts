@@ -7,6 +7,7 @@ export interface MessagingSettings {
   show_status: boolean;
   show_activity: boolean;
   show_avatar: boolean;
+  show_name: boolean;
   accept_non_friends: boolean;
   messages_before_accept: number;
 }
@@ -16,6 +17,7 @@ const DEFAULT_SETTINGS: MessagingSettings = {
   show_status: true,
   show_activity: true,
   show_avatar: true,
+  show_name: true,
   accept_non_friends: true,
   messages_before_accept: 3,
 };
@@ -41,6 +43,7 @@ export const useMessagingSettings = () => {
           show_status: data.show_status,
           show_activity: data.show_activity,
           show_avatar: data.show_avatar,
+          show_name: (data as any).show_name ?? true,
           accept_non_friends: data.accept_non_friends,
           messages_before_accept: data.messages_before_accept,
         });
