@@ -858,8 +858,44 @@ export const useMessaging = () => {
             });
           }
           
-          // Refresh conversations to update last message
-          fetchConversations();
+          // Update conversation list locally (avoids full reload flicker)
+          const senderId = payload.new.sender_id;
+          setConversations(prev => {
+            const convId = `dm_${senderId}`;
+            const existing = prev.find(c => c.id === convId);
+            if (existing) {
+              return prev.map(c => c.id === convId ? {
+                ...c,
+                lastMessage: payload.new.content?.substring(0, 50) || '',
+                lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                unreadCount: (c.unreadCount || 0) + (currentConversation?.id === convId ? 0 : 1),
+                lastMessageIsMine: false,
+              } : c);
+            } else {
+              // New conversation - fetch just this one profile
+              supabase
+                .from('profiles')
+                .select('id, user_id, full_name, avatar_url')
+                .eq('user_id', senderId)
+                .single()
+                .then(({ data: p }) => {
+                  if (p) {
+                    setConversations(prev2 => [{
+                      id: convId,
+                      type: 'dm' as const,
+                      name: p.full_name || 'Unknown User',
+                      avatar: p.avatar_url,
+                      lastMessage: payload.new.content?.substring(0, 50) || '',
+                      lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      unreadCount: 1,
+                      isOnline: false,
+                      lastMessageIsMine: false,
+                    }, ...prev2]);
+                  }
+                });
+            }
+            return prev;
+          });
         }
       )
       .subscribe();

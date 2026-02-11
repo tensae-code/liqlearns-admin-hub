@@ -123,7 +123,9 @@ const Messages = () => {
   };
 
   const handleForwardToConversation = async (conversationId: string, content: string) => {
-    const [type, id] = conversationId.split('_');
+    const underscoreIdx = conversationId.indexOf('_');
+    const type = conversationId.substring(0, underscoreIdx);
+    const id = conversationId.substring(underscoreIdx + 1);
     if (type === 'dm') {
       await supabase.from('direct_messages').insert({
         sender_id: user!.id,
@@ -239,7 +241,7 @@ const Messages = () => {
   return (
     <DashboardLayout>
       <motion.div
-        className="h-[calc(100dvh-8rem)] md:h-[calc(100vh-5.5rem)] flex overflow-hidden rounded-xl border border-border bg-card -m-4 md:-m-6"
+        className="h-[calc(100dvh-7rem)] md:h-[calc(100vh-5.5rem)] flex overflow-hidden rounded-xl border border-border bg-card -m-4 md:-m-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
