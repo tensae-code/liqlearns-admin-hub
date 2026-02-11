@@ -308,9 +308,9 @@ const ConversationList = ({
                         </Badge>
                       )}
                       {/* Unread badge - red */}
-                      {conv.unreadCount && conv.unreadCount > 0 && (
+                      {(conv.unreadCount ?? 0) > 0 && (
                         <Badge className="bg-destructive text-destructive-foreground text-[10px] h-5 min-w-5 rounded-full">
-                          {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
+                          {conv.unreadCount! > 99 ? '99+' : conv.unreadCount}
                         </Badge>
                       )}
                     </div>
