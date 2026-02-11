@@ -182,7 +182,7 @@ const SwipeableChatBubble = ({
           </span>
         )}
 
-        {/* Reply preview - compact with navigation arrow */}
+        {/* Reply preview - compact with navigation arrow (only on received messages) */}
         {replyTo && (
           <button
             onClick={(e) => {
@@ -198,8 +198,8 @@ const SwipeableChatBubble = ({
                 : "bg-muted/70"
             )}
           >
-            <Reply className="w-3 h-3 text-accent shrink-0" />
-            <div className="w-0.5 h-6 bg-accent rounded-full shrink-0" />
+            {!isSender && <Reply className="w-3 h-3 text-accent shrink-0" />}
+            <div className="w-0.5 h-5 bg-accent rounded-full shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-[9px] font-medium text-accent leading-tight">{replyTo.senderName}</p>
               <p className="text-[10px] text-muted-foreground truncate leading-tight">{replyTo.content}</p>
