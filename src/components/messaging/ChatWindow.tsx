@@ -170,8 +170,10 @@ const ChatWindow = ({
   
   const { isUserOnline, getTypingUsersForConversation, sendTypingIndicator } = usePresence();
   
-  // Pinned messages hook
-  const conversationIdForPins = conversation?.type === 'dm' ? conversation.id : null;
+  // Pinned messages hook - use channelId for groups (if available), else fallback to conversation.id
+  const conversationIdForPins = conversation?.type === 'dm' 
+    ? conversation.id 
+    : (!currentChannelId && conversation ? conversation.id : null);
   const { 
     pinnedMessages, 
     pinMessage, 
