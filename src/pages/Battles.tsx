@@ -11,11 +11,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import CreateBattleDialog from '@/components/battles/CreateBattleDialog';
 import BattlePlayView from '@/components/battles/BattlePlayView';
+import ClanWarTab from '@/components/battles/ClanWarTab';
 import {
   Swords, Trophy, Flame, Shield, Crown, Target, Coins,
   Clock, Users, Mic, MicOff, Plus, Loader2,
   TrendingUp, TrendingDown, Minus, ChevronRight, Zap, Gamepad2,
-  BarChart3
+  BarChart3, User, UsersRound
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
@@ -30,6 +31,7 @@ const Battles = () => {
   } = useBattles();
   const [createOpen, setCreateOpen] = useState(false);
   const [activeBattle, setActiveBattle] = useState<Battle | null>(null);
+  const [battleMode, setBattleMode] = useState<'individual' | 'clan'>('individual');
 
   // Battle notifications - listen for incoming challenges & results
   useEffect(() => {
@@ -142,6 +144,28 @@ const Battles = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-5xl mx-auto">
+        {/* Mode Switcher: Individual vs Clan War */}
+        <div className="flex gap-2">
+          <Button
+            variant={battleMode === 'individual' ? 'default' : 'outline'}
+            className={battleMode === 'individual' ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white flex-1' : 'flex-1'}
+            onClick={() => setBattleMode('individual')}
+          >
+            <User className="w-4 h-4 mr-2" /> Individual
+          </Button>
+          <Button
+            variant={battleMode === 'clan' ? 'default' : 'outline'}
+            className={battleMode === 'clan' ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white flex-1' : 'flex-1'}
+            onClick={() => setBattleMode('clan')}
+          >
+            <UsersRound className="w-4 h-4 mr-2" /> Clan War
+          </Button>
+        </div>
+
+        {battleMode === 'clan' ? (
+          <ClanWarTab />
+        ) : (
+        <>
         {/* Header with wallet stats */}
         <div className="flex flex-col md:flex-row gap-4">
           <motion.div
@@ -155,7 +179,7 @@ const Battles = () => {
                     <Swords className="w-7 h-7 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h1 className="text-xl md:text-2xl font-bold text-foreground">Clan Battles</h1>
+                    <h1 className="text-xl md:text-2xl font-bold text-foreground">Battle Arena</h1>
                     <p className="text-sm text-muted-foreground">Challenge opponents, win battle points!</p>
                   </div>
                   <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600" onClick={() => setCreateOpen(true)}>
@@ -436,6 +460,8 @@ const Battles = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        </>
+        )}
       </div>
 
       {/* Create Battle Dialog */}

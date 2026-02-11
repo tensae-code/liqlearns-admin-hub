@@ -314,6 +314,48 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
           }
         }
 
+        // Update per-game-type ELO ratings
+        if (gameTemplate?.type) {
+          const gameType = gameTemplate.type;
+          const playersToUpdate = [currentBattle.challenger_id, currentBattle.opponent_id].filter(Boolean) as string[];
+          
+          for (const playerId of playersToUpdate) {
+            const isWinner = winnerId === playerId;
+            const isDraw = !winnerId;
+            
+            // Upsert ELO record
+            const { data: existing } = await supabase
+              .from('player_game_elo')
+              .select('*')
+              .eq('user_id', playerId)
+              .eq('game_type', gameType)
+              .maybeSingle();
+            
+            const currentElo = existing?.elo_rating || 1000;
+            const eloChange = isDraw ? 0 : isWinner ? 20 : -15;
+            const newElo = Math.max(100, currentElo + eloChange);
+
+            if (existing) {
+              await supabase.from('player_game_elo').update({
+                elo_rating: newElo,
+                games_played: (existing.games_played || 0) + 1,
+                wins: (existing.wins || 0) + (isWinner ? 1 : 0),
+                losses: (existing.losses || 0) + (!isWinner && !isDraw ? 1 : 0),
+                updated_at: new Date().toISOString(),
+              }).eq('id', existing.id);
+            } else {
+              await supabase.from('player_game_elo').insert({
+                user_id: playerId,
+                game_type: gameType,
+                elo_rating: newElo,
+                games_played: 1,
+                wins: isWinner ? 1 : 0,
+                losses: !isWinner && !isDraw ? 1 : 0,
+              });
+            }
+          }
+        }
+
         setCompleted(true);
         // Disconnect voice when battle ends
         if (voiceConnected && livekit) {
