@@ -945,13 +945,18 @@ const ChatWindow = ({
                   };
                   const repliedBy = collectReplyChain(msg.id);
                   
+                  const formattedTime = (() => {
+                    const d = parseMessageDate(msg.timestamp);
+                    return !isNaN(d.getTime()) ? format(d, 'h:mm a') : msg.timestamp;
+                  })();
+
                   return (
                     <SwipeableChatBubble
                       key={msg.id}
                       messageId={msg.id}
                       message={msg.content}
                       sender={msg.sender}
-                      timestamp={msg.timestamp}
+                      timestamp={formattedTime}
                       isSender={isSender}
                       showAvatar={msgIndex === group.messages.length - 1}
                       isRead={msg.isRead}
