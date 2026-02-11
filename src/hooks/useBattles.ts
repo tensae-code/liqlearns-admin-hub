@@ -122,11 +122,14 @@ export const useBattles = () => {
       const { data: profiles } = userIds.length ? await supabase.from('profiles').select('id, full_name, avatar_url, username').in('id', userIds) : { data: [] };
       const gameIds = data.filter((b: any) => b.game_id).map((b: any) => b.game_id);
       const { data: games } = gameIds.length ? await supabase.from('game_templates').select('id, title, type').in('id', gameIds) : { data: [] };
+      const courseIds = data.filter((b: any) => b.course_id).map((b: any) => b.course_id);
+      const { data: courses } = courseIds.length ? await supabase.from('courses').select('id, title').in('id', courseIds) : { data: [] };
 
       setOpenBattles(data.map((b: any) => ({
         ...b,
         challenger_profile: profiles?.find((p: any) => p.id === b.challenger_id),
         game: games?.find((g: any) => g.id === b.game_id),
+        course: courses?.find((c: any) => c.id === b.course_id),
       })));
     }
   }, [profile?.id]);

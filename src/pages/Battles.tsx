@@ -7,18 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import CreateBattleDialog from '@/components/battles/CreateBattleDialog';
+import BattlePlayView from '@/components/battles/BattlePlayView';
 import {
   Swords, Trophy, Flame, Shield, Crown, Target, Coins,
-  Clock, Users, Mic, MicOff, Search, Plus, Loader2,
-  TrendingUp, TrendingDown, Minus, ChevronRight, Zap
+  Clock, Users, Mic, MicOff, Plus, Loader2,
+  TrendingUp, TrendingDown, Minus, ChevronRight, Zap, Gamepad2
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import type { Battle } from '@/hooks/useBattles';
 
@@ -29,21 +26,17 @@ const Battles = () => {
     createBattle, acceptBattle, cancelBattle, getRankTitle,
   } = useBattles();
   const [createOpen, setCreateOpen] = useState(false);
-  const [stakeAmount, setStakeAmount] = useState(10);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [activeBattle, setActiveBattle] = useState<Battle | null>(null);
 
   const rankInfo = wallet ? getRankTitle(wallet.rank_points) : { title: 'Rookie', color: 'text-muted-foreground' };
 
-  const handleCreateOpenBattle = async () => {
-    setCreating(true);
-    await createBattle({ stakeAmount, isOpen: true, voiceEnabled });
-    setCreating(false);
-    setCreateOpen(false);
-  };
-
   const handleAccept = async (battleId: string) => {
-    await acceptBattle(battleId);
+    const accepted = await acceptBattle(battleId);
+    if (accepted) {
+      // Find the battle and start playing
+      const battle = openBattles.find(b => b.id === battleId) || myBattles.find(b => b.id === battleId);
+      if (battle) setActiveBattle({ ...battle, status: 'accepted', opponent_id: profile?.id || null });
+    }
   };
 
   const getStatusBadge = (battle: Battle) => {
@@ -97,60 +90,9 @@ const Battles = () => {
                     <h1 className="text-xl md:text-2xl font-bold text-foreground">Clan Battles</h1>
                     <p className="text-sm text-muted-foreground">Challenge opponents, win battle points!</p>
                   </div>
-                  <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600">
-                        <Plus className="w-4 h-4 mr-1" /> Challenge
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <Swords className="w-5 h-5 text-accent" /> Create Battle
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 py-2">
-                        <div>
-                          <Label>Stake Amount (BP)</Label>
-                          <div className="flex gap-2 mt-1">
-                            {[5, 10, 25, 50].map(amt => (
-                              <Button
-                                key={amt}
-                                size="sm"
-                                variant={stakeAmount === amt ? 'default' : 'outline'}
-                                onClick={() => setStakeAmount(amt)}
-                                className={stakeAmount === amt ? 'bg-accent text-accent-foreground' : ''}
-                              >
-                                {amt} BP
-                              </Button>
-                            ))}
-                          </div>
-                          <Input
-                            type="number"
-                            value={stakeAmount}
-                            onChange={e => setStakeAmount(Number(e.target.value))}
-                            min={1}
-                            max={wallet?.balance || 50}
-                            className="mt-2"
-                          />
-                          <p className="text-xs text-muted-foreground mt-1">Balance: {wallet?.balance || 0} BP</p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label>Voice Chat</Label>
-                          <Switch checked={voiceEnabled} onCheckedChange={setVoiceEnabled} />
-                        </div>
-                        <Separator />
-                        <Button
-                          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white"
-                          onClick={handleCreateOpenBattle}
-                          disabled={creating || stakeAmount > (wallet?.balance || 0)}
-                        >
-                          {creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Zap className="w-4 h-4 mr-1" />}
-                          Find Opponent ({stakeAmount} BP)
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600" onClick={() => setCreateOpen(true)}>
+                    <Plus className="w-4 h-4 mr-1" /> Challenge
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -233,8 +175,14 @@ const Battles = () => {
                             <Coins className="w-3 h-3 text-yellow-500" />
                             <span>{battle.stake_amount} BP</span>
                             {battle.voice_enabled && <Mic className="w-3 h-3 text-green-500" />}
-                            <Clock className="w-3 h-3" />
-                            <span>{formatDistanceToNow(new Date(battle.created_at), { addSuffix: true })}</span>
+                            {battle.game && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                <Gamepad2 className="w-2.5 h-2.5 mr-0.5" />{battle.game.title}
+                              </Badge>
+                            )}
+                            {battle.course && (
+                              <span className="truncate max-w-[100px]">{battle.course.title}</span>
+                            )}
                           </div>
                         </div>
                         <Button size="sm" onClick={() => handleAccept(battle.id)}
@@ -299,6 +247,13 @@ const Battles = () => {
                             {battle.status === 'pending' && isChallenger && (
                               <Button size="sm" variant="ghost" className="text-destructive" onClick={() => cancelBattle(battle.id)}>
                                 Cancel
+                              </Button>
+                            )}
+                            {(battle.status === 'accepted' || battle.status === 'in_progress') && battle.game_id && (
+                              <Button size="sm" onClick={() => setActiveBattle(battle)}
+                                className="bg-gradient-to-r from-orange-500 to-red-500 text-white"
+                              >
+                                <Gamepad2 className="w-3 h-3 mr-1" /> Play
                               </Button>
                             )}
                           </motion.div>
@@ -373,6 +328,23 @@ const Battles = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Create Battle Dialog */}
+      <CreateBattleDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        wallet={wallet}
+        onCreateBattle={createBattle}
+      />
+
+      {/* Active Battle Play View */}
+      {activeBattle && (
+        <BattlePlayView
+          battle={activeBattle}
+          onClose={() => setActiveBattle(null)}
+          onComplete={() => {}}
+        />
+      )}
     </DashboardLayout>
   );
 };
