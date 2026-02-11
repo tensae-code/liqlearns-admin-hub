@@ -13,6 +13,7 @@ import CreateChannelModal from '@/components/messaging/CreateChannelModal';
 import ManageMemberModal from '@/components/messaging/ManageMemberModal';
 import AddMembersModal from '@/components/messaging/AddMembersModal';
 import ClubRoomView from '@/components/messaging/ClubRoomView';
+import InCallBanner from '@/components/messaging/InCallBanner';
 import useMessaging from '@/hooks/useMessaging';
 import usePresence from '@/hooks/usePresence';
 import { useAuth } from '@/contexts/AuthContext';
@@ -192,6 +193,9 @@ const Messages = () => {
 
   return (
     <DashboardLayout>
+      {/* In-call banner */}
+      <InCallBanner />
+      
       <motion.div
         className="h-[calc(100dvh-8rem)] md:h-[calc(100vh-5.5rem)] flex overflow-hidden rounded-xl border border-border bg-card -m-4 md:-m-6"
         initial={{ opacity: 0, y: 20 }}

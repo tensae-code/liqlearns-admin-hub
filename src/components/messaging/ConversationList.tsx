@@ -4,12 +4,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Users, User, Plus, Settings, Compass, Inbox, Check, CheckCheck } from 'lucide-react';
+import { Search, Users, User, Plus, Settings, Compass, Inbox, Check, CheckCheck, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import usePresence from '@/hooks/usePresence';
+import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
+import MessageSettingsModal from './MessageSettingsModal';
 
 export interface Conversation {
   id: string;
@@ -53,9 +55,11 @@ const ConversationList = ({
   isLoading = false
 }: ConversationListProps) => {
   const { user } = useAuth();
-  const { isUserOnline } = usePresence('messaging-presence');
+  const { isUserOnline, getTypingUsersForConversation } = usePresence('messaging-presence');
+  const liveKitContext = useOptionalLiveKitContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [requestCount, setRequestCount] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Fetch pending request count
   useEffect(() => {
@@ -97,6 +101,9 @@ const ConversationList = ({
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">Messages</h2>
           <div className="flex gap-1">
+            <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)} title="Settings">
+              <Settings className="w-4 h-4" />
+            </Button>
             <Button variant="ghost" size="icon" onClick={onNewDM} title="New DM">
               <User className="w-4 h-4" />
             </Button>
@@ -115,7 +122,7 @@ const ConversationList = ({
             >
               <Inbox className="w-4 h-4" />
               {requestCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-4 min-w-4 text-[10px] p-0 flex items-center justify-center bg-accent text-accent-foreground">
+                <Badge className="absolute -top-1 -right-1 h-4 min-w-4 text-[10px] p-0 flex items-center justify-center bg-destructive text-destructive-foreground">
                   {requestCount > 9 ? '9+' : requestCount}
                 </Badge>
               )}
@@ -200,76 +207,114 @@ const ConversationList = ({
             <p className="text-xs text-center mt-1">Start a new chat or create a group</p>
           </div>
         ) : (
-          filteredConversations.map((conv, i) => (
-            <motion.div
-              key={conv.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.03 }}
-              className={cn(
-                "flex items-center gap-3 p-3 cursor-pointer transition-colors border-b border-border/50",
-                selectedId === conv.id 
-                  ? "bg-accent/10 border-l-2 border-l-accent" 
-                  : "hover:bg-muted/50"
-              )}
-              onClick={() => onSelect(conv)}
-            >
-              <div className="relative">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={conv.avatar} />
-                  <AvatarFallback className={cn(
-                    "text-sm",
-                    conv.type === 'group' 
-                      ? "bg-primary/20 text-primary" 
-                      : "bg-gradient-accent text-accent-foreground"
-                  )}>
-                    {conv.type === 'group' ? <Users className="w-5 h-5" /> : conv.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                {conv.type === 'dm' && (conv.isOnline || isUserOnline(conv.id.replace('dm_', ''))) && (
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card animate-pulse" />
+          filteredConversations.map((conv, i) => {
+            // Get typing users for this conversation
+            const typingUsersForConv = getTypingUsersForConversation(conv.id);
+            
+            // Check if this conversation has an active call
+            const isInCall = liveKitContext?.callState?.status === 'connected' && (
+              (conv.type === 'dm' && liveKitContext.callState.roomContext === 'dm' && conv.id === `dm_${liveKitContext.callState.contextId}`) ||
+              (conv.type === 'group' && liveKitContext.callState.roomContext === 'group' && conv.id === `group_${liveKitContext.callState.contextId}`)
+            );
+            const callParticipantCount = isInCall ? (liveKitContext?.remoteParticipants?.length || 0) + 1 : 0;
+
+            // Activity text
+            let activityText = '';
+            if (typingUsersForConv.length === 1) {
+              activityText = `${typingUsersForConv[0].name.split(' ')[0]} typing...`;
+            } else if (typingUsersForConv.length > 1) {
+              activityText = `${typingUsersForConv.length} typing...`;
+            }
+
+            return (
+              <motion.div
+                key={conv.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className={cn(
+                  "flex items-center gap-3 p-3 cursor-pointer transition-colors border-b border-border/50",
+                  selectedId === conv.id 
+                    ? "bg-accent/10 border-l-2 border-l-accent" 
+                    : "hover:bg-muted/50"
                 )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-foreground truncate">{conv.name?.split(' ')[0]}</span>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-[10px] text-muted-foreground">{conv.lastMessageTime}</span>
-                    {/* Message status indicator */}
-                    {conv.type === 'dm' && conv.lastMessageIsMine && (
-                      conv.lastMessageStatus === 'seen' ? (
-                        <CheckCheck className="w-3 h-3 text-primary" />
-                      ) : (
-                        <Check className="w-3 h-3 text-muted-foreground" />
-                      )
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-0.5">
-                  <p className={cn(
-                    "text-sm truncate",
-                    conv.lastMessageIsMine 
-                      ? "text-accent" 
-                      : "text-muted-foreground"
-                  )}>
-                    {conv.lastMessageIsMine && <span className="text-muted-foreground">You: </span>}
-                    {conv.lastMessage}
-                  </p>
-                  {conv.unreadCount && conv.unreadCount > 0 && (
-                    <Badge className="bg-accent text-accent-foreground text-[10px] h-5 min-w-5 rounded-full shrink-0">
-                      {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
-                    </Badge>
+                onClick={() => onSelect(conv)}
+              >
+                <div className="relative">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={conv.avatar} />
+                    <AvatarFallback className={cn(
+                      "text-sm",
+                      conv.type === 'group' 
+                        ? "bg-primary/20 text-primary" 
+                        : "bg-gradient-accent text-accent-foreground"
+                    )}>
+                      {conv.type === 'group' ? <Users className="w-5 h-5" /> : conv.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {conv.type === 'dm' && (conv.isOnline || isUserOnline(conv.id.replace('dm_', ''))) && (
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card animate-pulse" />
                   )}
                 </div>
-                {conv.type === 'group' && conv.members && (
-                  <span className="text-[10px] text-muted-foreground">{conv.members} members</span>
-                )}
-              </div>
-            </motion.div>
-          ))
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-foreground truncate">{conv.name?.split(' ')[0]}</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[10px] text-muted-foreground">{conv.lastMessageTime}</span>
+                      {/* Message status indicator */}
+                      {conv.type === 'dm' && conv.lastMessageIsMine && (
+                        conv.lastMessageStatus === 'seen' ? (
+                          <CheckCheck className="w-3 h-3 text-primary" />
+                        ) : (
+                          <Check className="w-3 h-3 text-muted-foreground" />
+                        )
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-0.5">
+                    {activityText ? (
+                      <p className="text-xs text-accent italic truncate">{activityText}</p>
+                    ) : (
+                      <p className={cn(
+                        "text-sm truncate",
+                        conv.lastMessageIsMine 
+                          ? "text-accent" 
+                          : "text-muted-foreground"
+                      )}>
+                        {conv.lastMessageIsMine && <span className="text-muted-foreground">You: </span>}
+                        {conv.lastMessage}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {/* Call indicator */}
+                      {isInCall && (
+                        <Badge className="bg-success/20 text-success text-[10px] h-5 min-w-5 rounded-full flex items-center gap-0.5 px-1.5">
+                          <Phone className="w-2.5 h-2.5" />
+                          {callParticipantCount}
+                        </Badge>
+                      )}
+                      {/* Unread badge - red */}
+                      {conv.unreadCount && conv.unreadCount > 0 && (
+                        <Badge className="bg-destructive text-destructive-foreground text-[10px] h-5 min-w-5 rounded-full">
+                          {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {conv.type === 'group' && conv.members && (
+                    <span className="text-[10px] text-muted-foreground">{conv.members} members</span>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })
+
         )}
       </div>
+
+      {/* Message Settings Modal */}
+      <MessageSettingsModal open={showSettings} onOpenChange={setShowSettings} />
     </div>
   );
 };
