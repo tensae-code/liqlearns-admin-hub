@@ -12,6 +12,7 @@ import EnterpriseNavbar from './navbars/EnterpriseNavbar';
 
 interface DashboardLayoutProps {
   children: ReactNode;
+  noPadding?: boolean;
 }
 
 // Create context for sidebar state
@@ -27,7 +28,7 @@ const SidebarContext = createContext<SidebarContextType>({
 
 export const useSidebarContext = () => useContext(SidebarContext);
 
-const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+const DashboardLayout = ({ children, noPadding }: DashboardLayoutProps) => {
   const { userRole } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -68,8 +69,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
           
           {/* Page content - scrollable */}
-          <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-            <div className="p-4 md:p-6">
+          <main className={`flex-1 overflow-y-auto ${noPadding ? 'pb-0' : 'pb-20'} md:pb-0`}>
+            <div className={noPadding ? 'h-full' : 'p-4 md:p-6'}>
               {children}
             </div>
           </main>

@@ -1109,7 +1109,7 @@ const ChatWindow = ({
       {/* Voice recorder - shrink-0, full width container with proper padding */}
       <AnimatePresence>
         {showVoiceRecorder && (
-          <div className="p-2 md:p-4 border-t border-border bg-card shrink-0 pb-safe">
+          <div className="p-2 md:p-4 border-t border-border bg-card shrink-0">
             <VoiceRecorder
               onSend={handleVoiceSend}
               onCancel={() => setShowVoiceRecorder(false)}
@@ -1147,7 +1147,7 @@ const ChatWindow = ({
 
       {/* Input - always visible at bottom */}
       {!showVoiceRecorder && (
-        <div className="p-2 border-t border-border bg-card flex-shrink-0 pb-safe">
+        <div className="p-2 border-t border-border bg-card flex-shrink-0">
           <div className="flex items-center gap-1 w-full max-w-full">
             <input
               type="file"
