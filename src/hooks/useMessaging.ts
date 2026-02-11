@@ -461,6 +461,22 @@ export const useMessaging = () => {
           replyTo: replyToData,
         };
         setMessages(prev => [...prev, newMessage]);
+
+        // Update conversation list locally (no full refetch)
+        setConversations(prev => {
+          const convId = `dm_${id}`;
+          const existing = prev.find(c => c.id === convId);
+          if (existing) {
+            return prev.map(c => c.id === convId ? {
+              ...c,
+              lastMessage: content.substring(0, 50),
+              lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              lastMessageIsMine: true,
+              lastMessageStatus: 'sent',
+            } : c);
+          }
+          return prev;
+        });
         
       } else if (type === 'group') {
         // Get default channel or current channel

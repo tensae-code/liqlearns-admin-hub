@@ -93,6 +93,19 @@ const Messages = () => {
     }
   }, [searchParams, user, loading, conversations]);
 
+  // Auto-open forward modal from URL param (e.g. /messages?share=... from course learning)
+  const shareAutoOpenHandled = useRef(false);
+  useEffect(() => {
+    if (shareAutoOpenHandled.current || loading) return;
+    const shareContent = searchParams.get('share');
+    if (shareContent && user) {
+      shareAutoOpenHandled.current = true;
+      setSearchParams({}, { replace: true });
+      setForwardContent(decodeURIComponent(shareContent));
+      setShowForward(true);
+    }
+  }, [searchParams, user, loading]);
+
   // Saved Messages conversation entry
   const savedConv: Conversation = {
     id: 'saved',
@@ -193,34 +206,42 @@ const Messages = () => {
         original_sender_name: 'Forwarded',
         message_type: 'text',
       });
+      toast.success('Saved to Saved Messages');
       return;
     }
     const underscoreIdx = conversationId.indexOf('_');
     const type = conversationId.substring(0, underscoreIdx);
     const id = conversationId.substring(underscoreIdx + 1);
-    if (type === 'dm') {
-      await supabase.from('direct_messages').insert({
-        sender_id: user!.id,
-        receiver_id: id,
-        content,
-        message_type: 'text',
-      });
-    } else if (type === 'group' && profile) {
-      const { data: channel } = await supabase
-        .from('group_channels')
-        .select('id')
-        .eq('group_id', id)
-        .eq('is_default', true)
-        .maybeSingle();
-      
-      if (channel) {
-        await supabase.from('group_messages').insert({
-          channel_id: channel.id,
-          sender_id: profile.id,
+    try {
+      if (type === 'dm') {
+        const { error } = await supabase.from('direct_messages').insert({
+          sender_id: user!.id,
+          receiver_id: id,
           content,
           message_type: 'text',
         });
+        if (error) throw error;
+      } else if (type === 'group' && profile) {
+        const { data: channel } = await supabase
+          .from('group_channels')
+          .select('id')
+          .eq('group_id', id)
+          .eq('is_default', true)
+          .maybeSingle();
+        
+        if (channel) {
+          const { error } = await supabase.from('group_messages').insert({
+            channel_id: channel.id,
+            sender_id: profile.id,
+            content,
+            message_type: 'text',
+          });
+          if (error) throw error;
+        }
       }
+    } catch (err) {
+      console.error('Forward error:', err);
+      throw err; // re-throw so ForwardMessageModal shows error toast
     }
   };
 

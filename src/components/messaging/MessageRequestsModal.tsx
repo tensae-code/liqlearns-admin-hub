@@ -60,6 +60,32 @@ const MessageRequestsModal = ({
 
       if (!myProfile) return;
 
+      // Get existing DM partner IDs (people we're already chatting with)
+      const { data: existingDMs } = await supabase
+        .from('direct_messages')
+        .select('sender_id, receiver_id')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .limit(200);
+
+      const existingPartnerUserIds = new Set<string>();
+      (existingDMs || []).forEach(dm => {
+        if (dm.sender_id === user.id) existingPartnerUserIds.add(dm.receiver_id);
+        else existingPartnerUserIds.add(dm.sender_id);
+      });
+
+      // Also get existing friend user IDs (accepted friendships)
+      const { data: acceptedFriends } = await supabase
+        .from('friendships')
+        .select('requester_id, addressee_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+
+      const friendUserIds = new Set<string>();
+      (acceptedFriends || []).forEach(f => {
+        if (f.requester_id === user.id) friendUserIds.add(f.addressee_id);
+        else friendUserIds.add(f.requester_id);
+      });
+
       // Fetch message requests
       const { data: msgRequests } = await supabase
         .from('message_requests')
@@ -68,7 +94,7 @@ const MessageRequestsModal = ({
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      // Fetch friend requests (where I'm addressee - friendships uses user_id not profile.id)
+      // Fetch friend requests (where I'm addressee)
       const { data: friendRequests } = await supabase
         .from('friendships')
         .select('id, requester_id, created_at')
@@ -99,15 +125,27 @@ const MessageRequestsModal = ({
         friendProfiles = data || [];
       }
 
+      // Filter out requests from people we already have conversations with or are friends with
+      const filteredMsgRequests = (msgRequests || []).filter(r => {
+        // Look up the user_id for this profile sender
+        const senderProfile = profiles.find(p => p.id === r.sender_id);
+        if (!senderProfile) return true; // keep if we can't determine
+        return !existingPartnerUserIds.has(senderProfile.user_id) && !friendUserIds.has(senderProfile.user_id);
+      });
+
+      const filteredFriendRequests = (friendRequests || []).filter(r => {
+        return !existingPartnerUserIds.has(r.requester_id) && !friendUserIds.has(r.requester_id);
+      });
+
       const unified: UnifiedRequest[] = [
-        ...(msgRequests || []).map(r => ({
+        ...filteredMsgRequests.map(r => ({
           id: r.id,
           sender_id: r.sender_id,
           created_at: r.created_at,
           type: 'message' as const,
           sender: profiles.find(p => p.id === r.sender_id),
         })),
-        ...(friendRequests || []).map(r => ({
+        ...filteredFriendRequests.map(r => ({
           id: r.id,
           sender_id: r.requester_id,
           created_at: r.created_at,
