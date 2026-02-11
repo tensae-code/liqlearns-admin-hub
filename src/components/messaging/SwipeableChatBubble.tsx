@@ -37,8 +37,9 @@ interface SwipeableChatBubbleProps {
   };
   /** Messages that replied TO this message */
   repliedBy?: { id: string; senderName: string; content: string }[];
-  highlightId?: string;
+  highlightId?: string | string[];
   onNavigateToMessage?: (messageId: string) => void;
+  onNavigateToReplyChain?: (messageIds: string[]) => void;
 }
 
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
@@ -62,8 +63,11 @@ const SwipeableChatBubble = ({
   repliedBy,
   highlightId,
   onNavigateToMessage,
+  onNavigateToReplyChain,
 }: SwipeableChatBubbleProps) => {
-  const isHighlighted = highlightId === messageId;
+  const isHighlighted = Array.isArray(highlightId) 
+    ? highlightId.includes(messageId || '') 
+    : highlightId === messageId;
   const [showOptions, setShowOptions] = useState(false);
   const x = useMotionValue(0);
   const controls = useAnimation();
@@ -331,33 +335,28 @@ const SwipeableChatBubble = ({
           )}
         </div>
         
+        {/* "Replied by" arrow - shows on original messages that have replies */}
+        {repliedBy && repliedBy.length > 0 && (
+          <button
+            onClick={() => {
+              if (onNavigateToReplyChain) {
+                onNavigateToReplyChain(repliedBy.map(r => r.id));
+              }
+            }}
+            className={cn(
+              "mt-0.5 p-1 rounded-full hover:bg-accent/10 transition-colors cursor-pointer w-fit",
+              isSender ? "ml-auto mr-1" : "ml-3"
+            )}
+          >
+            <Reply className="w-3.5 h-3.5 text-accent" />
+          </button>
+        )}
+
         {/* Timestamp for receiver - only on last in group */}
         {!isSender && isLastInGroup && (
           <span className="text-[10px] text-muted-foreground mt-1 ml-3">
             {timestamp}
           </span>
-        )}
-
-        {/* "Replied by" indicator - shows on original messages that have replies */}
-        {repliedBy && repliedBy.length > 0 && (
-          <button
-            onClick={() => {
-              if (onNavigateToMessage && repliedBy[0]) {
-                onNavigateToMessage(repliedBy[0].id);
-              }
-            }}
-            className={cn(
-              "flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] text-accent hover:bg-accent/10 transition-colors cursor-pointer w-fit",
-              isSender ? "ml-auto mr-1" : "ml-3"
-            )}
-          >
-            <Reply className="w-3 h-3" />
-            <span className="font-medium">
-              {repliedBy.length === 1 
-                ? `${repliedBy[0].senderName} replied` 
-                : `${repliedBy.length} replies`}
-            </span>
-          </button>
         )}
       </motion.div>
       

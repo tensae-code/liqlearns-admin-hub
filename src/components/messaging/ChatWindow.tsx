@@ -429,8 +429,21 @@ const ChatWindow = ({
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setHighlightedMessageId(messageId);
-      // Clear highlight after animation
       setTimeout(() => setHighlightedMessageId(null), 2000);
+    }
+  }, []);
+
+  // Navigate to and highlight an entire reply chain
+  const [highlightedChain, setHighlightedChain] = useState<string[] | null>(null);
+
+  const navigateToReplyChain = useCallback((messageIds: string[]) => {
+    if (messageIds.length > 0) {
+      const firstEl = document.getElementById(`message-${messageIds[0]}`);
+      if (firstEl) {
+        firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      setHighlightedChain(messageIds);
+      setTimeout(() => setHighlightedChain(null), 2500);
     }
   }, []);
 
@@ -920,10 +933,17 @@ const ChatWindow = ({
                     return renderFileMessage(msg, isSender);
                   }
 
-                  // Compute messages that replied to this message
-                  const repliedBy = messages
-                    .filter(m => m.replyTo?.messageId === msg.id)
-                    .map(m => ({ id: m.id, senderName: m.sender.name, content: m.content }));
+                  // Compute full reply chain from this message
+                  const collectReplyChain = (rootId: string): { id: string; senderName: string; content: string }[] => {
+                    const direct = messages.filter(m => m.replyTo?.messageId === rootId);
+                    const result: { id: string; senderName: string; content: string }[] = [];
+                    for (const d of direct) {
+                      result.push({ id: d.id, senderName: d.sender.name, content: d.content });
+                      result.push(...collectReplyChain(d.id));
+                    }
+                    return result;
+                  };
+                  const repliedBy = collectReplyChain(msg.id);
                   
                   return (
                     <SwipeableChatBubble
@@ -944,8 +964,9 @@ const ChatWindow = ({
                       isPinned={isMessagePinned(msg.id)}
                       replyTo={msg.replyTo}
                       repliedBy={repliedBy.length > 0 ? repliedBy : undefined}
-                      highlightId={highlightedMessageId || undefined}
+                      highlightId={highlightedChain || highlightedMessageId || undefined}
                       onNavigateToMessage={navigateToMessage}
+                      onNavigateToReplyChain={navigateToReplyChain}
                     />
                   );
                 })}
