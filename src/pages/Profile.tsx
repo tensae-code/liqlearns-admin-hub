@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useClans } from '@/hooks/useClans';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
@@ -30,47 +32,18 @@ import {
   Shield,
   Briefcase,
   Swords,
-  UserPlus,
-  Search
+  UserPlus
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { toast } from 'sonner';
-
-const mockClans = [
-  { id: 1, name: 'Eliteforce', members: 48, level: 12, isOpen: true },
-  { id: 2, name: 'Night Owls', members: 32, level: 8, isOpen: true },
-  { id: 3, name: 'Study Squad', members: 65, level: 15, isOpen: false },
-  { id: 4, name: 'Rising Stars', members: 24, level: 6, isOpen: true },
-];
 
 const Profile = () => {
   const { user, userRole } = useAuth();
   const { profile, loading } = useProfile();
-  const [showJoinClan, setShowJoinClan] = useState(false);
-  const [clanSearch, setClanSearch] = useState('');
-  const [userClan, setUserClan] = useState<{ name: string; role: string } | null>(null);
+  const { myClans } = useClans();
+  const navigate = useNavigate();
 
-  const filteredClans = mockClans.filter(c => 
-    c.name.toLowerCase().includes(clanSearch.toLowerCase())
-  );
+  const primaryClan = myClans[0];
 
-  const handleJoinClan = (clan: typeof mockClans[0]) => {
-    if (!clan.isOpen) {
-      toast.error('This clan is invite-only');
-      return;
-    }
-    setUserClan({ name: clan.name, role: 'Member' });
-    setShowJoinClan(false);
-    toast.success(`Joined ${clan.name}!`, { description: 'Welcome to the clan!' });
-  };
 
   // Role-specific stats
   const getRoleStats = () => {
@@ -251,78 +224,44 @@ const Profile = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">
-                  {userClan ? userClan.name : 'No Clan'}
+                  {primaryClan ? primaryClan.name : 'No Clan'}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  {userClan ? `${userClan.role} • Team up to earn bonus XP` : 'Join a clan to earn bonus XP'}
+                  {primaryClan
+                    ? `Lv.${primaryClan.clan_level} • ${primaryClan.clan_xp} XP`
+                    : 'Join a clan to earn bonus XP'}
                 </p>
               </div>
             </div>
-            
-            <Dialog open={showJoinClan} onOpenChange={setShowJoinClan}>
-              <DialogTrigger asChild>
-                <Button size="sm" variant={userClan ? "outline" : "default"} className={!userClan ? "bg-gradient-accent text-accent-foreground" : ""}>
-                  {userClan ? (
-                    <>
-                      <Settings className="w-4 h-4 mr-1" />
-                      Manage
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="w-4 h-4 mr-1" />
-                      Join Clan
-                    </>
-                  )}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Find a Clan</DialogTitle>
-                  <DialogDescription>Join a clan to earn bonus XP and compete together</DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search clans..."
-                      value={clanSearch}
-                      onChange={(e) => setClanSearch(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {filteredClans.map((clan) => (
-                      <div
-                        key={clan.id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                            {clan.name.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{clan.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {clan.members} members • Level {clan.level}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant={clan.isOpen ? "default" : "outline"}
-                          onClick={() => handleJoinClan(clan)}
-                          disabled={!clan.isOpen}
-                          className={clan.isOpen ? "bg-violet-600 hover:bg-violet-700" : ""}
-                        >
-                          {clan.isOpen ? 'Join' : 'Invite Only'}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+
+            <Button
+              size="sm"
+              variant={primaryClan ? "outline" : "default"}
+              className={!primaryClan ? "bg-gradient-accent text-accent-foreground" : ""}
+              onClick={() => navigate('/clans')}
+            >
+              {primaryClan ? (
+                <>
+                  <Settings className="w-4 h-4 mr-1" />
+                  Manage
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4 mr-1" />
+                  Join Clan
+                </>
+              )}
+            </Button>
           </div>
+          {myClans.length > 1 && (
+            <div className="mt-3 flex gap-2 flex-wrap">
+              {myClans.slice(1).map(clan => (
+                <Badge key={clan.id} variant="outline" className="text-xs cursor-pointer" onClick={() => navigate('/clans')}>
+                  {clan.name} • Lv.{clan.clan_level}
+                </Badge>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* Stats Grid */}
