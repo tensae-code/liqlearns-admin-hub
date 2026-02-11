@@ -278,6 +278,25 @@ export const useClans = () => {
         description: `${profile.full_name || 'A user'} joined the clan`,
         xp_earned: 5,
       });
+
+      // Auto-join clan group chat
+      try {
+        const { data: clanGroup } = await supabase
+          .from('groups')
+          .select('id')
+          .eq('clan_id', clanId)
+          .maybeSingle();
+        if (clanGroup) {
+          await supabase.from('group_members').insert({
+            group_id: clanGroup.id,
+            user_id: profile.id,
+            role: 'member',
+          });
+        }
+      } catch (gcErr) {
+        console.error('Error auto-joining clan GC:', gcErr);
+      }
+
       toast.success('Joined clan!');
       await fetchMyClans();
       return true;

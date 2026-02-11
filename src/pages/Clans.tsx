@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useClans, type Clan, type ClanMember, type ClanBattleLog } from '@/hooks/useClans';
+import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -108,7 +109,7 @@ const Clans = () => {
   );
 
   const handleCreate = async () => {
-    if (!clanName.trim()) return;
+    if (!clanName.trim() || !profile) return;
     setCreateLoading(true);
     const result = await createClan({
       name: clanName.trim(),
@@ -120,6 +121,40 @@ const Clans = () => {
     });
     setCreateLoading(false);
     if (result) {
+      // Auto-create clan group chat
+      try {
+        const groupUsername = `clan_${result.id.substring(0, 8)}`;
+        const { data: group, error: groupErr } = await supabase
+          .from('groups')
+          .insert({
+            name: `${clanName.trim()} Clan`,
+            username: groupUsername,
+            description: `Official group chat for ${clanName.trim()}`,
+            is_public: false,
+            owner_id: profile.id,
+            clan_id: result.id,
+          })
+          .select()
+          .single();
+
+        if (!groupErr && group) {
+          await supabase.from('group_members').insert({
+            group_id: group.id,
+            user_id: profile.id,
+            role: 'owner',
+          });
+          await supabase.from('group_channels').insert({
+            group_id: group.id,
+            name: 'general',
+            channel_type: 'text',
+            is_default: true,
+            description: 'Clan general chat',
+          });
+        }
+      } catch (err) {
+        console.error('Error creating clan GC:', err);
+      }
+
       setShowCreate(false);
       setClanName(''); setClanDesc('');
       fetchClans();

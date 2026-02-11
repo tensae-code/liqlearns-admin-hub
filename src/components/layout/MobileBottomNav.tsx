@@ -183,6 +183,19 @@ const MobileBottomNav = () => {
                 </Link>
               )}
               <Link
+                to="/clans"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-violet-500" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">Clans</span>
+                  <p className="text-xs text-muted-foreground">Join or create a team</p>
+                </div>
+              </Link>
+              <Link
                 to="/community"
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
                 onClick={() => setDrawerOpen(false)}
