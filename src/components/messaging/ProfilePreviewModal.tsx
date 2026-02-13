@@ -213,7 +213,7 @@ const ProfilePreviewModal = ({
         toast.success('Friend request accepted!');
 
         await supabase.from('notifications').insert({
-          user_id: profile.user_id,
+          user_id: profile.id,
           type: 'social',
           title: 'Friend Request Accepted',
           message: `accepted your friend request.`,
@@ -241,7 +241,7 @@ const ProfilePreviewModal = ({
       toast.success('Friend request sent!');
 
         await supabase.from('notifications').insert({
-          user_id: profile.user_id,
+          user_id: profile.id,
           type: 'social',
           title: 'Friend Request',
           message: `sent you a friend request.`,
