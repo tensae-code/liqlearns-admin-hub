@@ -370,10 +370,33 @@ const Battles = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <LiveBattlesList onSpectate={(battleId) => {
-                  const battle = myBattles.find(b => b.id === battleId);
-                  if (battle) setActiveBattle(battle);
-                  else toast('Spectating view coming soon');
+                <LiveBattlesList onSpectate={async (battleId) => {
+                  // First check local battles
+                  const local = myBattles.find(b => b.id === battleId);
+                  if (local) { setActiveBattle(local); return; }
+                  // Fetch from DB for spectators who aren't participants
+                  const { data } = await supabase
+                    .from('battles')
+                    .select('*')
+                    .eq('id', battleId)
+                    .single();
+                  if (data) {
+                    // Fetch profiles for the battle
+                    const userIds = [data.challenger_id, data.opponent_id].filter(Boolean) as string[];
+                    const { data: profiles } = await supabase.from('profiles').select('id, full_name, avatar_url, username').in('id', userIds);
+                    const gameId = data.game_id;
+                    const { data: games } = gameId
+                      ? await supabase.from('game_templates').select('id, title, type').eq('id', gameId)
+                      : { data: [] };
+                    setActiveBattle({
+                      ...data,
+                      challenger_profile: profiles?.find(p => p.id === data.challenger_id),
+                      opponent_profile: data.opponent_id ? profiles?.find(p => p.id === data.opponent_id) : undefined,
+                      game: games?.[0] || undefined,
+                    } as Battle);
+                  } else {
+                    toast.error('Could not load battle');
+                  }
                 }} />
               </CardContent>
             </Card>
