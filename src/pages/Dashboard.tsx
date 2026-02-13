@@ -17,6 +17,7 @@ import GradingSystem from '@/components/dashboard/GradingSystem';
 import ClanPopup from '@/components/dashboard/ClanPopup';
 import { useClans } from '@/hooks/useClans';
 import AchievementsSection from '@/components/dashboard/AchievementsSection';
+import NewsFeedWidget from '@/components/dashboard/NewsFeedWidget';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -423,6 +424,11 @@ const Dashboard = () => {
       {/* Grading System */}
       <div className="mt-4 md:mt-6">
         <GradingSystem />
+      </div>
+
+      {/* News Feed */}
+      <div className="mt-4 md:mt-6">
+        <NewsFeedWidget />
       </div>
 
       {/* Achievements */}

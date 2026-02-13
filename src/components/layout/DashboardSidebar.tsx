@@ -41,7 +41,8 @@ import {
   Bot,
   Wallet,
   Crown,
-  Swords
+  Swords,
+  Megaphone
 } from 'lucide-react';
 import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
 
@@ -64,6 +65,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
     case 'ceo':
       return [
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Overview & insights', path: '/ceo' },
+        { icon: Megaphone, label: 'Announcements', description: 'Platform updates', path: '/ceo?tab=announcements' },
         { icon: Crown, label: 'Subscriptions', description: 'User plans', path: '/ceo?tab=subscriptions' },
         { icon: Percent, label: 'Commissions', description: 'Group rates', path: '/ceo?tab=commissions' },
         { icon: Lightbulb, label: 'Skills', description: 'Skill approvals', path: '/ceo?tab=skills' },
@@ -96,6 +98,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Support overview', path: '/support' },
         { icon: MessageSquare, label: 'Tickets', description: 'Open requests', path: '/support/tickets' },
         { icon: Users, label: 'Users', description: 'User lookup', path: '/support/users' },
+        { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Mail, label: 'Messages', description: 'Communications', path: '/messages' },
         { icon: HelpCircle, label: 'Help', description: 'Resources', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
@@ -122,6 +125,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Baby, label: 'My Children', description: 'Manage kids', path: '/parent/children' },
         { icon: BarChart3, label: 'Progress', description: 'Learning stats', path: '/parent/progress' },
         { icon: Briefcase, label: 'Business', description: 'Earn rewards', path: '/business' },
+        { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Mail, label: 'Messages', description: 'Communications', path: '/messages' },
         { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
@@ -136,6 +140,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Swords, label: 'Battles', description: 'Clan wars', path: '/battles' },
         { icon: Shield, label: 'Clans', description: 'Manage clans', path: '/clans' },
         { icon: Briefcase, label: 'Business', description: 'Earn rewards', path: '/business' },
+        { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Mail, label: 'Messages', description: 'Team chat', path: '/messages' },
         { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
