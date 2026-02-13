@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Trophy, BookOpen, Flame, Gift, Check, Gamepad2, Video, CheckCircle2, Star, FileText, Users, AlertCircle, HelpCircle, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +33,7 @@ interface Notification {
 const NotificationBell = () => {
   const { user } = useAuth();
   const { role } = useRoleBasedConfig();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -281,7 +283,24 @@ const NotificationBell = () => {
                     'p-3 hover:bg-muted/50 transition-colors cursor-pointer',
                     !notification.read && 'bg-accent/5'
                   )}
-                  onClick={() => !notification.read && markAsRead(notification.id)}
+                  onClick={() => {
+                    if (!notification.read) markAsRead(notification.id);
+                    // Navigate based on notification type
+                    if (notification.type === 'message') {
+                      const senderId = (notification.data as any)?.sender_id;
+                      const convId = (notification.data as any)?.conversation_id;
+                      if (senderId) {
+                        navigate(`/messages?dm=${senderId}`);
+                      } else {
+                        navigate('/messages');
+                      }
+                      setIsOpen(false);
+                    } else if (notification.type === 'course') {
+                      const courseId = (notification.data as any)?.course_id;
+                      if (courseId) navigate(`/courses/${courseId}`);
+                      setIsOpen(false);
+                    }
+                  }}
                 >
                   <div className="flex gap-3">
                     <div className={cn(
