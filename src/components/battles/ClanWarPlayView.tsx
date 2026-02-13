@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
+import { useClans } from '@/hooks/useClans';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
-  Swords, Trophy, Gamepad2, CheckCircle, Clock, Users, Zap, X
+  Swords, Trophy, Gamepad2, CheckCircle, Clock, Users, Zap, X, AlertTriangle, Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -21,13 +22,48 @@ interface ClanWarPlayViewProps {
 
 const ClanWarPlayView = ({ war, onClose }: ClanWarPlayViewProps) => {
   const { profile } = useProfile();
+  const { myClans } = useClans();
   const [rounds, setRounds] = useState<ClanWarRound[]>([]);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<string | null>(null);
+  const [sidePick, setSidePick] = useState<string | null>(null);
+  const [sidePickLoading, setSidePickLoading] = useState(false);
 
-  const isChallenger = war.challenger_clan?.name === war.challenger_clan?.name; // always true, used for side logic
-  const myClanName = war.challenger_clan?.name;
-  const theirClanName = war.opponent_clan?.name;
+  // Check if user is in BOTH clans
+  const myClanIds = myClans.map(c => c.id);
+  const isInBothClans = myClanIds.includes(war.challenger_clan_id) && myClanIds.includes(war.opponent_clan_id);
+  const needsSidePick = isInBothClans && war.status !== 'completed';
+
+  // Fetch existing side pick
+  useEffect(() => {
+    if (!needsSidePick || !profile?.id) return;
+    const fetch = async () => {
+      const { data } = await supabase
+        .from('clan_war_side_picks')
+        .select('chosen_clan_id')
+        .eq('war_id', war.id)
+        .eq('user_id', profile.id)
+        .maybeSingle();
+      if (data) setSidePick(data.chosen_clan_id);
+    };
+    fetch();
+  }, [needsSidePick, profile?.id, war.id]);
+
+  const pickSide = async (clanId: string) => {
+    if (!profile?.id) return;
+    setSidePickLoading(true);
+    const { error } = await supabase
+      .from('clan_war_side_picks')
+      .upsert({ war_id: war.id, user_id: profile.id, chosen_clan_id: clanId }, { onConflict: 'war_id,user_id' });
+    if (error) {
+      toast.error('Failed to pick side');
+    } else {
+      setSidePick(clanId);
+      const clanName = clanId === war.challenger_clan_id ? war.challenger_clan?.name : war.opponent_clan?.name;
+      toast.success(`You're fighting for ${clanName}! ⚔️`);
+    }
+    setSidePickLoading(false);
+  };
 
   const fetchRounds = useCallback(async () => {
     const { data, error } = await supabase
@@ -156,6 +192,49 @@ const ClanWarPlayView = ({ war, onClose }: ClanWarPlayViewProps) => {
             </div>
           </div>
         </div>
+
+        {/* Side Pick Banner for shared members */}
+        {needsSidePick && !sidePick && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-3"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0" />
+              <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+                You're in both clans! Pick your side:
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={sidePickLoading}
+                className="flex-1 border-violet-500/30 hover:bg-violet-500/10"
+                onClick={() => pickSide(war.challenger_clan_id)}
+              >
+                <Shield className="w-3 h-3 mr-1" /> {war.challenger_clan?.name}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={sidePickLoading}
+                className="flex-1 border-orange-500/30 hover:bg-orange-500/10"
+                onClick={() => pickSide(war.opponent_clan_id)}
+              >
+                <Shield className="w-3 h-3 mr-1" /> {war.opponent_clan?.name}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        {needsSidePick && sidePick && (
+          <div className="bg-green-500/10 border-b border-green-500/20 px-4 py-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Fighting for <span className="font-semibold">{sidePick === war.challenger_clan_id ? war.challenger_clan?.name : war.opponent_clan?.name}</span>
+          </div>
+        )}
 
         {/* Notification Banner */}
         <AnimatePresence>
