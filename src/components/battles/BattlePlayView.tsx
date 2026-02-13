@@ -69,7 +69,7 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
     const connectVoice = async () => {
       try {
         const roomName = `battle:${battle.id}`;
-        await livekit.connect(roomName, 'dm' as any, battle.id, 'speaker');
+        await livekit.connect(roomName, 'battle' as any, battle.id, 'speaker');
         setVoiceConnected(true);
         setMyMicOn(true);
       } catch (err) {
