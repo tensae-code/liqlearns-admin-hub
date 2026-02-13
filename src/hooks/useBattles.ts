@@ -170,6 +170,14 @@ export const useBattles = () => {
     stakeAmount: number;
     isOpen: boolean;
     voiceEnabled: boolean;
+    mode?: string;
+    maxTeamSize?: number;
+    isJudged?: boolean;
+    isPrivate?: boolean;
+    allowSpectators?: boolean;
+    spectatorCamera?: boolean;
+    spectatorAudio?: boolean;
+    spectatorChat?: boolean;
   }) => {
     if (!profile?.id) { toast.error('Sign in first'); return null; }
     if (!wallet || wallet.balance < opts.stakeAmount) { toast.error('Insufficient battle points'); return null; }
@@ -182,6 +190,14 @@ export const useBattles = () => {
       stake_amount: opts.stakeAmount,
       is_open: opts.isOpen,
       voice_enabled: opts.voiceEnabled,
+      mode: opts.mode || '1v1',
+      max_team_size: opts.maxTeamSize || 1,
+      is_judged: opts.isJudged || false,
+      is_private: opts.isPrivate || false,
+      allow_spectators: opts.allowSpectators ?? true,
+      spectator_camera: opts.spectatorCamera || false,
+      spectator_audio: opts.spectatorAudio || false,
+      spectator_chat: opts.spectatorChat ?? true,
     }).select().single();
 
     if (error) { toast.error('Failed to create battle'); return null; }

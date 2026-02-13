@@ -322,10 +322,18 @@ const Battles = () => {
                               );
                             })()}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              {(battle as any).mode || '1v1'}
+                            </Badge>
                             <Coins className="w-3 h-3 text-yellow-500" />
                             <span>{battle.stake_amount} BP</span>
                             {battle.voice_enabled && <Mic className="w-3 h-3 text-green-500" />}
+                            {(battle as any).is_judged && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-purple-500 border-purple-500/30">
+                                Judged
+                              </Badge>
+                            )}
                             {battle.game && (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                 <Gamepad2 className="w-2.5 h-2.5 mr-0.5" />{battle.game.title}

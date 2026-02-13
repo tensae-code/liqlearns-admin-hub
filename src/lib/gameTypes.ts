@@ -221,6 +221,16 @@ export const GAME_TYPES = [
     subLevels: ['reading', 'speaking'],
     configFields: ['dialogueScenarios'],
   },
+  {
+    id: 'spelling_bee',
+    name: 'Spelling Bee',
+    description: 'Listen to a word pronounced by a teacher or audio, then spell it correctly. Supports live judged competitions.',
+    icon: 'Mic',
+    color: 'from-yellow-500 to-amber-500',
+    levels: ['beginner', 'basics', 'advanced', 'pro'],
+    subLevels: ['hearing', 'writing'],
+    configFields: ['spellingBeeWords'],
+  },
 ] as const;
 
 export type GameType = typeof GAME_TYPES[number]['id'];
@@ -328,6 +338,9 @@ export interface GameConfig {
 
   // Dialogue Builder
   dialogueScenarios?: { id: string; scenario: string; turns: { speaker: 'npc' | 'player'; text?: string; options?: { id: string; text: string; isCorrect: boolean }[] }[] }[];
+
+  // Spelling Bee
+  spellingBeeWords?: { word: string; definition?: string; sentence?: string; audioUrl?: string; difficulty?: string }[];
 }
 
 export interface GameItem {
