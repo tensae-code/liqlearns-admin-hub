@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import NewsFeedWidget from '@/components/dashboard/NewsFeedWidget';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -853,6 +854,10 @@ const AdminDashboard = () => {
           open={courseApprovalOpen} 
           onOpenChange={setCourseApprovalOpen} 
         />
+
+        <div className="mt-4">
+          <NewsFeedWidget />
+        </div>
     </DashboardLayout>
   );
 };

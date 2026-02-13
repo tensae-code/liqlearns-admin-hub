@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import GameTemplateCatalog from '@/components/teacher/GameTemplateCatalog';
+import NewsFeedWidget from '@/components/dashboard/NewsFeedWidget';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
@@ -1164,6 +1165,10 @@ const TeacherDashboard = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <div className="mt-6">
+          <NewsFeedWidget />
+        </div>
       </DashboardLayout>
 
       {/* Create Course Modal */}
