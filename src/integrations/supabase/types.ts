@@ -723,6 +723,59 @@ export type Database = {
           },
         ]
       }
+      clan_war_side_picks: {
+        Row: {
+          chosen_clan_id: string
+          created_at: string
+          id: string
+          user_id: string
+          war_id: string
+        }
+        Insert: {
+          chosen_clan_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          war_id: string
+        }
+        Update: {
+          chosen_clan_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          war_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_war_side_picks_chosen_clan_id_fkey"
+            columns: ["chosen_clan_id"]
+            isOneToOne: false
+            referencedRelation: "clans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_side_picks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_side_picks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clan_war_side_picks_war_id_fkey"
+            columns: ["war_id"]
+            isOneToOne: false
+            referencedRelation: "clan_wars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clan_wars: {
         Row: {
           challenger_clan_id: string
