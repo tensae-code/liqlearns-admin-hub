@@ -11,6 +11,8 @@ import AdminPrivilegeManager from '@/components/ceo/AdminPrivilegeManager';
 import CourseApprovalModal from '@/components/ceo/CourseApprovalModal';
 import UserSubscriptionManager from '@/components/ceo/UserSubscriptionManager';
 import CommissionGroupManager from '@/components/ceo/CommissionGroupManager';
+import AnnouncementManager from '@/components/ceo/AnnouncementManager';
+import NewsFeedWidget from '@/components/dashboard/NewsFeedWidget';
 import {
   Users,
   BookOpen,
@@ -31,7 +33,8 @@ import {
   FolderTree,
   Shield,
   Lightbulb,
-  Crown
+  Crown,
+  Megaphone
 } from 'lucide-react';
 
 import { STAT_GRADIENTS } from '@/lib/theme';
@@ -47,7 +50,7 @@ const CEODashboard = () => {
   const [courseApprovalOpen, setCourseApprovalOpen] = useState(false);
   const [subscriptionManagerOpen, setSubscriptionManagerOpen] = useState(false);
   const [commissionGroupOpen, setCommissionGroupOpen] = useState(false);
-
+  const [announcementOpen, setAnnouncementOpen] = useState(false);
   // Handle tab query params to open modals from sidebar navigation
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -67,6 +70,8 @@ const CEODashboard = () => {
       setSubscriptionManagerOpen(true);
     } else if (tab === 'commissions') {
       setCommissionGroupOpen(true);
+    } else if (tab === 'announcements') {
+      setAnnouncementOpen(true);
     }
   }, [location.search]);
 
@@ -103,6 +108,11 @@ const CEODashboard = () => {
 
   const handleCommissionGroupClose = (open: boolean) => {
     setCommissionGroupOpen(open);
+    if (!open) navigate('/ceo', { replace: true });
+  };
+
+  const handleAnnouncementClose = (open: boolean) => {
+    setAnnouncementOpen(open);
     if (!open) navigate('/ceo', { replace: true });
   };
   
@@ -297,6 +307,22 @@ const CEODashboard = () => {
             <p className="text-xs md:text-sm text-muted-foreground">Uptime</p>
           </motion.div>
         </div>
+
+        {/* Announcement Button + News Feed */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <motion.div
+            className="bg-card rounded-xl border border-border p-4 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            onClick={() => setAnnouncementOpen(true)}
+          >
+            <Megaphone className="w-10 h-10 text-accent" />
+            <p className="text-sm font-semibold text-foreground">Publish Announcement</p>
+            <p className="text-xs text-muted-foreground text-center">Send updates to all platform users</p>
+          </motion.div>
+          <NewsFeedWidget />
+        </div>
       </div>
       
       {/* Category Manager Modal */}
@@ -327,6 +353,10 @@ const CEODashboard = () => {
       <CommissionGroupManager
         open={commissionGroupOpen}
         onOpenChange={handleCommissionGroupClose}
+      />
+      <AnnouncementManager
+        open={announcementOpen}
+        onOpenChange={handleAnnouncementClose}
       />
     </DashboardLayout>
   );

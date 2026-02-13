@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Trophy, BookOpen, Flame, Gift, Check, Gamepad2, Video, CheckCircle2, Star, FileText, Users, AlertCircle, HelpCircle, Award } from 'lucide-react';
+import { Bell, Trophy, BookOpen, Flame, Gift, Check, Gamepad2, Video, CheckCircle2, Star, FileText, Users, AlertCircle, HelpCircle, Award, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -170,6 +170,8 @@ const NotificationBell = () => {
       case 'team':
       case 'completion':
         return <Users className="w-4 h-4 text-success" />;
+      case 'announcement':
+        return <Megaphone className="w-4 h-4 text-accent" />;
       default:
         return <Bell className="w-4 h-4 text-muted-foreground" />;
     }
@@ -212,6 +214,8 @@ const NotificationBell = () => {
       case 'resolution':
       case 'completion':
         return 'bg-success/10';
+      case 'announcement':
+        return 'bg-accent/10';
       default: return 'bg-muted';
     }
   };
