@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import NewsFeedWidget from '@/components/dashboard/NewsFeedWidget';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -312,6 +313,10 @@ const UnderageDashboard = () => {
         show={showAnimation}
         onClose={closeAnimation}
       />
+
+      <div className="mt-4">
+        <NewsFeedWidget />
+      </div>
     </DashboardLayout>
   );
 };

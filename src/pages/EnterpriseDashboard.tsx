@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import NewsFeedWidget from '@/components/dashboard/NewsFeedWidget';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -463,6 +464,10 @@ const EnterpriseDashboard = () => {
         open={learningPathOpen}
         onOpenChange={handleLearningPathClose}
       />
+
+      <div className="mt-6">
+        <NewsFeedWidget />
+      </div>
     </DashboardLayout>
   );
 };

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Megaphone, Pin, Swords, Users, BookOpen, Trophy } from 'lucide-react';
+import { Megaphone, Pin, Swords, Users, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -24,21 +24,22 @@ const NewsFeedWidget = () => {
   useEffect(() => {
     fetchFeed();
 
-    // Subscribe to new announcements
     const channel = supabase
       .channel('news-feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'announcements' }, (payload) => {
         const a = payload.new as any;
         setItems(prev => [{
-          id: a.id,
-          type: 'announcement',
-          title: a.title,
-          content: a.content,
-          category: a.category,
-          priority: a.priority,
-          is_pinned: a.is_pinned,
-          created_at: a.created_at,
+          id: a.id, type: 'announcement', title: a.title, content: a.content,
+          category: a.category, priority: a.priority, is_pinned: a.is_pinned, created_at: a.created_at,
         }, ...prev]);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'community_posts' }, (payload) => {
+        const p = payload.new as any;
+        const newItem: FeedItem = {
+          id: p.id, type: 'community', title: 'New Post',
+          content: p.content?.substring(0, 120) || '', created_at: p.created_at,
+        };
+        setItems(prev => [newItem, ...prev].slice(0, 20));
       })
       .subscribe();
 
@@ -47,6 +48,8 @@ const NewsFeedWidget = () => {
 
   const fetchFeed = async () => {
     try {
+      const feedItems: FeedItem[] = [];
+
       // Fetch announcements
       const { data: announcements } = await supabase
         .from('announcements')
@@ -55,16 +58,12 @@ const NewsFeedWidget = () => {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      const feedItems: FeedItem[] = (announcements || []).map((a: any) => ({
-        id: a.id,
-        type: 'announcement' as const,
-        title: a.title,
-        content: a.content,
-        category: a.category,
-        priority: a.priority,
-        is_pinned: a.is_pinned,
-        created_at: a.created_at,
-      }));
+      (announcements || []).forEach((a: any) => {
+        feedItems.push({
+          id: a.id, type: 'announcement', title: a.title, content: a.content,
+          category: a.category, priority: a.priority, is_pinned: a.is_pinned, created_at: a.created_at,
+        });
+      });
 
       // Fetch recent completed battles
       const { data: battles } = await supabase
@@ -74,26 +73,38 @@ const NewsFeedWidget = () => {
         .order('completed_at', { ascending: false })
         .limit(5);
 
-      if (battles) {
-        battles.forEach((b: any) => {
-          feedItems.push({
-            id: b.id,
-            type: 'battle',
-            title: `Battle Completed`,
-            content: `A ${b.mode} ${b.game_type || 'battle'} just ended${b.stake_amount > 0 ? ` with ${b.stake_amount} coins at stake` : ''}!`,
-            created_at: b.completed_at || b.created_at,
-          });
+      (battles || []).forEach((b: any) => {
+        feedItems.push({
+          id: b.id, type: 'battle', title: 'Battle Completed',
+          content: `A ${b.mode} ${b.game_type || 'battle'} just ended${b.stake_amount > 0 ? ` with ${b.stake_amount} coins at stake` : ''}!`,
+          created_at: b.completed_at || b.created_at,
         });
-      }
+      });
 
-      // Sort all by date, pinned first
+      // Fetch recent community posts
+      const { data: posts } = await supabase
+        .from('community_posts')
+        .select('id, content, created_at, is_question')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      (posts || []).forEach((p: any) => {
+        feedItems.push({
+          id: p.id, type: 'community',
+          title: p.is_question ? 'New Question' : 'New Post',
+          content: p.content?.substring(0, 120) || '',
+          created_at: p.created_at,
+        });
+      });
+
+      // Sort: pinned first, then by date
       feedItems.sort((a, b) => {
         if (a.is_pinned && !b.is_pinned) return -1;
         if (!a.is_pinned && b.is_pinned) return 1;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
 
-      setItems(feedItems.slice(0, 15));
+      setItems(feedItems.slice(0, 20));
     } catch (err) {
       console.error('Feed fetch error:', err);
     } finally {
@@ -105,7 +116,7 @@ const NewsFeedWidget = () => {
     switch (item.type) {
       case 'announcement': return <Megaphone className="w-4 h-4 text-accent" />;
       case 'battle': return <Swords className="w-4 h-4 text-destructive" />;
-      case 'community': return <Users className="w-4 h-4 text-primary" />;
+      case 'community': return <MessageSquare className="w-4 h-4 text-primary" />;
     }
   };
 
