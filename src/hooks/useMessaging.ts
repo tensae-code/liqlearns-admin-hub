@@ -444,32 +444,24 @@ export const useMessaging = () => {
 
         // Send notification to receiver (look up their profile.id)
         try {
-          const { data: receiverProfile, error: profileError } = await supabase
+          const { data: receiverProfile } = await supabase
             .from('profiles')
             .select('id, full_name')
             .eq('user_id', id)
-            .single();
+            .maybeSingle();
 
-          console.log('[Notification] Receiver profile lookup:', { id, receiverProfile, profileError });
-
-          if (receiverProfile && !profileError) {
+          if (receiverProfile) {
             const senderName = profile?.full_name || profile?.username || 'Someone';
-            const { error: notifError } = await supabase.from('notifications').insert({
+            await supabase.from('notifications').insert({
               user_id: receiverProfile.id,
               type: 'message',
               title: 'New Message',
               message: `${senderName} sent you a message`,
-              data: { sender_id: profile?.id, conversation_id: `dm_${user.id}` },
+              data: { sender_id: profile?.id || null, conversation_id: `dm_${user.id}` },
             });
-            
-            if (notifError) {
-              console.error('[Notification] Insert error:', notifError);
-            } else {
-              console.log('[Notification] Successfully sent to:', receiverProfile.full_name);
-            }
           }
         } catch (notifErr) {
-          console.error('[Notification] Exception:', notifErr);
+          console.error('[Notification] Error:', notifErr);
         }
         
         // Optimistically add message to UI
