@@ -111,6 +111,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Swords, label: 'Battles', description: 'Clan wars', path: '/battles' },
         { icon: Shield, label: 'Clans', description: 'Manage clans', path: '/clans' },
         { icon: Calendar, label: 'Events', description: 'Scheduled events', path: '/events' },
+        { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Mail, label: 'Messages', description: 'Student chat', path: '/messages' },
         { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },

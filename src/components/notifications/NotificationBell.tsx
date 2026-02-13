@@ -283,14 +283,22 @@ const NotificationBell = () => {
                     'p-3 hover:bg-muted/50 transition-colors cursor-pointer',
                     !notification.read && 'bg-accent/5'
                   )}
-                  onClick={() => {
+                  onClick={async () => {
                     if (!notification.read) markAsRead(notification.id);
-                    // Navigate based on notification type
                     if (notification.type === 'message') {
                       const senderId = (notification.data as any)?.sender_id;
-                      const convId = (notification.data as any)?.conversation_id;
                       if (senderId) {
-                        navigate(`/messages?dm=${senderId}`);
+                        // sender_id is profile ID, need auth UUID for messages
+                        const { data: senderProfile } = await supabase
+                          .from('profiles')
+                          .select('user_id')
+                          .eq('id', senderId)
+                          .maybeSingle();
+                        if (senderProfile?.user_id) {
+                          navigate(`/messages?dm=${senderProfile.user_id}`);
+                        } else {
+                          navigate('/messages');
+                        }
                       } else {
                         navigate('/messages');
                       }
