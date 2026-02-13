@@ -10,7 +10,7 @@ const corsHeaders = {
 
 interface TokenRequest {
   roomName: string;
-  contextType: 'dm' | 'group' | 'study_room';
+  contextType: 'dm' | 'group' | 'study_room' | 'battle';
   contextId: string;
   role?: 'host' | 'moderator' | 'speaker' | 'listener';
 }
@@ -209,6 +209,21 @@ Deno.serve(async (req) => {
             .eq('user_id', profile.id)
             .single();
           hasAccess = !!participant;
+        }
+      }
+    } else if (contextType === 'battle') {
+      // For battles, check if user is a participant (challenger or opponent) or spectator
+      const { data: battle } = await supabase
+        .from('battles')
+        .select('id, challenger_id, opponent_id, allow_spectators')
+        .eq('id', contextId)
+        .single();
+
+      if (battle) {
+        if (battle.challenger_id === profile.id || battle.opponent_id === profile.id) {
+          hasAccess = true;
+        } else if (battle.allow_spectators) {
+          hasAccess = true;
         }
       }
     }
