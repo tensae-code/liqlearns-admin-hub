@@ -443,20 +443,33 @@ export const useMessaging = () => {
         console.log('DM sent successfully:', data?.id);
 
         // Send notification to receiver (look up their profile.id)
-        const { data: receiverProfile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', id)
-          .single();
+        try {
+          const { data: receiverProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .eq('user_id', id)
+            .single();
 
-        if (receiverProfile) {
-          await supabase.from('notifications').insert({
-            user_id: receiverProfile.id,
-            type: 'message',
-            title: 'New Message',
-            message: `${profile.full_name || profile.username || 'Someone'} sent you a message`,
-            data: { sender_id: profile.id, conversation_id: `dm_${user.id}` },
-          });
+          console.log('[Notification] Receiver profile lookup:', { id, receiverProfile, profileError });
+
+          if (receiverProfile && !profileError) {
+            const senderName = profile?.full_name || profile?.username || 'Someone';
+            const { error: notifError } = await supabase.from('notifications').insert({
+              user_id: receiverProfile.id,
+              type: 'message',
+              title: 'New Message',
+              message: `${senderName} sent you a message`,
+              data: { sender_id: profile?.id, conversation_id: `dm_${user.id}` },
+            });
+            
+            if (notifError) {
+              console.error('[Notification] Insert error:', notifError);
+            } else {
+              console.log('[Notification] Successfully sent to:', receiverProfile.full_name);
+            }
+          }
+        } catch (notifErr) {
+          console.error('[Notification] Exception:', notifErr);
         }
         
         // Optimistically add message to UI
