@@ -74,6 +74,45 @@ export type Database = {
         }
         Relationships: []
       }
+      battle_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          id?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       battle_messages: {
         Row: {
           battle_id: string
@@ -114,6 +153,146 @@ export type Database = {
           {
             foreignKeyName: "battle_messages_sender_id_fkey"
             columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_rankings: {
+        Row: {
+          best_streak: number
+          category: string
+          draws: number
+          entity_id: string
+          entity_type: string
+          game_type: string | null
+          id: string
+          losses: number
+          rank_points: number
+          total_battles: number
+          updated_at: string
+          win_streak: number
+          wins: number
+        }
+        Insert: {
+          best_streak?: number
+          category?: string
+          draws?: number
+          entity_id: string
+          entity_type: string
+          game_type?: string | null
+          id?: string
+          losses?: number
+          rank_points?: number
+          total_battles?: number
+          updated_at?: string
+          win_streak?: number
+          wins?: number
+        }
+        Update: {
+          best_streak?: number
+          category?: string
+          draws?: number
+          entity_id?: string
+          entity_type?: string
+          game_type?: string | null
+          id?: string
+          losses?: number
+          rank_points?: number
+          total_battles?: number
+          updated_at?: string
+          win_streak?: number
+          wins?: number
+        }
+        Relationships: []
+      }
+      battle_spectators: {
+        Row: {
+          battle_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          battle_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          battle_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_spectators_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_spectators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_spectators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battle_team_members: {
+        Row: {
+          battle_id: string
+          id: string
+          joined_at: string
+          score: number | null
+          team: string
+          user_id: string
+        }
+        Insert: {
+          battle_id: string
+          id?: string
+          joined_at?: string
+          score?: number | null
+          team: string
+          user_id: string
+        }
+        Update: {
+          battle_id?: string
+          id?: string
+          joined_at?: string
+          score?: number | null
+          team?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battle_team_members_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battle_team_members_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
@@ -179,6 +358,7 @@ export type Database = {
       }
       battles: {
         Row: {
+          allow_spectators: boolean
           challenger_id: string
           challenger_score: number | null
           challenger_time_seconds: number | null
@@ -186,11 +366,20 @@ export type Database = {
           course_id: string | null
           created_at: string
           game_id: string | null
+          game_type: string | null
           id: string
+          is_judged: boolean
           is_open: boolean
+          is_private: boolean
+          judge_id: string | null
+          max_team_size: number
+          mode: string
           opponent_id: string | null
           opponent_score: number | null
           opponent_time_seconds: number | null
+          spectator_audio: boolean
+          spectator_camera: boolean
+          spectator_chat: boolean
           stake_amount: number
           started_at: string | null
           status: string
@@ -199,6 +388,7 @@ export type Database = {
           winner_id: string | null
         }
         Insert: {
+          allow_spectators?: boolean
           challenger_id: string
           challenger_score?: number | null
           challenger_time_seconds?: number | null
@@ -206,11 +396,20 @@ export type Database = {
           course_id?: string | null
           created_at?: string
           game_id?: string | null
+          game_type?: string | null
           id?: string
+          is_judged?: boolean
           is_open?: boolean
+          is_private?: boolean
+          judge_id?: string | null
+          max_team_size?: number
+          mode?: string
           opponent_id?: string | null
           opponent_score?: number | null
           opponent_time_seconds?: number | null
+          spectator_audio?: boolean
+          spectator_camera?: boolean
+          spectator_chat?: boolean
           stake_amount?: number
           started_at?: string | null
           status?: string
@@ -219,6 +418,7 @@ export type Database = {
           winner_id?: string | null
         }
         Update: {
+          allow_spectators?: boolean
           challenger_id?: string
           challenger_score?: number | null
           challenger_time_seconds?: number | null
@@ -226,11 +426,20 @@ export type Database = {
           course_id?: string | null
           created_at?: string
           game_id?: string | null
+          game_type?: string | null
           id?: string
+          is_judged?: boolean
           is_open?: boolean
+          is_private?: boolean
+          judge_id?: string | null
+          max_team_size?: number
+          mode?: string
           opponent_id?: string | null
           opponent_score?: number | null
           opponent_time_seconds?: number | null
+          spectator_audio?: boolean
+          spectator_camera?: boolean
+          spectator_chat?: boolean
           stake_amount?: number
           started_at?: string | null
           status?: string
@@ -265,6 +474,20 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "game_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_judge_id_fkey"
+            columns: ["judge_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battles_judge_id_fkey"
+            columns: ["judge_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {

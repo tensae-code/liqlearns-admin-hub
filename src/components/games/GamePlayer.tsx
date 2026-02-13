@@ -42,6 +42,7 @@ import RhymeTimePlayer from './RhymeTimePlayer';
 import CategorizePlayer from './CategorizePlayer';
 import PollPlayer from './PollPlayer';
 import DialogueBuilderPlayer from './DialogueBuilderPlayer';
+import SpellingBeePlayer from './SpellingBeePlayer';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Grid3X3, Brain, GripVertical, TextCursorInput, Search,
@@ -122,6 +123,8 @@ const GamePlayer = ({ template, onComplete }: GamePlayerProps) => {
         return <PollPlayer config={template.config} onComplete={onComplete} />;
       case 'dialogue':
         return <DialogueBuilderPlayer config={template.config} onComplete={onComplete} />;
+      case 'spelling_bee':
+        return <SpellingBeePlayer config={template.config} onComplete={(s, m) => onComplete?.(s, m)} level={template.level} />;
       default:
         return <p className="text-center text-muted-foreground py-8">Unknown game type</p>;
     }
