@@ -441,6 +441,23 @@ export const useMessaging = () => {
         }
         
         console.log('DM sent successfully:', data?.id);
+
+        // Send notification to receiver (look up their profile.id)
+        const { data: receiverProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', id)
+          .single();
+
+        if (receiverProfile) {
+          await supabase.from('notifications').insert({
+            user_id: receiverProfile.id,
+            type: 'message',
+            title: 'New Message',
+            message: `${profile.full_name || profile.username || 'Someone'} sent you a message`,
+            data: { sender_id: profile.id, conversation_id: `dm_${user.id}` },
+          });
+        }
         
         // Optimistically add message to UI
         const newMessage: Message = {
