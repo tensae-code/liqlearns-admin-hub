@@ -142,6 +142,20 @@ const Battles = () => {
     );
   }
 
+  // If there's an active battle, render it inline within the layout
+  if (activeBattle) {
+    return (
+      <DashboardLayout>
+        <BattlePlayView
+          battle={activeBattle}
+          onClose={() => setActiveBattle(null)}
+          onComplete={() => {}}
+          onRematch={handleRematch}
+        />
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-5xl mx-auto">
@@ -475,16 +489,6 @@ const Battles = () => {
         wallet={wallet}
         onCreateBattle={createBattle}
       />
-
-      {/* Active Battle Play View */}
-      {activeBattle && (
-        <BattlePlayView
-          battle={activeBattle}
-          onClose={() => setActiveBattle(null)}
-          onComplete={() => {}}
-          onRematch={handleRematch}
-        />
-      )}
     </DashboardLayout>
   );
 };

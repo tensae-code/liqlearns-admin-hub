@@ -5,15 +5,16 @@ import { useOptionalLiveKitContext } from '@/contexts/LiveKitContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import GamePlayer from '@/components/games/GamePlayer';
 import type { GameTemplate } from '@/hooks/useGameTemplates';
 import { toast } from 'sonner';
 import {
   Mic, MicOff, Volume2, VolumeX, Send, MessageSquare, X,
   Trophy, Clock, Swords, Loader2, Phone, PhoneOff,
-  CheckCircle2, XCircle, RotateCcw, RefreshCw, Timer
+  CheckCircle2, XCircle, RotateCcw, RefreshCw, Timer, Crown, ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Battle, BattleMessage } from '@/hooks/useBattles';
@@ -380,7 +381,7 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-accent" />
       </div>
     );
@@ -391,7 +392,7 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
     const won = battle.winner_id === profile?.id;
     const draw = !battle.winner_id && completed;
     return (
-      <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="flex items-center justify-center p-4">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -515,16 +516,74 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
     );
   }
 
+  const myName = isChallenger
+    ? (battle.challenger_profile?.full_name || 'You')
+    : (battle.opponent_profile?.full_name || 'You');
+  const myAvatar = isChallenger
+    ? (battle.challenger_profile as any)?.avatar_url
+    : (battle.opponent_profile as any)?.avatar_url;
+  const opponentAvatar = isChallenger
+    ? (battle.opponent_profile as any)?.avatar_url
+    : (battle.challenger_profile as any)?.avatar_url;
+
+  // Player profile card component
+  const PlayerCard = ({ name, avatarUrl, score, side }: { name: string; avatarUrl?: string; score: number | null; side: 'left' | 'right' }) => (
+    <Card className={`hidden lg:flex flex-col items-center p-3 w-36 shrink-0 gap-2 ${
+      side === 'left' ? 'border-accent/20 bg-accent/5' : 'border-orange-500/20 bg-orange-500/5'
+    }`}>
+      <Avatar className="w-14 h-14">
+        <AvatarImage src={avatarUrl} />
+        <AvatarFallback className={`text-lg font-bold ${
+          side === 'left' ? 'bg-accent/20 text-accent' : 'bg-orange-500/20 text-orange-600'
+        }`}>
+          {name.charAt(0)}
+        </AvatarFallback>
+      </Avatar>
+      <p className="text-xs font-semibold text-foreground truncate max-w-full text-center">{name}</p>
+      {score !== null ? (
+        <div className="text-center">
+          <div className="text-2xl font-black text-foreground">{score}</div>
+          <div className="text-[10px] text-muted-foreground">Score</div>
+        </div>
+      ) : (
+        <Badge variant="outline" className="text-[10px]">Playing...</Badge>
+      )}
+    </Card>
+  );
+
+  // Mobile VS header (visible only on small screens)
+  const MobileVSHeader = () => (
+    <div className="flex lg:hidden items-center justify-between px-4 py-2 bg-card border-b border-border">
+      <div className="flex items-center gap-2">
+        <Avatar className="w-8 h-8">
+          <AvatarImage src={myAvatar} />
+          <AvatarFallback className="bg-accent/20 text-accent text-xs">{myName.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <span className="text-xs font-medium text-foreground truncate max-w-[60px]">{myName}</span>
+        {myScore !== null && <span className="text-sm font-bold text-foreground">{myScore}</span>}
+      </div>
+      <Swords className="w-4 h-4 text-muted-foreground" />
+      <div className="flex items-center gap-2">
+        {opponentScore !== null && <span className="text-sm font-bold text-foreground">{opponentScore}</span>}
+        <span className="text-xs font-medium text-foreground truncate max-w-[60px]">{opponentName}</span>
+        <Avatar className="w-8 h-8">
+          <AvatarImage src={opponentAvatar} />
+          <AvatarFallback className="bg-orange-500/20 text-orange-600 text-xs">{opponentName.charAt(0)}</AvatarFallback>
+        </Avatar>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-border bg-card">
+      <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-border bg-card rounded-t-xl">
         <div className="flex items-center gap-2">
           <Button size="icon" variant="ghost" onClick={onClose}>
-            <X className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5" />
           </Button>
           <Swords className="w-5 h-5 text-accent" />
-          <span className="font-semibold text-sm text-foreground">vs {opponentName}</span>
+          <span className="font-semibold text-sm text-foreground">Battle</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
@@ -546,39 +605,21 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
             <div className="flex items-center gap-1">
               {voiceConnected ? (
                 <>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="w-8 h-8"
-                    onClick={toggleMyMic}
-                    title={myMicOn ? 'Mute yourself' : 'Unmute yourself'}
-                  >
+                  <Button size="icon" variant="ghost" className="w-8 h-8" onClick={toggleMyMic}
+                    title={myMicOn ? 'Mute yourself' : 'Unmute yourself'}>
                     {myMicOn ? <Mic className="w-4 h-4 text-green-500" /> : <MicOff className="w-4 h-4 text-red-500" />}
                   </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="w-8 h-8"
-                    onClick={toggleOpponentMute}
-                    title={opponentMuted ? 'Unmute opponent' : 'Mute opponent'}
-                  >
+                  <Button size="icon" variant="ghost" className="w-8 h-8" onClick={toggleOpponentMute}
+                    title={opponentMuted ? 'Unmute opponent' : 'Mute opponent'}>
                     {opponentMuted ? <VolumeX className="w-4 h-4 text-red-500" /> : <Volume2 className="w-4 h-4" />}
                   </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="w-8 h-8 text-red-500 hover:text-red-600"
-                    onClick={disconnectVoice}
-                    title="Leave voice"
-                  >
+                  <Button size="icon" variant="ghost" className="w-8 h-8 text-red-500 hover:text-red-600"
+                    onClick={disconnectVoice} title="Leave voice">
                     <PhoneOff className="w-4 h-4" />
                   </Button>
                 </>
               ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 gap-1 text-green-600 border-green-500/30"
+                <Button size="sm" variant="outline" className="h-8 gap-1 text-green-600 border-green-500/30"
                   onClick={async () => {
                     if (livekit && profile?.id) {
                       try {
@@ -587,20 +628,14 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
                         setMyMicOn(true);
                       } catch { toast.error('Voice connect failed'); }
                     }
-                  }}
-                >
+                  }}>
                   <Phone className="w-3 h-3" /> Join Voice
                 </Button>
               )}
             </div>
           )}
 
-          <Button
-            size="icon"
-            variant="ghost"
-            className="w-8 h-8"
-            onClick={() => setChatOpen(!chatOpen)}
-          >
+          <Button size="icon" variant="ghost" className="w-8 h-8" onClick={() => setChatOpen(!chatOpen)}>
             <MessageSquare className={`w-4 h-4 ${chatOpen ? 'text-accent' : ''}`} />
             {messages.length > 0 && !chatOpen && (
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-accent rounded-full" />
@@ -609,8 +644,16 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
         </div>
       </div>
 
-      {/* Main content */}
+      {/* Mobile VS Header */}
+      <MobileVSHeader />
+
+      {/* Main content with player profile cards */}
       <div className="flex-1 flex overflow-hidden">
+        {/* Left player card (You) */}
+        <div className="hidden lg:flex flex-col items-center justify-start pt-6 pl-3">
+          <PlayerCard name={myName} avatarUrl={myAvatar} score={myScore} side="left" />
+        </div>
+
         {/* Game area */}
         <div className={`flex-1 overflow-y-auto p-4 ${chatOpen ? 'hidden md:block' : ''}`}>
           {gameTemplate ? (
@@ -626,6 +669,11 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
               </div>
             </div>
           )}
+        </div>
+
+        {/* Right player card (Opponent) */}
+        <div className="hidden lg:flex flex-col items-center justify-start pt-6 pr-3">
+          <PlayerCard name={opponentName} avatarUrl={opponentAvatar} score={opponentScore} side="right" />
         </div>
 
         {/* Chat sidebar */}
