@@ -13,11 +13,13 @@ import CreateBattleDialog from '@/components/battles/CreateBattleDialog';
 import BattlePlayView from '@/components/battles/BattlePlayView';
 import ClanWarTab from '@/components/battles/ClanWarTab';
 import ClanInfoPanel from '@/components/battles/ClanInfoPanel';
+import BattleRankings from '@/components/battles/BattleRankings';
+import LiveBattlesList from '@/components/battles/LiveBattlesList';
 import {
   Swords, Trophy, Flame, Shield, Crown, Target, Coins,
   Clock, Users, Mic, MicOff, Plus, Loader2,
   TrendingUp, TrendingDown, Minus, ChevronRight, Zap, Gamepad2,
-  BarChart3, User, UsersRound
+  BarChart3, User, UsersRound, Eye
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
@@ -273,9 +275,10 @@ const Battles = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="arena" className="space-y-4">
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="arena" className="gap-1"><Target className="w-4 h-4" /> Arena</TabsTrigger>
-            <TabsTrigger value="my-battles" className="gap-1"><Swords className="w-4 h-4" /> My Battles</TabsTrigger>
+            <TabsTrigger value="live" className="gap-1"><Eye className="w-4 h-4" /> Live</TabsTrigger>
+            <TabsTrigger value="my-battles" className="gap-1"><Swords className="w-4 h-4" /> History</TabsTrigger>
             <TabsTrigger value="leaderboard" className="gap-1"><Trophy className="w-4 h-4" /> Rankings</TabsTrigger>
           </TabsList>
 
@@ -357,6 +360,25 @@ const Battles = () => {
             </Card>
           </TabsContent>
 
+          {/* Live Battles - Spectating */}
+          <TabsContent value="live">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-red-500" /> Live Battles
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <LiveBattlesList onSpectate={(battleId) => {
+                  const battle = myBattles.find(b => b.id === battleId);
+                  if (battle) setActiveBattle(battle);
+                  else toast('Spectating view coming soon');
+                }} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* My Battles */}
           <TabsContent value="my-battles">
             <Card>
@@ -425,65 +447,9 @@ const Battles = () => {
             </Card>
           </TabsContent>
 
-          {/* Leaderboard */}
+          {/* Rankings */}
           <TabsContent value="leaderboard">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-500" /> Battle Rankings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {leaderboard.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Trophy className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>No rankings yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {leaderboard.map((entry, idx) => {
-                      const rank = getRankTitle(entry.rank_points);
-                      const isMe = entry.user_id === profile?.id;
-                      return (
-                        <motion.div
-                          key={entry.id}
-                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.05 }}
-                          className={`flex items-center gap-3 p-3 rounded-xl border ${isMe ? 'border-accent/30 bg-accent/5' : 'border-border'}`}
-                        >
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                            idx === 0 ? 'bg-yellow-500 text-white' :
-                            idx === 1 ? 'bg-gray-400 text-white' :
-                            idx === 2 ? 'bg-orange-600 text-white' :
-                            'bg-muted text-muted-foreground'
-                          }`}>
-                            {idx + 1}
-                          </div>
-                          <Avatar className="w-9 h-9">
-                            <AvatarFallback className="bg-accent/10 text-accent text-xs">
-                              {entry.profile?.full_name?.charAt(0) || '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm text-foreground truncate">
-                              {entry.profile?.full_name || 'Unknown'} {isMe && <span className="text-accent">(You)</span>}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Crown className={`w-3 h-3 ${rank.color}`} />
-                              <span className={`text-xs ${rank.color}`}>{rank.title}</span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-sm text-foreground">{entry.rank_points} RP</div>
-                            <div className="text-[10px] text-muted-foreground">{entry.wins}W / {entry.losses}L</div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <BattleRankings />
           </TabsContent>
         </Tabs>
         </>
