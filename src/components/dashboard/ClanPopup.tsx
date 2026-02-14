@@ -96,8 +96,7 @@ const ClanPopup = ({ isOpen, onClose }: ClanPopupProps) => {
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="fixed z-[100] w-[95%] max-w-md bg-card rounded-2xl border border-border shadow-2xl overflow-hidden"
-        style={{ top: '10%', left: '50%', transform: 'translateX(-50%)', maxHeight: '80vh' }}
+        className="fixed z-[100] w-[92%] max-w-md left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card rounded-2xl border border-border shadow-2xl overflow-hidden max-h-[80vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

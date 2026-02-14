@@ -249,13 +249,9 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed z-[100] w-[90%] max-w-sm"
-            style={{
-              top: '15%',
-              left: '30%',
-            }}
+            className="fixed z-[100] w-[92%] max-w-sm left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           >
-            <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden">
+            <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
               {/* Header */}
               <div className={`p-4 bg-gradient-to-r ${getGradient()} text-white flex items-center justify-between`}>
                 <h3 className="text-lg font-display font-semibold">{getTitle()}</h3>
@@ -269,7 +265,7 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
                 </Button>
               </div>
 
-              <div className="p-4">
+              <div className="p-4 overflow-y-auto">
                 {type === 'streak' && renderStreakContent()}
                 {type === 'xp' && renderXPContent()}
                 {type === 'badges' && renderBadgesContent()}
