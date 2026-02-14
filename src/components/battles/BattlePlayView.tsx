@@ -14,7 +14,8 @@ import { toast } from 'sonner';
 import {
   Mic, MicOff, Volume2, VolumeX, Send, MessageSquare, X,
   Trophy, Clock, Swords, Loader2, Phone, PhoneOff,
-  CheckCircle2, XCircle, RotateCcw, RefreshCw, Timer, Crown, ArrowLeft
+  CheckCircle2, XCircle, RotateCcw, RefreshCw, Timer, Crown, ArrowLeft,
+  Gamepad2, Coins
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Battle, BattleMessage } from '@/hooks/useBattles';
@@ -44,7 +45,7 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
   const [chatOpen, setChatOpen] = useState(false);
   const [gameTemplate, setGameTemplate] = useState<GameTemplate | null>(null);
   const [loading, setLoading] = useState(true);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(0);
   const [opponentMuted, setOpponentMuted] = useState(false);
   const [myMicOn, setMyMicOn] = useState(false);
   const [voiceConnected, setVoiceConnected] = useState(false);
@@ -57,10 +58,85 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Waiting room state
+  const [waitingRoom, setWaitingRoom] = useState(true);
+  const [opponentPresent, setOpponentPresent] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+
   const isChallenger = battle.challenger_id === profile?.id;
   const opponentName = isChallenger
     ? (battle.opponent_profile?.full_name || 'Opponent')
     : (battle.challenger_profile?.full_name || 'Opponent');
+
+  // Presence-based waiting room
+  useEffect(() => {
+    if (!profile?.id || !battle.opponent_id) {
+      // No opponent yet, stay in waiting room
+      return;
+    }
+
+    // If battle is already in_progress with scores, skip waiting room
+    if (battle.status === 'in_progress' || battle.status === 'completed') {
+      setWaitingRoom(false);
+      setStartTime(Date.now());
+      return;
+    }
+
+    const channel = supabase.channel(`battle-presence-${battle.id}`, {
+      config: { presence: { key: profile.id } },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const presentIds = Object.keys(state);
+        const opponentId = battle.challenger_id === profile.id ? battle.opponent_id : battle.challenger_id;
+        const isOpponentHere = presentIds.includes(opponentId!);
+        setOpponentPresent(isOpponentHere);
+
+        if (isOpponentHere && countdown === null) {
+          // Start 3-2-1 countdown
+          let count = 3;
+          setCountdown(count);
+          countdownRef.current = setInterval(() => {
+            count -= 1;
+            if (count <= 0) {
+              clearInterval(countdownRef.current!);
+              setCountdown(null);
+              setWaitingRoom(false);
+              setStartTime(Date.now());
+              // Update battle status to in_progress
+              supabase.from('battles').update({ status: 'in_progress', started_at: new Date().toISOString() }).eq('id', battle.id);
+            } else {
+              setCountdown(count);
+            }
+          }, 1000);
+        }
+      })
+      .on('presence', { event: 'leave' }, ({ key }) => {
+        const opponentId = battle.challenger_id === profile.id ? battle.opponent_id : battle.challenger_id;
+        if (key === opponentId) {
+          setOpponentPresent(false);
+          // Cancel countdown if opponent leaves
+          if (countdownRef.current) {
+            clearInterval(countdownRef.current);
+            countdownRef.current = null;
+            setCountdown(null);
+          }
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ user_id: profile.id, joined_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.id, battle.id, battle.challenger_id, battle.opponent_id, battle.status]);
 
   // Connect voice chat if enabled
   useEffect(() => {
@@ -205,9 +281,9 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
     return () => { supabase.removeChannel(channel); };
   }, [battle.id, isChallenger]);
 
-  // Countdown timer
+  // Countdown timer - only starts after waiting room
   useEffect(() => {
-    if (myScore !== null || completed) return;
+    if (waitingRoom || myScore !== null || completed) return;
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -220,7 +296,7 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [myScore, completed]);
+  }, [waitingRoom, myScore, completed]);
 
   // Auto scroll messages
   useEffect(() => {
@@ -387,7 +463,119 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
     );
   }
 
-  // Results screen with review
+  // Waiting room screen
+  if (waitingRoom) {
+    const opponentName = isChallenger
+      ? (battle.opponent_profile?.full_name || 'Opponent')
+      : (battle.challenger_profile?.full_name || 'Opponent');
+    const myName = isChallenger
+      ? (battle.challenger_profile?.full_name || 'You')
+      : (battle.opponent_profile?.full_name || 'You');
+
+    return (
+      <div className="flex flex-col items-center justify-center py-12 px-4 space-y-8">
+        <Button variant="ghost" size="sm" onClick={onClose} className="absolute top-4 left-4">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Leave
+        </Button>
+
+        {countdown !== null ? (
+          <motion.div
+            key={countdown}
+            initial={{ scale: 2, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.5, opacity: 0 }}
+            className="text-center space-y-4"
+          >
+            <div className="text-8xl font-black text-accent">{countdown}</div>
+            <p className="text-lg font-semibold text-foreground">Get Ready!</p>
+          </motion.div>
+        ) : (
+          <>
+            <div className="text-center space-y-2">
+              <Swords className="w-12 h-12 mx-auto text-accent" />
+              <h2 className="text-xl font-bold text-foreground">Battle Waiting Room</h2>
+              <p className="text-sm text-muted-foreground">Waiting for both players to join...</p>
+            </div>
+
+            {/* VS display */}
+            <div className="flex items-center gap-6">
+              {/* You */}
+              <motion.div
+                initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                className="flex flex-col items-center gap-2"
+              >
+                <div className="relative">
+                  <Avatar className="w-16 h-16 border-2 border-accent">
+                    <AvatarFallback className="bg-accent/20 text-accent text-lg font-bold">
+                      {myName.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
+                    <CheckCircle2 className="w-3 h-3 text-white" />
+                  </div>
+                </div>
+                <span className="text-sm font-medium text-foreground">{myName}</span>
+                <Badge className="bg-green-500/10 text-green-600 border-green-500/30">Ready</Badge>
+              </motion.div>
+
+              <div className="text-2xl font-black text-muted-foreground">VS</div>
+
+              {/* Opponent */}
+              <motion.div
+                initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                className="flex flex-col items-center gap-2"
+              >
+                <div className="relative">
+                  <Avatar className={`w-16 h-16 border-2 ${opponentPresent ? 'border-green-500' : 'border-muted'}`}>
+                    <AvatarFallback className={`text-lg font-bold ${opponentPresent ? 'bg-green-500/20 text-green-600' : 'bg-muted text-muted-foreground'}`}>
+                      {opponentName.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {opponentPresent ? (
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
+                      <CheckCircle2 className="w-3 h-3 text-white" />
+                    </div>
+                  ) : (
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-muted rounded-full border-2 border-background flex items-center justify-center">
+                      <Loader2 className="w-3 h-3 text-muted-foreground animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <span className="text-sm font-medium text-foreground">{opponentName}</span>
+                <Badge variant={opponentPresent ? 'default' : 'secondary'}
+                  className={opponentPresent ? 'bg-green-500/10 text-green-600 border-green-500/30' : ''}>
+                  {opponentPresent ? 'Ready' : 'Waiting...'}
+                </Badge>
+              </motion.div>
+            </div>
+
+            {/* Game info */}
+            {gameTemplate && (
+              <Card className="p-4 w-full max-w-sm text-center">
+                <div className="flex items-center justify-center gap-2 text-sm text-foreground font-medium">
+                  <Gamepad2 className="w-4 h-4 text-accent" />
+                  {gameTemplate.title}
+                </div>
+                <div className="flex items-center justify-center gap-3 mt-2 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><Coins className="w-3 h-3 text-yellow-500" />{battle.stake_amount} BP</span>
+                  <span className="flex items-center gap-1"><Timer className="w-3 h-3" />5:00</span>
+                  {battle.voice_enabled && <span className="flex items-center gap-1"><Mic className="w-3 h-3 text-green-500" />Voice</span>}
+                </div>
+              </Card>
+            )}
+
+            {!opponentPresent && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Waiting for {opponentName} to join...
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
   if (completed || myScore !== null) {
     const won = battle.winner_id === profile?.id;
     const draw = !battle.winner_id && completed;
