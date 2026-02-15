@@ -111,9 +111,21 @@ const Battles = () => {
   const handleAccept = async (battleId: string) => {
     const accepted = await acceptBattle(battleId);
     if (accepted) {
-      // Find the battle and start playing
-      const battle = openBattles.find(b => b.id === battleId) || myBattles.find(b => b.id === battleId);
-      if (battle) setActiveBattle({ ...battle, status: 'accepted', opponent_id: profile?.id || null });
+      // Fetch fresh battle data with profiles
+      const { data } = await supabase.from('battles').select('*').eq('id', battleId).single();
+      if (data) {
+        const userIds = [data.challenger_id, data.opponent_id].filter(Boolean) as string[];
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, avatar_url, username').in('id', userIds);
+        const { data: games } = data.game_id
+          ? await supabase.from('game_templates').select('id, title, type').eq('id', data.game_id)
+          : { data: [] };
+        setActiveBattle({
+          ...data,
+          challenger_profile: profiles?.find(p => p.id === data.challenger_id),
+          opponent_profile: data.opponent_id ? profiles?.find(p => p.id === data.opponent_id) : undefined,
+          game: games?.[0] || undefined,
+        } as Battle);
+      }
     }
   };
 
