@@ -154,8 +154,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
     setUserRole(null);
+    setUser(null);
+    setSession(null);
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (err) {
+      console.error('Sign out error:', err);
+    }
   };
 
   const getDashboardPath = (): string => {
