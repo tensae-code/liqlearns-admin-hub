@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Eye, EyeOff, Users, UserPlus, UserCheck, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Users, UserPlus, UserCheck, Loader2, Gamepad2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import type { Battle } from '@/hooks/useBattles';
@@ -80,7 +80,8 @@ export const LiveBattleCard = ({ battle, onSpectate }: LiveBattleCardProps) => {
     setFollowLoading(false);
   };
 
-  const canSpectate = (battle as any).allow_spectators && !(battle as any).is_private;
+  const isMyBattle = profile?.id === battle.challenger_id || profile?.id === battle.opponent_id;
+  const canSpectate = (battle as any).allow_spectators && !(battle as any).is_private && !isMyBattle;
   const isLive = battle.status === 'in_progress' || battle.status === 'accepted';
 
   if (!isLive) return null;
@@ -131,7 +132,11 @@ export const LiveBattleCard = ({ battle, onSpectate }: LiveBattleCardProps) => {
             isFollowing ? <UserCheck className="w-3.5 h-3.5 text-accent" /> : <UserPlus className="w-3.5 h-3.5" />
           }
         </Button>
-        {canSpectate ? (
+        {isMyBattle ? (
+          <Button size="sm" variant="default" onClick={() => onSpectate(battle.id)} className="h-7 gap-1 text-xs bg-gradient-to-r from-orange-500 to-red-500 text-white">
+            <Gamepad2 className="w-3 h-3" /> Play
+          </Button>
+        ) : canSpectate ? (
           <Button size="sm" variant="outline" onClick={() => onSpectate(battle.id)} className="h-7 gap-1 text-xs">
             <Eye className="w-3 h-3" /> Watch
           </Button>
