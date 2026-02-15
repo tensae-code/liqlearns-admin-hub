@@ -389,61 +389,81 @@ const Battles = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {openBattles.map(battle => (
-                      <motion.div
-                        key={battle.id}
-                        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors"
-                      >
-                        <Avatar className="w-10 h-10">
-                          <AvatarFallback className="bg-accent/10 text-accent text-sm">
-                            {battle.challenger_profile?.full_name?.charAt(0) || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm text-foreground truncate">
-                              {battle.challenger_profile?.full_name || 'Unknown'}
-                            </span>
-                            {(battle as any).challenger_rank && (() => {
-                              const rank = getRankTitle((battle as any).challenger_rank);
-                              return (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
-                                  <Crown className={`w-2.5 h-2.5 ${rank.color}`} />
-                                  <span className={rank.color}>{rank.title}</span>
-                                </Badge>
-                              );
-                            })()}
+                    {openBattles.map(battle => {
+                      const rank = getRankTitle((battle as any).challenger_rank || 1000);
+                      return (
+                        <motion.div
+                          key={battle.id}
+                          initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                          className="p-4 rounded-xl border border-border hover:bg-muted/50 transition-colors space-y-3"
+                        >
+                          {/* Challenger info row */}
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-10 h-10">
+                              {battle.challenger_profile?.avatar_url ? (
+                                <img src={battle.challenger_profile.avatar_url} alt="" className="w-full h-full object-cover rounded-full" />
+                              ) : (
+                                <AvatarFallback className="bg-accent/10 text-accent text-sm">
+                                  {battle.challenger_profile?.full_name?.charAt(0) || '?'}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm text-foreground truncate">
+                                {battle.challenger_profile?.full_name || 'Unknown'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                @{battle.challenger_profile?.username || 'unknown'} · <span className={rank.color}>{rank.title}</span>
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+
+                          {/* Battle details row */}
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <Badge variant="secondary" className="gap-1">
+                              <Users className="w-3 h-3" />
                               {(battle as any).mode || '1v1'}
                             </Badge>
-                            <Coins className="w-3 h-3 text-yellow-500" />
-                            <span>{battle.stake_amount} BP</span>
-                            {battle.voice_enabled && <Mic className="w-3 h-3 text-green-500" />}
+                            <Badge variant="secondary" className="gap-1">
+                              <Coins className="w-3 h-3 text-yellow-500" />
+                              {battle.stake_amount} BP stake
+                            </Badge>
+                            {battle.voice_enabled && (
+                              <Badge variant="secondary" className="gap-1">
+                                <Mic className="w-3 h-3 text-green-500" />
+                                Voice
+                              </Badge>
+                            )}
                             {(battle as any).is_judged && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-purple-500 border-purple-500/30">
+                              <Badge variant="outline" className="gap-1 text-purple-500 border-purple-500/30">
+                                <Crown className="w-3 h-3" />
                                 Judged
                               </Badge>
                             )}
-                            {battle.game && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                <Gamepad2 className="w-2.5 h-2.5 mr-0.5" />{battle.game.title}
-                              </Badge>
-                            )}
-                            {battle.course && (
-                              <span className="truncate max-w-[100px]">{battle.course.title}</span>
-                            )}
                           </div>
-                        </div>
-                        <Button size="sm" onClick={() => handleAccept(battle.id)}
-                          className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
-                        >
-                          Accept
-                        </Button>
-                      </motion.div>
-                    ))}
+
+                          {/* Game info + Accept button */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-xs text-muted-foreground truncate">
+                              {battle.game && (
+                                <span className="flex items-center gap-1">
+                                  <Gamepad2 className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="font-medium text-foreground">{battle.game.title}</span>
+                                </span>
+                              )}
+                              {battle.course && (
+                                <span className="truncate">{battle.course.title}</span>
+                              )}
+                            </div>
+                            <Button size="sm" onClick={() => handleAccept(battle.id)}
+                              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shrink-0"
+                            >
+                              Accept Challenge
+                            </Button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
