@@ -15,7 +15,7 @@ import {
   Mic, MicOff, Volume2, VolumeX, Send, MessageSquare, X,
   Trophy, Clock, Swords, Loader2, Phone, PhoneOff,
   CheckCircle2, XCircle, RotateCcw, RefreshCw, Timer, Crown, ArrowLeft,
-  Gamepad2, Coins
+  Gamepad2, Coins, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Battle, BattleMessage } from '@/hooks/useBattles';
@@ -40,6 +40,9 @@ const BATTLE_TIME_LIMIT = 300; // 5 minutes
 const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayViewProps) => {
   const { profile } = useProfile();
   const livekit = useOptionalLiveKitContext();
+
+  // Determine if the current user is a spectator (not a participant)
+  const isSpectator = profile?.id !== battle.challenger_id && profile?.id !== battle.opponent_id;
   const [messages, setMessages] = useState<BattleMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
@@ -71,6 +74,13 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
 
   // Presence-based waiting room
   useEffect(() => {
+    // Spectators skip the waiting room entirely
+    if (isSpectator) {
+      setWaitingRoom(false);
+      setStartTime(Date.now());
+      return;
+    }
+
     if (!profile?.id || !battle.opponent_id) {
       // No opponent yet, stay in waiting room
       return;
@@ -138,9 +148,9 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
     };
   }, [profile?.id, battle.id, battle.challenger_id, battle.opponent_id, battle.status]);
 
-  // Connect voice chat if enabled
+  // Connect voice chat if enabled - NOT for spectators
   useEffect(() => {
-    if (!battle.voice_enabled || !livekit || !profile?.id) return;
+    if (isSpectator || !battle.voice_enabled || !livekit || !profile?.id) return;
     
     const connectVoice = async () => {
       try {
@@ -283,7 +293,7 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
 
   // Countdown timer - only starts after waiting room
   useEffect(() => {
-    if (waitingRoom || myScore !== null || completed) return;
+    if (waitingRoom || myScore !== null || completed || isSpectator) return;
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -771,7 +781,14 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <Swords className="w-5 h-5 text-accent" />
-          <span className="font-semibold text-sm text-foreground">Battle</span>
+          <span className="font-semibold text-sm text-foreground">
+            {isSpectator ? 'Spectating' : 'Battle'}
+          </span>
+          {isSpectator && (
+            <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-500 border-red-500/30">
+              <Eye className="w-2.5 h-2.5 mr-0.5" /> LIVE
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-1.5">
           <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
@@ -788,8 +805,8 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
             {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
           </Badge>
 
-          {/* Voice controls */}
-          {battle.voice_enabled && (
+          {/* Voice controls - hidden for spectators */}
+          {battle.voice_enabled && !isSpectator && (
             <div className="flex items-center gap-1">
               {voiceConnected ? (
                 <>
@@ -837,14 +854,43 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
 
       {/* Main content with player profile cards */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left player card (You) */}
+        {/* Left player card */}
         <div className="hidden lg:flex flex-col items-center justify-start pt-6 pl-3">
-          <PlayerCard name={myName} avatarUrl={myAvatar} score={myScore} side="left" />
+          <PlayerCard name={isSpectator ? (battle.challenger_profile?.full_name || 'Player 1') : myName} avatarUrl={isSpectator ? (battle.challenger_profile as any)?.avatar_url : myAvatar} score={isSpectator ? (battle.challenger_score ?? null) : myScore} side="left" />
         </div>
 
         {/* Game area */}
         <div className={`flex-1 overflow-y-auto p-4 ${chatOpen ? 'hidden md:block' : ''}`}>
-          {gameTemplate ? (
+          {isSpectator ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="text-center space-y-4">
+                <Eye className="w-16 h-16 mx-auto opacity-30" />
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Spectating Battle</h3>
+                  <p className="text-sm mt-1">
+                    {battle.challenger_profile?.full_name || 'Player 1'} vs {battle.opponent_profile?.full_name || 'Player 2'}
+                  </p>
+                </div>
+                {gameTemplate && (
+                  <Badge variant="outline" className="gap-1">
+                    <Gamepad2 className="w-3 h-3" /> {gameTemplate.title}
+                  </Badge>
+                )}
+                <div className="flex items-center justify-center gap-8 mt-4">
+                  <div className="text-center">
+                    <div className="text-sm text-muted-foreground">{battle.challenger_profile?.full_name || 'Player 1'}</div>
+                    <div className="text-3xl font-bold text-foreground">{battle.challenger_score ?? '—'}</div>
+                  </div>
+                  <Swords className="w-6 h-6 text-muted-foreground" />
+                  <div className="text-center">
+                    <div className="text-sm text-muted-foreground">{battle.opponent_profile?.full_name || 'Player 2'}</div>
+                    <div className="text-3xl font-bold text-foreground">{battle.opponent_score ?? '—'}</div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground animate-pulse">Battle in progress...</p>
+              </div>
+            </div>
+          ) : gameTemplate ? (
             <GamePlayer
               template={gameTemplate}
               onComplete={handleGameComplete}
@@ -859,9 +905,9 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
           )}
         </div>
 
-        {/* Right player card (Opponent) */}
+        {/* Right player card */}
         <div className="hidden lg:flex flex-col items-center justify-start pt-6 pr-3">
-          <PlayerCard name={opponentName} avatarUrl={opponentAvatar} score={opponentScore} side="right" />
+          <PlayerCard name={isSpectator ? (battle.opponent_profile?.full_name || 'Player 2') : opponentName} avatarUrl={isSpectator ? (battle.opponent_profile as any)?.avatar_url : opponentAvatar} score={isSpectator ? (battle.opponent_score ?? null) : opponentScore} side="right" />
         </div>
 
         {/* Chat sidebar */}

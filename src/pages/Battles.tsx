@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useBattles } from '@/hooks/useBattles';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +29,7 @@ import type { Battle } from '@/hooks/useBattles';
 
 const Battles = () => {
   const { profile } = useProfile();
+  const { userRole } = useAuth();
   const {
     wallet, myBattles, openBattles, leaderboard, loading,
     createBattle, acceptBattle, cancelBattle, getRankTitle,
@@ -35,6 +37,9 @@ const Battles = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [activeBattle, setActiveBattle] = useState<Battle | null>(null);
   const [battleMode, setBattleMode] = useState<'individual' | 'clan'>('individual');
+
+  // Teacher/admin/support/ceo/parent roles are spectator-only
+  const isSpectatorRole = ['teacher', 'admin', 'support', 'ceo', 'parent'].includes(userRole || '');
 
   // Battle notifications - listen for incoming challenges & results
   useEffect(() => {
@@ -154,6 +159,79 @@ const Battles = () => {
           onComplete={() => {}}
           onRematch={handleRematch}
         />
+      </DashboardLayout>
+    );
+  }
+
+  // Spectator-only view for teachers/admins etc.
+  if (isSpectatorRole) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6 max-w-5xl mx-auto">
+          {/* Header */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="bg-gradient-to-br from-orange-500/10 via-red-500/5 to-purple-500/10 border-orange-500/20">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                    <Eye className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-xl md:text-2xl font-bold text-foreground">Battle Arena</h1>
+                    <p className="text-sm text-muted-foreground">Watch live battles & view rankings</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <Tabs defaultValue="live" className="space-y-4">
+            <TabsList className="w-full grid grid-cols-2">
+              <TabsTrigger value="live" className="gap-1"><Eye className="w-4 h-4" /> Live Battles</TabsTrigger>
+              <TabsTrigger value="leaderboard" className="gap-1"><Trophy className="w-4 h-4" /> Rankings</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="live">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-red-500" /> Live Battles
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <LiveBattlesList onSpectate={async (battleId) => {
+                    const { data } = await supabase
+                      .from('battles')
+                      .select('*')
+                      .eq('id', battleId)
+                      .single();
+                    if (data) {
+                      const userIds = [data.challenger_id, data.opponent_id].filter(Boolean) as string[];
+                      const { data: profiles } = await supabase.from('profiles').select('id, full_name, avatar_url, username').in('id', userIds);
+                      const gameId = data.game_id;
+                      const { data: games } = gameId
+                        ? await supabase.from('game_templates').select('id, title, type').eq('id', gameId)
+                        : { data: [] };
+                      setActiveBattle({
+                        ...data,
+                        challenger_profile: profiles?.find(p => p.id === data.challenger_id),
+                        opponent_profile: data.opponent_id ? profiles?.find(p => p.id === data.opponent_id) : undefined,
+                        game: games?.[0] || undefined,
+                      } as Battle);
+                    } else {
+                      toast.error('Could not load battle');
+                    }
+                  }} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="leaderboard">
+              <BattleRankings />
+            </TabsContent>
+          </Tabs>
+        </div>
       </DashboardLayout>
     );
   }
