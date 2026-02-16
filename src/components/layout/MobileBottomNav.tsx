@@ -100,7 +100,7 @@ const MobileBottomNav = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/10 dark:bg-black/20 backdrop-blur-xl border-t border-white/20 dark:border-white/10 shadow-[0_-4px_30px_rgba(0,0,0,0.1)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/5 dark:bg-black/10 backdrop-blur-lg border-t border-white/10 dark:border-white/5 shadow-[0_-4px_30px_rgba(0,0,0,0.05)]">
       <div className="flex items-center justify-around px-1 py-1.5 pb-safe">
         {navItems.map((item) => {
           const isActive = isItemActive(item.path);
@@ -122,7 +122,7 @@ const MobileBottomNav = () => {
                 <item.icon className={cn('w-4 h-4', isActive ? 'text-accent-foreground' : 'text-muted-foreground')} />
               </div>
               <span className={cn(
-                'text-[10px] font-medium',
+                'text-[10px] font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]',
                 isActive ? 'text-accent' : 'text-muted-foreground'
               )}>
                 {item.label}
@@ -135,9 +135,9 @@ const MobileBottomNav = () => {
           <DrawerTrigger asChild>
             <button className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-muted-foreground min-w-[56px] hover:bg-muted/50 transition-all">
               <div className="w-6 h-6 flex items-center justify-center">
-                <Menu className="w-4 h-4" />
+                <Menu className="w-4 h-4 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" />
               </div>
-              <span className="text-[10px] font-medium">More</span>
+              <span className="text-[10px] font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">More</span>
             </button>
           </DrawerTrigger>
           <DrawerContent className="max-h-[85vh] flex flex-col">
