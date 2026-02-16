@@ -423,8 +423,8 @@ const WorldMap = () => {
         </div>
 
         {/* Map Container — fills remaining space */}
-        <div className="relative flex-1 min-h-0 rounded-xl border border-border overflow-hidden" style={{ minHeight: '320px' }}>
-          <div ref={mapContainerRef} className="h-full w-full" />
+        <div className="relative rounded-xl border border-border overflow-hidden" style={{ height: 'calc(100vh - 280px)', minHeight: '320px' }}>
+          <div ref={mapContainerRef} className="absolute inset-0" />
 
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-[1000]">
