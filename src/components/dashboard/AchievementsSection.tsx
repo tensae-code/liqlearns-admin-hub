@@ -8,8 +8,18 @@ import {
   Star, 
   Clock,
   Target,
-  Zap
+  Zap,
+  Brain,
+  GraduationCap,
+  Sparkles,
+  Award,
+  Layers,
+  ShieldCheck,
+  Gem,
+  Crown
 } from 'lucide-react';
+
+type BadgeCategory = 'personal' | 'skill' | 'course';
 
 interface Achievement {
   id: string;
@@ -19,15 +29,48 @@ interface Achievement {
   earned: boolean;
   progress?: number;
   target?: number;
+  category: BadgeCategory;
 }
 
+const categoryStyles: Record<BadgeCategory, {
+  bg: string;
+  border: string;
+  iconBg: string;
+  iconText: string;
+  starColor: string;
+}> = {
+  personal: {
+    bg: 'bg-pink-500/10',
+    border: 'border-pink-400/30',
+    iconBg: 'bg-gradient-to-br from-pink-500 to-rose-400',
+    iconText: 'text-white',
+    starColor: 'text-pink-400 fill-pink-400',
+  },
+  skill: {
+    bg: 'bg-violet-500/10',
+    border: 'border-violet-400/30',
+    iconBg: 'bg-gradient-to-br from-violet-500 to-indigo-400',
+    iconText: 'text-white',
+    starColor: 'text-violet-400 fill-violet-400',
+  },
+  course: {
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-400/30',
+    iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-400',
+    iconText: 'text-white',
+    starColor: 'text-emerald-400 fill-emerald-400',
+  },
+};
+
 const achievements: Achievement[] = [
+  // Personal badges
   {
     id: '1',
     title: 'First Steps',
     description: 'Complete your first lesson',
     icon: <BookOpen className="w-5 h-5" />,
     earned: true,
+    category: 'personal',
   },
   {
     id: '2',
@@ -35,6 +78,7 @@ const achievements: Achievement[] = [
     description: '7-day learning streak',
     icon: <Flame className="w-5 h-5" />,
     earned: true,
+    category: 'personal',
   },
   {
     id: '3',
@@ -44,36 +88,105 @@ const achievements: Achievement[] = [
     earned: false,
     progress: 2,
     target: 3,
+    category: 'personal',
   },
   {
     id: '4',
+    title: 'Dedicated',
+    description: 'Study for 10 hours total',
+    icon: <Clock className="w-5 h-5" />,
+    earned: true,
+    category: 'personal',
+  },
+  // Skill badges
+  {
+    id: '5',
+    title: 'Skill Seeker',
+    description: 'Unlock your first skill',
+    icon: <Brain className="w-5 h-5" />,
+    earned: true,
+    category: 'skill',
+  },
+  {
+    id: '6',
+    title: 'Level Up',
+    description: 'Reach Level 3 in any skill',
+    icon: <Layers className="w-5 h-5" />,
+    earned: false,
+    progress: 2,
+    target: 3,
+    category: 'skill',
+  },
+  {
+    id: '7',
+    title: 'Mastery Path',
+    description: 'Master 5 skill levels',
+    icon: <Gem className="w-5 h-5" />,
+    earned: false,
+    progress: 1,
+    target: 5,
+    category: 'skill',
+  },
+  {
+    id: '8',
+    title: 'Skill Champion',
+    description: 'Max out a full skill tree',
+    icon: <Crown className="w-5 h-5" />,
+    earned: false,
+    progress: 0,
+    target: 1,
+    category: 'skill',
+  },
+  // Course badges
+  {
+    id: '9',
+    title: 'Course Pioneer',
+    description: 'Enroll in your first course',
+    icon: <GraduationCap className="w-5 h-5" />,
+    earned: true,
+    category: 'course',
+  },
+  {
+    id: '10',
     title: 'Quiz Master',
     description: 'Score 100% on 5 quizzes',
     icon: <Target className="w-5 h-5" />,
     earned: false,
     progress: 3,
     target: 5,
+    category: 'course',
   },
   {
-    id: '5',
+    id: '11',
     title: 'Speed Learner',
     description: 'Complete 10 lessons in one day',
     icon: <Zap className="w-5 h-5" />,
     earned: false,
     progress: 4,
     target: 10,
+    category: 'course',
   },
   {
-    id: '6',
-    title: 'Dedicated',
-    description: 'Study for 10 hours total',
-    icon: <Clock className="w-5 h-5" />,
-    earned: true,
+    id: '12',
+    title: 'Course Graduate',
+    description: 'Complete 3 full courses',
+    icon: <ShieldCheck className="w-5 h-5" />,
+    earned: false,
+    progress: 1,
+    target: 3,
+    category: 'course',
   },
 ];
 
+const categoryLabels: Record<BadgeCategory, { label: string; icon: React.ReactNode }> = {
+  personal: { label: 'Personal', icon: <Sparkles className="w-3.5 h-3.5" /> },
+  skill: { label: 'Skills', icon: <Brain className="w-3.5 h-3.5" /> },
+  course: { label: 'Courses', icon: <Award className="w-3.5 h-3.5" /> },
+};
+
 const AchievementsSection = () => {
   const earnedCount = achievements.filter(a => a.earned).length;
+  const categories: BadgeCategory[] = ['personal', 'skill', 'course'];
 
   return (
     <motion.div
@@ -91,43 +204,63 @@ const AchievementsSection = () => {
         </Badge>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {achievements.map((achievement, i) => (
-          <motion.div
-            key={achievement.id}
-            className={`relative p-3 rounded-xl border text-center transition-all ${
-              achievement.earned
-                ? 'bg-gold/10 border-gold/30'
-                : 'bg-muted/30 border-border opacity-60'
-            }`}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.05 }}
-          >
-            <div className={`w-10 h-10 mx-auto mb-2 rounded-full flex items-center justify-center ${
-              achievement.earned
-                ? 'bg-gold text-gold-foreground'
-                : 'bg-muted text-muted-foreground'
-            }`}>
-              {achievement.icon}
-            </div>
-            <p className={`text-xs font-medium mb-0.5 ${
-              achievement.earned ? 'text-foreground' : 'text-muted-foreground'
-            }`}>
-              {achievement.title}
-            </p>
-            {!achievement.earned && achievement.progress !== undefined && achievement.target && (
-              <p className="text-[10px] text-muted-foreground">
-                {achievement.progress}/{achievement.target}
-              </p>
-            )}
-            {achievement.earned && (
-              <div className="absolute -top-1 -right-1">
-                <Star className="w-4 h-4 text-gold fill-gold" />
+      <div className="space-y-4">
+        {categories.map((cat) => {
+          const catAchievements = achievements.filter(a => a.category === cat);
+          const catInfo = categoryLabels[cat];
+          const styles = categoryStyles[cat];
+
+          return (
+            <div key={cat}>
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className={`${styles.iconBg} ${styles.iconText} w-5 h-5 rounded-md flex items-center justify-center`}>
+                  {catInfo.icon}
+                </span>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {catInfo.label}
+                </span>
               </div>
-            )}
-          </motion.div>
-        ))}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {catAchievements.map((achievement, i) => (
+                  <motion.div
+                    key={achievement.id}
+                    className={`relative p-3 rounded-xl border text-center transition-all ${
+                      achievement.earned
+                        ? `${styles.bg} ${styles.border}`
+                        : 'bg-muted/30 border-border opacity-60'
+                    }`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    <div className={`w-10 h-10 mx-auto mb-2 rounded-full flex items-center justify-center ${
+                      achievement.earned
+                        ? `${styles.iconBg} ${styles.iconText}`
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {achievement.icon}
+                    </div>
+                    <p className={`text-xs font-medium mb-0.5 ${
+                      achievement.earned ? 'text-foreground' : 'text-muted-foreground'
+                    }`}>
+                      {achievement.title}
+                    </p>
+                    {!achievement.earned && achievement.progress !== undefined && achievement.target && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {achievement.progress}/{achievement.target}
+                      </p>
+                    )}
+                    {achievement.earned && (
+                      <div className="absolute -top-1 -right-1">
+                        <Star className={`w-4 h-4 ${styles.starColor}`} />
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </motion.div>
   );
