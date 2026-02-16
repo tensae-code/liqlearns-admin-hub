@@ -175,6 +175,8 @@ const WorldMap = () => {
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.5, 1));
   const handleResetView = () => { setZoom(1); setPan({ x: 0, y: 0 }); };
 
+  const lastTouchDist = useRef<number | null>(null);
+
   // Pan handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     if (zoom <= 1) return;
@@ -187,16 +189,30 @@ const WorldMap = () => {
   }, [isPanning]);
   const handleMouseUp = () => setIsPanning(false);
 
-  // Touch pan
+  // Touch: pan + pinch-to-zoom
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (zoom <= 1) return;
-    setIsPanning(true);
-    panStart.current = { x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y };
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist.current = Math.hypot(dx, dy);
+    } else if (e.touches.length === 1 && zoom > 1) {
+      setIsPanning(true);
+      panStart.current = { x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y };
+    }
   };
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isPanning) return;
-    setPan({ x: e.touches[0].clientX - panStart.current.x, y: e.touches[0].clientY - panStart.current.y });
+    if (e.touches.length === 2 && lastTouchDist.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const delta = dist - lastTouchDist.current;
+      setZoom(z => Math.min(Math.max(z + delta * 0.01, 1), 4));
+      lastTouchDist.current = dist;
+    } else if (isPanning && e.touches.length === 1) {
+      setPan({ x: e.touches[0].clientX - panStart.current.x, y: e.touches[0].clientY - panStart.current.y });
+    }
   }, [isPanning]);
+  const handleTouchEnd = () => { setIsPanning(false); lastTouchDist.current = null; };
 
   // Filter & group
   const filteredUsers = mapUsers.filter(u => {
@@ -287,7 +303,7 @@ const WorldMap = () => {
               onMouseLeave={handleMouseUp}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
-              onTouchEnd={handleMouseUp}
+              onTouchEnd={handleTouchEnd}
             >
               {/* World map background */}
               <img
@@ -297,58 +313,61 @@ const WorldMap = () => {
                 draggable={false}
               />
 
-              {/* Country dots - ORANGE accent */}
+              {/* Country name labels - clickable */}
               {Object.entries(countryGroups).map(([country, users]) => {
                 const coords = COUNTRY_COORDS[country];
                 if (!coords) return null;
                 const isSelected = selectedCountry === country;
-                const size = Math.min(14 + users.length * 2, 36);
 
                 return (
-                  <motion.button
+                  <button
                     key={country}
-                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center cursor-pointer transition-all z-10 ${
-                      isSelected
-                        ? 'ring-4 ring-orange-400 bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                        : 'bg-orange-500 text-white hover:ring-2 hover:ring-orange-300 shadow-md shadow-orange-500/20'
-                    }`}
-                    style={{ left: `${coords.x}%`, top: `${coords.y}%`, width: size, height: size }}
+                    className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 flex flex-col items-center gap-0.5 group`}
+                    style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
                     onClick={(e) => { e.stopPropagation(); setSelectedCountry(isSelected ? null : country); }}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    whileHover={{ scale: 1.4 }}
-                    title={`${coords.flag} ${coords.name}: ${users.length} user${users.length > 1 ? 's' : ''}`}
+                    title={`${coords.flag} ${coords.name}: ${users.length} users`}
                   >
-                    <span className="text-[8px] font-bold">{users.length}</span>
-                  </motion.button>
+                    {/* Small dot */}
+                    <span className={`w-2.5 h-2.5 rounded-full block transition-all ${
+                      isSelected
+                        ? 'bg-orange-500 ring-2 ring-orange-300 shadow-lg shadow-orange-500/40'
+                        : 'bg-orange-500 shadow-sm shadow-orange-500/30 group-hover:ring-2 group-hover:ring-orange-300'
+                    }`} />
+                    {/* Country name */}
+                    <span className={`text-[7px] leading-none font-semibold whitespace-nowrap transition-colors ${
+                      isSelected ? 'text-orange-600 dark:text-orange-400' : 'text-foreground/60 group-hover:text-orange-500'
+                    }`}>
+                      {coords.name}
+                    </span>
+                  </button>
                 );
               })}
-
-              {/* Country flag popup on select */}
-              <AnimatePresence>
-                {selectedCountry && COUNTRY_COORDS[selectedCountry] && (
-                  <motion.div
-                    className="absolute z-20 bg-popover text-popover-foreground px-4 py-2 rounded-xl shadow-xl border border-border"
-                    style={{
-                      left: `${COUNTRY_COORDS[selectedCountry].x}%`,
-                      top: `${COUNTRY_COORDS[selectedCountry].y - 8}%`,
-                      transform: 'translateX(-50%)',
-                    }}
-                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{COUNTRY_COORDS[selectedCountry].flag}</span>
-                      <div>
-                        <p className="font-semibold text-sm">{selectedCountry}</p>
-                        <p className="text-xs text-muted-foreground">{countryGroups[selectedCountry]?.length || 0} users</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
+
+            {/* Flag popup - OUTSIDE scaled container so it stays normal size */}
+            <AnimatePresence>
+              {selectedCountry && COUNTRY_COORDS[selectedCountry] && (
+                <motion.div
+                  className="absolute z-30 bg-popover text-popover-foreground px-3 py-1.5 rounded-lg shadow-xl border border-border pointer-events-none"
+                  style={{
+                    left: `${COUNTRY_COORDS[selectedCountry].x}%`,
+                    top: `${Math.max(COUNTRY_COORDS[selectedCountry].y - 10, 2)}%`,
+                    transform: 'translateX(-50%)',
+                  }}
+                  initial={{ opacity: 0, y: 5, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-lg">{COUNTRY_COORDS[selectedCountry].flag}</span>
+                    <div>
+                      <p className="font-semibold text-xs">{selectedCountry}</p>
+                      <p className="text-[10px] text-muted-foreground">{countryGroups[selectedCountry]?.length || 0} users</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
