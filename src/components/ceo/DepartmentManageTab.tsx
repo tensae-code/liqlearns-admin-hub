@@ -223,6 +223,46 @@ const DepartmentManageTab = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Department Dialog (detail view) */}
+        <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) setEditDept(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Edit Department</DialogTitle>
+            </DialogHeader>
+            {editDept && (
+              <div className="space-y-3 pt-2">
+                <div>
+                  <Label>Name</Label>
+                  <Input value={editDept.name} onChange={e => setEditDept({ ...editDept, name: e.target.value })} className="mt-1" />
+                </div>
+                <div>
+                  <Label>Department Head</Label>
+                  <Input value={editDept.head} onChange={e => setEditDept({ ...editDept, head: e.target.value })} className="mt-1" />
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select
+                    value={editDept.status}
+                    onValueChange={(v) => setEditDept({ ...editDept, status: v as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="on_track">On Track</SelectItem>
+                      <SelectItem value="needs_review">Needs Review</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setEditOpen(false); setEditDept(null); }}>Cancel</Button>
+              <Button onClick={handleEditDept}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
