@@ -123,53 +123,86 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
     </div>
   );
 
-  const renderBadgesContent = () => (
-    <div className="space-y-4">
-      {/* Badges Header */}
-      <div className="text-center">
-        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-3">
-          <Award className="w-10 h-10 text-white" />
-        </div>
-        <p className="text-2xl font-display font-bold text-foreground">5 Badges</p>
-        <p className="text-muted-foreground">Earned</p>
-      </div>
-
-      {/* Badges Grid with Levels */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
+  const renderBadgesContent = () => {
+    const badgeCategories = [
+      {
+        label: 'Personal',
+        color: 'from-pink-500 to-rose-400',
+        borderColor: 'border-pink-400/30',
+        bgColor: 'bg-pink-500/10',
+        badges: [
           { name: 'Early Bird', icon: '🌅', earned: true, level: 3 },
+          { name: 'Dedicated', icon: '⏰', earned: true, level: 2 },
+        ],
+      },
+      {
+        label: 'Skills',
+        color: 'from-blue-500 to-cyan-400',
+        borderColor: 'border-blue-400/30',
+        bgColor: 'bg-blue-500/10',
+        badges: [
           { name: 'Streak Master', icon: '🔥', earned: true, level: 5 },
+          { name: 'Skill Seeker', icon: '🧠', earned: false, level: 0 },
+        ],
+      },
+      {
+        label: 'Courses',
+        color: 'from-emerald-500 to-teal-400',
+        borderColor: 'border-emerald-400/30',
+        bgColor: 'bg-emerald-500/10',
+        badges: [
           { name: 'Quiz Ace', icon: '🎯', earned: true, level: 2 },
           { name: 'Bookworm', icon: '📚', earned: true, level: 4 },
-          { name: 'Social Star', icon: '⭐', earned: true, level: 1 },
-          { name: 'Night Owl', icon: '🦉', earned: false, level: 0 },
-        ].map((badge, i) => (
-          <motion.div
-            key={i}
-            className={`relative p-3 rounded-xl text-center transition-all ${
-              badge.earned 
-                ? 'bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20' 
-                : 'bg-muted/30 opacity-50'
-            }`}
-            whileHover={badge.earned ? { scale: 1.05 } : {}}
-          >
-            {/* Level Badge on top */}
-            {badge.earned && (
-              <div className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-gold text-[10px] font-bold text-white shadow-sm">
-                Lv.{badge.level}
-              </div>
-            )}
-            <span className="text-2xl block">{badge.icon}</span>
-            <p className="text-[11px] font-medium text-foreground mt-1 truncate">{badge.name}</p>
-          </motion.div>
-        ))}
-      </div>
+        ],
+      },
+    ];
 
-      <Button variant="outline" className="w-full" size="sm">
-        View All Badges
-      </Button>
-    </div>
-  );
+    return (
+      <div className="space-y-4">
+        <div className="text-center">
+          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-pink-500 via-violet-500 to-emerald-500 flex items-center justify-center mb-3">
+            <Award className="w-10 h-10 text-white" />
+          </div>
+          <p className="text-2xl font-display font-bold text-foreground">5 Badges</p>
+          <p className="text-muted-foreground">Earned</p>
+        </div>
+
+        {badgeCategories.map((cat) => (
+          <div key={cat.label}>
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${cat.color}`} />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{cat.label}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {cat.badges.map((badge, i) => (
+                <motion.div
+                  key={i}
+                  className={`relative p-3 rounded-xl text-center transition-all ${
+                    badge.earned
+                      ? `${cat.bgColor} border ${cat.borderColor}`
+                      : 'bg-muted/30 opacity-50 border border-border'
+                  }`}
+                  whileHover={badge.earned ? { scale: 1.05 } : {}}
+                >
+                  {badge.earned && (
+                    <div className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-gold text-[10px] font-bold text-white shadow-sm">
+                      Lv.{badge.level}
+                    </div>
+                  )}
+                  <span className="text-2xl block">{badge.icon}</span>
+                  <p className="text-[11px] font-medium text-foreground mt-1 truncate">{badge.name}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <Button variant="outline" className="w-full" size="sm">
+          View All Badges
+        </Button>
+      </div>
+    );
+  };
 
   const renderAuraContent = () => (
     <div className="space-y-4">
