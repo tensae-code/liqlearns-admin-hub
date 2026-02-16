@@ -1,4 +1,4 @@
-import { ReactNode, useState, createContext, useContext } from 'react';
+import { ReactNode, useState, createContext, useContext, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
 import MobileBottomNav from './MobileBottomNav';
@@ -27,56 +27,65 @@ const SidebarContext = createContext<SidebarContextType>({
 
 export const useSidebarContext = () => useContext(SidebarContext);
 
+const DESKTOP_BREAKPOINT = 1024;
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= DESKTOP_BREAKPOINT : true
+  );
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= DESKTOP_BREAKPOINT);
+    window.addEventListener('resize', check);
+    check();
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  return isDesktop;
+}
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { userRole } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const isDesktop = useIsDesktop();
 
   const renderNavbar = () => {
     switch (userRole) {
-      case 'ceo':
-        return <CEONavbar />;
-      case 'admin':
-        return <AdminNavbar />;
-      case 'support':
-        return <SupportNavbar />;
-      case 'teacher':
-        return <TeacherNavbar />;
-      case 'parent':
-        return <ParentNavbar />;
-      case 'enterprise':
-        return <EnterpriseNavbar />;
-      default:
-        return <StudentNavbar />;
+      case 'ceo': return <CEONavbar />;
+      case 'admin': return <AdminNavbar />;
+      case 'support': return <SupportNavbar />;
+      case 'teacher': return <TeacherNavbar />;
+      case 'parent': return <ParentNavbar />;
+      case 'enterprise': return <EnterpriseNavbar />;
+      default: return <StudentNavbar />;
     }
   };
 
   return (
     <SidebarContext.Provider value={{ collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed }}>
       <div className="h-screen bg-background flex flex-col overflow-hidden">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
-          <DashboardSidebar onCollapseChange={setSidebarCollapsed} />
-        </div>
+        {/* Desktop Sidebar - JS-based detection */}
+        {isDesktop && <DashboardSidebar onCollapseChange={setSidebarCollapsed} />}
         
-        {/* Main content area - adjusts based on sidebar state */}
+        {/* Main content area */}
         <div 
-          className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-56'}`}
+          className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isDesktop ? (sidebarCollapsed ? 'ml-16' : 'ml-56') : ''}`}
         >
-          {/* Role-specific Navbar - sticky */}
+          {/* Role-specific Navbar */}
           <div className="shrink-0">
             {renderNavbar()}
           </div>
           
-          {/* Page content - scrollable */}
-          <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
+          {/* Page content */}
+          <main className={`flex-1 overflow-y-auto ${isDesktop ? '' : 'pb-20'}`}>
             <div className="p-4 md:p-6">
               {children}
             </div>
           </main>
         </div>
         
-        {/* Mobile Bottom Navigation */}
-        <MobileBottomNav />
+        {/* Mobile/Tablet Bottom Navigation */}
+        {!isDesktop && <MobileBottomNav />}
       </div>
     </SidebarContext.Provider>
   );
