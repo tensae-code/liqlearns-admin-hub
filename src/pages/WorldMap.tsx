@@ -443,7 +443,7 @@ const WorldMap = () => {
         </div>
 
         {/* Map / Globe Container */}
-        <div className="relative rounded-xl border border-border overflow-hidden" style={{ height: 'calc(100vh - 300px)', minHeight: '320px' }}>
+        <div className="relative overflow-hidden -mx-3 md:-mx-4 lg:-mx-6" style={{ height: 'calc(100vh - 300px)', minHeight: '320px' }}>
           {viewMode === 'globe' ? (
             <GlobeView
               countryGroups={countryGroups}
