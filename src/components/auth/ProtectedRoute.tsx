@@ -15,7 +15,8 @@ export const ProtectedRoute = ({
 }: ProtectedRouteProps) => {
   const { user, userRole, loading } = useAuth();
 
-  if (loading) {
+  // Wait for both auth and role to finish loading
+  if (loading || (user && !userRole)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin" />
@@ -27,7 +28,7 @@ export const ProtectedRoute = ({
     return <Navigate to="/auth" replace />;
   }
 
-  if (!userRole || !allowedRoles.includes(userRole)) {
+  if (!allowedRoles.includes(userRole!)) {
     return <Navigate to={redirectTo} replace />;
   }
 
