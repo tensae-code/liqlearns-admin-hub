@@ -4826,37 +4826,46 @@ export type Database = {
       }
       subscription_tiers: {
         Row: {
+          ai_calls_per_day: number
           created_at: string
           features: Json | null
           id: string
           is_active: boolean
+          max_weekly_bp_conversion: number
           monthly_coins: number
           name: string
           price_etb: number
           slug: string
           sort_order: number
+          tokens_per_month: number
         }
         Insert: {
+          ai_calls_per_day?: number
           created_at?: string
           features?: Json | null
           id?: string
           is_active?: boolean
+          max_weekly_bp_conversion?: number
           monthly_coins?: number
           name: string
           price_etb?: number
           slug: string
           sort_order?: number
+          tokens_per_month?: number
         }
         Update: {
+          ai_calls_per_day?: number
           created_at?: string
           features?: Json | null
           id?: string
           is_active?: boolean
+          max_weekly_bp_conversion?: number
           monthly_coins?: number
           name?: string
           price_etb?: number
           slug?: string
           sort_order?: number
+          tokens_per_month?: number
         }
         Relationships: []
       }
@@ -5378,6 +5387,10 @@ export type Database = {
         Args: { p_battle_points: number; p_user_id: string }
         Returns: Json
       }
+      convert_bp_to_tokens: {
+        Args: { p_bp_amount: number; p_user_id: string }
+        Returns: Json
+      }
       get_direct_referrals: {
         Args: { p_profile_id: string }
         Returns: {
@@ -5469,6 +5482,7 @@ export type Database = {
         | "ceo"
         | "parent"
         | "enterprise"
+        | "senior_teacher"
       channel_type: "text" | "announcement" | "voice"
       friendship_status: "pending" | "accepted" | "blocked"
       group_role: "owner" | "admin" | "member"
@@ -5618,6 +5632,7 @@ export const Constants = {
         "ceo",
         "parent",
         "enterprise",
+        "senior_teacher",
       ],
       channel_type: ["text", "announcement", "voice"],
       friendship_status: ["pending", "accepted", "blocked"],
