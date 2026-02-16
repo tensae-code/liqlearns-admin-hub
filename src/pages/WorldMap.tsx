@@ -219,15 +219,14 @@ const WorldMap = () => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Map Area */}
           <div className="lg:col-span-2 relative bg-card rounded-xl border border-border overflow-hidden" style={{ aspectRatio: '16/9' }}>
-            {/* Simple world map background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-accent/5 to-primary/5">
-              {/* Grid lines */}
-              {[...Array(10)].map((_, i) => (
-                <div key={`h-${i}`} className="absolute w-full border-t border-border/20" style={{ top: `${(i + 1) * 10}%` }} />
-              ))}
-              {[...Array(10)].map((_, i) => (
-                <div key={`v-${i}`} className="absolute h-full border-l border-border/20" style={{ left: `${(i + 1) * 10}%` }} />
-              ))}
+            {/* Real world map background */}
+            <div className="absolute inset-0">
+              <img
+                src="/images/world-map.png"
+                alt="World Map"
+                className="w-full h-full object-contain opacity-30 dark:invert dark:opacity-20"
+                draggable={false}
+              />
             </div>
 
             {/* Country dots */}
