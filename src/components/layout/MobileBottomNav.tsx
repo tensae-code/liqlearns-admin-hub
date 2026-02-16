@@ -100,7 +100,7 @@ const MobileBottomNav = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/5 dark:bg-black/10 backdrop-blur-lg border-t border-white/10 dark:border-white/5 shadow-[0_-4px_30px_rgba(0,0,0,0.05)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/25 backdrop-blur-lg border-t border-white/10 dark:border-white/5 shadow-[0_-4px_30px_rgba(0,0,0,0.05)]">
       <div className="flex items-center justify-around px-1 py-1.5 pb-safe">
         {navItems.map((item) => {
           const isActive = isItemActive(item.path);
