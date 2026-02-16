@@ -204,6 +204,32 @@ const AchievementsSection = () => {
         </Badge>
       </div>
 
+      {/* Featured badges - one from each category */}
+      <div className="flex items-center justify-center gap-4 mb-4">
+        {categories.map((cat) => {
+          const featured = achievements.find(a => a.category === cat && a.earned);
+          if (!featured) return null;
+          const styles = categoryStyles[cat];
+          return (
+            <motion.div
+              key={cat}
+              className="flex flex-col items-center"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+            >
+              <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full ${styles.iconBg} flex items-center justify-center shadow-lg ring-2 ring-offset-2 ring-offset-background`}
+                style={{ boxShadow: `0 0 20px hsl(var(--accent) / 0.3)` }}
+              >
+                <div className="text-white scale-150">{featured.icon}</div>
+              </div>
+              <p className="text-xs font-semibold mt-1.5 text-foreground">{featured.title}</p>
+              <span className={`text-[10px] font-medium ${styles.starColor}`}>{categoryLabels[cat].label}</span>
+            </motion.div>
+          );
+        })}
+      </div>
+
       <div className="space-y-4">
         {categories.map((cat) => {
           const catAchievements = achievements.filter(a => a.category === cat);
