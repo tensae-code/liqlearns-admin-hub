@@ -5,6 +5,7 @@ import InCallBanner from '@/components/messaging/InCallBanner';
 import { usePlatformSettings } from '@/contexts/PlatformSettingsContext';
 import useScreenshotProtection from '@/hooks/useScreenshotProtection';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 /**
  * Global floating elements that persist across authenticated routes only
@@ -28,6 +29,9 @@ const GlobalFloatingElements = () => {
     blurOnCapture: true,
   });
   
+  // Push notifications - syncs DB notifications to browser/phone notifications
+  usePushNotifications();
+
   // Hide quick access on landing page and auth page
   const hiddenPaths = ['/', '/auth'];
   const shouldHideQuickAccess = hiddenPaths.includes(location.pathname);
