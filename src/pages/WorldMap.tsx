@@ -363,7 +363,7 @@ const WorldMap = () => {
 
         <div className="grid lg:grid-cols-3 gap-4">
           {/* Leaflet Map */}
-          <div className="lg:col-span-2 rounded-xl border border-border overflow-hidden relative" style={{ height: 'clamp(350px, 55vh, 550px)' }}>
+          <div className="lg:col-span-2 rounded-xl border border-border overflow-hidden relative z-0 isolate" style={{ height: 'clamp(350px, 55vh, 550px)' }}>
             <div ref={mapContainerRef} className="h-full w-full" />
 
             {loading && (
