@@ -88,6 +88,9 @@ const GlobeView = ({ countryGroups, onSelectCountry, selectedCountry }: GlobeVie
     };
   }, [countryGroups]);
 
+  const pinchStartDist = useRef<number | null>(null);
+  const pinchStartScale = useRef(1);
+
   const handlePointerDown = (e: React.PointerEvent) => {
     pointerStart.current = { x: e.clientX, y: e.clientY };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -114,6 +117,41 @@ const GlobeView = ({ countryGroups, onSelectCountry, selectedCountry }: GlobeVie
     setScale(scaleRef.current);
   };
 
+  // Touch handlers for mobile pinch-to-zoom
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchStartDist.current = Math.hypot(dx, dy);
+      pinchStartScale.current = scaleRef.current;
+    } else if (e.touches.length === 1) {
+      pointerStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 2 && pinchStartDist.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const ratio = dist / pinchStartDist.current;
+      scaleRef.current = Math.max(0.8, Math.min(3, pinchStartScale.current * ratio));
+      setScale(scaleRef.current);
+    } else if (e.touches.length === 1 && pointerStart.current) {
+      const dx = e.touches[0].clientX - pointerStart.current.x;
+      const dy = e.touches[0].clientY - pointerStart.current.y;
+      phiOffset.current += dx * 0.005;
+      thetaOffset.current = Math.max(-1, Math.min(1, thetaOffset.current - dy * 0.005));
+      pointerStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+
+  const handleTouchEnd = () => {
+    pinchStartDist.current = null;
+    pointerStart.current = null;
+  };
+
   return (
     <div
       ref={containerRef}
@@ -127,6 +165,9 @@ const GlobeView = ({ countryGroups, onSelectCountry, selectedCountry }: GlobeVie
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         className="cursor-grab active:cursor-grabbing"
         style={{
           width: '100%',
@@ -134,6 +175,7 @@ const GlobeView = ({ countryGroups, onSelectCountry, selectedCountry }: GlobeVie
           maxWidth: '100%',
           maxHeight: '100%',
           objectFit: 'contain',
+          touchAction: 'none',
         }}
       />
     </div>
