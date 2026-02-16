@@ -103,10 +103,11 @@ const WorldMap = () => {
     const map = L.map(mapContainerRef.current, {
       center: [20, 0],
       zoom: 2,
-      minZoom: 2,
+      minZoom: 1,
       maxZoom: 10,
       scrollWheelZoom: true,
       zoomControl: true,
+      worldCopyJump: true,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -154,10 +155,18 @@ const WorldMap = () => {
         color: isSelected ? '#fff' : '#ea580c',
         weight: isSelected ? 3 : 1.5,
         fillOpacity: isSelected ? 1 : 0.8,
+        interactive: true,
+        bubblingMouseEvents: false,
       }).addTo(map);
 
       marker.on('click', () => {
         setSelectedCountry(prev => prev === country ? null : country);
+      });
+
+      // Add tooltip with country name on hover
+      marker.bindTooltip(`${coords.flag} ${country} (${users.length})`, {
+        direction: 'top',
+        offset: L.point(0, -radius),
       });
 
       markersRef.current.push(marker);
