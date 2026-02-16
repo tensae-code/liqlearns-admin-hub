@@ -32,6 +32,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DepartmentView from '@/components/ceo/DepartmentView';
 
 interface TeamMember {
   id: string;
@@ -294,131 +295,151 @@ const CEOTeam = () => {
           ))}
         </div>
 
-        {/* Search & Filter */}
-        <div className="flex gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name or email..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-[160px]">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Filter role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
-                <SelectItem key={key} value={key}>
-                  {cfg.label} ({roleCounts[key] || 0})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Tabs */}
+        <Tabs defaultValue="members" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="members" className="gap-1.5">
+              <Users className="w-4 h-4" />
+              Members
+            </TabsTrigger>
+            <TabsTrigger value="departments" className="gap-1.5">
+              <Building2 className="w-4 h-4" />
+              Departments
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Members List */}
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
-            <p>No members found</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filtered.map((member, i) => {
-              const cfg = ROLE_CONFIG[member.role] || ROLE_CONFIG.student;
-              const RoleIcon = cfg.icon;
-              const isSelf = member.user_id === user?.id;
+          <TabsContent value="members" className="space-y-4">
+            {/* Search & Filter */}
+            <div className="flex gap-3 flex-wrap">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Filter role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
+                    <SelectItem key={key} value={key}>
+                      {cfg.label} ({roleCounts[key] || 0})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              return (
-                <motion.div
-                  key={member.user_id}
-                  className={`flex items-center gap-3 p-3 bg-card border rounded-xl ${member.is_on_hold ? 'border-destructive/30 opacity-60' : 'border-border'}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.02, 0.5) }}
-                >
-                  <Avatar className="h-10 w-10">
-                    {member.avatar_url && <AvatarImage src={member.avatar_url} />}
-                    <AvatarFallback className="bg-muted text-sm">
-                      {member.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
+            {/* Members List */}
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                <p>No members found</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filtered.map((member, i) => {
+                  const cfg = ROLE_CONFIG[member.role] || ROLE_CONFIG.student;
+                  const RoleIcon = cfg.icon;
+                  const isSelf = member.user_id === user?.id;
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-foreground text-sm truncate">{member.full_name}</p>
-                      {member.is_on_hold && (
-                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">On Hold</Badge>
+                  return (
+                    <motion.div
+                      key={member.user_id}
+                      className={`flex items-center gap-3 p-3 bg-card border rounded-xl ${member.is_on_hold ? 'border-destructive/30 opacity-60' : 'border-border'}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(i * 0.02, 0.5) }}
+                    >
+                      <Avatar className="h-10 w-10">
+                        {member.avatar_url && <AvatarImage src={member.avatar_url} />}
+                        <AvatarFallback className="bg-muted text-sm">
+                          {member.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-foreground text-sm truncate">{member.full_name}</p>
+                          {member.is_on_hold && (
+                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0">On Hold</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                      </div>
+
+                      <Badge variant="outline" className={`text-xs gap-1 ${cfg.color}`}>
+                        <RoleIcon className="w-3 h-3" />
+                        {cfg.label}
+                      </Badge>
+
+                      {!isSelf && member.role !== 'ceo' && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger>
+                                <Shield className="w-4 h-4 mr-2" />
+                                Change Role
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                {ASSIGNABLE_ROLES.map(role => {
+                                  const rc = ROLE_CONFIG[role];
+                                  const Icon = rc.icon;
+                                  return (
+                                    <DropdownMenuItem
+                                      key={role}
+                                      onClick={() => handleChangeRole(member, role)}
+                                      className={member.role === role ? 'bg-accent/10 font-semibold' : ''}
+                                    >
+                                      <Icon className={`w-4 h-4 mr-2 ${rc.color}`} />
+                                      {rc.label}
+                                      {member.role === role && ' ✓'}
+                                    </DropdownMenuItem>
+                                  );
+                                })}
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            <DropdownMenuItem onClick={() => handleToggleHold(member)}>
+                              <UserCheck className="w-4 h-4 mr-2" />
+                              {member.is_on_hold ? 'Remove Hold' : 'Put on Hold'}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDeleteTarget(member)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Remove from Team
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">{member.email}</p>
-                  </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
 
-                  <Badge variant="outline" className={`text-xs gap-1 ${cfg.color}`}>
-                    <RoleIcon className="w-3 h-3" />
-                    {cfg.label}
-                  </Badge>
-
-                  {!isSelf && member.role !== 'ceo' && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-52">
-                        <DropdownMenuSub>
-                          <DropdownMenuSubTrigger>
-                            <Shield className="w-4 h-4 mr-2" />
-                            Change Role
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent>
-                            {ASSIGNABLE_ROLES.map(role => {
-                              const rc = ROLE_CONFIG[role];
-                              const Icon = rc.icon;
-                              return (
-                                <DropdownMenuItem
-                                  key={role}
-                                  onClick={() => handleChangeRole(member, role)}
-                                  className={member.role === role ? 'bg-accent/10 font-semibold' : ''}
-                                >
-                                  <Icon className={`w-4 h-4 mr-2 ${rc.color}`} />
-                                  {rc.label}
-                                  {member.role === role && ' ✓'}
-                                </DropdownMenuItem>
-                              );
-                            })}
-                          </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                        <DropdownMenuItem onClick={() => handleToggleHold(member)}>
-                          <UserCheck className="w-4 h-4 mr-2" />
-                          {member.is_on_hold ? 'Remove Hold' : 'Put on Hold'}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => setDeleteTarget(member)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Remove from Team
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
+          <TabsContent value="departments">
+            <DepartmentView members={members} loading={loading} />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Add/Change Role Dialog */}
