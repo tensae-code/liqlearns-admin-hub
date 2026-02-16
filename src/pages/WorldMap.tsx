@@ -96,18 +96,26 @@ const WorldMap = () => {
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
+    const worldBounds = L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180));
+
     const map = L.map(mapContainerRef.current, {
       center: [20, 0],
       zoom: 2,
-      minZoom: 1,
+      minZoom: 2,
       maxZoom: 18,
       scrollWheelZoom: true,
       zoomControl: true,
-      worldCopyJump: true,
+      worldCopyJump: false,
+      maxBounds: worldBounds,
+      maxBoundsViscosity: 1.0,
     });
+
+    // Fit the map to show the whole world within the container
+    map.fitBounds(worldBounds);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      noWrap: true,
     }).addTo(map);
 
     mapRef.current = map;
