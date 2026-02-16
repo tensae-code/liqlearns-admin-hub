@@ -16,7 +16,7 @@ import StatsPopupCard from '@/components/dashboard/StatsPopupCard';
 import GradingSystem from '@/components/dashboard/GradingSystem';
 import ClanPopup from '@/components/dashboard/ClanPopup';
 import { useClans } from '@/hooks/useClans';
-import AchievementsSection from '@/components/dashboard/AchievementsSection';
+
 import NewsFeedWidget from '@/components/dashboard/NewsFeedWidget';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -158,12 +158,15 @@ const Dashboard = () => {
   const today = new Date();
   const formattedDate = format(today, 'EEEE, MMMM d, yyyy');
 
+  const badgeCounts = { personal: 2, skill: 1, course: 2 };
+  const totalBadges = badgeCounts.personal + badgeCounts.skill + badgeCounts.course;
+
   const stats = [
-    { icon: BookOpen, label: 'Lessons', value: '24', gradient: STAT_GRADIENTS[0], clickable: false },
-    { icon: Award, label: 'Badges', value: '5', gradient: STAT_GRADIENTS[1], clickable: true, popupType: 'badges' as const },
-    { icon: Star, label: 'XP', value: profile?.xp_points?.toLocaleString() || '0', gradient: STAT_GRADIENTS[2], clickable: true, popupType: 'xp' as const },
-    { icon: Flame, label: 'Streak', value: profile?.current_streak?.toString() || '0', gradient: STAT_GRADIENTS[3], clickable: true, popupType: 'streak' as const },
-    { icon: Sparkles, label: 'Aura', value: '1,250', gradient: 'from-violet-500 to-purple-600', clickable: true, popupType: 'aura' as const },
+    { icon: BookOpen, label: 'Lessons', value: '24', gradient: STAT_GRADIENTS[0], clickable: false, isBadgeCard: false },
+    { icon: Award, label: 'Badges', value: totalBadges.toString(), gradient: STAT_GRADIENTS[1], clickable: true, popupType: 'badges' as const, isBadgeCard: true },
+    { icon: Star, label: 'XP', value: profile?.xp_points?.toLocaleString() || '0', gradient: STAT_GRADIENTS[2], clickable: true, popupType: 'xp' as const, isBadgeCard: false },
+    { icon: Flame, label: 'Streak', value: profile?.current_streak?.toString() || '0', gradient: STAT_GRADIENTS[3], clickable: true, popupType: 'streak' as const, isBadgeCard: false },
+    { icon: Sparkles, label: 'Aura', value: '1,250', gradient: 'from-violet-500 to-purple-600', clickable: true, popupType: 'aura' as const, isBadgeCard: false },
   ];
 
   // Use real enrolled courses
@@ -223,7 +226,11 @@ const Dashboard = () => {
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
-            className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${stat.gradient} text-white shadow-lg ${stat.clickable ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : ''}`}
+            className={`relative overflow-hidden rounded-2xl p-4 ${
+              stat.isBadgeCard
+                ? 'bg-gradient-to-br from-pink-500 via-violet-500 to-emerald-500'
+                : `bg-gradient-to-br ${stat.gradient}`
+            } text-white shadow-lg ${stat.clickable ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : ''}`}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.05 }}
@@ -234,7 +241,20 @@ const Dashboard = () => {
             <stat.icon className="w-6 h-6 mb-2 opacity-90" />
             <p className="text-2xl font-display font-bold">{stat.value}</p>
             <p className="text-xs opacity-80">{stat.label}</p>
-            {stat.clickable && (
+            {stat.isBadgeCard && (
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <span className="flex items-center gap-0.5 text-[10px] font-medium">
+                  <span className="w-2 h-2 rounded-full bg-pink-300" />{badgeCounts.personal}
+                </span>
+                <span className="flex items-center gap-0.5 text-[10px] font-medium">
+                  <span className="w-2 h-2 rounded-full bg-blue-300" />{badgeCounts.skill}
+                </span>
+                <span className="flex items-center gap-0.5 text-[10px] font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-300" />{badgeCounts.course}
+                </span>
+              </div>
+            )}
+            {stat.clickable && !stat.isBadgeCard && (
               <p className="text-[10px] opacity-60 mt-1">Tap for details</p>
             )}
           </motion.div>
@@ -307,10 +327,6 @@ const Dashboard = () => {
           )}
         </motion.div>
 
-        {/* Achievements */}
-        <div className="lg:col-span-3">
-          <AchievementsSection />
-        </div>
 
         {/* Continue Learning */}
         <motion.div
