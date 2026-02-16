@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { MapPin, Globe, Users, Eye, EyeOff, Search } from 'lucide-react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Country center coordinates (lat/lng)
@@ -302,15 +302,15 @@ const WorldMap = () => {
                       click: () => setSelectedCountry(isSelected ? null : country),
                     }}
                   >
-                    <Popup>
+                    <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
                       <div className="flex items-center gap-2 min-w-[120px]">
                         <span className="text-2xl">{coords.flag}</span>
                         <div>
                           <p className="font-bold text-sm">{coords.name}</p>
-                          <p className="text-xs text-gray-500">{users.length} user{users.length > 1 ? 's' : ''}</p>
+                          <p className="text-xs text-muted-foreground">{users.length} user{users.length > 1 ? 's' : ''}</p>
                         </div>
                       </div>
-                    </Popup>
+                    </Tooltip>
                   </CircleMarker>
                 );
               })}
