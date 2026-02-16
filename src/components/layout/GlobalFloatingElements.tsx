@@ -29,7 +29,7 @@ const GlobalFloatingElements = () => {
   });
   
   // Hide quick access on landing page and auth page
-  const hiddenPaths = ['/', '/auth', '/map'];
+  const hiddenPaths = ['/', '/auth'];
   const shouldHideQuickAccess = hiddenPaths.includes(location.pathname);
 
   return (
