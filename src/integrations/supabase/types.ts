@@ -3418,6 +3418,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           birthday: string | null
+          city: string | null
           commission_group_id: string | null
           country: string | null
           created_at: string
@@ -3453,6 +3454,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           birthday?: string | null
+          city?: string | null
           commission_group_id?: string | null
           country?: string | null
           created_at?: string
@@ -3488,6 +3490,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           birthday?: string | null
+          city?: string | null
           commission_group_id?: string | null
           country?: string | null
           created_at?: string

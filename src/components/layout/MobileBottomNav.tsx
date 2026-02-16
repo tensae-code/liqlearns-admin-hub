@@ -140,7 +140,7 @@ const MobileBottomNav = () => {
               <span className="text-[10px] font-medium">More</span>
             </button>
           </DrawerTrigger>
-          <DrawerContent className="max-h-[85vh]">
+          <DrawerContent className="max-h-[85vh] flex flex-col">
             <DrawerHeader className="pb-2">
               <DrawerTitle className="text-left">
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-accent/10 to-gold/10">
@@ -155,7 +155,7 @@ const MobileBottomNav = () => {
                 </div>
               </DrawerTitle>
             </DrawerHeader>
-            <div className="px-4 pb-6 space-y-1">
+            <div className="px-4 pb-6 space-y-1 overflow-y-auto flex-1">
               <Link
                 to="/profile"
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
