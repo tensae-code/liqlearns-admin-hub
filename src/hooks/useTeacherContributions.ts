@@ -108,7 +108,9 @@ export const useTeacherContributions = () => {
     skillLevelId: string,
     title: string,
     description: string,
-    content: any
+    content: any,
+    contributorComment?: string,
+    sourceLinks?: string[]
   ) => {
     if (!profile?.id) return { success: false, error: 'Not logged in' };
     try {
@@ -118,6 +120,8 @@ export const useTeacherContributions = () => {
         proposed_title: title,
         proposed_description: description,
         proposed_content: content,
+        contributor_comment: contributorComment || null,
+        source_links: sourceLinks || [],
         status: 'under_review',
       });
       if (error) throw error;
@@ -208,6 +212,44 @@ export const useTeacherContributions = () => {
     return (data || []) as ProposalVote[];
   }, []);
 
+  const editProposalContent = useCallback(async (
+    proposalId: string,
+    editedContent: any,
+    editedTitle?: string
+  ) => {
+    if (!profile?.id) return { success: false, error: 'Not logged in' };
+    try {
+      const updateData: any = {
+        edited_content: editedContent,
+        edited_by: profile.id,
+        edited_at: new Date().toISOString(),
+      };
+      if (editedTitle) updateData.proposed_title = editedTitle;
+
+      const { error } = await supabase
+        .from('skill_edit_proposals')
+        .update(updateData)
+        .eq('id', proposalId);
+      if (error) throw error;
+
+      // Award points for editing
+      await supabase.from('teacher_contribution_points').insert({
+        teacher_id: profile.id,
+        points: 8,
+        action_type: 'senior_edit',
+        reference_id: proposalId,
+        description: 'Edited proposal as Senior Teacher',
+      });
+
+      toast.success('Content edited and saved!');
+      await load();
+      return { success: true };
+    } catch (err: any) {
+      toast.error(err.message);
+      return { success: false, error: err.message };
+    }
+  }, [profile?.id, load]);
+
   return {
     proposals,
     myProposals,
@@ -219,6 +261,7 @@ export const useTeacherContributions = () => {
     addComment,
     fetchComments,
     fetchVotes,
+    editProposalContent,
     refresh: load,
   };
 };

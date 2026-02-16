@@ -4277,7 +4277,11 @@ export type Database = {
       skill_edit_proposals: {
         Row: {
           author_id: string
+          contributor_comment: string | null
           created_at: string
+          edited_at: string | null
+          edited_by: string | null
+          edited_content: Json | null
           id: string
           proposed_content: Json
           proposed_description: string | null
@@ -4288,12 +4292,17 @@ export type Database = {
           reviewed_by: string | null
           reviewer_notes: string | null
           skill_level_id: string
+          source_links: string[] | null
           status: string
           updated_at: string
         }
         Insert: {
           author_id: string
+          contributor_comment?: string | null
           created_at?: string
+          edited_at?: string | null
+          edited_by?: string | null
+          edited_content?: Json | null
           id?: string
           proposed_content: Json
           proposed_description?: string | null
@@ -4304,12 +4313,17 @@ export type Database = {
           reviewed_by?: string | null
           reviewer_notes?: string | null
           skill_level_id: string
+          source_links?: string[] | null
           status?: string
           updated_at?: string
         }
         Update: {
           author_id?: string
+          contributor_comment?: string | null
           created_at?: string
+          edited_at?: string | null
+          edited_by?: string | null
+          edited_content?: Json | null
           id?: string
           proposed_content?: Json
           proposed_description?: string | null
@@ -4320,6 +4334,7 @@ export type Database = {
           reviewed_by?: string | null
           reviewer_notes?: string | null
           skill_level_id?: string
+          source_links?: string[] | null
           status?: string
           updated_at?: string
         }
