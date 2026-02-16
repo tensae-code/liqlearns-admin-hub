@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import GameTemplateCatalog from '@/components/teacher/GameTemplateCatalog';
+import SkillContentEditor from '@/components/teacher/SkillContentEditor';
 import NewsFeedWidget from '@/components/dashboard/NewsFeedWidget';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -115,9 +116,9 @@ const TeacherDashboard = () => {
   const requestDifferentReviewer = useRequestDifferentReviewer();
   
   // Get active tab from URL query param, default to 'overview'
-  const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'assignments' | 'games' | 'earnings') || 'overview';
+  const activeTab = (searchParams.get('tab') as 'overview' | 'courses' | 'students' | 'assignments' | 'games' | 'skills' | 'earnings') || 'overview';
   
-  const setActiveTab = (tab: 'overview' | 'courses' | 'students' | 'assignments' | 'games' | 'earnings') => {
+  const setActiveTab = (tab: 'overview' | 'courses' | 'students' | 'assignments' | 'games' | 'skills' | 'earnings') => {
     setSearchParams({ tab });
   };
   
@@ -444,7 +445,7 @@ const TeacherDashboard = () => {
     }
   };
 
-  const tabs = ['overview', 'courses', 'students', 'assignments', 'games', 'earnings'] as const;
+  const tabs = ['overview', 'courses', 'students', 'assignments', 'games', 'skills', 'earnings'] as const;
 
 
   // Get courses under review with reviewer info
@@ -1102,6 +1103,17 @@ const TeacherDashboard = () => {
               exit={{ opacity: 0, y: -20 }}
             >
               <GameTemplateCatalog />
+            </motion.div>
+          )}
+
+          {activeTab === 'skills' && (
+            <motion.div
+              key="skills"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <SkillContentEditor />
             </motion.div>
           )}
 

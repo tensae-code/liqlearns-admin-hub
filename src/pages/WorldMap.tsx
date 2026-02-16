@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { MapPin, Globe, Users, Eye, EyeOff, Search, X } from 'lucide-react';
+import { MapPin, Globe, Map as MapIcon, Users, Eye, EyeOff, Search, X } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import GlobeView from '@/components/map/GlobeView';
 
 const COUNTRY_FLAGS: Record<string, string> = {
   'Ethiopia': '🇪🇹', 'United States': '🇺🇸', 'United Kingdom': '🇬🇧', 'Canada': '🇨🇦',
@@ -82,6 +83,7 @@ const WorldMap = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
   const [showBottomSheet, setShowBottomSheet] = useState(false);
+  const [viewMode, setViewMode] = useState<'map' | 'globe'>('map');
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -208,7 +210,7 @@ const WorldMap = () => {
       geoJsonLayerRef.current = null;
       markersLayerRef.current = null;
     };
-  }, []);
+  }, [viewMode]);
 
   // Update GeoJSON styles when selectedCountry changes
   useEffect(() => {
@@ -381,6 +383,24 @@ const WorldMap = () => {
               {hoveredCountry ? `${COUNTRY_FLAGS[hoveredCountry] || '🌍'} ${hoveredCountry}` : 'Tap any country to see users'}
             </p>
           </div>
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+            <Button
+              size="sm"
+              variant={viewMode === 'map' ? 'default' : 'ghost'}
+              className="h-7 text-xs px-2.5"
+              onClick={() => setViewMode('map')}
+            >
+              <MapIcon className="w-3.5 h-3.5 mr-1" /> Map
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === 'globe' ? 'default' : 'ghost'}
+              className="h-7 text-xs px-2.5"
+              onClick={() => setViewMode('globe')}
+            >
+              <Globe className="w-3.5 h-3.5 mr-1" /> Globe
+            </Button>
+          </div>
         </div>
 
         {/* Settings Bar */}
@@ -422,102 +442,109 @@ const WorldMap = () => {
           </Select>
         </div>
 
-        {/* Map Container — fills remaining space */}
-        <div className="relative rounded-xl border border-border overflow-hidden" style={{ height: 'calc(100vh - 280px)', minHeight: '320px' }}>
-          <div ref={mapContainerRef} className="absolute inset-0" />
+        {/* Map / Globe Container */}
+        <div className="relative rounded-xl border border-border overflow-hidden" style={{ height: 'calc(100vh - 300px)', minHeight: '320px' }}>
+          {viewMode === 'globe' ? (
+            <GlobeView
+              countryGroups={countryGroups}
+              onSelectCountry={(c) => {
+                setSelectedCountry(c);
+                if (c) setShowBottomSheet(true);
+                else setShowBottomSheet(false);
+              }}
+              selectedCountry={selectedCountry}
+            />
+          ) : (
+            <div ref={mapContainerRef} className="absolute inset-0" />
+          )}
 
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-[1000]">
               <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
             </div>
           )}
-
-          {/* Bottom sheet popup when a country is selected */}
-          <AnimatePresence>
-            {showBottomSheet && selectedCountry && (
-              <motion.div
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="absolute bottom-0 left-0 right-0 z-[1001] bg-card border-t border-border rounded-t-2xl shadow-lg max-h-[60%] flex flex-col"
-              >
-                {/* Handle */}
-                <div className="flex justify-center pt-2 pb-1">
-                  <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-                </div>
-
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{selectedFlag}</span>
-                    <div>
-                      <h3 className="font-display font-bold text-foreground text-sm">{selectedCountry}</h3>
-                      <p className="text-xs text-muted-foreground">{selectedUserCount} user{selectedUserCount !== 1 ? 's' : ''}</p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => { setShowBottomSheet(false); setSelectedCountry(null); }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Filter tabs */}
-                <div className="flex gap-1 px-4 pb-2">
-                  {(['all', 'friends', 'clan'] as const).map(f => (
-                    <Button key={f} size="sm" variant={filter === f ? 'default' : 'outline'} className="h-7 text-xs px-3" onClick={() => setFilter(f)}>
-                      {f === 'all' ? 'All Users' : f === 'friends' ? 'Friends' : 'Clan'}
-                    </Button>
-                  ))}
-                </div>
-
-                {/* Search */}
-                <div className="relative px-4 pb-2">
-                  <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input placeholder="Search users..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-8 text-xs" />
-                </div>
-
-                {/* User list */}
-                <div className="flex-1 overflow-y-auto px-4 pb-4">
-                  {selectedUsers.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-4">No users found in {selectedCountry}</p>
-                  ) : (
-                    <div className="space-y-1.5">
-                      {selectedUsers.map(u => (
-                        <div
-                          key={u.id}
-                          className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <Avatar className="h-8 w-8">
-                            {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                            <AvatarFallback className="bg-accent/20 text-accent-foreground text-xs">
-                              {u.full_name?.charAt(0) || '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-foreground truncate">{u.full_name}</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              @{u.username}
-                              {u.city && <span className="ml-1 text-accent">• {u.city}</span>}
-                            </p>
-                          </div>
-                          <div className="flex gap-1">
-                            {u.is_friend && <Badge variant="secondary" className="text-[9px] px-1">Friend</Badge>}
-                            {u.is_clan_member && <Badge variant="outline" className="text-[9px] px-1">Clan</Badge>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
+
+        {/* Country info panel — below map, not overlaying */}
+        <AnimatePresence>
+          {showBottomSheet && selectedCountry && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="mt-3 bg-card border border-border rounded-xl shadow-lg max-h-64 flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{selectedFlag}</span>
+                  <div>
+                    <h3 className="font-display font-bold text-foreground text-sm">{selectedCountry}</h3>
+                    <p className="text-xs text-muted-foreground">{selectedUserCount} user{selectedUserCount !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => { setShowBottomSheet(false); setSelectedCountry(null); }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Filter tabs */}
+              <div className="flex gap-1 px-4 pb-2">
+                {(['all', 'friends', 'clan'] as const).map(f => (
+                  <Button key={f} size="sm" variant={filter === f ? 'default' : 'outline'} className="h-7 text-xs px-3" onClick={() => setFilter(f)}>
+                    {f === 'all' ? 'All Users' : f === 'friends' ? 'Friends' : 'Clan'}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Search */}
+              <div className="relative px-4 pb-2">
+                <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input placeholder="Search users..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-8 text-xs" />
+              </div>
+
+              {/* User list */}
+              <div className="flex-1 overflow-y-auto px-4 pb-3">
+                {selectedUsers.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">No users found in {selectedCountry}</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {selectedUsers.map(u => (
+                      <div
+                        key={u.id}
+                        className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <Avatar className="h-8 w-8">
+                          {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                          <AvatarFallback className="bg-accent/20 text-accent-foreground text-xs">
+                            {u.full_name?.charAt(0) || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">{u.full_name}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            @{u.username}
+                            {u.city && <span className="ml-1 text-accent">• {u.city}</span>}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          {u.is_friend && <Badge variant="secondary" className="text-[9px] px-1">Friend</Badge>}
+                          {u.is_clan_member && <Badge variant="outline" className="text-[9px] px-1">Clan</Badge>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </DashboardLayout>
   );
