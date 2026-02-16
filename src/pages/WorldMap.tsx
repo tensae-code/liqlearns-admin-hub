@@ -369,9 +369,9 @@ const WorldMap = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-4">
+        <div className="space-y-4">
           {/* Leaflet Map */}
-          <div className="lg:col-span-2 rounded-xl border border-border overflow-hidden relative z-0 isolate" style={{ height: 'clamp(200px, 35vh, 320px)' }}>
+          <div className="w-full rounded-xl border border-border overflow-hidden relative z-0 isolate" style={{ height: 'clamp(200px, 35vh, 320px)' }}>
             <div ref={mapContainerRef} className="h-full w-full" />
 
             {loading && (
@@ -381,8 +381,8 @@ const WorldMap = () => {
             )}
           </div>
 
-          {/* Users Panel */}
-          <div className="bg-card rounded-xl border border-border p-4 max-h-[550px] overflow-y-auto">
+          {/* Users Panel - full width, fixed height, won't resize with map zoom */}
+          <div className="w-full bg-card rounded-xl border border-border p-4 max-h-[300px] overflow-y-auto">
             <div className="flex items-center gap-2 mb-3">
               <Users className="w-5 h-5 text-accent" />
               <h3 className="font-display font-semibold text-foreground text-sm">
