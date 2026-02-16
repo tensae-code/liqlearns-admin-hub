@@ -31,7 +31,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import DepartmentView from '@/components/ceo/DepartmentView';
 
 interface TeamMember {
@@ -65,6 +65,7 @@ const CEOTeam = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<string>('members');
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
@@ -271,10 +272,22 @@ const CEOTeam = () => {
               <p className="text-muted-foreground">Manage roles, seniority, and access</p>
             </div>
           </div>
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add / Change Role
+          <div className="flex items-center gap-3">
+            <ToggleGroup type="single" value={viewMode} onValueChange={v => v && setViewMode(v)} className="bg-muted rounded-lg p-0.5">
+              <ToggleGroupItem value="members" className="text-xs gap-1 px-3 h-8 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+                <Users className="w-3.5 h-3.5" />
+                Members
+              </ToggleGroupItem>
+              <ToggleGroupItem value="departments" className="text-xs gap-1 px-3 h-8 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+                <Building2 className="w-3.5 h-3.5" />
+                Departments
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <Button onClick={() => setAddOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add / Change Role
           </Button>
+          </div>
         </motion.div>
 
         {/* Stats */}
@@ -295,20 +308,8 @@ const CEOTeam = () => {
           ))}
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="members" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="members" className="gap-1.5">
-              <Users className="w-4 h-4" />
-              Members
-            </TabsTrigger>
-            <TabsTrigger value="departments" className="gap-1.5">
-              <Building2 className="w-4 h-4" />
-              Departments
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="members" className="space-y-4">
+        {viewMode === 'members' ? (
+          <div className="space-y-4">
             {/* Search & Filter */}
             <div className="flex gap-3 flex-wrap">
               <div className="relative flex-1 min-w-[200px]">
@@ -434,12 +435,10 @@ const CEOTeam = () => {
                 })}
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="departments">
-            <DepartmentView members={members} loading={loading} />
-          </TabsContent>
-        </Tabs>
+          </div>
+        ) : (
+          <DepartmentView members={members} loading={loading} />
+        )}
       </div>
 
       {/* Add/Change Role Dialog */}
