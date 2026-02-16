@@ -11,11 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { MapPin, Globe, Users, Eye, EyeOff, Search } from 'lucide-react';
+import { MapPin, Globe, Users, Eye, EyeOff, Search, Map } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import GlobeView from '@/components/map/GlobeView';
 
-// Country flag lookup
 const COUNTRY_FLAGS: Record<string, string> = {
   'Ethiopia': '🇪🇹', 'United States': '🇺🇸', 'United Kingdom': '🇬🇧', 'Canada': '🇨🇦',
   'Germany': '🇩🇪', 'France': '🇫🇷', 'India': '🇮🇳', 'China': '🇨🇳', 'Japan': '🇯🇵',
@@ -28,7 +28,6 @@ const COUNTRY_FLAGS: Record<string, string> = {
 
 const ALL_COUNTRIES = Object.keys(COUNTRY_FLAGS).sort();
 
-// GeoJSON country name mapping (GeoJSON uses specific names)
 const GEOJSON_NAME_MAP: Record<string, string> = {
   'United States of America': 'United States',
   'Republic of Korea': 'South Korea',
@@ -63,13 +62,13 @@ const WorldMap = () => {
   const [filter, setFilter] = useState<'all' | 'friends' | 'clan'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'map' | 'globe'>('map');
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
   const selectedCountryRef = useRef<string | null>(null);
 
-  // Keep ref in sync so callbacks see latest value
   useEffect(() => {
     selectedCountryRef.current = selectedCountry;
   }, [selectedCountry]);
@@ -88,20 +87,24 @@ const WorldMap = () => {
     fetchMapUsers();
   }, [profile?.id]);
 
-  const resolveCountryName = useCallback((geoName: string): string => {
-    return GEOJSON_NAME_MAP[geoName] || geoName;
-  }, []);
-
-  // Initialize Leaflet map + load GeoJSON
+  // Initialize Leaflet map only when in map mode
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (viewMode !== 'map') return;
+    if (!mapContainerRef.current) return;
 
-    const worldBounds = L.latLngBounds(L.latLng(-60, -180), L.latLng(75, 180));
+    // Destroy old map if exists
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+      geoJsonLayerRef.current = null;
+    }
+
+    const worldBounds = L.latLngBounds(L.latLng(-60, -180), L.latLng(80, 180));
 
     const map = L.map(mapContainerRef.current, {
       center: [25, 0],
-      zoom: 1,
-      minZoom: 1,
+      zoom: 2,
+      minZoom: 2,
       maxZoom: 18,
       scrollWheelZoom: true,
       zoomControl: true,
@@ -110,8 +113,7 @@ const WorldMap = () => {
       maxBoundsViscosity: 1.0,
     });
 
-    // Fit world into container with padding
-    map.fitBounds(worldBounds, { padding: [10, 10] });
+    map.fitBounds(worldBounds, { padding: [5, 5] });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -120,12 +122,11 @@ const WorldMap = () => {
 
     mapRef.current = map;
 
-    // Load GeoJSON countries
     fetch(GEOJSON_URL)
       .then(res => res.json())
       .then((geojson) => {
         const layer = L.geoJSON(geojson, {
-          style: (feature) => ({
+          style: () => ({
             fillColor: 'transparent',
             fillOpacity: 0,
             color: 'transparent',
@@ -137,34 +138,28 @@ const WorldMap = () => {
 
             featureLayer.on({
               mouseover: (e) => {
-                const layer = e.target;
-                layer.setStyle({
+                e.target.setStyle({
                   fillColor: '#f97316',
                   fillOpacity: 0.15,
                   color: '#f97316',
                   weight: 2,
                 });
-                layer.bringToFront();
+                e.target.bringToFront();
                 setHoveredCountry(countryName);
               },
               mouseout: (e) => {
-                const layer = e.target;
                 const isSelected = selectedCountryRef.current === countryName;
-                if (isSelected) {
-                  layer.setStyle({
-                    fillColor: '#f97316',
-                    fillOpacity: 0.25,
-                    color: '#ea580c',
-                    weight: 2.5,
-                  });
-                } else {
-                  layer.setStyle({
-                    fillColor: 'transparent',
-                    fillOpacity: 0,
-                    color: 'transparent',
-                    weight: 1,
-                  });
-                }
+                e.target.setStyle(isSelected ? {
+                  fillColor: '#f97316',
+                  fillOpacity: 0.25,
+                  color: '#ea580c',
+                  weight: 2.5,
+                } : {
+                  fillColor: 'transparent',
+                  fillOpacity: 0,
+                  color: 'transparent',
+                  weight: 1,
+                });
                 setHoveredCountry(null);
               },
               click: () => {
@@ -178,12 +173,15 @@ const WorldMap = () => {
       })
       .catch(err => console.error('Failed to load GeoJSON:', err));
 
+    // Invalidate size after a tick so tiles fill properly
+    setTimeout(() => map.invalidateSize(), 100);
+
     return () => {
       map.remove();
       mapRef.current = null;
       geoJsonLayerRef.current = null;
     };
-  }, []);
+  }, [viewMode]);
 
   // Update GeoJSON styles when selectedCountry changes
   useEffect(() => {
@@ -321,6 +319,27 @@ const WorldMap = () => {
               {hoveredCountry ? `${COUNTRY_FLAGS[hoveredCountry] || '🌍'} ${hoveredCountry}` : 'Click any country to see users there'}
             </p>
           </div>
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+            <Button
+              size="sm"
+              variant={viewMode === 'map' ? 'default' : 'ghost'}
+              className="h-7 text-xs px-3 gap-1.5"
+              onClick={() => setViewMode('map')}
+            >
+              <Map className="w-3.5 h-3.5" />
+              Map
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === 'globe' ? 'default' : 'ghost'}
+              className="h-7 text-xs px-3 gap-1.5"
+              onClick={() => setViewMode('globe')}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              Globe
+            </Button>
+          </div>
         </div>
 
         {/* Settings Bar */}
@@ -370,18 +389,25 @@ const WorldMap = () => {
         </div>
 
         <div className="space-y-4">
-          {/* Leaflet Map */}
-          <div className="w-full rounded-xl border border-border overflow-hidden relative z-0 isolate" style={{ height: 'clamp(200px, 35vh, 320px)' }}>
-            <div ref={mapContainerRef} className="h-full w-full" />
+          {/* Map or Globe */}
+          {viewMode === 'map' ? (
+            <div className="w-full rounded-xl border border-border overflow-hidden relative z-0 isolate" style={{ height: 'clamp(220px, 38vh, 320px)' }}>
+              <div ref={mapContainerRef} className="h-full w-full" />
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-[1000]">
+                  <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <GlobeView
+              countryGroups={countryGroups}
+              onSelectCountry={setSelectedCountry}
+              selectedCountry={selectedCountry}
+            />
+          )}
 
-            {loading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-[1000]">
-                <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-          </div>
-
-          {/* Users Panel - full width, fixed height, won't resize with map zoom */}
+          {/* Users Panel */}
           <div className="w-full bg-card rounded-xl border border-border p-4 max-h-[300px] overflow-y-auto">
             <div className="flex items-center gap-2 mb-3">
               <Users className="w-5 h-5 text-accent" />
