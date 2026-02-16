@@ -217,25 +217,30 @@ export const useWallet = () => {
       return { success: false, error: 'Wallet not loaded' };
     }
 
+    if (amount <= 0 || amount > 100000) {
+      return { success: false, error: 'Amount must be between 1 and 100,000' };
+    }
+
     try {
-      const newBalance = wallet.balance + amount;
-      const { error } = await supabase
-        .from('wallets')
-        .update({
-          balance: newBalance,
-          total_earned: (wallet.total_earned || 0) + amount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', profile.id);
+      const { data, error } = await supabase.rpc('top_up_wallet', {
+        p_user_id: profile.id,
+        p_amount: amount,
+      });
 
       if (error) throw error;
+
+      const result = data as { success: boolean; error?: string; new_balance?: number; previous_balance?: number };
+
+      if (!result.success) {
+        return { success: false, error: result.error || 'Top-up failed' };
+      }
 
       // Create notification
       await supabase.from('notifications').insert({
         user_id: profile.id,
         type: 'transaction',
         title: 'Top Up Successful',
-        message: `Your wallet has been topped up with ${amount.toLocaleString()} ETB. New balance: ${newBalance.toLocaleString()} ETB.`,
+        message: `Your wallet has been topped up with ${amount.toLocaleString()} ETB. New balance: ${result.new_balance?.toLocaleString()} ETB.`,
         data: { amount, type: 'top_up' },
       });
 
@@ -243,7 +248,7 @@ export const useWallet = () => {
         prev
           ? {
               ...prev,
-              balance: newBalance,
+              balance: result.new_balance || prev.balance + amount,
               total_earned: (prev.total_earned || 0) + amount,
             }
           : null

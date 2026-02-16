@@ -5725,6 +5725,10 @@ export type Database = {
         Args: { p_amount: number; p_buyer_id: string; p_course_id: string }
         Returns: Json
       }
+      top_up_wallet: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: Json
+      }
       transfer_money: {
         Args: {
           p_amount: number
