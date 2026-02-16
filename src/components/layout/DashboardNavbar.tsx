@@ -13,24 +13,7 @@ import {
   User,
   LogOut,
   Settings,
-  Menu,
   LayoutDashboard,
-  GraduationCap,
-  Users,
-  Calendar,
-  ShoppingBag,
-  MessageSquare,
-  HelpCircle,
-  Trophy,
-  Briefcase,
-  Library,
-  Shield,
-  Baby,
-  BarChart3,
-  FileText,
-  HeadphonesIcon,
-  Flame,
-  Star,
   Phone,
   PhoneOff
 } from 'lucide-react';
@@ -41,98 +24,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
-interface NavItem {
-  icon: typeof LayoutDashboard;
-  label: string;
-  path: string;
-}
-
-const getNavItemsForRole = (role: string | null): NavItem[] => {
-  switch (role) {
-    case 'ceo':
-      return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/ceo' },
-        { icon: BarChart3, label: 'Analytics', path: '/ceo/analytics' },
-        { icon: Users, label: 'Team', path: '/ceo/team' },
-        { icon: Library, label: 'Courses', path: '/courses' },
-        { icon: FileText, label: 'Reports', path: '/ceo/reports' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
-      ];
-    case 'admin':
-      return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-        { icon: Users, label: 'Users', path: '/admin' },
-        { icon: Library, label: 'Courses', path: '/courses' },
-        { icon: Shield, label: 'Moderation', path: '/admin' },
-        { icon: BarChart3, label: 'Reports', path: '/admin' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
-      ];
-    case 'support':
-      return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/support' },
-        { icon: HeadphonesIcon, label: 'Tickets', path: '/support' },
-        { icon: Users, label: 'Users', path: '/support' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
-      ];
-    case 'teacher':
-      return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/teacher' },
-        { icon: Library, label: 'My Courses', path: '/teacher' },
-        { icon: Users, label: 'Students', path: '/teacher' },
-        { icon: BarChart3, label: 'Earnings', path: '/teacher' },
-        { icon: Calendar, label: 'Events', path: '/events' },
-        { icon: MessageSquare, label: 'Community', path: '/community' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
-      ];
-    case 'parent':
-      return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/parent' },
-        { icon: Baby, label: 'My Children', path: '/parent' },
-        { icon: BarChart3, label: 'Progress', path: '/parent' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
-      ];
-    default: // student
-      return [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-        { icon: Briefcase, label: 'Business', path: '/business' },
-        { icon: Library, label: 'Courses', path: '/courses' },
-        { icon: GraduationCap, label: 'Quest', path: '/quest' },
-        { icon: Users, label: 'Study Rooms', path: '/study-rooms' },
-        { icon: Calendar, label: 'Events', path: '/events' },
-        { icon: ShoppingBag, label: 'Marketplace', path: '/marketplace' },
-        { icon: MessageSquare, label: 'Community', path: '/community' },
-        { icon: HelpCircle, label: 'Help', path: '/help' },
-        { icon: Settings, label: 'Settings', path: '/settings' },
-      ];
-  }
-};
 
 const DashboardNavbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, signOut, userRole } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
   const location = useLocation();
   const liveKitContext = useOptionalLiveKitContext();
-
-  const navItems = getNavItemsForRole(userRole);
 
   const handleSignOut = async () => {
     await signOut();
