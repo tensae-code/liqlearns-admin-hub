@@ -199,17 +199,21 @@ const SkillTree = () => {
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-2xl">{skill.icon}</span>
-                    <div className="flex-1">
-                      <h3 className="font-display font-semibold text-foreground group-hover:text-accent transition-colors">{skill.name}</h3>
-                      <p className="text-xs text-muted-foreground">{skill.description}</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-display font-semibold text-foreground group-hover:text-accent transition-colors truncate">{skill.name}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{skill.description}</p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors shrink-0" />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-2">
                     <Progress value={progressPercent} className="h-2 flex-1" />
                     <span className="text-xs font-medium text-muted-foreground">
                       {progress?.current_level || 0}/{skill.max_level}
                     </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1"><Trophy className="w-3 h-3" /> {skill.max_level} levels</span>
+                    {progress?.is_max_level && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Mastered</Badge>}
                   </div>
                 </motion.button>
               );
