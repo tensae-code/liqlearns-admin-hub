@@ -15,44 +15,27 @@ import { MapPin, Globe, Users, Eye, EyeOff, Search } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Country center coordinates (lat/lng)
-const COUNTRY_COORDS: Record<string, { lat: number; lng: number; name: string; flag: string }> = {
-  'Ethiopia': { lat: 9.0, lng: 38.7, name: 'Ethiopia', flag: '🇪🇹' },
-  'United States': { lat: 39.8, lng: -98.6, name: 'United States', flag: '🇺🇸' },
-  'United Kingdom': { lat: 54.0, lng: -2.0, name: 'United Kingdom', flag: '🇬🇧' },
-  'Canada': { lat: 56.1, lng: -106.3, name: 'Canada', flag: '🇨🇦' },
-  'Germany': { lat: 51.2, lng: 10.5, name: 'Germany', flag: '🇩🇪' },
-  'France': { lat: 46.6, lng: 2.2, name: 'France', flag: '🇫🇷' },
-  'India': { lat: 20.6, lng: 79.0, name: 'India', flag: '🇮🇳' },
-  'China': { lat: 35.9, lng: 104.2, name: 'China', flag: '🇨🇳' },
-  'Japan': { lat: 36.2, lng: 138.3, name: 'Japan', flag: '🇯🇵' },
-  'Brazil': { lat: -14.2, lng: -51.9, name: 'Brazil', flag: '🇧🇷' },
-  'Nigeria': { lat: 9.1, lng: 8.7, name: 'Nigeria', flag: '🇳🇬' },
-  'South Africa': { lat: -30.6, lng: 22.9, name: 'South Africa', flag: '🇿🇦' },
-  'Kenya': { lat: -0.02, lng: 37.9, name: 'Kenya', flag: '🇰🇪' },
-  'Egypt': { lat: 26.8, lng: 30.8, name: 'Egypt', flag: '🇪🇬' },
-  'Australia': { lat: -25.3, lng: 133.8, name: 'Australia', flag: '🇦🇺' },
-  'Mexico': { lat: 23.6, lng: -102.6, name: 'Mexico', flag: '🇲🇽' },
-  'Turkey': { lat: 38.9, lng: 35.2, name: 'Turkey', flag: '🇹🇷' },
-  'Saudi Arabia': { lat: 23.9, lng: 45.1, name: 'Saudi Arabia', flag: '🇸🇦' },
-  'UAE': { lat: 23.4, lng: 53.8, name: 'UAE', flag: '🇦🇪' },
-  'South Korea': { lat: 35.9, lng: 127.8, name: 'South Korea', flag: '🇰🇷' },
-  'Indonesia': { lat: -0.8, lng: 113.9, name: 'Indonesia', flag: '🇮🇩' },
-  'Philippines': { lat: 12.9, lng: 121.8, name: 'Philippines', flag: '🇵🇭' },
-  'Italy': { lat: 41.9, lng: 12.6, name: 'Italy', flag: '🇮🇹' },
-  'Spain': { lat: 40.5, lng: -3.7, name: 'Spain', flag: '🇪🇸' },
-  'Russia': { lat: 61.5, lng: 105.3, name: 'Russia', flag: '🇷🇺' },
-  'Argentina': { lat: -38.4, lng: -63.6, name: 'Argentina', flag: '🇦🇷' },
-  'Colombia': { lat: 4.6, lng: -74.3, name: 'Colombia', flag: '🇨🇴' },
-  'Ghana': { lat: 7.9, lng: -1.0, name: 'Ghana', flag: '🇬🇭' },
-  'Tanzania': { lat: -6.4, lng: 34.9, name: 'Tanzania', flag: '🇹🇿' },
-  'Uganda': { lat: 1.4, lng: 32.3, name: 'Uganda', flag: '🇺🇬' },
-  'Eritrea': { lat: 15.2, lng: 39.8, name: 'Eritrea', flag: '🇪🇷' },
-  'Somalia': { lat: 5.2, lng: 46.2, name: 'Somalia', flag: '🇸🇴' },
-  'Sudan': { lat: 12.9, lng: 30.2, name: 'Sudan', flag: '🇸🇩' },
+// Country flag lookup
+const COUNTRY_FLAGS: Record<string, string> = {
+  'Ethiopia': '🇪🇹', 'United States': '🇺🇸', 'United Kingdom': '🇬🇧', 'Canada': '🇨🇦',
+  'Germany': '🇩🇪', 'France': '🇫🇷', 'India': '🇮🇳', 'China': '🇨🇳', 'Japan': '🇯🇵',
+  'Brazil': '🇧🇷', 'Nigeria': '🇳🇬', 'South Africa': '🇿🇦', 'Kenya': '🇰🇪', 'Egypt': '🇪🇬',
+  'Australia': '🇦🇺', 'Mexico': '🇲🇽', 'Turkey': '🇹🇷', 'Saudi Arabia': '🇸🇦', 'UAE': '🇦🇪',
+  'South Korea': '🇰🇷', 'Indonesia': '🇮🇩', 'Philippines': '🇵🇭', 'Italy': '🇮🇹',
+  'Spain': '🇪🇸', 'Russia': '🇷🇺', 'Argentina': '🇦🇷', 'Colombia': '🇨🇴', 'Ghana': '🇬🇭',
+  'Tanzania': '🇹🇿', 'Uganda': '🇺🇬', 'Eritrea': '🇪🇷', 'Somalia': '🇸🇴', 'Sudan': '🇸🇩',
 };
 
-const ALL_COUNTRIES = Object.keys(COUNTRY_COORDS).sort();
+const ALL_COUNTRIES = Object.keys(COUNTRY_FLAGS).sort();
+
+// GeoJSON country name mapping (GeoJSON uses specific names)
+const GEOJSON_NAME_MAP: Record<string, string> = {
+  'United States of America': 'United States',
+  'Republic of Korea': 'South Korea',
+  'United Republic of Tanzania': 'Tanzania',
+  'United Arab Emirates': 'UAE',
+  'United Kingdom of Great Britain and Northern Ireland': 'United Kingdom',
+};
 
 interface MapUser {
   id: string;
@@ -64,6 +47,8 @@ interface MapUser {
   is_friend: boolean;
   is_clan_member: boolean;
 }
+
+const GEOJSON_URL = 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson';
 
 const WorldMap = () => {
   const { user } = useAuth();
@@ -77,10 +62,17 @@ const WorldMap = () => {
   const [myCity, setMyCity] = useState('');
   const [filter, setFilter] = useState<'all' | 'friends' | 'clan'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.CircleMarker[]>([]);
+  const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
+  const selectedCountryRef = useRef<string | null>(null);
+
+  // Keep ref in sync so callbacks see latest value
+  useEffect(() => {
+    selectedCountryRef.current = selectedCountry;
+  }, [selectedCountry]);
 
   useEffect(() => {
     if (profile) {
@@ -96,7 +88,11 @@ const WorldMap = () => {
     fetchMapUsers();
   }, [profile?.id]);
 
-  // Initialize Leaflet map
+  const resolveCountryName = useCallback((geoName: string): string => {
+    return GEOJSON_NAME_MAP[geoName] || geoName;
+  }, []);
+
+  // Initialize Leaflet map + load GeoJSON
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
@@ -104,7 +100,7 @@ const WorldMap = () => {
       center: [20, 0],
       zoom: 2,
       minZoom: 1,
-      maxZoom: 10,
+      maxZoom: 18,
       scrollWheelZoom: true,
       zoomControl: true,
       worldCopyJump: true,
@@ -116,11 +112,91 @@ const WorldMap = () => {
 
     mapRef.current = map;
 
+    // Load GeoJSON countries
+    fetch(GEOJSON_URL)
+      .then(res => res.json())
+      .then((geojson) => {
+        const layer = L.geoJSON(geojson, {
+          style: (feature) => ({
+            fillColor: 'transparent',
+            fillOpacity: 0,
+            color: 'transparent',
+            weight: 1,
+          }),
+          onEachFeature: (feature, featureLayer) => {
+            const geoName = feature.properties?.ADMIN || feature.properties?.name || '';
+            const countryName = GEOJSON_NAME_MAP[geoName] || geoName;
+
+            featureLayer.on({
+              mouseover: (e) => {
+                const layer = e.target;
+                layer.setStyle({
+                  fillColor: '#f97316',
+                  fillOpacity: 0.15,
+                  color: '#f97316',
+                  weight: 2,
+                });
+                layer.bringToFront();
+                setHoveredCountry(countryName);
+              },
+              mouseout: (e) => {
+                const layer = e.target;
+                const isSelected = selectedCountryRef.current === countryName;
+                if (isSelected) {
+                  layer.setStyle({
+                    fillColor: '#f97316',
+                    fillOpacity: 0.25,
+                    color: '#ea580c',
+                    weight: 2.5,
+                  });
+                } else {
+                  layer.setStyle({
+                    fillColor: 'transparent',
+                    fillOpacity: 0,
+                    color: 'transparent',
+                    weight: 1,
+                  });
+                }
+                setHoveredCountry(null);
+              },
+              click: () => {
+                setSelectedCountry(prev => prev === countryName ? null : countryName);
+              },
+            });
+          },
+        }).addTo(map);
+
+        geoJsonLayerRef.current = layer;
+      })
+      .catch(err => console.error('Failed to load GeoJSON:', err));
+
     return () => {
       map.remove();
       mapRef.current = null;
+      geoJsonLayerRef.current = null;
     };
   }, []);
+
+  // Update GeoJSON styles when selectedCountry changes
+  useEffect(() => {
+    const layer = geoJsonLayerRef.current;
+    if (!layer) return;
+
+    layer.eachLayer((featureLayer: any) => {
+      const feature = featureLayer.feature;
+      if (!feature) return;
+      const geoName = feature.properties?.ADMIN || feature.properties?.name || '';
+      const countryName = GEOJSON_NAME_MAP[geoName] || geoName;
+      const isSelected = selectedCountry === countryName;
+
+      featureLayer.setStyle({
+        fillColor: isSelected ? '#f97316' : 'transparent',
+        fillOpacity: isSelected ? 0.25 : 0,
+        color: isSelected ? '#ea580c' : 'transparent',
+        weight: isSelected ? 2.5 : 1,
+      });
+    });
+  }, [selectedCountry]);
 
   const filteredUsers = useMemo(() => mapUsers.filter(u => {
     if (filter === 'friends') return u.is_friend;
@@ -133,53 +209,6 @@ const WorldMap = () => {
     acc[u.country].push(u);
     return acc;
   }, {} as Record<string, MapUser[]>), [filteredUsers]);
-
-  // Update markers when data changes
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    // Clear old markers
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-
-    Object.entries(countryGroups).forEach(([country, users]) => {
-      const coords = COUNTRY_COORDS[country];
-      if (!coords) return;
-      const isSelected = selectedCountry === country;
-      const radius = Math.min(6 + Math.log2(users.length + 1) * 3, 16);
-
-      const marker = L.circleMarker([coords.lat, coords.lng], {
-        radius,
-        fillColor: '#f97316',
-        color: isSelected ? '#fff' : '#ea580c',
-        weight: isSelected ? 3 : 1.5,
-        fillOpacity: isSelected ? 1 : 0.8,
-        interactive: true,
-        bubblingMouseEvents: false,
-      }).addTo(map);
-
-      marker.on('click', () => {
-        setSelectedCountry(prev => prev === country ? null : country);
-      });
-
-      // Add tooltip with country name on hover
-      marker.bindTooltip(`${coords.flag} ${country} (${users.length})`, {
-        direction: 'top',
-        offset: L.point(0, -radius),
-      });
-
-      markersRef.current.push(marker);
-    });
-  }, [countryGroups, selectedCountry]);
-
-  // Fly to selected country
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !selectedCountry || !COUNTRY_COORDS[selectedCountry]) return;
-    const { lat, lng } = COUNTRY_COORDS[selectedCountry];
-    map.flyTo([lat, lng], 5, { duration: 1 });
-  }, [selectedCountry]);
 
   const fetchMapUsers = async () => {
     if (!profile?.id) return;
@@ -268,6 +297,9 @@ const WorldMap = () => {
     !searchQuery || u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || u.username.toLowerCase().includes(searchQuery.toLowerCase())
   ) : [];
 
+  const selectedFlag = selectedCountry ? (COUNTRY_FLAGS[selectedCountry] || '🌍') : '';
+  const selectedUserCount = selectedCountry ? (countryGroups[selectedCountry]?.length || 0) : 0;
+
   return (
     <DashboardLayout>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -277,7 +309,9 @@ const WorldMap = () => {
               <Globe className="w-7 h-7 text-accent" />
               World Map
             </h1>
-            <p className="text-sm text-muted-foreground">See where your community is around the world</p>
+            <p className="text-sm text-muted-foreground">
+              {hoveredCountry ? `${COUNTRY_FLAGS[hoveredCountry] || '🌍'} ${hoveredCountry}` : 'Click any country to see users there'}
+            </p>
           </div>
         </div>
 
@@ -291,7 +325,7 @@ const WorldMap = () => {
               </SelectTrigger>
               <SelectContent>
                 {ALL_COUNTRIES.map(c => (
-                  <SelectItem key={c} value={c}>{COUNTRY_COORDS[c]?.flag} {c}</SelectItem>
+                  <SelectItem key={c} value={c}>{COUNTRY_FLAGS[c]} {c}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -329,28 +363,28 @@ const WorldMap = () => {
 
         <div className="grid lg:grid-cols-3 gap-4">
           {/* Leaflet Map */}
-          <div className="lg:col-span-2 rounded-xl border border-border overflow-hidden relative" style={{ height: 'clamp(300px, 50vh, 500px)' }}>
-            <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />
+          <div className="lg:col-span-2 rounded-xl border border-border overflow-hidden relative" style={{ height: 'clamp(350px, 55vh, 550px)' }}>
+            <div ref={mapContainerRef} className="h-full w-full" />
 
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-[1000]">
-                <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
               </div>
             )}
           </div>
 
           {/* Users Panel */}
-          <div className="bg-card rounded-xl border border-border p-4 max-h-[500px] overflow-y-auto">
+          <div className="bg-card rounded-xl border border-border p-4 max-h-[550px] overflow-y-auto">
             <div className="flex items-center gap-2 mb-3">
-              <Users className="w-5 h-5 text-orange-500" />
+              <Users className="w-5 h-5 text-accent" />
               <h3 className="font-display font-semibold text-foreground text-sm">
                 {selectedCountry ? (
                   <span className="flex items-center gap-2">
-                    <span className="text-lg">{COUNTRY_COORDS[selectedCountry]?.flag}</span>
+                    <span className="text-lg">{selectedFlag}</span>
                     {selectedCountry}
-                    <Badge variant="secondary" className="text-[10px]">{countryGroups[selectedCountry]?.length || 0}</Badge>
+                    <Badge variant="secondary" className="text-[10px]">{selectedUserCount}</Badge>
                   </span>
-                ) : 'Tap a country on the map'}
+                ) : 'Click a country on the map'}
               </h3>
             </div>
 
@@ -362,9 +396,9 @@ const WorldMap = () => {
             )}
 
             {!selectedCountry ? (
-              <p className="text-xs text-muted-foreground">Click an orange dot on the map to see users in that country</p>
+              <p className="text-xs text-muted-foreground">Click any country on the map to see users located there</p>
             ) : selectedUsers.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No users found</p>
+              <p className="text-xs text-muted-foreground">No users found in {selectedCountry}</p>
             ) : (
               <div className="space-y-2">
                 {selectedUsers.map(u => (
@@ -376,7 +410,7 @@ const WorldMap = () => {
                   >
                     <Avatar className="h-9 w-9">
                       {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                      <AvatarFallback className="bg-orange-500/20 text-orange-600 text-xs">
+                      <AvatarFallback className="bg-accent/20 text-accent-foreground text-xs">
                         {u.full_name?.charAt(0) || '?'}
                       </AvatarFallback>
                     </Avatar>
@@ -384,7 +418,7 @@ const WorldMap = () => {
                       <p className="text-xs font-medium text-foreground truncate">{u.full_name}</p>
                       <p className="text-[11px] text-muted-foreground">
                         @{u.username}
-                        {u.city && <span className="ml-1 text-orange-500">• {u.city}</span>}
+                        {u.city && <span className="ml-1 text-accent">• {u.city}</span>}
                       </p>
                     </div>
                     <div className="flex gap-1">
