@@ -238,18 +238,34 @@ const Dashboard = () => {
             whileHover={stat.clickable ? { y: -2 } : {}}
           >
             <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-6 -mt-6" />
-            <stat.icon className="w-6 h-6 mb-2 opacity-90" />
-            <p className="text-2xl font-display font-bold">{stat.value}</p>
-            <p className="text-xs opacity-80">{stat.label}</p>
-            {stat.isBadgeCard && (
-              <div className="flex items-center gap-1 mt-1.5">
-                <span className="w-7 h-7 rounded-full bg-pink-400/80 flex items-center justify-center text-sm shadow-md ring-1 ring-white/30">🌅</span>
-                <span className="w-7 h-7 rounded-full bg-blue-400/80 flex items-center justify-center text-sm shadow-md ring-1 ring-white/30">🎯</span>
-                <span className="w-7 h-7 rounded-full bg-emerald-400/80 flex items-center justify-center text-sm shadow-md ring-1 ring-white/30">📚</span>
-              </div>
-            )}
-            {stat.clickable && !stat.isBadgeCard && (
-              <p className="text-[10px] opacity-60 mt-1">Tap for details</p>
+            {stat.isBadgeCard ? (
+              <>
+                <p className="text-[10px] font-semibold opacity-70 uppercase tracking-wider mb-2">Badges</p>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="flex flex-col items-center">
+                    <span className="w-10 h-10 rounded-full bg-pink-400/90 flex items-center justify-center text-lg shadow-lg ring-2 ring-white/30">🌅</span>
+                    <span className="text-[9px] mt-1 opacity-70">Personal</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="w-10 h-10 rounded-full bg-blue-400/90 flex items-center justify-center text-lg shadow-lg ring-2 ring-white/30">🔥</span>
+                    <span className="text-[9px] mt-1 opacity-70">Skill</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="w-10 h-10 rounded-full bg-emerald-400/90 flex items-center justify-center text-lg shadow-lg ring-2 ring-white/30">🎯</span>
+                    <span className="text-[9px] mt-1 opacity-70">Course</span>
+                  </div>
+                </div>
+                <p className="text-[10px] opacity-60 mt-1.5 text-center">Tap for details</p>
+              </>
+            ) : (
+              <>
+                <stat.icon className="w-6 h-6 mb-2 opacity-90" />
+                <p className="text-2xl font-display font-bold">{stat.value}</p>
+                <p className="text-xs opacity-80">{stat.label}</p>
+                {stat.clickable && (
+                  <p className="text-[10px] opacity-60 mt-1">Tap for details</p>
+                )}
+              </>
             )}
           </motion.div>
         ))}
