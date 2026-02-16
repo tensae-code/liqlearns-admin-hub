@@ -1,155 +1,253 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { STAT_GRADIENTS } from '@/lib/theme';
-import AddTeamMemberModal from '@/components/ceo/AddTeamMemberModal';
-import EditDepartmentModal from '@/components/ceo/EditDepartmentModal';
-import {
-  Users,
-  ArrowLeft,
-  Building2,
-  Mail,
-  Phone,
-  Plus,
-  Search,
-  Filter,
-  MoreVertical,
-  TrendingUp,
-  UserCheck,
-  UserPlus,
-  Clock,
-  Edit,
-  Settings
-} from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { STAT_GRADIENTS } from '@/lib/theme';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Users, ArrowLeft, Mail, Plus, Search, Filter, MoreVertical,
+  UserCheck, UserPlus, Shield, Crown, GraduationCap, HeadphonesIcon,
+  Building2, Baby, BookOpen, Trash2, ChevronDown, Star,
+} from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub,
+  DropdownMenuSubTrigger, DropdownMenuSubContent,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface Department {
-  name: string;
-  head: string;
-  headEmail: string;
-  employees: number;
-  growth: string;
-  budget?: string;
-  members: Array<{ name: string; role: string; avatar: string }>;
+interface TeamMember {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
+  role: string;
+  created_at: string;
+  is_on_hold: boolean;
 }
+
+const ROLE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
+  ceo: { label: 'CEO', icon: Crown, color: 'text-amber-500' },
+  admin: { label: 'Admin', icon: Shield, color: 'text-red-500' },
+  senior_teacher: { label: 'Senior Teacher', icon: Star, color: 'text-purple-500' },
+  teacher: { label: 'Teacher', icon: GraduationCap, color: 'text-blue-500' },
+  support: { label: 'Support', icon: HeadphonesIcon, color: 'text-green-500' },
+  enterprise: { label: 'Enterprise', icon: Building2, color: 'text-cyan-500' },
+  parent: { label: 'Parent', icon: Baby, color: 'text-pink-500' },
+  student: { label: 'Student', icon: BookOpen, color: 'text-foreground' },
+};
+
+const ASSIGNABLE_ROLES = ['student', 'teacher', 'senior_teacher', 'support', 'admin', 'parent', 'enterprise'];
 
 const CEOTeam = () => {
   const navigate = useNavigate();
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [editDeptOpen, setEditDeptOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  const { user } = useAuth();
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
+
+  // Add member
+  const [addOpen, setAddOpen] = useState(false);
+  const [addEmail, setAddEmail] = useState('');
+  const [addRole, setAddRole] = useState('student');
+  const [addLoading, setAddLoading] = useState(false);
+
+  const fetchMembers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: roles, error: rolesErr } = await supabase
+        .from('user_roles')
+        .select('user_id, role, created_at');
+      if (rolesErr) throw rolesErr;
+
+      if (!roles || roles.length === 0) {
+        setMembers([]);
+        return;
+      }
+
+      const userIds = roles.map(r => r.user_id);
+      const { data: profiles, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, user_id, full_name, email, avatar_url, is_on_hold')
+        .in('user_id', userIds);
+      if (profErr) throw profErr;
+
+      const profileMap = (profiles || []).reduce((acc, p) => {
+        acc[p.user_id] = p;
+        return acc;
+      }, {} as Record<string, any>);
+
+      const merged: TeamMember[] = (roles || []).map(r => {
+        const p = profileMap[r.user_id];
+        return {
+          id: p?.id || r.user_id,
+          user_id: r.user_id,
+          full_name: p?.full_name || 'Unknown',
+          email: p?.email || '',
+          avatar_url: p?.avatar_url || null,
+          role: r.role,
+          created_at: r.created_at,
+          is_on_hold: p?.is_on_hold || false,
+        };
+      });
+
+      setMembers(merged);
+    } catch (err: any) {
+      console.error('Error fetching team:', err);
+      toast.error('Failed to load team members');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchMembers(); }, [fetchMembers]);
+
+  const handleChangeRole = async (member: TeamMember, newRole: string) => {
+    if (member.role === newRole) return;
+    if (member.role === 'ceo') {
+      toast.error("Cannot change the CEO's role");
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: newRole as any })
+        .eq('user_id', member.user_id);
+      if (error) throw error;
+
+      setMembers(prev => prev.map(m =>
+        m.user_id === member.user_id ? { ...m, role: newRole } : m
+      ));
+      toast.success(`${member.full_name} is now ${ROLE_CONFIG[newRole]?.label || newRole}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update role');
+    }
+  };
+
+  const handleRemoveMember = async () => {
+    if (!deleteTarget) return;
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', deleteTarget.user_id);
+      if (error) throw error;
+
+      setMembers(prev => prev.filter(m => m.user_id !== deleteTarget.user_id));
+      toast.success(`${deleteTarget.full_name} removed from team`);
+      setDeleteTarget(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove member');
+    }
+  };
+
+  const handleToggleHold = async (member: TeamMember) => {
+    const newHold = !member.is_on_hold;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_on_hold: newHold, held_at: newHold ? new Date().toISOString() : null })
+        .eq('user_id', member.user_id);
+      if (error) throw error;
+
+      setMembers(prev => prev.map(m =>
+        m.user_id === member.user_id ? { ...m, is_on_hold: newHold } : m
+      ));
+      toast.success(newHold ? `${member.full_name} put on hold` : `${member.full_name} hold removed`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleAddByEmail = async () => {
+    if (!addEmail.trim()) { toast.error('Enter an email'); return; }
+    setAddLoading(true);
+    try {
+      // Find user by email
+      const { data: profile, error: pErr } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .eq('email', addEmail.trim())
+        .maybeSingle();
+      if (pErr) throw pErr;
+      if (!profile) { toast.error('No user found with that email'); setAddLoading(false); return; }
+
+      // Check if already has a role
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', profile.user_id)
+        .maybeSingle();
+
+      if (existingRole) {
+        // Update role
+        const { error } = await supabase
+          .from('user_roles')
+          .update({ role: addRole as any })
+          .eq('user_id', profile.user_id);
+        if (error) throw error;
+        toast.success(`${profile.full_name}'s role updated to ${ROLE_CONFIG[addRole]?.label}`);
+      } else {
+        // Insert new role
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ user_id: profile.user_id, role: addRole } as any);
+        if (error) throw error;
+        toast.success(`${profile.full_name} added as ${ROLE_CONFIG[addRole]?.label}`);
+      }
+
+      setAddOpen(false);
+      setAddEmail('');
+      setAddRole('student');
+      fetchMembers();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add member');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  // Counts
+  const roleCounts = members.reduce((acc, m) => {
+    acc[m.role] = (acc[m.role] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const filtered = members.filter(m => {
+    const matchSearch = m.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchRole = roleFilter === 'all' || m.role === roleFilter;
+    return matchSearch && matchRole;
+  });
 
   const teamStats = [
-    { label: 'Total Employees', value: '86', icon: Users, gradient: STAT_GRADIENTS[0] },
-    { label: 'Active Today', value: '72', icon: UserCheck, gradient: STAT_GRADIENTS[2] },
-    { label: 'New This Month', value: '5', icon: UserPlus, gradient: STAT_GRADIENTS[1] },
-    { label: 'Avg. Tenure', value: '2.3 yrs', icon: Clock, gradient: STAT_GRADIENTS[3] },
+    { label: 'Total Users', value: members.length, icon: Users, gradient: STAT_GRADIENTS[0] },
+    { label: 'Teachers', value: (roleCounts['teacher'] || 0) + (roleCounts['senior_teacher'] || 0), icon: GraduationCap, gradient: STAT_GRADIENTS[2] },
+    { label: 'Admins', value: roleCounts['admin'] || 0, icon: Shield, gradient: STAT_GRADIENTS[1] },
+    { label: 'Students', value: roleCounts['student'] || 0, icon: BookOpen, gradient: STAT_GRADIENTS[3] },
   ];
-
-  const departments: Department[] = [
-    { 
-      name: 'Engineering', 
-      head: 'Dawit M.', 
-      headEmail: 'dawit@liqlearns.com',
-      employees: 24, 
-      growth: '+3',
-      budget: '$450K',
-      members: [
-        { name: 'Abel T.', role: 'Senior Developer', avatar: 'AT' },
-        { name: 'Hana G.', role: 'Frontend Lead', avatar: 'HG' },
-        { name: 'Yosef K.', role: 'Backend Developer', avatar: 'YK' },
-      ]
-    },
-    { 
-      name: 'Marketing', 
-      head: 'Sara T.', 
-      headEmail: 'sara@liqlearns.com',
-      employees: 12, 
-      growth: '+2',
-      budget: '$180K',
-      members: [
-        { name: 'Meron H.', role: 'Content Manager', avatar: 'MH' },
-        { name: 'Daniel B.', role: 'Social Media', avatar: 'DB' },
-      ]
-    },
-    { 
-      name: 'Content', 
-      head: 'Tigist K.', 
-      headEmail: 'tigist@liqlearns.com',
-      employees: 18, 
-      growth: '+4',
-      budget: '$220K',
-      members: [
-        { name: 'Bethel M.', role: 'Course Creator', avatar: 'BM' },
-        { name: 'Solomon A.', role: 'Video Editor', avatar: 'SA' },
-        { name: 'Rahel Y.', role: 'Curriculum Designer', avatar: 'RY' },
-      ]
-    },
-    { 
-      name: 'Support', 
-      head: 'Yonas G.', 
-      headEmail: 'yonas@liqlearns.com',
-      employees: 8, 
-      growth: '+1',
-      budget: '$95K',
-      members: [
-        { name: 'Kidus L.', role: 'Support Lead', avatar: 'KL' },
-        { name: 'Marta S.', role: 'Support Agent', avatar: 'MS' },
-      ]
-    },
-    { 
-      name: 'Finance', 
-      head: 'Abebe W.', 
-      headEmail: 'abebe@liqlearns.com',
-      employees: 6, 
-      growth: '0',
-      budget: '$120K',
-      members: [
-        { name: 'Eyob T.', role: 'Accountant', avatar: 'ET' },
-      ]
-    },
-    { 
-      name: 'HR', 
-      head: 'Meseret A.', 
-      headEmail: 'meseret@liqlearns.com',
-      employees: 4, 
-      growth: '+1',
-      budget: '$80K',
-      members: [
-        { name: 'Liya N.', role: 'Recruiter', avatar: 'LN' },
-      ]
-    },
-  ];
-
-  const allHeads = departments.map(d => ({ name: d.head, email: d.headEmail }));
-
-  const handleContactHead = (email: string) => {
-    window.location.href = `mailto:${email}`;
-    toast.success(`Opening email to ${email}`);
-  };
-
-  const handleEditDepartment = (dept: Department) => {
-    setSelectedDepartment(dept);
-    setEditDeptOpen(true);
-  };
-
-  const filteredDepartments = departments.filter(dept => 
-    dept.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dept.head.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dept.members.some(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   return (
     <DashboardLayout>
@@ -169,16 +267,16 @@ const CEOTeam = () => {
                 <Users className="w-8 h-8 text-primary" />
                 Team Management
               </h1>
-              <p className="text-muted-foreground">Manage your organization's team members</p>
+              <p className="text-muted-foreground">Manage roles, seniority, and access</p>
             </div>
           </div>
-          <Button onClick={() => setAddMemberOpen(true)}>
+          <Button onClick={() => setAddOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            Add Team Member
+            Add / Change Role
           </Button>
         </motion.div>
 
-        {/* Team Stats */}
+        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {teamStats.map((stat, i) => (
             <motion.div
@@ -196,137 +294,207 @@ const CEOTeam = () => {
           ))}
         </div>
 
-        {/* Search and Filter */}
-        <div className="flex gap-3">
-          <div className="relative flex-1">
+        {/* Search & Filter */}
+        <div className="flex gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search team members..." 
-              className="pl-10" 
+            <Input
+              placeholder="Search by name or email..."
+              className="pl-10"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-[160px]">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Filter role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
+                <SelectItem key={key} value={key}>
+                  {cfg.label} ({roleCounts[key] || 0})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Departments Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredDepartments.map((dept, i) => (
-            <motion.div
-              key={dept.name}
-              className="bg-card border border-border rounded-xl overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + i * 0.1 }}
-            >
-              {/* Department Header */}
-              <div className="p-4 border-b border-border bg-muted/30">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold text-foreground">{dept.name}</h3>
+        {/* Members List */}
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+            <p>No members found</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filtered.map((member, i) => {
+              const cfg = ROLE_CONFIG[member.role] || ROLE_CONFIG.student;
+              const RoleIcon = cfg.icon;
+              const isSelf = member.user_id === user?.id;
+
+              return (
+                <motion.div
+                  key={member.user_id}
+                  className={`flex items-center gap-3 p-3 bg-card border rounded-xl ${member.is_on_hold ? 'border-destructive/30 opacity-60' : 'border-border'}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.02, 0.5) }}
+                >
+                  <Avatar className="h-10 w-10">
+                    {member.avatar_url && <AvatarImage src={member.avatar_url} />}
+                    <AvatarFallback className="bg-muted text-sm">
+                      {member.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-foreground text-sm truncate">{member.full_name}</p>
+                      {member.is_on_hold && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">On Hold</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEditDepartment(dept)}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Department
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => {
-                        setSelectedDepartment(dept);
-                        setAddMemberOpen(true);
-                      }}>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add Member
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => toast.info('Department settings')}>
-                        <Settings className="w-4 h-4 mr-2" />
-                        Settings
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{dept.employees} members</span>
-                  {dept.growth !== '0' && (
-                    <span className="text-success flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" />
-                      {dept.growth}
-                    </span>
+
+                  <Badge variant="outline" className={`text-xs gap-1 ${cfg.color}`}>
+                    <RoleIcon className="w-3 h-3" />
+                    {cfg.label}
+                  </Badge>
+
+                  {!isSelf && member.role !== 'ceo' && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52">
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger>
+                            <Shield className="w-4 h-4 mr-2" />
+                            Change Role
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent>
+                            {ASSIGNABLE_ROLES.map(role => {
+                              const rc = ROLE_CONFIG[role];
+                              const Icon = rc.icon;
+                              return (
+                                <DropdownMenuItem
+                                  key={role}
+                                  onClick={() => handleChangeRole(member, role)}
+                                  className={member.role === role ? 'bg-accent/10 font-semibold' : ''}
+                                >
+                                  <Icon className={`w-4 h-4 mr-2 ${rc.color}`} />
+                                  {rc.label}
+                                  {member.role === role && ' ✓'}
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                        <DropdownMenuItem onClick={() => handleToggleHold(member)}>
+                          <UserCheck className="w-4 h-4 mr-2" />
+                          {member.is_on_hold ? 'Remove Hold' : 'Put on Hold'}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeleteTarget(member)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remove from Team
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                </div>
-              </div>
-
-              {/* Department Head */}
-              <div className="p-4 border-b border-border">
-                <p className="text-xs text-muted-foreground mb-2">Department Head</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-gradient-hero text-primary-foreground text-sm">
-                        {dept.head.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-foreground">{dept.head}</p>
-                      <p className="text-xs text-muted-foreground">{dept.headEmail}</p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleContactHead(dept.headEmail)}>
-                    <Mail className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Team Members Preview */}
-              <div className="p-4">
-                <p className="text-xs text-muted-foreground mb-3">Team Members</p>
-                <div className="space-y-2">
-                  {dept.members.map((member) => (
-                    <div key={member.name} className="flex items-center gap-2">
-                      <Avatar className="h-7 w-7">
-                        <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                          {member.avatar}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground truncate">{member.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{member.role}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button variant="ghost" className="w-full mt-3 text-xs" size="sm">
-                  View All {dept.employees} Members
-                </Button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Modals */}
-      <AddTeamMemberModal
-        open={addMemberOpen}
-        onOpenChange={setAddMemberOpen}
-        departments={departments}
-      />
-      <EditDepartmentModal
-        open={editDeptOpen}
-        onOpenChange={setEditDeptOpen}
-        department={selectedDepartment}
-        allHeads={allHeads}
-      />
+      {/* Add/Change Role Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Add or Change User Role
+            </DialogTitle>
+            <DialogDescription>
+              Enter a user's email to assign or change their role.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <Label>User Email</Label>
+              <div className="relative mt-1">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="user@example.com"
+                  value={addEmail}
+                  onChange={e => setAddEmail(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Role</Label>
+              <Select value={addRole} onValueChange={setAddRole}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ASSIGNABLE_ROLES.map(role => {
+                    const rc = ROLE_CONFIG[role];
+                    const Icon = rc.icon;
+                    return (
+                      <SelectItem key={role} value={role}>
+                        <span className="flex items-center gap-2">
+                          <Icon className={`w-4 h-4 ${rc.color}`} />
+                          {rc.label}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddByEmail} disabled={addLoading}>
+              {addLoading ? 'Processing...' : 'Assign Role'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {deleteTarget?.full_name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove their role from the system. They will lose access to their current dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemoveMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
