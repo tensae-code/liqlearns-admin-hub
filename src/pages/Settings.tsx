@@ -57,6 +57,14 @@ const Settings = () => {
     streakReminder: true,
     newContent: false,
     community: true,
+    friendBattles: false,
+  });
+
+  // Sync friend battle notification preference from profile
+  useState(() => {
+    if ((profile as any)?.notify_friends_battles !== undefined) {
+      setNotifications(prev => ({ ...prev, friendBattles: (profile as any)?.notify_friends_battles || false }));
+    }
   });
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -387,6 +395,7 @@ const Settings = () => {
                   { key: 'streakReminder', label: 'Streak Reminders', description: 'Get reminded to maintain your streak' },
                   { key: 'newContent', label: 'New Content Alerts', description: 'Be notified when new courses are added' },
                   { key: 'community', label: 'Community Updates', description: 'Get updates from community posts' },
+                  { key: 'friendBattles', label: 'Friend Battle Alerts', description: 'Get notified when your friends start a battle so you can watch live' },
                 ].map((item) => (
                   <div key={item.key} className="flex items-center justify-between">
                     <div>
@@ -395,9 +404,13 @@ const Settings = () => {
                     </div>
                     <Switch
                       checked={notifications[item.key as keyof typeof notifications]}
-                      onCheckedChange={(checked) => 
-                        setNotifications(prev => ({ ...prev, [item.key]: checked }))
-                      }
+                      onCheckedChange={async (checked) => {
+                        setNotifications(prev => ({ ...prev, [item.key]: checked }));
+                        // Persist friend battle notification preference
+                        if (item.key === 'friendBattles' && user) {
+                          await supabase.from('profiles').update({ notify_friends_battles: checked }).eq('user_id', user.id);
+                        }
+                      }}
                     />
                   </div>
                 ))}

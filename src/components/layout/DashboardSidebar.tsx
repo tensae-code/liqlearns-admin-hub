@@ -42,7 +42,8 @@ import {
   Wallet,
   Crown,
   Swords,
-  Megaphone
+  Megaphone,
+  Globe
 } from 'lucide-react';
 import SidebarRankCard from '@/components/dashboard/SidebarRankCard';
 
@@ -101,6 +102,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Swords, label: 'Battles', description: 'Challenge others', path: '/battles' },
         { icon: Shield, label: 'Clans', description: 'Join a team', path: '/clans' },
+        { icon: Globe, label: 'World Map', description: 'See friends globally', path: '/map' },
         { icon: Mail, label: 'Messages', description: 'Communications', path: '/messages' },
         { icon: HelpCircle, label: 'Help', description: 'Resources', path: '/help' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
@@ -115,6 +117,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Briefcase, label: 'Business', description: 'Earn rewards', path: '/business' },
         { icon: Swords, label: 'Battles', description: 'Clan wars', path: '/battles' },
         { icon: Shield, label: 'Clans', description: 'Manage clans', path: '/clans' },
+        { icon: Globe, label: 'World Map', description: 'See friends globally', path: '/map' },
         { icon: Calendar, label: 'Events', description: 'Scheduled events', path: '/events' },
         { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Mail, label: 'Messages', description: 'Student chat', path: '/messages' },
@@ -129,6 +132,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: Briefcase, label: 'Business', description: 'Earn rewards', path: '/business' },
         { icon: Swords, label: 'Battles', description: 'Challenge others', path: '/battles' },
         { icon: Shield, label: 'Clans', description: 'Join a team', path: '/clans' },
+        { icon: Globe, label: 'World Map', description: 'See friends globally', path: '/map' },
         { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Mail, label: 'Messages', description: 'Communications', path: '/messages' },
         { icon: HelpCircle, label: 'Help', description: 'Get support', path: '/help' },
@@ -143,6 +147,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: BarChart3, label: 'Analytics', description: 'Reports & insights', path: '/enterprise/analytics' },
         { icon: Swords, label: 'Battles', description: 'Clan wars', path: '/battles' },
         { icon: Shield, label: 'Clans', description: 'Manage clans', path: '/clans' },
+        { icon: Globe, label: 'World Map', description: 'See friends globally', path: '/map' },
         { icon: Briefcase, label: 'Business', description: 'Earn rewards', path: '/business' },
         { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Mail, label: 'Messages', description: 'Team chat', path: '/messages' },
@@ -154,6 +159,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: LayoutDashboard, label: 'Dashboard', description: 'Your overview', path: '/dashboard' },
         { icon: Briefcase, label: 'Business', description: 'Earn rewards', path: '/business' },
         { icon: Library, label: 'Courses', description: 'Browse & learn', path: '/courses' },
+        { icon: Trophy, label: 'Skills', description: 'Skill tree', path: '/skills' },
         { icon: GraduationCap, label: 'Quest', description: 'Daily challenges', path: '/quest' },
         { icon: Users, label: 'Study Rooms', description: 'Learn together', path: '/study-rooms' },
         { icon: Mail, label: 'Messages', description: 'Chat with friends', path: '/messages' },
@@ -161,6 +167,7 @@ const getNavItemsForRole = (role: string | null): NavItem[] => {
         { icon: ShoppingBag, label: 'Marketplace', description: 'Spend rewards', path: '/marketplace' },
         { icon: Swords, label: 'Battles', description: 'Challenge others', path: '/battles' },
         { icon: Shield, label: 'Clans', description: 'Join a team', path: '/clans' },
+        { icon: Globe, label: 'World Map', description: 'See friends globally', path: '/map' },
         { icon: MessageSquare, label: 'Community', description: 'Discussions', path: '/community' },
         { icon: Settings, label: 'Settings', description: 'Preferences', path: '/settings' },
       ];
