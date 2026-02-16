@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { MapPin, Globe, Users, Eye, EyeOff, Search } from 'lucide-react';
-import { MapContainer, TileLayer, CircleMarker, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Country center coordinates (lat/lng)
@@ -65,18 +65,6 @@ interface MapUser {
   is_clan_member: boolean;
 }
 
-// Component to fly to selected country
-const FlyToCountry = ({ country }: { country: string | null }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (country && COUNTRY_COORDS[country]) {
-      const { lat, lng } = COUNTRY_COORDS[country];
-      map.flyTo([lat, lng], 5, { duration: 1 });
-    }
-  }, [country, map]);
-  return null;
-};
-
 const WorldMap = () => {
   const { user } = useAuth();
   const { profile, refetch } = useProfile();
@@ -89,6 +77,10 @@ const WorldMap = () => {
   const [myCity, setMyCity] = useState('');
   const [filter, setFilter] = useState<'all' | 'friends' | 'clan'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.CircleMarker[]>([]);
 
   useEffect(() => {
     if (profile) {
@@ -103,6 +95,82 @@ const WorldMap = () => {
     if (!profile?.id) return;
     fetchMapUsers();
   }, [profile?.id]);
+
+  // Initialize Leaflet map
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const map = L.map(mapContainerRef.current, {
+      center: [20, 0],
+      zoom: 2,
+      minZoom: 2,
+      maxZoom: 10,
+      scrollWheelZoom: true,
+      zoomControl: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  const filteredUsers = useMemo(() => mapUsers.filter(u => {
+    if (filter === 'friends') return u.is_friend;
+    if (filter === 'clan') return u.is_clan_member;
+    return true;
+  }), [mapUsers, filter]);
+
+  const countryGroups = useMemo(() => filteredUsers.reduce((acc, u) => {
+    if (!acc[u.country]) acc[u.country] = [];
+    acc[u.country].push(u);
+    return acc;
+  }, {} as Record<string, MapUser[]>), [filteredUsers]);
+
+  // Update markers when data changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear old markers
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    Object.entries(countryGroups).forEach(([country, users]) => {
+      const coords = COUNTRY_COORDS[country];
+      if (!coords) return;
+      const isSelected = selectedCountry === country;
+      const radius = Math.min(6 + Math.log2(users.length + 1) * 3, 16);
+
+      const marker = L.circleMarker([coords.lat, coords.lng], {
+        radius,
+        fillColor: '#f97316',
+        color: isSelected ? '#fff' : '#ea580c',
+        weight: isSelected ? 3 : 1.5,
+        fillOpacity: isSelected ? 1 : 0.8,
+      }).addTo(map);
+
+      marker.on('click', () => {
+        setSelectedCountry(prev => prev === country ? null : country);
+      });
+
+      markersRef.current.push(marker);
+    });
+  }, [countryGroups, selectedCountry]);
+
+  // Fly to selected country
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedCountry || !COUNTRY_COORDS[selectedCountry]) return;
+    const { lat, lng } = COUNTRY_COORDS[selectedCountry];
+    map.flyTo([lat, lng], 5, { duration: 1 });
+  }, [selectedCountry]);
 
   const fetchMapUsers = async () => {
     if (!profile?.id) return;
@@ -187,18 +255,6 @@ const WorldMap = () => {
     await supabase.from('profiles').update({ map_visibility: vis } as any).eq('user_id', user.id);
   };
 
-  const filteredUsers = useMemo(() => mapUsers.filter(u => {
-    if (filter === 'friends') return u.is_friend;
-    if (filter === 'clan') return u.is_clan_member;
-    return true;
-  }), [mapUsers, filter]);
-
-  const countryGroups = useMemo(() => filteredUsers.reduce((acc, u) => {
-    if (!acc[u.country]) acc[u.country] = [];
-    acc[u.country].push(u);
-    return acc;
-  }, {} as Record<string, MapUser[]>), [filteredUsers]);
-
   const selectedUsers = selectedCountry ? (countryGroups[selectedCountry] || []).filter(u =>
     !searchQuery || u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || u.username.toLowerCase().includes(searchQuery.toLowerCase())
   ) : [];
@@ -265,46 +321,7 @@ const WorldMap = () => {
         <div className="grid lg:grid-cols-3 gap-4">
           {/* Leaflet Map */}
           <div className="lg:col-span-2 rounded-xl border border-border overflow-hidden relative" style={{ height: 'clamp(300px, 50vh, 500px)' }}>
-            <MapContainer
-              center={[20, 0]}
-              zoom={2}
-              minZoom={2}
-              maxZoom={10}
-              scrollWheelZoom={true}
-              zoomControl={true}
-              style={{ height: '100%', width: '100%' }}
-              className="z-0"
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <FlyToCountry country={selectedCountry} />
-
-              {Object.entries(countryGroups).map(([country, users]) => {
-                const coords = COUNTRY_COORDS[country];
-                if (!coords) return null;
-                const isSelected = selectedCountry === country;
-                const radius = Math.min(6 + Math.log2(users.length + 1) * 3, 16);
-
-                return (
-                  <CircleMarker
-                    key={country}
-                    center={[coords.lat, coords.lng]}
-                    radius={radius}
-                    pathOptions={{
-                      fillColor: '#f97316',
-                      color: isSelected ? '#fff' : '#ea580c',
-                      weight: isSelected ? 3 : 1.5,
-                      fillOpacity: isSelected ? 1 : 0.8,
-                    }}
-                    eventHandlers={{
-                      click: () => setSelectedCountry(isSelected ? null : country),
-                    }}
-                  />
-                );
-              })}
-            </MapContainer>
+            <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />
 
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-[1000]">
