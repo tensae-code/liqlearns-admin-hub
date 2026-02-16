@@ -242,16 +242,10 @@ const Dashboard = () => {
             <p className="text-2xl font-display font-bold">{stat.value}</p>
             <p className="text-xs opacity-80">{stat.label}</p>
             {stat.isBadgeCard && (
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <span className="flex items-center gap-0.5 text-[10px] font-medium">
-                  <span className="w-2 h-2 rounded-full bg-pink-300" />{badgeCounts.personal}
-                </span>
-                <span className="flex items-center gap-0.5 text-[10px] font-medium">
-                  <span className="w-2 h-2 rounded-full bg-blue-300" />{badgeCounts.skill}
-                </span>
-                <span className="flex items-center gap-0.5 text-[10px] font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-300" />{badgeCounts.course}
-                </span>
+              <div className="flex items-center gap-1 mt-1.5">
+                <span className="w-7 h-7 rounded-full bg-pink-400/80 flex items-center justify-center text-sm shadow-md ring-1 ring-white/30">🌅</span>
+                <span className="w-7 h-7 rounded-full bg-blue-400/80 flex items-center justify-center text-sm shadow-md ring-1 ring-white/30">🎯</span>
+                <span className="w-7 h-7 rounded-full bg-emerald-400/80 flex items-center justify-center text-sm shadow-md ring-1 ring-white/30">📚</span>
               </div>
             )}
             {stat.clickable && !stat.isBadgeCard && (
