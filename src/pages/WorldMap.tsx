@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { MapPin, Globe, Users, Eye, EyeOff, Search } from 'lucide-react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Country center coordinates (lat/lng)
@@ -301,17 +301,7 @@ const WorldMap = () => {
                     eventHandlers={{
                       click: () => setSelectedCountry(isSelected ? null : country),
                     }}
-                  >
-                    <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
-                      <div className="flex items-center gap-2 min-w-[120px]">
-                        <span className="text-2xl">{coords.flag}</span>
-                        <div>
-                          <p className="font-bold text-sm">{coords.name}</p>
-                          <p className="text-xs text-muted-foreground">{users.length} user{users.length > 1 ? 's' : ''}</p>
-                        </div>
-                      </div>
-                    </Tooltip>
-                  </CircleMarker>
+                  />
                 );
               })}
             </MapContainer>
