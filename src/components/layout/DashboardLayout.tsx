@@ -54,13 +54,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <SidebarContext.Provider value={{ collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed }}>
       <div className="h-screen bg-background flex flex-col overflow-hidden">
         {/* Desktop Sidebar */}
-        <div className="hidden md:block">
+        <div className="hidden lg:block">
           <DashboardSidebar onCollapseChange={setSidebarCollapsed} />
         </div>
         
         {/* Main content area - adjusts based on sidebar state */}
         <div 
-          className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-56'}`}
+          className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-56'}`}
         >
           {/* Role-specific Navbar - sticky */}
           <div className="shrink-0">
@@ -68,7 +68,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
           
           {/* Page content - scrollable */}
-          <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+          <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
             <div className="p-4 md:p-6">
               {children}
             </div>
