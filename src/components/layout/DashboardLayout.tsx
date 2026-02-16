@@ -69,7 +69,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         
         {/* Main content area */}
         <div 
-          className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isDesktop ? (sidebarCollapsed ? 'ml-16' : 'ml-56') : ''}`}
+          className={`flex-1 flex flex-col overflow-hidden transition-[margin] duration-300 ${isDesktop ? (sidebarCollapsed ? 'ml-16' : 'ml-56') : ''}`}
         >
           {/* Role-specific Navbar */}
           <div className="shrink-0">
