@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import { X, Flame, Star, Award, Trophy, Target, TrendingUp, Gift, Shield, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -231,7 +232,7 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
     }
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -240,42 +241,45 @@ const StatsPopupCard = ({ type, isOpen, onClose, data }: StatsPopupCardProps) =>
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/50 z-[100]"
             onClick={onClose}
           />
 
-          {/* Card - Positioned 15% from top, 30% from left */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed z-[100] w-[92%] max-w-sm left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-          >
-            <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
-              {/* Header */}
-              <div className={`p-4 bg-gradient-to-r ${getGradient()} text-white flex items-center justify-between`}>
-                <h3 className="text-lg font-display font-semibold">{getTitle()}</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-white hover:bg-white/20"
-                  onClick={onClose}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
+          {/* Card */}
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="w-full max-w-sm pointer-events-auto"
+            >
+              <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+                {/* Header */}
+                <div className={`p-4 bg-gradient-to-r ${getGradient()} text-white flex items-center justify-between`}>
+                  <h3 className="text-lg font-display font-semibold">{getTitle()}</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-white hover:bg-white/20"
+                    onClick={onClose}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
 
-              <div className="p-4 overflow-y-auto">
-                {type === 'streak' && renderStreakContent()}
-                {type === 'xp' && renderXPContent()}
-                {type === 'badges' && renderBadgesContent()}
-                {type === 'aura' && renderAuraContent()}
+                <div className="p-4 overflow-y-auto">
+                  {type === 'streak' && renderStreakContent()}
+                  {type === 'xp' && renderXPContent()}
+                  {type === 'badges' && renderBadgesContent()}
+                  {type === 'aura' && renderAuraContent()}
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

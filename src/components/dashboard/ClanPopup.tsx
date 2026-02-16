@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,21 +85,25 @@ const ClanPopup = ({ isOpen, onClose }: ClanPopupProps) => {
     fetchMyClans();
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
-      onClick={onClose}
-    >
+  return createPortal(
+    <>
+      {/* Backdrop */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="fixed z-[100] w-[92%] max-w-md left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card rounded-2xl border border-border shadow-2xl overflow-hidden max-h-[80vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 z-[100]"
+        onClick={onClose}
+      />
+      {/* Card container */}
+      <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          className="w-full max-w-md pointer-events-auto bg-card rounded-2xl border border-border shadow-2xl overflow-hidden max-h-[80vh]"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Header */}
         <div className="p-4 bg-gradient-to-r from-violet-500 to-purple-600 text-white flex items-center justify-between">
           <h3 className="text-lg font-display font-semibold">
@@ -348,6 +353,7 @@ const ClanPopup = ({ isOpen, onClose }: ClanPopupProps) => {
           </AnimatePresence>
         </ScrollArea>
       </motion.div>
+      </div>
 
       {/* Create Clan Modal */}
       <CreateClanModal 
@@ -355,7 +361,8 @@ const ClanPopup = ({ isOpen, onClose }: ClanPopupProps) => {
         onOpenChange={setShowCreateModal}
         onClanCreated={handleClanCreated}
       />
-    </motion.div>
+    </>,
+    document.body
   );
 };
 
