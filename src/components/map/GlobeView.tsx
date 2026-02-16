@@ -59,13 +59,13 @@ const GlobeView = ({ countryGroups, onSelectCountry, selectedCountry }: GlobeVie
       height: size * 2,
       phi: currentPhi.current,
       theta: currentTheta.current,
-      dark: 1,
-      diffuse: 1.2,
+      dark: 0,
+      diffuse: 3,
       mapSamples: 16000,
       mapBrightness: 6,
-      baseColor: [0.3, 0.3, 0.3],
+      baseColor: [0.63, 0.78, 0.45],
       markerColor: [0.976, 0.451, 0.086],
-      glowColor: [0.15, 0.15, 0.15],
+      glowColor: [0.56, 0.78, 1],
       markers,
       scale: scaleRef.current,
       onRender: (state) => {
@@ -155,8 +155,7 @@ const GlobeView = ({ countryGroups, onSelectCountry, selectedCountry }: GlobeVie
   return (
     <div
       ref={containerRef}
-      className="w-full rounded-xl border border-border overflow-hidden bg-background flex items-center justify-center touch-none"
-      style={{ height: 'clamp(220px, 38vh, 320px)' }}
+      className="w-full h-full overflow-hidden bg-sky-100 flex items-center justify-center touch-none"
       onWheel={handleWheel}
     >
       <canvas
