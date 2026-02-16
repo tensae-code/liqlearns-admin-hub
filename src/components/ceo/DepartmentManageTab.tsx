@@ -11,6 +11,9 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 
 interface Department {
@@ -329,7 +332,7 @@ const DepartmentManageTab = () => {
       </Dialog>
 
       {/* Edit Department Dialog */}
-      <Dialog open={editOpen} onOpenChange={o => { if (!o) { setEditOpen(false); setEditDept(null); } }}>
+      <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) setEditDept(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Edit Department</DialogTitle>
@@ -346,14 +349,18 @@ const DepartmentManageTab = () => {
               </div>
               <div>
                 <Label>Status</Label>
-                <select
-                  className="w-full mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                <Select
                   value={editDept.status}
-                  onChange={e => setEditDept({ ...editDept, status: e.target.value as any })}
+                  onValueChange={(v) => setEditDept({ ...editDept, status: v as any })}
                 >
-                  <option value="on_track">On Track</option>
-                  <option value="needs_review">Needs Review</option>
-                </select>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="on_track">On Track</SelectItem>
+                    <SelectItem value="needs_review">Needs Review</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
