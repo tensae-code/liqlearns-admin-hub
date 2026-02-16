@@ -3275,6 +3275,48 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_stats: {
         Row: {
           id: string
@@ -4368,6 +4410,113 @@ export type Database = {
           },
         ]
       }
+      skill_level_resources: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          resource_type: string
+          skill_level_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          resource_type: string
+          skill_level_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          resource_type?: string
+          skill_level_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_level_resources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_level_resources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_level_resources_skill_level_id_fkey"
+            columns: ["skill_level_id"]
+            isOneToOne: false
+            referencedRelation: "skill_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_level_review_votes: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          proposal_id: string
+          vote: string
+          voter_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          proposal_id: string
+          vote: string
+          voter_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          proposal_id?: string
+          vote?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_level_review_votes_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "skill_edit_proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_level_review_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_level_review_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skill_levels: {
         Row: {
           coin_cost: number
@@ -4414,6 +4563,52 @@ export type Database = {
             columns: ["skill_id"]
             isOneToOne: false
             referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_proposal_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          proposal_id: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          proposal_id: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          proposal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_proposal_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_proposal_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_proposal_comments_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "skill_edit_proposals"
             referencedColumns: ["id"]
           },
         ]
@@ -4957,6 +5152,51 @@ export type Database = {
           },
         ]
       }
+      teacher_contribution_points: {
+        Row: {
+          action_type: string
+          created_at: string
+          description: string | null
+          id: string
+          points: number
+          reference_id: string | null
+          teacher_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          points?: number
+          reference_id?: string | null
+          teacher_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          points?: number
+          reference_id?: string | null
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_contribution_points_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_contribution_points_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -5376,6 +5616,29 @@ export type Database = {
           xp_points?: number | null
         }
         Relationships: []
+      }
+      teacher_points_summary: {
+        Row: {
+          teacher_id: string | null
+          total_actions: number | null
+          total_points: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_contribution_points_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_contribution_points_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
