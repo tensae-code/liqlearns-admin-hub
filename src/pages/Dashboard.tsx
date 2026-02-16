@@ -307,6 +307,11 @@ const Dashboard = () => {
           )}
         </motion.div>
 
+        {/* Achievements */}
+        <div className="lg:col-span-3">
+          <AchievementsSection />
+        </div>
+
         {/* Continue Learning */}
         <motion.div
           className="lg:col-span-2"
@@ -431,10 +436,7 @@ const Dashboard = () => {
         <NewsFeedWidget />
       </div>
 
-      {/* Achievements */}
-      <div className="mt-4 md:mt-6">
-        <AchievementsSection />
-      </div>
+      {/* Achievements - moved to after quests */}
 
       {/* Acquired Skills List */}
       <div className="mt-4 md:mt-6">
