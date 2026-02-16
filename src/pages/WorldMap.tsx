@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -11,10 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { MapPin, Globe, Users, Eye, EyeOff, Search, Map } from 'lucide-react';
+import { MapPin, Globe, Users, Eye, EyeOff, Search, X } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import GlobeView from '@/components/map/GlobeView';
 
 const COUNTRY_FLAGS: Record<string, string> = {
   'Ethiopia': '🇪🇹', 'United States': '🇺🇸', 'United Kingdom': '🇬🇧', 'Canada': '🇨🇦',
@@ -24,6 +23,26 @@ const COUNTRY_FLAGS: Record<string, string> = {
   'South Korea': '🇰🇷', 'Indonesia': '🇮🇩', 'Philippines': '🇵🇭', 'Italy': '🇮🇹',
   'Spain': '🇪🇸', 'Russia': '🇷🇺', 'Argentina': '🇦🇷', 'Colombia': '🇨🇴', 'Ghana': '🇬🇭',
   'Tanzania': '🇹🇿', 'Uganda': '🇺🇬', 'Eritrea': '🇪🇷', 'Somalia': '🇸🇴', 'Sudan': '🇸🇩',
+};
+
+const COUNTRY_COORDS: Record<string, { lat: number; lng: number }> = {
+  'Ethiopia': { lat: 9.0, lng: 38.7 }, 'United States': { lat: 39.8, lng: -98.6 },
+  'United Kingdom': { lat: 54.0, lng: -2.0 }, 'Canada': { lat: 56.1, lng: -106.3 },
+  'Germany': { lat: 51.2, lng: 10.5 }, 'France': { lat: 46.6, lng: 2.2 },
+  'India': { lat: 20.6, lng: 79.0 }, 'China': { lat: 35.9, lng: 104.2 },
+  'Japan': { lat: 36.2, lng: 138.3 }, 'Brazil': { lat: -14.2, lng: -51.9 },
+  'Nigeria': { lat: 9.1, lng: 8.7 }, 'South Africa': { lat: -30.6, lng: 22.9 },
+  'Kenya': { lat: -0.02, lng: 37.9 }, 'Egypt': { lat: 26.8, lng: 30.8 },
+  'Australia': { lat: -25.3, lng: 133.8 }, 'Mexico': { lat: 23.6, lng: -102.6 },
+  'Turkey': { lat: 38.9, lng: 35.2 }, 'Saudi Arabia': { lat: 23.9, lng: 45.1 },
+  'UAE': { lat: 23.4, lng: 53.8 }, 'South Korea': { lat: 35.9, lng: 127.8 },
+  'Indonesia': { lat: -0.8, lng: 113.9 }, 'Philippines': { lat: 12.9, lng: 121.8 },
+  'Italy': { lat: 41.9, lng: 12.6 }, 'Spain': { lat: 40.5, lng: -3.7 },
+  'Russia': { lat: 61.5, lng: 105.3 }, 'Argentina': { lat: -38.4, lng: -63.6 },
+  'Colombia': { lat: 4.6, lng: -74.3 }, 'Ghana': { lat: 7.9, lng: -1.0 },
+  'Tanzania': { lat: -6.4, lng: 34.9 }, 'Uganda': { lat: 1.4, lng: 32.3 },
+  'Eritrea': { lat: 15.2, lng: 39.8 }, 'Somalia': { lat: 5.2, lng: 46.2 },
+  'Sudan': { lat: 12.9, lng: 30.2 },
 };
 
 const ALL_COUNTRIES = Object.keys(COUNTRY_FLAGS).sort();
@@ -62,11 +81,12 @@ const WorldMap = () => {
   const [filter, setFilter] = useState<'all' | 'friends' | 'clan'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'map' | 'globe'>('map');
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const selectedCountryRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -87,41 +107,40 @@ const WorldMap = () => {
     fetchMapUsers();
   }, [profile?.id]);
 
-  // Initialize Leaflet map only when in map mode
+  // Initialize Leaflet map
   useEffect(() => {
-    if (viewMode !== 'map') return;
     if (!mapContainerRef.current) return;
 
-    // Destroy old map if exists
     if (mapRef.current) {
       mapRef.current.remove();
       mapRef.current = null;
       geoJsonLayerRef.current = null;
+      markersLayerRef.current = null;
     }
 
-    const worldBounds = L.latLngBounds(L.latLng(-60, -180), L.latLng(80, 180));
-
     const map = L.map(mapContainerRef.current, {
-      center: [25, 0],
+      center: [20, 0],
       zoom: 2,
-      minZoom: 2,
+      minZoom: 1,
       maxZoom: 18,
       scrollWheelZoom: true,
       zoomControl: true,
-      worldCopyJump: false,
-      maxBounds: L.latLngBounds(L.latLng(-85, -200), L.latLng(85, 200)),
-      maxBoundsViscosity: 1.0,
+      worldCopyJump: true,
+      // No maxBounds — allow free panning
     });
 
-    map.fitBounds(worldBounds, { padding: [5, 5] });
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      noWrap: true,
+    // Light theme tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
     }).addTo(map);
 
     mapRef.current = map;
 
+    // Markers layer
+    const markersLayer = L.layerGroup().addTo(map);
+    markersLayerRef.current = markersLayer;
+
+    // Load GeoJSON countries
     fetch(GEOJSON_URL)
       .then(res => res.json())
       .then((geojson) => {
@@ -140,9 +159,9 @@ const WorldMap = () => {
               mouseover: (e) => {
                 e.target.setStyle({
                   fillColor: '#f97316',
-                  fillOpacity: 0.15,
+                  fillOpacity: 0.1,
                   color: '#f97316',
-                  weight: 2,
+                  weight: 1.5,
                 });
                 e.target.bringToFront();
                 setHoveredCountry(countryName);
@@ -151,9 +170,9 @@ const WorldMap = () => {
                 const isSelected = selectedCountryRef.current === countryName;
                 e.target.setStyle(isSelected ? {
                   fillColor: '#f97316',
-                  fillOpacity: 0.25,
+                  fillOpacity: 0.2,
                   color: '#ea580c',
-                  weight: 2.5,
+                  weight: 2,
                 } : {
                   fillColor: 'transparent',
                   fillOpacity: 0,
@@ -163,7 +182,15 @@ const WorldMap = () => {
                 setHoveredCountry(null);
               },
               click: () => {
-                setSelectedCountry(prev => prev === countryName ? null : countryName);
+                setSelectedCountry(prev => {
+                  const next = prev === countryName ? null : countryName;
+                  if (next) {
+                    setShowBottomSheet(true);
+                  } else {
+                    setShowBottomSheet(false);
+                  }
+                  return next;
+                });
               },
             });
           },
@@ -173,15 +200,15 @@ const WorldMap = () => {
       })
       .catch(err => console.error('Failed to load GeoJSON:', err));
 
-    // Invalidate size after a tick so tiles fill properly
     setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
       map.remove();
       mapRef.current = null;
       geoJsonLayerRef.current = null;
+      markersLayerRef.current = null;
     };
-  }, [viewMode]);
+  }, []);
 
   // Update GeoJSON styles when selectedCountry changes
   useEffect(() => {
@@ -197,9 +224,9 @@ const WorldMap = () => {
 
       featureLayer.setStyle({
         fillColor: isSelected ? '#f97316' : 'transparent',
-        fillOpacity: isSelected ? 0.25 : 0,
+        fillOpacity: isSelected ? 0.2 : 0,
         color: isSelected ? '#ea580c' : 'transparent',
-        weight: isSelected ? 2.5 : 1,
+        weight: isSelected ? 2 : 1,
       });
     });
   }, [selectedCountry]);
@@ -215,6 +242,41 @@ const WorldMap = () => {
     acc[u.country].push(u);
     return acc;
   }, {} as Record<string, MapUser[]>), [filteredUsers]);
+
+  // Add/update orange dot markers when countryGroups change
+  useEffect(() => {
+    const markersLayer = markersLayerRef.current;
+    if (!markersLayer) return;
+
+    markersLayer.clearLayers();
+
+    Object.entries(countryGroups).forEach(([country, users]) => {
+      const coords = COUNTRY_COORDS[country];
+      if (!coords) return;
+
+      const radius = Math.min(4 + users.length * 1.5, 12);
+
+      const marker = L.circleMarker([coords.lat, coords.lng], {
+        radius,
+        fillColor: '#f97316',
+        fillOpacity: 0.85,
+        color: '#ea580c',
+        weight: 1.5,
+      });
+
+      marker.bindTooltip(
+        `${COUNTRY_FLAGS[country] || '🌍'} ${country} — ${users.length} user${users.length !== 1 ? 's' : ''}`,
+        { direction: 'top', offset: [0, -8] }
+      );
+
+      marker.on('click', () => {
+        setSelectedCountry(country);
+        setShowBottomSheet(true);
+      });
+
+      markersLayer.addLayer(marker);
+    });
+  }, [countryGroups]);
 
   const fetchMapUsers = async () => {
     if (!profile?.id) return;
@@ -308,42 +370,21 @@ const WorldMap = () => {
 
   return (
     <DashboardLayout>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center justify-between mb-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground flex items-center gap-2">
-              <Globe className="w-7 h-7 text-accent" />
+            <h1 className="text-xl md:text-2xl font-display font-bold text-foreground flex items-center gap-2">
+              <Globe className="w-6 h-6 text-accent" />
               World Map
             </h1>
-            <p className="text-sm text-muted-foreground">
-              {hoveredCountry ? `${COUNTRY_FLAGS[hoveredCountry] || '🌍'} ${hoveredCountry}` : 'Click any country to see users there'}
+            <p className="text-xs text-muted-foreground">
+              {hoveredCountry ? `${COUNTRY_FLAGS[hoveredCountry] || '🌍'} ${hoveredCountry}` : 'Tap any country to see users'}
             </p>
-          </div>
-          {/* View toggle */}
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
-            <Button
-              size="sm"
-              variant={viewMode === 'map' ? 'default' : 'ghost'}
-              className="h-7 text-xs px-3 gap-1.5"
-              onClick={() => setViewMode('map')}
-            >
-              <Map className="w-3.5 h-3.5" />
-              Map
-            </Button>
-            <Button
-              size="sm"
-              variant={viewMode === 'globe' ? 'default' : 'ghost'}
-              className="h-7 text-xs px-3 gap-1.5"
-              onClick={() => setViewMode('globe')}
-            >
-              <Globe className="w-3.5 h-3.5" />
-              Globe
-            </Button>
           </div>
         </div>
 
         {/* Settings Bar */}
-        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-4 p-3 bg-card rounded-xl border border-border text-sm">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 p-2.5 bg-card rounded-xl border border-border text-sm">
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
             <Select value={myCountry} onValueChange={handleUpdateCountry}>
@@ -379,91 +420,103 @@ const WorldMap = () => {
               <SelectItem value="clan">Clan only</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex gap-1 ml-auto">
-            {(['all', 'friends', 'clan'] as const).map(f => (
-              <Button key={f} size="sm" variant={filter === f ? 'default' : 'outline'} className="h-7 text-xs px-2" onClick={() => setFilter(f)}>
-                {f === 'all' ? 'All' : f === 'friends' ? 'Friends' : 'Clan'}
-              </Button>
-            ))}
-          </div>
         </div>
 
-        <div className="space-y-4">
-          {/* Map or Globe */}
-          {viewMode === 'map' ? (
-            <div className="w-full rounded-xl border border-border overflow-hidden relative z-0 isolate" style={{ height: 'clamp(220px, 38vh, 320px)' }}>
-              <div ref={mapContainerRef} className="h-full w-full" />
-              {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-[1000]">
-                  <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
+        {/* Map Container — fills remaining space */}
+        <div className="relative flex-1 min-h-0 rounded-xl border border-border overflow-hidden" style={{ minHeight: '320px' }}>
+          <div ref={mapContainerRef} className="h-full w-full" />
+
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-[1000]">
+              <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : (
-            <GlobeView
-              countryGroups={countryGroups}
-              onSelectCountry={setSelectedCountry}
-              selectedCountry={selectedCountry}
-            />
           )}
 
-          {/* Users Panel */}
-          <div className="w-full bg-card rounded-xl border border-border p-4 max-h-[300px] overflow-y-auto">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="w-5 h-5 text-accent" />
-              <h3 className="font-display font-semibold text-foreground text-sm">
-                {selectedCountry ? (
-                  <span className="flex items-center gap-2">
-                    <span className="text-lg">{selectedFlag}</span>
-                    {selectedCountry}
-                    <Badge variant="secondary" className="text-[10px]">{selectedUserCount}</Badge>
-                  </span>
-                ) : 'Click a country on the map'}
-              </h3>
-            </div>
+          {/* Bottom sheet popup when a country is selected */}
+          <AnimatePresence>
+            {showBottomSheet && selectedCountry && (
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="absolute bottom-0 left-0 right-0 z-[1001] bg-card border-t border-border rounded-t-2xl shadow-lg max-h-[60%] flex flex-col"
+              >
+                {/* Handle */}
+                <div className="flex justify-center pt-2 pb-1">
+                  <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                </div>
 
-            {selectedCountry && (
-              <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search users..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-8 text-xs" />
-              </div>
-            )}
-
-            {!selectedCountry ? (
-              <p className="text-xs text-muted-foreground">Click any country on the map to see users located there</p>
-            ) : selectedUsers.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No users found in {selectedCountry}</p>
-            ) : (
-              <div className="space-y-2">
-                {selectedUsers.map(u => (
-                  <motion.div
-                    key={u.id}
-                    className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{selectedFlag}</span>
+                    <div>
+                      <h3 className="font-display font-bold text-foreground text-sm">{selectedCountry}</h3>
+                      <p className="text-xs text-muted-foreground">{selectedUserCount} user{selectedUserCount !== 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => { setShowBottomSheet(false); setSelectedCountry(null); }}
                   >
-                    <Avatar className="h-9 w-9">
-                      {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                      <AvatarFallback className="bg-accent/20 text-accent-foreground text-xs">
-                        {u.full_name?.charAt(0) || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate">{u.full_name}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        @{u.username}
-                        {u.city && <span className="ml-1 text-accent">• {u.city}</span>}
-                      </p>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Filter tabs */}
+                <div className="flex gap-1 px-4 pb-2">
+                  {(['all', 'friends', 'clan'] as const).map(f => (
+                    <Button key={f} size="sm" variant={filter === f ? 'default' : 'outline'} className="h-7 text-xs px-3" onClick={() => setFilter(f)}>
+                      {f === 'all' ? 'All Users' : f === 'friends' ? 'Friends' : 'Clan'}
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Search */}
+                <div className="relative px-4 pb-2">
+                  <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input placeholder="Search users..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-8 text-xs" />
+                </div>
+
+                {/* User list */}
+                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                  {selectedUsers.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No users found in {selectedCountry}</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {selectedUsers.map(u => (
+                        <div
+                          key={u.id}
+                          className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <Avatar className="h-8 w-8">
+                            {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                            <AvatarFallback className="bg-accent/20 text-accent-foreground text-xs">
+                              {u.full_name?.charAt(0) || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate">{u.full_name}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              @{u.username}
+                              {u.city && <span className="ml-1 text-accent">• {u.city}</span>}
+                            </p>
+                          </div>
+                          <div className="flex gap-1">
+                            {u.is_friend && <Badge variant="secondary" className="text-[9px] px-1">Friend</Badge>}
+                            {u.is_clan_member && <Badge variant="outline" className="text-[9px] px-1">Clan</Badge>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex gap-1">
-                      {u.is_friend && <Badge variant="secondary" className="text-[9px] px-1">Friend</Badge>}
-                      {u.is_clan_member && <Badge variant="outline" className="text-[9px] px-1">Clan</Badge>}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                  )}
+                </div>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
         </div>
       </motion.div>
     </DashboardLayout>
