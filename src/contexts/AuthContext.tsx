@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type UserRole = 'student' | 'teacher' | 'support' | 'admin' | 'ceo' | 'parent' | 'enterprise';
+type UserRole = 'student' | 'teacher' | 'senior_teacher' | 'support' | 'admin' | 'ceo' | 'parent' | 'enterprise';
 
 interface AuthContextType {
   user: User | null;
@@ -173,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'support':
         return '/support';
       case 'teacher':
+      case 'senior_teacher':
         return '/teacher';
       case 'parent':
         return '/parent';

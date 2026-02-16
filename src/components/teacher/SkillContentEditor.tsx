@@ -54,7 +54,7 @@ const SkillContentEditor = () => {
   const [seniorEditTitle, setSeniorEditTitle] = useState('');
   const [seniorEditing, setSeniorEditing] = useState(false);
 
-  const isSeniorTeacher = userRole === 'ceo' || userRole === 'admin';
+  const isSeniorTeacher = userRole === 'senior_teacher' || userRole === 'ceo' || userRole === 'admin';
   const handleSelectSkill = async (skillId: string) => {
     setSelectedSkill(skillId);
     const data = await fetchSkillLevels(skillId);
