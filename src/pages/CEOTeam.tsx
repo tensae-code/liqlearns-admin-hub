@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { STAT_GRADIENTS } from '@/lib/theme';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Users, ArrowLeft, Mail, Plus, Search, Filter, MoreVertical,
   UserCheck, UserPlus, Shield, Crown, GraduationCap, HeadphonesIcon,
-  Building2, Baby, BookOpen, Trash2, ChevronDown, Star,
+  Building2, Baby, BookOpen, Trash2, Star, LayoutList, LayoutGrid,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -33,6 +34,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import DepartmentView from '@/components/ceo/DepartmentView';
+import DepartmentManageTab from '@/components/ceo/DepartmentManageTab';
 
 interface TeamMember {
   id: string;
@@ -65,7 +67,7 @@ const CEOTeam = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<string>('members');
+  const [listMode, setListMode] = useState<string>('list');
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
@@ -187,7 +189,6 @@ const CEOTeam = () => {
     if (!addEmail.trim()) { toast.error('Enter an email'); return; }
     setAddLoading(true);
     try {
-      // Find user by email
       const { data: profile, error: pErr } = await supabase
         .from('profiles')
         .select('user_id, full_name')
@@ -196,7 +197,6 @@ const CEOTeam = () => {
       if (pErr) throw pErr;
       if (!profile) { toast.error('No user found with that email'); setAddLoading(false); return; }
 
-      // Check if already has a role
       const { data: existingRole } = await supabase
         .from('user_roles')
         .select('role')
@@ -204,7 +204,6 @@ const CEOTeam = () => {
         .maybeSingle();
 
       if (existingRole) {
-        // Update role
         const { error } = await supabase
           .from('user_roles')
           .update({ role: addRole as any })
@@ -212,7 +211,6 @@ const CEOTeam = () => {
         if (error) throw error;
         toast.success(`${profile.full_name}'s role updated to ${ROLE_CONFIG[addRole]?.label}`);
       } else {
-        // Insert new role
         const { error } = await supabase
           .from('user_roles')
           .insert({ user_id: profile.user_id, role: addRole } as any);
@@ -231,7 +229,6 @@ const CEOTeam = () => {
     }
   };
 
-  // Counts
   const roleCounts = members.reduce((acc, m) => {
     acc[m.role] = (acc[m.role] || 0) + 1;
     return acc;
@@ -272,22 +269,10 @@ const CEOTeam = () => {
               <p className="text-muted-foreground">Manage roles, seniority, and access</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <ToggleGroup type="single" value={viewMode} onValueChange={v => v && setViewMode(v)} className="bg-muted rounded-lg p-0.5">
-              <ToggleGroupItem value="members" className="text-xs gap-1 px-3 h-8 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
-                <Users className="w-3.5 h-3.5" />
-                Members
-              </ToggleGroupItem>
-              <ToggleGroupItem value="departments" className="text-xs gap-1 px-3 h-8 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
-                <Building2 className="w-3.5 h-3.5" />
-                Departments
-              </ToggleGroupItem>
-            </ToggleGroup>
-            <Button onClick={() => setAddOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add / Change Role
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add / Change Role
           </Button>
-          </div>
         </motion.div>
 
         {/* Stats */}
@@ -308,10 +293,23 @@ const CEOTeam = () => {
           ))}
         </div>
 
-        {viewMode === 'members' ? (
-          <div className="space-y-4">
-            {/* Search & Filter */}
-            <div className="flex gap-3 flex-wrap">
+        {/* Tabs: Members | Departments */}
+        <Tabs defaultValue="members" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="members" className="gap-1.5">
+              <Users className="w-4 h-4" />
+              Members
+            </TabsTrigger>
+            <TabsTrigger value="departments" className="gap-1.5">
+              <Building2 className="w-4 h-4" />
+              Departments
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Members Tab */}
+          <TabsContent value="members" className="space-y-4">
+            {/* Search, Filter, View Toggle row */}
+            <div className="flex gap-3 flex-wrap items-center">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -335,110 +333,128 @@ const CEOTeam = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <ToggleGroup type="single" value={listMode} onValueChange={v => v && setListMode(v)} className="bg-muted rounded-lg p-0.5">
+                <ToggleGroupItem value="list" className="text-xs gap-1 px-3 h-8 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+                  <LayoutList className="w-3.5 h-3.5" />
+                  List
+                </ToggleGroupItem>
+                <ToggleGroupItem value="group" className="text-xs gap-1 px-3 h-8 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-md">
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  Group
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
 
-            {/* Members List */}
-            {loading ? (
-              <div className="flex justify-center py-16">
-                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p>No members found</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filtered.map((member, i) => {
-                  const cfg = ROLE_CONFIG[member.role] || ROLE_CONFIG.student;
-                  const RoleIcon = cfg.icon;
-                  const isSelf = member.user_id === user?.id;
+            {listMode === 'list' ? (
+              /* Flat list view */
+              loading ? (
+                <div className="flex justify-center py-16">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p>No members found</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filtered.map((member, i) => {
+                    const cfg = ROLE_CONFIG[member.role] || ROLE_CONFIG.student;
+                    const RoleIcon = cfg.icon;
+                    const isSelf = member.user_id === user?.id;
 
-                  return (
-                    <motion.div
-                      key={member.user_id}
-                      className={`flex items-center gap-3 p-3 bg-card border rounded-xl ${member.is_on_hold ? 'border-destructive/30 opacity-60' : 'border-border'}`}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(i * 0.02, 0.5) }}
-                    >
-                      <Avatar className="h-10 w-10">
-                        {member.avatar_url && <AvatarImage src={member.avatar_url} />}
-                        <AvatarFallback className="bg-muted text-sm">
-                          {member.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
+                    return (
+                      <motion.div
+                        key={member.user_id}
+                        className={`flex items-center gap-3 p-3 bg-card border rounded-xl ${member.is_on_hold ? 'border-destructive/30 opacity-60' : 'border-border'}`}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.02, 0.5) }}
+                      >
+                        <Avatar className="h-10 w-10">
+                          {member.avatar_url && <AvatarImage src={member.avatar_url} />}
+                          <AvatarFallback className="bg-muted text-sm">
+                            {member.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-foreground text-sm truncate">{member.full_name}</p>
-                          {member.is_on_hold && (
-                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0">On Hold</Badge>
-                          )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground text-sm truncate">{member.full_name}</p>
+                            {member.is_on_hold && (
+                              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">On Hold</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">{member.email}</p>
-                      </div>
 
-                      <Badge variant="outline" className={`text-xs gap-1 ${cfg.color}`}>
-                        <RoleIcon className="w-3 h-3" />
-                        {cfg.label}
-                      </Badge>
+                        <Badge variant="outline" className={`text-xs gap-1 ${cfg.color}`}>
+                          <RoleIcon className="w-3 h-3" />
+                          {cfg.label}
+                        </Badge>
 
-                      {!isSelf && member.role !== 'ceo' && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-52">
-                            <DropdownMenuSub>
-                              <DropdownMenuSubTrigger>
-                                <Shield className="w-4 h-4 mr-2" />
-                                Change Role
-                              </DropdownMenuSubTrigger>
-                              <DropdownMenuSubContent>
-                                {ASSIGNABLE_ROLES.map(role => {
-                                  const rc = ROLE_CONFIG[role];
-                                  const Icon = rc.icon;
-                                  return (
-                                    <DropdownMenuItem
-                                      key={role}
-                                      onClick={() => handleChangeRole(member, role)}
-                                      className={member.role === role ? 'bg-accent/10 font-semibold' : ''}
-                                    >
-                                      <Icon className={`w-4 h-4 mr-2 ${rc.color}`} />
-                                      {rc.label}
-                                      {member.role === role && ' ✓'}
-                                    </DropdownMenuItem>
-                                  );
-                                })}
-                              </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                            <DropdownMenuItem onClick={() => handleToggleHold(member)}>
-                              <UserCheck className="w-4 h-4 mr-2" />
-                              {member.is_on_hold ? 'Remove Hold' : 'Put on Hold'}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => setDeleteTarget(member)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Remove from Team
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
+                        {!isSelf && member.role !== 'ceo' && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-52">
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                  <Shield className="w-4 h-4 mr-2" />
+                                  Change Role
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                  {ASSIGNABLE_ROLES.map(role => {
+                                    const rc = ROLE_CONFIG[role];
+                                    const Icon = rc.icon;
+                                    return (
+                                      <DropdownMenuItem
+                                        key={role}
+                                        onClick={() => handleChangeRole(member, role)}
+                                        className={member.role === role ? 'bg-accent/10 font-semibold' : ''}
+                                      >
+                                        <Icon className={`w-4 h-4 mr-2 ${rc.color}`} />
+                                        {rc.label}
+                                        {member.role === role && ' ✓'}
+                                      </DropdownMenuItem>
+                                    );
+                                  })}
+                                </DropdownMenuSubContent>
+                              </DropdownMenuSub>
+                              <DropdownMenuItem onClick={() => handleToggleHold(member)}>
+                                <UserCheck className="w-4 h-4 mr-2" />
+                                {member.is_on_hold ? 'Remove Hold' : 'Put on Hold'}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => setDeleteTarget(member)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Remove from Team
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )
+            ) : (
+              /* Group view (by role) */
+              <DepartmentView members={filtered} loading={loading} />
             )}
-          </div>
-        ) : (
-          <DepartmentView members={members} loading={loading} />
-        )}
+          </TabsContent>
+
+          {/* Departments Tab */}
+          <TabsContent value="departments">
+            <DepartmentManageTab />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Add/Change Role Dialog */}
