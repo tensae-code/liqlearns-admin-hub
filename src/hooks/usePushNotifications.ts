@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export const usePushNotifications = () => {
   const { user } = useAuth();
   const permissionGranted = useRef(false);
+  const swRegistration = useRef<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
     if (!('Notification' in window)) return;
@@ -16,6 +17,13 @@ export const usePushNotifications = () => {
       });
     } else {
       permissionGranted.current = Notification.permission === 'granted';
+    }
+
+    // Get the active service worker registration for mobile notifications
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((reg) => {
+        swRegistration.current = reg;
+      });
     }
   }, []);
 
@@ -68,23 +76,36 @@ export const usePushNotifications = () => {
     // Don't show if the page is focused (user can see in-app notifications)
     if (document.hasFocus()) return;
 
-    try {
-      const notification = new Notification(title, {
-        body,
-        icon: '/favicon.png',
-        badge: '/favicon.png',
-        tag: type || 'general',
-      } as NotificationOptions);
+    const notificationOptions = {
+      body,
+      icon: '/favicon.png',
+      badge: '/favicon.png',
+      tag: type || 'general',
+      renotify: true,
+      requireInteraction: false,
+    } as NotificationOptions & { renotify?: boolean };
 
+    // Use Service Worker showNotification for PWA/mobile support
+    if (swRegistration.current) {
+      swRegistration.current.showNotification(title, notificationOptions).catch(() => {
+        // Fallback to regular Notification if SW method fails
+        fallbackNotification(title, notificationOptions);
+      });
+    } else {
+      fallbackNotification(title, notificationOptions);
+    }
+  };
+
+  const fallbackNotification = (title: string, options: NotificationOptions) => {
+    try {
+      const notification = new Notification(title, options);
       notification.onclick = () => {
         window.focus();
         notification.close();
       };
-
-      // Auto close after 5 seconds
       setTimeout(() => notification.close(), 5000);
     } catch {
-      // Fallback: some browsers don't support new Notification()
+      // Some browsers don't support new Notification()
     }
   };
 };
