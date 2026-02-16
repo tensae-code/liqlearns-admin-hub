@@ -853,7 +853,7 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
       <MobileVSHeader />
 
       {/* Main content with player profile cards */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Left player card */}
         <div className="hidden lg:flex flex-col items-center justify-start pt-6 pl-3">
           <PlayerCard name={isSpectator ? (battle.challenger_profile?.full_name || 'Player 1') : myName} avatarUrl={isSpectator ? (battle.challenger_profile as any)?.avatar_url : myAvatar} score={isSpectator ? (battle.challenger_score ?? null) : myScore} side="left" />
@@ -915,9 +915,9 @@ const BattlePlayView = ({ battle, onClose, onComplete, onRematch }: BattlePlayVi
           {chatOpen && (
             <motion.div
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 300, opacity: 1 }}
+              animate={{ width: '100%', opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
-              className="border-l border-border flex flex-col bg-card w-full md:w-[300px] shrink-0"
+              className="border-l border-border flex flex-col bg-card w-full md:!w-[300px] shrink-0 absolute inset-0 md:relative md:inset-auto z-20"
             >
               <div className="p-3 border-b border-border flex items-center justify-between">
                 <span className="text-sm font-semibold text-foreground">Battle Chat</span>
