@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSkills, SkillLevel } from '@/hooks/useSkillTree';
 import { useTeacherContributions, SkillProposal, ProposalComment } from '@/hooks/useTeacherContributions';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import {
   ArrowLeft, BookOpen, ChevronRight, Edit, Eye, MessageSquare, Send,
   Star, ThumbsUp, ThumbsDown, Trophy, Zap, Coins, Plus, FileText, X,
+  Link2, PenTool, ExternalLink, CheckCircle2, Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,13 +23,14 @@ const SkillContentEditor = () => {
   const { categories, skills, loading: skillsLoading, selectedCategory, setSelectedCategory, fetchSkillLevels } = useSkills();
   const {
     proposals, myProposals, totalPoints, approvalThreshold,
-    loading: contribLoading, createProposal, voteOnProposal, addComment, fetchComments, fetchVotes, refresh
+    loading: contribLoading, createProposal, voteOnProposal, addComment, fetchComments, fetchVotes, editProposalContent, refresh
   } = useTeacherContributions();
   const { profile } = useProfile();
+  const { userRole } = useAuth();
 
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [levels, setLevels] = useState<SkillLevel[]>([]);
-  const [view, setView] = useState<'browse' | 'edit' | 'review'>('browse');
+  const [view, setView] = useState<'browse' | 'edit' | 'review' | 'senior_edit'>('browse');
   const [editingLevel, setEditingLevel] = useState<SkillLevel | null>(null);
 
   // Editor state
@@ -35,6 +38,8 @@ const SkillContentEditor = () => {
   const [proposalDesc, setProposalDesc] = useState('');
   const [proposalContent, setProposalContent] = useState('');
   const [proposalResources, setProposalResources] = useState<{ type: string; title: string; data: string }[]>([]);
+  const [contributorComment, setContributorComment] = useState('');
+  const [sourceLinks, setSourceLinks] = useState<string[]>(['']);
   const [submitting, setSubmitting] = useState(false);
 
   // Review state
@@ -44,6 +49,12 @@ const SkillContentEditor = () => {
   const [myVote, setMyVote] = useState<'approve' | 'reject' | null>(null);
   const [voteComment, setVoteComment] = useState('');
 
+  // Senior Teacher edit state
+  const [seniorEditContent, setSeniorEditContent] = useState('');
+  const [seniorEditTitle, setSeniorEditTitle] = useState('');
+  const [seniorEditing, setSeniorEditing] = useState(false);
+
+  const isSeniorTeacher = userRole === 'ceo' || userRole === 'admin';
   const handleSelectSkill = async (skillId: string) => {
     setSelectedSkill(skillId);
     const data = await fetchSkillLevels(skillId);
@@ -56,6 +67,8 @@ const SkillContentEditor = () => {
     setProposalDesc(level.description || '');
     setProposalContent(level.content ? JSON.stringify(level.content, null, 2) : '');
     setProposalResources([]);
+    setContributorComment('');
+    setSourceLinks(['']);
     setView('edit');
   };
 
@@ -69,7 +82,8 @@ const SkillContentEditor = () => {
       text: proposalContent,
       resources: proposalResources,
     };
-    await createProposal(editingLevel.id, proposalTitle, proposalDesc, content);
+    const validLinks = sourceLinks.filter(l => l.trim());
+    await createProposal(editingLevel.id, proposalTitle, proposalDesc, content, contributorComment, validLinks);
     setSubmitting(false);
     setView('browse');
     setEditingLevel(null);
@@ -163,7 +177,71 @@ const SkillContentEditor = () => {
                 : String(reviewingProposal.proposed_content)}
             </div>
           )}
+
+          {/* Contributor's Comment */}
+          {(reviewingProposal as any).contributor_comment && (
+            <div className="bg-accent/5 border border-accent/20 rounded-lg p-3 space-y-1">
+              <h4 className="text-xs font-medium text-accent flex items-center gap-1">
+                <MessageSquare className="w-3 h-3" /> Contributor's Comment
+              </h4>
+              <p className="text-sm text-foreground">{(reviewingProposal as any).contributor_comment}</p>
+            </div>
+          )}
+
+          {/* Source Links */}
+          {(reviewingProposal as any).source_links?.length > 0 && (
+            <div className="space-y-1">
+              <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Link2 className="w-3 h-3" /> References
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {((reviewingProposal as any).source_links as string[]).map((link, i) => (
+                  <a key={i} href={link} target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline flex items-center gap-1 bg-muted/50 px-2 py-1 rounded-md">
+                    <ExternalLink className="w-3 h-3" /> {new URL(link).hostname}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Edited content indicator */}
+          {(reviewingProposal as any).edited_content && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-1">
+              <h4 className="text-xs font-medium text-primary flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" /> Edited by Senior Teacher
+              </h4>
+              <div className="bg-muted/50 rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto">
+                {typeof (reviewingProposal as any).edited_content === 'object'
+                  ? ((reviewingProposal as any).edited_content as any).text || JSON.stringify((reviewingProposal as any).edited_content, null, 2)
+                  : String((reviewingProposal as any).edited_content)}
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Senior Teacher Edit Button */}
+        {isSeniorTeacher && (
+          <div className="bg-card rounded-xl border-2 border-primary/30 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary" />
+                <div>
+                  <h4 className="font-medium text-foreground text-sm">Senior Teacher Tools</h4>
+                  <p className="text-xs text-muted-foreground">Edit to match platform brand & standards (+8 pts)</p>
+                </div>
+              </div>
+              <Button size="sm" onClick={() => {
+                const content = (reviewingProposal as any).edited_content || reviewingProposal.proposed_content;
+                setSeniorEditTitle(reviewingProposal.proposed_title);
+                setSeniorEditContent(typeof content === 'object' ? (content as any).text || JSON.stringify(content, null, 2) : String(content));
+                setView('senior_edit');
+              }}>
+                <PenTool className="w-4 h-4 mr-1" /> Edit Content
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Vote */}
         {reviewingProposal.author_id !== profile?.id && (
@@ -229,6 +307,76 @@ const SkillContentEditor = () => {
               <Send className="w-4 h-4" />
             </Button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Senior Teacher Edit view
+  if (view === 'senior_edit' && reviewingProposal) {
+    const handleSeniorSave = async () => {
+      setSeniorEditing(true);
+      const editedContent = { text: seniorEditContent };
+      await editProposalContent(reviewingProposal.id, editedContent, seniorEditTitle);
+      setSeniorEditing(false);
+      setView('review');
+    };
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => setView('review')}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h2 className="text-xl font-display font-bold text-foreground flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" /> Senior Teacher Edit
+            </h2>
+            <p className="text-sm text-muted-foreground">Rewrite content to match platform brand & standards</p>
+          </div>
+        </div>
+
+        {/* Original contributor info */}
+        <div className="bg-accent/5 border border-accent/20 rounded-xl p-3 space-y-2">
+          <p className="text-xs font-medium text-accent">Original by {reviewingProposal.author?.full_name}</p>
+          {(reviewingProposal as any).contributor_comment && (
+            <p className="text-xs text-muted-foreground italic">"{(reviewingProposal as any).contributor_comment}"</p>
+          )}
+          {(reviewingProposal as any).source_links?.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {((reviewingProposal as any).source_links as string[]).map((link: string, i: number) => (
+                <a key={i} href={link} target="_blank" rel="noopener noreferrer"
+                  className="text-[10px] text-primary hover:underline flex items-center gap-0.5 bg-muted/50 px-1.5 py-0.5 rounded">
+                  <ExternalLink className="w-2.5 h-2.5" /> Source {i + 1}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border-2 border-primary/30 p-4 space-y-4">
+          <div>
+            <label className="text-sm font-medium text-foreground">Title</label>
+            <Input value={seniorEditTitle} onChange={e => setSeniorEditTitle(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-foreground">Content (Full Rewrite Authority)</label>
+            <Textarea
+              value={seniorEditContent}
+              onChange={e => setSeniorEditContent(e.target.value)}
+              rows={12}
+              className="mt-1 font-mono text-sm"
+              placeholder="Rewrite the content to match the platform's brand, tone, and quality standards..."
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" onClick={() => setView('review')}>Cancel</Button>
+          <Button onClick={handleSeniorSave} disabled={seniorEditing || !seniorEditContent.trim()}>
+            <PenTool className="w-4 h-4 mr-1" />
+            {seniorEditing ? 'Saving...' : 'Save Edited Content (+8 pts)'}
+          </Button>
         </div>
       </div>
     );
@@ -306,6 +454,54 @@ const SkillContentEditor = () => {
                   <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => removeResource(i)}>
                     <X className="w-3 h-3" />
                   </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Contributor Comment */}
+          <div>
+            <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
+              <MessageSquare className="w-3.5 h-3.5" /> Your Comment
+            </label>
+            <Textarea
+              value={contributorComment}
+              onChange={e => setContributorComment(e.target.value)}
+              rows={3}
+              className="mt-1 text-sm"
+              placeholder="Explain why this content is valuable, what makes it accurate, and any context for reviewers..."
+            />
+          </div>
+
+          {/* Source Links */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                <Link2 className="w-3.5 h-3.5" /> Source Links / References
+              </label>
+              <Button size="sm" variant="outline" onClick={() => setSourceLinks(prev => [...prev, ''])}>
+                <Plus className="w-3 h-3 mr-1" /> Add Link
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {sourceLinks.map((link, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <Input
+                    placeholder="https://example.com/source-article"
+                    value={link}
+                    onChange={e => {
+                      const updated = [...sourceLinks];
+                      updated[i] = e.target.value;
+                      setSourceLinks(updated);
+                    }}
+                    className="h-8 text-xs flex-1"
+                  />
+                  {sourceLinks.length > 1 && (
+                    <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => setSourceLinks(prev => prev.filter((_, idx) => idx !== i))}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
