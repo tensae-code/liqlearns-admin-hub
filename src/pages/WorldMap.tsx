@@ -442,8 +442,8 @@ const WorldMap = () => {
           </Select>
         </div>
 
-        {/* Map / Globe Container */}
-        <div className="relative overflow-hidden -mx-3 md:-mx-4 lg:-mx-6" style={{ height: 'calc(100vh - 300px)', minHeight: '320px' }}>
+        {/* Map / Globe Container — z-0 keeps it below drawers/modals/FABs */}
+        <div className="relative overflow-hidden rounded-xl border border-border z-0" style={{ height: 'calc(100vh - 300px)', minHeight: '320px' }}>
           {viewMode === 'globe' ? (
             <GlobeView
               countryGroups={countryGroups}

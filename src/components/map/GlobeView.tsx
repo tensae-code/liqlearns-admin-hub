@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import createGlobe from 'cobe';
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import { feature } from 'topojson-client';
+
+// Lazy-load the heavy globe component
+const Globe = lazy(() => import('react-globe.gl'));
 
 const COUNTRY_COORDS: Record<string, { lat: number; lng: number }> = {
   'Ethiopia': { lat: 9.0, lng: 38.7 }, 'United States': { lat: 39.8, lng: -98.6 },
@@ -21,6 +24,18 @@ const COUNTRY_COORDS: Record<string, { lat: number; lng: number }> = {
   'Sudan': { lat: 12.9, lng: 30.2 },
 };
 
+// Map of numeric country IDs to country names (world-atlas uses numeric IDs)
+const COUNTRY_ID_TO_NAME: Record<string, string> = {
+  '231': 'Ethiopia', '840': 'United States', '826': 'United Kingdom', '124': 'Canada',
+  '276': 'Germany', '250': 'France', '356': 'India', '156': 'China', '392': 'Japan',
+  '076': 'Brazil', '566': 'Nigeria', '710': 'South Africa', '404': 'Kenya', '818': 'Egypt',
+  '036': 'Australia', '484': 'Mexico', '792': 'Turkey', '682': 'Saudi Arabia',
+  '784': 'UAE', '410': 'South Korea', '360': 'Indonesia', '608': 'Philippines',
+  '380': 'Italy', '724': 'Spain', '643': 'Russia', '032': 'Argentina',
+  '170': 'Colombia', '288': 'Ghana', '834': 'Tanzania', '800': 'Uganda',
+  '232': 'Eritrea', '706': 'Somalia', '729': 'Sudan',
+};
+
 interface GlobeViewProps {
   countryGroups: Record<string, any[]>;
   onSelectCountry: (country: string | null) => void;
@@ -28,155 +43,115 @@ interface GlobeViewProps {
 }
 
 const GlobeView = ({ countryGroups, onSelectCountry, selectedCountry }: GlobeViewProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const globeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const pointerStart = useRef<{ x: number; y: number } | null>(null);
-  const phiOffset = useRef(0);
-  const thetaOffset = useRef(0);
-  const phiVelocity = useRef(0);
-  const currentPhi = useRef(0);
-  const currentTheta = useRef(0.25);
-  const [scale, setScale] = useState(1);
-  const scaleRef = useRef(1);
-  const globeRef = useRef<ReturnType<typeof createGlobe> | null>(null);
+  const [countries, setCountries] = useState<any[]>([]);
+  const [dimensions, setDimensions] = useState({ width: 400, height: 400 });
 
+  // Load world polygons
   useEffect(() => {
-    if (!canvasRef.current || !containerRef.current) return;
+    const url = 'https://unpkg.com/world-atlas@2/countries-110m.json';
+    (async () => {
+      try {
+        const res = await fetch(url);
+        const topo = await res.json();
+        const geo = feature(topo, topo.objects.countries) as any;
+        setCountries(geo.features || []);
+      } catch (err) {
+        console.error('Failed to load world topology:', err);
+      }
+    })();
+  }, []);
 
-    const markers = Object.entries(countryGroups)
+  // Resize observer
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const obs = new ResizeObserver(entries => {
+      for (const e of entries) {
+        setDimensions({ width: e.contentRect.width, height: e.contentRect.height });
+      }
+    });
+    obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  // Set initial point of view
+  useEffect(() => {
+    if (!globeRef.current) return;
+    globeRef.current.pointOfView({ lat: 15, lng: 20, altitude: 2.2 }, 0);
+  }, [countries]); // once countries load the globe is ready
+
+  // Build dots from countryGroups
+  const dots = useMemo(() => {
+    return Object.entries(countryGroups)
       .filter(([country]) => COUNTRY_COORDS[country])
       .map(([country, users]) => ({
-        location: [COUNTRY_COORDS[country].lat, COUNTRY_COORDS[country].lng] as [number, number],
-        size: Math.min(0.04 + users.length * 0.015, 0.12),
+        countryCode: country,
+        lat: COUNTRY_COORDS[country].lat,
+        lng: COUNTRY_COORDS[country].lng,
+        users: users.length,
       }));
-
-    const container = containerRef.current;
-    const size = Math.min(container.offsetWidth, container.offsetHeight);
-
-    const globe = createGlobe(canvasRef.current, {
-      devicePixelRatio: Math.min(window.devicePixelRatio, 2),
-      width: size * 2,
-      height: size * 2,
-      phi: currentPhi.current,
-      theta: currentTheta.current,
-      dark: 0,
-      diffuse: 3,
-      mapSamples: 16000,
-      mapBrightness: 6,
-      baseColor: [0.63, 0.78, 0.45],
-      markerColor: [0.976, 0.451, 0.086],
-      glowColor: [0.56, 0.78, 1],
-      markers,
-      scale: scaleRef.current,
-      onRender: (state) => {
-        if (!pointerStart.current) {
-          phiOffset.current += 0.003;
-        }
-        state.phi = phiOffset.current;
-        state.theta = currentTheta.current + thetaOffset.current;
-        state.width = size * 2;
-        state.height = size * 2;
-        state.scale = scaleRef.current;
-      },
-    });
-
-    globeRef.current = globe;
-
-    return () => {
-      globe.destroy();
-      globeRef.current = null;
-    };
   }, [countryGroups]);
 
-  const pinchStartDist = useRef<number | null>(null);
-  const pinchStartScale = useRef(1);
+  const selectedCountryId = useMemo(() => {
+    if (!selectedCountry) return null;
+    return Object.entries(COUNTRY_ID_TO_NAME).find(([, name]) => name === selectedCountry)?.[0] || null;
+  }, [selectedCountry]);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    pointerStart.current = { x: e.clientX, y: e.clientY };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  };
+  const onPolygonClick = (feat: any) => {
+    const name = COUNTRY_ID_TO_NAME[feat.id] || null;
+    onSelectCountry(name);
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!pointerStart.current) return;
-    const dx = e.clientX - pointerStart.current.x;
-    const dy = e.clientY - pointerStart.current.y;
-    phiOffset.current += dx * 0.005;
-    thetaOffset.current = Math.max(-1, Math.min(1, thetaOffset.current - dy * 0.005));
-    pointerStart.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    pointerStart.current = null;
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    scaleRef.current = Math.max(0.8, Math.min(3, scaleRef.current + delta));
-    setScale(scaleRef.current);
-  };
-
-  // Touch handlers for mobile pinch-to-zoom
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      pinchStartDist.current = Math.hypot(dx, dy);
-      pinchStartScale.current = scaleRef.current;
-    } else if (e.touches.length === 1) {
-      pointerStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    // Zoom into country
+    if (feat.bbox && globeRef.current) {
+      const lng = (feat.bbox[0] + feat.bbox[2]) / 2;
+      const lat = (feat.bbox[1] + feat.bbox[3]) / 2;
+      globeRef.current.pointOfView({ lat, lng, altitude: 1.4 }, 600);
     }
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault();
-    if (e.touches.length === 2 && pinchStartDist.current !== null) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      const ratio = dist / pinchStartDist.current;
-      scaleRef.current = Math.max(0.8, Math.min(3, pinchStartScale.current * ratio));
-      setScale(scaleRef.current);
-    } else if (e.touches.length === 1 && pointerStart.current) {
-      const dx = e.touches[0].clientX - pointerStart.current.x;
-      const dy = e.touches[0].clientY - pointerStart.current.y;
-      phiOffset.current += dx * 0.005;
-      thetaOffset.current = Math.max(-1, Math.min(1, thetaOffset.current - dy * 0.005));
-      pointerStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
-  };
-
-  const handleTouchEnd = () => {
-    pinchStartDist.current = null;
-    pointerStart.current = null;
-  };
+  const dotRadius = (d: any) => Math.min(0.55, 0.18 + Math.log10(d.users + 1) * 0.12);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full overflow-hidden bg-sky-100 flex items-center justify-center touch-none"
-      onWheel={handleWheel}
-    >
-      <canvas
-        ref={canvasRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className="cursor-grab active:cursor-grabbing"
-        style={{
-          width: '100%',
-          height: '100%',
-          maxWidth: '100%',
-          maxHeight: '100%',
-          objectFit: 'contain',
-          touchAction: 'none',
-        }}
-      />
+    <div ref={containerRef} className="w-full h-full overflow-hidden flex items-center justify-center">
+      <Suspense fallback={
+        <div className="flex items-center justify-center w-full h-full">
+          <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+        </div>
+      }>
+        <Globe
+          ref={globeRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          backgroundColor="rgba(0,0,0,0)"
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+          
+          polygonsData={countries}
+          polygonAltitude={(d: any) => (d.id === selectedCountryId ? 0.06 : 0.01)}
+          polygonCapColor={(d: any) => (d.id === selectedCountryId ? 'rgba(255,140,0,0.55)' : 'rgba(255,255,255,0.06)')}
+          polygonSideColor={() => 'rgba(255,140,0,0.12)'}
+          polygonStrokeColor={() => 'rgba(255,140,0,0.5)'}
+          polygonLabel={(d: any) => {
+            const name = COUNTRY_ID_TO_NAME[d.id] || `Country #${d.id}`;
+            const users = countryGroups[name]?.length || 0;
+            return `<div style="font-size:12px;background:rgba(0,0,0,0.7);color:#fff;padding:4px 8px;border-radius:6px"><b>${name}</b><br/>Users: ${users}</div>`;
+          }}
+          onPolygonClick={onPolygonClick}
+          
+          pointsData={dots}
+          pointLat={(d: any) => d.lat}
+          pointLng={(d: any) => d.lng}
+          pointRadius={(d: any) => dotRadius(d)}
+          pointColor={() => 'orange'}
+          pointAltitude={0.02}
+          pointLabel={(d: any) =>
+            `<div style="font-size:12px;background:rgba(0,0,0,0.7);color:#fff;padding:4px 8px;border-radius:6px"><b>${d.countryCode}</b><br/>Users: ${d.users}</div>`
+          }
+          
+          enablePointerInteraction={true}
+        />
+      </Suspense>
     </div>
   );
 };
