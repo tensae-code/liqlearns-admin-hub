@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useSkills, SkillLevel } from '@/hooks/useSkillTree';
 import { useCoins } from '@/hooks/useCoins';
@@ -18,6 +18,8 @@ import {
   ArrowLeft,
   Trophy,
   Zap,
+  BookOpen,
+  CheckCircle,
 } from 'lucide-react';
 
 const SkillTree = () => {
@@ -27,6 +29,7 @@ const SkillTree = () => {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [levels, setLevels] = useState<SkillLevel[]>([]);
   const [loadingLevels, setLoadingLevels] = useState(false);
+  const [viewingLevel, setViewingLevel] = useState<SkillLevel | null>(null);
 
   const handleSelectSkill = async (skillId: string) => {
     setSelectedSkill(skillId);
@@ -38,15 +41,17 @@ const SkillTree = () => {
 
   const handleUnlockLevel = async (level: SkillLevel, skillId: string) => {
     if (!profile?.id) return;
-    if (balance < level.coin_cost) {
+    if (level.coin_cost > 0 && balance < level.coin_cost) {
       toast.error(`Need ${level.coin_cost} coins (you have ${balance})`);
       return;
     }
 
-    const result = await spendCoins(level.coin_cost, 'level_activation', `Unlocked ${level.title}`, level.id);
-    if (!result.success) {
-      toast.error(result.error || 'Failed to unlock');
-      return;
+    if (level.coin_cost > 0) {
+      const result = await spendCoins(level.coin_cost, 'level_activation', `Unlocked ${level.title}`, level.id);
+      if (!result.success) {
+        toast.error(result.error || 'Failed to unlock');
+        return;
+      }
     }
 
     // Update user progress
@@ -69,9 +74,36 @@ const SkillTree = () => {
 
     toast.success(`🎉 Unlocked "${level.title}"! +${level.xp_reward} XP`);
     await refreshCoins();
+    // Open the level content after unlock
+    setViewingLevel(level);
   };
 
   const selectedSkillData = skills.find(s => s.id === selectedSkill);
+
+  // Render markdown-like content simply
+  const renderContent = (text: string) => {
+    return text.split('\n').map((line, i) => {
+      if (line.startsWith('# ')) return <h1 key={i} className="text-2xl font-display font-bold text-foreground mt-4 mb-2">{line.slice(2)}</h1>;
+      if (line.startsWith('## ')) return <h2 key={i} className="text-xl font-display font-semibold text-foreground mt-4 mb-2">{line.slice(3)}</h2>;
+      if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-display font-semibold text-foreground mt-3 mb-1">{line.slice(4)}</h3>;
+      if (line.startsWith('> ')) return <blockquote key={i} className="border-l-4 border-accent pl-4 py-1 my-2 italic text-muted-foreground">{line.slice(2)}</blockquote>;
+      if (line.startsWith('- ')) return <li key={i} className="ml-4 text-foreground list-disc">{renderInlineMarkdown(line.slice(2))}</li>;
+      if (line.startsWith('| ')) return <div key={i} className="text-sm text-foreground font-mono">{line}</div>;
+      if (line.trim() === '') return <div key={i} className="h-2" />;
+      return <p key={i} className="text-foreground leading-relaxed">{renderInlineMarkdown(line)}</p>;
+    });
+  };
+
+  const renderInlineMarkdown = (text: string) => {
+    // Handle bold **text**
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -79,9 +111,10 @@ const SkillTree = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            {(selectedCategory || selectedSkill) && (
+            {(selectedCategory || selectedSkill || viewingLevel) && (
               <Button variant="ghost" size="icon" onClick={() => {
-                if (selectedSkill) { setSelectedSkill(null); setLevels([]); }
+                if (viewingLevel) { setViewingLevel(null); }
+                else if (selectedSkill) { setSelectedSkill(null); setLevels([]); }
                 else setSelectedCategory(null);
               }}>
                 <ArrowLeft className="w-5 h-5" />
@@ -90,10 +123,10 @@ const SkillTree = () => {
             <div>
               <h1 className="text-3xl font-display font-bold text-foreground flex items-center gap-2">
                 <Zap className="w-8 h-8 text-accent" />
-                {selectedSkillData ? selectedSkillData.name : selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : 'Skill Tree'}
+                {viewingLevel ? viewingLevel.title : selectedSkillData ? selectedSkillData.name : selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : 'Skill Tree'}
               </h1>
               <p className="text-muted-foreground">
-                {selectedSkillData ? selectedSkillData.description || 'Master each level to progress' : 'Choose a category to start learning'}
+                {viewingLevel ? `Level ${viewingLevel.level_number}` : selectedSkillData ? selectedSkillData.description || 'Master each level to progress' : 'Choose a category to start learning'}
               </p>
             </div>
           </div>
@@ -107,6 +140,33 @@ const SkillTree = () => {
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : viewingLevel ? (
+          /* Level Content View */
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-card rounded-xl border border-border p-6 md:p-8">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
+                <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-accent" />
+                </div>
+                <div>
+                  <h2 className="font-display font-semibold text-foreground">{viewingLevel.title}</h2>
+                  <p className="text-sm text-muted-foreground">{viewingLevel.description}</p>
+                </div>
+                <Badge className="ml-auto bg-accent/20 text-accent border-accent">+{viewingLevel.xp_reward} XP</Badge>
+              </div>
+              
+              {viewingLevel.content?.lesson_text ? (
+                <div className="prose-sm space-y-1">
+                  {renderContent(viewingLevel.content.lesson_text)}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>Content coming soon! Teachers are working on this level.</p>
+                </div>
+              )}
+            </div>
           </div>
         ) : selectedSkill && selectedSkillData ? (
           /* Skill Levels View */
@@ -138,6 +198,7 @@ const SkillTree = () => {
                   const isUnlocked = level.level_number <= userLevel;
                   const isNext = level.level_number === userLevel + 1;
                   const isLocked = level.level_number > userLevel + 1;
+                  const hasContent = !!(level.content?.lesson_text);
 
                   return (
                     <motion.div
@@ -146,14 +207,21 @@ const SkillTree = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
                       className={`p-4 rounded-xl border transition-all ${
-                        isUnlocked ? 'bg-accent/10 border-accent' : isNext ? 'bg-card border-primary hover:border-accent' : 'bg-muted/30 border-border opacity-60'
+                        isUnlocked
+                          ? 'bg-accent/10 border-accent cursor-pointer hover:bg-accent/20'
+                          : isNext
+                          ? 'bg-card border-primary hover:border-accent'
+                          : 'bg-muted/30 border-border opacity-60'
                       }`}
+                      onClick={() => {
+                        if (isUnlocked) setViewingLevel(level);
+                      }}
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold ${
                           isUnlocked ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'
                         }`}>
-                          {isUnlocked ? <Star className="w-6 h-6" /> : isLocked ? <Lock className="w-5 h-5" /> : level.level_number}
+                          {isUnlocked ? <CheckCircle className="w-6 h-6" /> : isLocked ? <Lock className="w-5 h-5" /> : level.level_number}
                         </div>
                         <div className="flex-1">
                           <h4 className="font-medium text-foreground">{level.title}</h4>
@@ -166,9 +234,15 @@ const SkillTree = () => {
                           </div>
                         </div>
                         {isUnlocked ? (
-                          <Badge className="bg-accent/20 text-accent border-accent">Completed</Badge>
+                          <div className="flex items-center gap-2">
+                            {hasContent && <BookOpen className="w-4 h-4 text-accent" />}
+                            <Badge className="bg-accent/20 text-accent border-accent">
+                              <CheckCircle className="w-3 h-3 mr-1" /> Done
+                            </Badge>
+                            <ChevronRight className="w-4 h-4 text-accent" />
+                          </div>
                         ) : isNext ? (
-                          <Button size="sm" onClick={() => handleUnlockLevel(level, selectedSkill!)}>
+                          <Button size="sm" onClick={(e) => { e.stopPropagation(); handleUnlockLevel(level, selectedSkill!); }}>
                             <Unlock className="w-4 h-4 mr-1" /> Unlock
                           </Button>
                         ) : (
