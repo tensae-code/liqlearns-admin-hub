@@ -1212,6 +1212,126 @@ export type Database = {
           },
         ]
       }
+      coin_conversion_rates: {
+        Row: {
+          battle_points_required: number
+          coins_given: number
+          created_at: string
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          battle_points_required?: number
+          coins_given?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          battle_points_required?: number
+          coins_given?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coin_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coin_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coin_wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          last_monthly_credit: string | null
+          monthly_allocation: number
+          total_earned: number
+          total_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          last_monthly_credit?: string | null
+          monthly_allocation?: number
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          last_monthly_credit?: string | null
+          monthly_allocation?: number
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coin_wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coin_wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commission_groups: {
         Row: {
           color: string | null
@@ -3299,6 +3419,7 @@ export type Database = {
           bio: string | null
           birthday: string | null
           commission_group_id: string | null
+          country: string | null
           created_at: string
           current_streak: number
           email: string
@@ -3314,7 +3435,9 @@ export type Database = {
           last_login_date: string | null
           longest_streak: number
           nickname: string | null
+          notify_friends_battles: boolean | null
           phone: string | null
+          show_on_map: boolean | null
           sponsor_id: string | null
           subscription_ends_at: string | null
           subscription_plan: string | null
@@ -3331,6 +3454,7 @@ export type Database = {
           bio?: string | null
           birthday?: string | null
           commission_group_id?: string | null
+          country?: string | null
           created_at?: string
           current_streak?: number
           email: string
@@ -3346,7 +3470,9 @@ export type Database = {
           last_login_date?: string | null
           longest_streak?: number
           nickname?: string | null
+          notify_friends_battles?: boolean | null
           phone?: string | null
+          show_on_map?: boolean | null
           sponsor_id?: string | null
           subscription_ends_at?: string | null
           subscription_plan?: string | null
@@ -3363,6 +3489,7 @@ export type Database = {
           bio?: string | null
           birthday?: string | null
           commission_group_id?: string | null
+          country?: string | null
           created_at?: string
           current_streak?: number
           email?: string
@@ -3378,7 +3505,9 @@ export type Database = {
           last_login_date?: string | null
           longest_streak?: number
           nickname?: string | null
+          notify_friends_battles?: boolean | null
           phone?: string | null
+          show_on_map?: boolean | null
           sponsor_id?: string | null
           subscription_ends_at?: string | null
           subscription_plan?: string | null
@@ -4050,6 +4179,242 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          parent_id: string | null
+          slug: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          parent_id?: string | null
+          slug: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "skill_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_edit_proposals: {
+        Row: {
+          author_id: string
+          created_at: string
+          id: string
+          proposed_content: Json
+          proposed_description: string | null
+          proposed_title: string | null
+          review_votes_down: number | null
+          review_votes_up: number | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          skill_level_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          id?: string
+          proposed_content: Json
+          proposed_description?: string | null
+          proposed_title?: string | null
+          review_votes_down?: number | null
+          review_votes_up?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          skill_level_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          id?: string
+          proposed_content?: Json
+          proposed_description?: string | null
+          proposed_title?: string | null
+          review_votes_down?: number | null
+          review_votes_up?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          skill_level_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_edit_proposals_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_edit_proposals_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_edit_proposals_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_edit_proposals_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_edit_proposals_skill_level_id_fkey"
+            columns: ["skill_level_id"]
+            isOneToOne: false
+            referencedRelation: "skill_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_edit_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          proposal_id: string
+          reviewer_id: string
+          vote: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          proposal_id: string
+          reviewer_id: string
+          vote: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          proposal_id?: string
+          reviewer_id?: string
+          vote?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_edit_reviews_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "skill_edit_proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_edit_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_edit_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_levels: {
+        Row: {
+          coin_cost: number
+          content: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          level_number: number
+          skill_id: string
+          title: string
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          coin_cost?: number
+          content?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          level_number: number
+          skill_id: string
+          title: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Update: {
+          coin_cost?: number
+          content?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          level_number?: number
+          skill_id?: string
+          title?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_levels_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skill_suggestion_votes: {
         Row: {
           created_at: string
@@ -4172,6 +4537,56 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skills: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          max_level: number
+          name: string
+          slug: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_level?: number
+          name: string
+          slug: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_level?: number
+          name?: string
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skills_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "skill_categories"
             referencedColumns: ["id"]
           },
         ]
@@ -4405,6 +4820,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_tiers: {
+        Row: {
+          created_at: string
+          features: Json | null
+          id: string
+          is_active: boolean
+          monthly_coins: number
+          name: string
+          price_etb: number
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          monthly_coins?: number
+          name: string
+          price_etb?: number
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          monthly_coins?: number
+          name?: string
+          price_etb?: number
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       support_tickets: {
         Row: {
@@ -4720,6 +5171,61 @@ export type Database = {
         }
         Relationships: []
       }
+      user_skill_progress: {
+        Row: {
+          current_level: number
+          id: string
+          is_max_level: boolean | null
+          last_activity_at: string
+          skill_id: string
+          started_at: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          current_level?: number
+          id?: string
+          is_max_level?: boolean | null
+          last_activity_at?: string
+          skill_id: string
+          started_at?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          current_level?: number
+          id?: string
+          is_max_level?: boolean | null
+          last_activity_at?: string
+          skill_id?: string
+          started_at?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_skill_progress_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_skill_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_skill_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wallets: {
         Row: {
           balance: number
@@ -4864,6 +5370,10 @@ export type Database = {
       can_message: {
         Args: { receiver_profile_id: string; sender_profile_id: string }
         Returns: boolean
+      }
+      convert_battle_points_to_coins: {
+        Args: { p_battle_points: number; p_user_id: string }
+        Returns: Json
       }
       get_direct_referrals: {
         Args: { p_profile_id: string }

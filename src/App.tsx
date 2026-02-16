@@ -44,6 +44,8 @@ import SupportDashboard from "./pages/SupportDashboard";
 import NotFound from "./pages/NotFound";
 import GamePage from "./pages/GamePage";
 import Battles from "./pages/Battles";
+import WorldMap from "./pages/WorldMap";
+import SkillTree from "./pages/SkillTree";
 import Clans from "./pages/Clans";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -161,6 +163,8 @@ const AppRoutes = () => (
     {/* Battles & Clans */}
     <Route path="/battles" element={<RequireAuth><Battles /></RequireAuth>} />
     <Route path="/clans" element={<RequireAuth><Clans /></RequireAuth>} />
+    <Route path="/map" element={<RequireAuth><WorldMap /></RequireAuth>} />
+    <Route path="/skills" element={<RequireAuth><SkillTree /></RequireAuth>} />
     
     {/* Shareable Game Route */}
     <Route path="/game/:shareCode" element={<GamePage />} />
