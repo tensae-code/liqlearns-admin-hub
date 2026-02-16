@@ -96,22 +96,22 @@ const WorldMap = () => {
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    const worldBounds = L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180));
+    const worldBounds = L.latLngBounds(L.latLng(-60, -180), L.latLng(75, 180));
 
     const map = L.map(mapContainerRef.current, {
-      center: [20, 0],
-      zoom: 2,
-      minZoom: 2,
+      center: [25, 0],
+      zoom: 1,
+      minZoom: 1,
       maxZoom: 18,
       scrollWheelZoom: true,
       zoomControl: true,
       worldCopyJump: false,
-      maxBounds: worldBounds,
+      maxBounds: L.latLngBounds(L.latLng(-85, -200), L.latLng(85, 200)),
       maxBoundsViscosity: 1.0,
     });
 
-    // Fit the map to show the whole world within the container
-    map.fitBounds(worldBounds);
+    // Fit world into container with padding
+    map.fitBounds(worldBounds, { padding: [10, 10] });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -371,7 +371,7 @@ const WorldMap = () => {
 
         <div className="grid lg:grid-cols-3 gap-4">
           {/* Leaflet Map */}
-          <div className="lg:col-span-2 rounded-xl border border-border overflow-hidden relative z-0 isolate" style={{ height: 'clamp(350px, 55vh, 550px)' }}>
+          <div className="lg:col-span-2 rounded-xl border border-border overflow-hidden relative z-0 isolate" style={{ height: 'clamp(200px, 35vh, 320px)' }}>
             <div ref={mapContainerRef} className="h-full w-full" />
 
             {loading && (
