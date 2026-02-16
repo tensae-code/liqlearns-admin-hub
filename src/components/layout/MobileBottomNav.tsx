@@ -19,7 +19,10 @@ import {
   FileText,
   Mail,
   Briefcase,
-  Swords
+  Swords,
+  Globe,
+  Trophy,
+  ShoppingBag
 } from 'lucide-react';
 import {
   Drawer,
@@ -193,6 +196,45 @@ const MobileBottomNav = () => {
                 <div className="flex-1">
                   <span className="font-medium text-foreground">Clans</span>
                   <p className="text-xs text-muted-foreground">Join or create a team</p>
+                </div>
+              </Link>
+              <Link
+                to="/skills"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-accent" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">Skills</span>
+                  <p className="text-xs text-muted-foreground">Skill tree & levels</p>
+                </div>
+              </Link>
+              <Link
+                to="/map"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">World Map</span>
+                  <p className="text-xs text-muted-foreground">See friends globally</p>
+                </div>
+              </Link>
+              <Link
+                to="/marketplace"
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                  <ShoppingBag className="w-5 h-5 text-gold" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">Marketplace</span>
+                  <p className="text-xs text-muted-foreground">Spend rewards</p>
                 </div>
               </Link>
               <Link
